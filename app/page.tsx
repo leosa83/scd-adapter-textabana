@@ -1,0 +1,680 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { markdown } from "@codemirror/lang-markdown";
+import { javascript } from "@codemirror/lang-javascript";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import {
+  AlertTriangle,
+  BookOpen,
+  Box,
+  Braces,
+  CheckCircle2,
+  ChevronRight,
+  CircleDot,
+  Code2,
+  Copy,
+  Download,
+  FileText,
+  Layers3,
+  Play,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Toaster } from "@/components/ui/sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Specification } from "./specification";
+
+type ProjectFile = {
+  path: string;
+  kind: "document" | "module";
+  content: string;
+};
+
+type FunctionMeta = {
+  name: string;
+  modulePath: string;
+  description: string;
+  args: Record<string, { type?: string; default?: unknown; description?: string }>;
+  accepts: string;
+  returns: string;
+};
+
+type RuntimeResult = {
+  ok: boolean;
+  output: string;
+  error?: string;
+  diagnostics: Array<{ level: string; line: number; message: string }>;
+  functions: FunctionMeta[];
+  modulesLoaded: number;
+  duration: number;
+};
+
+const sampleDocument = `>>>>! include "./modules/core.js"
+>>>>! include "./modules/editorial.js"
+>>>>! include "./modules/base64.js"
+>>>>! config scope-order="declaration:asc"
+
+>>>>+ normalize @id=clean @order=10
+>>>>+ annotate label="Ärvd intervallfunktion" @id=provenance @order=30
+
+# Semantisk körplan
+
+Den här texten befinner sig direkt i båda öppna intervallen.
+
+>>>> summarize sentences=2
+Blocket körs först. Den här meningen ingår i blockets input. Därefter blir blockets output input till normalize och annotate. Den sista meningen tas bort av summarize.
+<<<< summarize
+
+>>>> uppercase @inherit=none
+Det här blocket stänger av alla intervallfunktioner.
+<<<< uppercase
+
+>>>> heading text="Explicit kontroll" level=2 @inherit=explicit
+  | @intervals only=[clean]
+  | bullet
+  | @intervals only=[provenance]
+
+Blocket väljer själv vilka intervall som körs och var de placeras.
+<<<< heading
+
+Ett stycke kan bära lättviktiga properties.
+
+{.claim priority=10 confidence=0.94}
+
+<<<<+ @id=clean
+
+Nu är bara annotate aktiv.
+
+<<<<+ @id=provenance
+
+## Base64 som intervallfunktion
+
+>>>>+ base64encode @id=encoder
+
+<base64encode> Textabana kan transformera den här texten </base64encode>
+
+<<<<+ @id=encoder
+
+>>>>+ base64decode @id=decoder
+
+<base64decode>VGV4dGFiYW5hIGthbiB0cmFuc2Zvcm1lcmEgdGV4dA==</base64decode>
+
+<<<<+ @id=decoder
+
+## Base64 som nästlad intervallfunktion ger invers
+
+>>>>+ base64encode @id=nested-encoder
+
+>>>>+ base64decode @id=nested-decoder
+
+<base64decode><base64encode> Textabana kan transformera den här texten </base64encode></base64decode>
+
+<<<<+ @id=nested-encoder
+<<<<+ @id=nested-decoder`;
+
+const coreModule = `define({
+  normalize: {
+    description: "Normaliserar blanksteg utan att ändra Markdown-strukturen.",
+    behavior: "segment-preserving",
+    args: {},
+    transform(input) {
+      return String(input).replace(/[ \\t]+/g, " ");
+    }
+  },
+
+  trim: {
+    description: "Tar bort inledande och avslutande blanksteg.",
+    args: {},
+    transform(input) {
+      return String(input).trim();
+    }
+  },
+
+  uppercase: {
+    description: "Gör all text till versaler.",
+    behavior: "segment-preserving",
+    args: {},
+    transform(input) {
+      return String(input).toUpperCase();
+    }
+  },
+
+  replace: {
+    description: "Ersätter text. Använd from och to.",
+    args: {
+      from: { type: "string", description: "Text att söka efter" },
+      to: { type: "string", default: "", description: "Ersättningstext" }
+    },
+    transform(input, args) {
+      return String(input).split(String(args.from ?? "")).join(String(args.to ?? ""));
+    }
+  },
+
+  heading: {
+    description: "Lägger till en Markdown-rubrik före resultatet.",
+    args: {
+      text: { type: "string", description: "Rubrikens text" },
+      level: { type: "number", default: 2, description: "Rubriknivå 1–6" }
+    },
+    transform(input, args) {
+      const level = Math.min(6, Math.max(1, Number(args.level ?? 2)));
+      return "#".repeat(level) + " " + (args.text ?? "Resultat") + "\\n\\n" + String(input).trim() + "\\n";
+    }
+  },
+
+  bullet: {
+    description: "Gör varje icke-tom rad till en punkt i en lista.",
+    args: {},
+    transform(input) {
+      return String(input)
+        .split("\\n")
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => "- " + line)
+        .join("\\n");
+    }
+  }
+});`;
+
+const editorialModule = `>>>>! include "./core.js"
+
+define({
+  select_sentences: {
+    description: "Behåller meningar som innehåller ett visst ord eller uttryck.",
+    args: {
+      contains: { type: "string", description: "Text som meningen måste innehålla" },
+      caseSensitive: { type: "boolean", default: false, description: "Skiftlägeskänslig sökning" }
+    },
+    transform(input, args) {
+      const source = String(input).trim();
+      const needle = String(args.contains ?? "");
+      const sentences = source.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [];
+      const matches = sentences.filter(sentence => {
+        if (args.caseSensitive) return sentence.includes(needle);
+        return sentence.toLowerCase().includes(needle.toLowerCase());
+      });
+      return matches.map(sentence => sentence.trim()).join("\\n");
+    }
+  },
+
+  summarize: {
+    description: "Behåller de första meningarna som en deterministisk kortversion.",
+    behavior: "reducing",
+    args: {
+      sentences: { type: "number", default: 2, description: "Antal meningar" }
+    },
+    transform(input, args) {
+      const count = Math.max(1, Number(args.sentences ?? 2));
+      const sentences = String(input).match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [];
+      return sentences.slice(0, count).map(sentence => sentence.trim()).join(" ");
+    }
+  },
+
+  annotate: {
+    description: "Omsluter resultatet med en märkt Markdown-notering.",
+    behavior: "expanding",
+    args: {
+      label: { type: "string", default: "Notering", description: "Rutans etikett" }
+    },
+    transform(input, args) {
+      return "> **" + (args.label ?? "Notering") + "**  \\n> " + String(input).trim().replace(/\\n/g, "\\n> ");
+    }
+  }
+});`;
+
+const base64Module = `function encodeUtf8(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function decodeUtf8(value) {
+  const binary = atob(value.replace(/\\s+/g, ""));
+  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+define({
+  base64encode: {
+    description: "Base64-kodar innehållet i <base64encode>...</base64encode>.",
+    behavior: "segment-preserving",
+    args: {},
+    transform(input) {
+      return String(input).replace(
+        /<base64encode>([\\s\\S]*?)<\\/base64encode>/gi,
+        (_match, text) => encodeUtf8(text.trim())
+      );
+    }
+  },
+
+  base64decode: {
+    description: "Avkodar Base64 i <base64decode>...</base64decode> till UTF-8-text.",
+    behavior: "segment-preserving",
+    args: {},
+    transform(input, _args, context) {
+      return String(input).replace(
+        /<base64decode>([\\s\\S]*?)<\\/base64decode>/gi,
+        (_match, text) => {
+          try {
+            return decodeUtf8(text.trim());
+          } catch {
+            context.warn("Ogiltig Base64 lämnades oförändrad.");
+            return _match;
+          }
+        }
+      );
+    }
+  }
+});`;
+
+const initialFiles: ProjectFile[] = [
+  { path: "document.md", kind: "document", content: sampleDocument },
+  { path: "modules/core.js", kind: "module", content: coreModule },
+  { path: "modules/editorial.js", kind: "module", content: editorialModule },
+  { path: "modules/base64.js", kind: "module", content: base64Module },
+];
+
+const storageKey = "textabana-project-v4";
+
+function argSignature(args: FunctionMeta["args"]) {
+  const entries = Object.entries(args);
+  if (!entries.length) return "inga argument";
+  return entries
+    .map(([name, value]) => `${name}${value.default === undefined ? "" : `=${JSON.stringify(value.default)}`}`)
+    .join(" · ");
+}
+
+function CodeEditor({ file, onChange }: { file: ProjectFile; onChange: (value: string) => void }) {
+  const extensions = useMemo(
+    () => [file.kind === "document" ? markdown() : javascript()],
+    [file.kind],
+  );
+
+  return (
+    <CodeMirror
+      value={file.content}
+      height="100%"
+      theme="dark"
+      extensions={extensions}
+      onChange={onChange}
+      basicSetup={{
+        lineNumbers: true,
+        foldGutter: false,
+        highlightActiveLine: true,
+        highlightSelectionMatches: true,
+        autocompletion: true,
+      }}
+      aria-label={`Redigera ${file.path}`}
+    />
+  );
+}
+
+function Preview({ result, running }: { result: RuntimeResult; running: boolean }) {
+  return (
+    <section className="preview-shell" aria-label="Renderat resultat">
+      <div className="panel-bar">
+        <div className="panel-title">
+          <Sparkles aria-hidden="true" />
+          Resultat
+        </div>
+        <span className={`runtime-state ${result.ok ? "is-ok" : "is-error"}`}>
+          <span />
+          {running ? "Bearbetar" : result.ok ? "Synkroniserad" : "Fel"}
+        </span>
+      </div>
+
+      {result.ok ? (
+        <div className="preview-scroll">
+          <article className="rendered-markdown">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.output}</ReactMarkdown>
+          </article>
+        </div>
+      ) : (
+        <div className="error-state">
+          <div className="error-icon"><AlertTriangle aria-hidden="true" /></div>
+          <div>
+            <p className="error-kicker">Körningen avbröts</p>
+            <h3>{result.error}</h3>
+            <p>Kontrollera markören, funktionsnamnet eller den inkluderade modulen.</p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function WorkspaceDocs({ functions }: { functions: FunctionMeta[] }) {
+  return (
+    <div className="docs-layout">
+      <aside className="docs-index">
+        <p className="eyebrow">Textabana Docs</p>
+        <a href="#start">Kom igång</a>
+        <a href="#blocks">Block och piping</a>
+        <a href="#modules">Includes och moduler</a>
+        <a href="#arguments">Argument</a>
+        <a href="#reference">Funktionsreferens</a>
+        <a href="#execution">Exekveringsmodell</a>
+      </aside>
+
+      <main className="docs-content">
+        <section id="start" className="docs-hero">
+          <div>
+            <span className="docs-badge"><Zap /> 5 minuters start</span>
+            <h1>Skriv text. Koppla funktioner. Visa bara resultatet.</h1>
+            <p>Textabana är vanlig Markdown med explicita transformationsblock. Det gör dokumentet läsbart även innan det körs.</p>
+          </div>
+          <div className="docs-flow" aria-label="Textabana körflöde">
+            <span>Källtext</span><ChevronRight /><span>Funktion</span><ChevronRight /><span>Ren output</span>
+          </div>
+        </section>
+
+        <section id="blocks" className="docs-section">
+          <p className="section-number">01</p>
+          <h2>Block och piping</h2>
+          <p>Startmarkören anger första funktionen. Varje pipe tar emot föregående funktions resultat. Slutmarkören matchar alltid den första funktionen.</p>
+          <pre><code>{`>>>> summarize sentences=3
+  | uppercase
+
+Texten som ska bearbetas.
+<<<< summarize`}</code></pre>
+          <div className="rule-grid">
+            <div><strong>Vänster till höger</strong><span>Pipeline-steg körs i skriven ordning.</span></div>
+            <div><strong>Nästlingsbart</strong><span>Inre block renderas före yttre block.</span></div>
+            <div><strong>Osynlig syntax</strong><span>Markörer och includes tas bort ur resultatet.</span></div>
+          </div>
+        </section>
+
+        <section id="modules" className="docs-section">
+          <p className="section-number">02</p>
+          <h2>Includes och moduler</h2>
+          <p>En include laddar en textbaserad JavaScript-modul. Varje unik modul evalueras en gång per version, även när flera moduler refererar till den.</p>
+          <pre><code>{`>>>> include "./modules/core.js"`}</code></pre>
+          <pre><code>{`define({
+  uppercase: {
+    description: "Gör text till versaler.",
+    args: {},
+    transform(input) {
+      return String(input).toUpperCase();
+    }
+  }
+});`}</code></pre>
+          <div className="callout"><Box /><p><strong>Modulcache.</strong> Sökvägen normaliseras och källan innehållshashas. Oförändrade moduler återanvänds; ändrad kod laddas som en ny version.</p></div>
+        </section>
+
+        <section id="arguments" className="docs-section">
+          <p className="section-number">03</p>
+          <h2>Argument</h2>
+          <p>Strängar, tal, booleans, null, JSON-listor och JSON-objekt stöds direkt.</p>
+          <div className="argument-table">
+            <code>tone=&quot;formal&quot;</code><span>sträng</span>
+            <code>length=240</code><span>tal</span>
+            <code>strict=true</code><span>boolean</span>
+            <code>tags=[&quot;a&quot;,&quot;b&quot;]</code><span>lista</span>
+          </div>
+        </section>
+
+        <section id="reference" className="docs-section">
+          <p className="section-number">04</p>
+          <h2>Funktionsreferens</h2>
+          <p>Referensen genereras direkt ur de moduler som dokumentet inkluderar.</p>
+          <div className="function-grid">
+            {functions.length ? functions.map((fn) => (
+              <article key={`${fn.modulePath}:${fn.name}`} className="function-card">
+                <div className="function-card-head"><code>{fn.name}</code><span>{fn.modulePath}</span></div>
+                <p>{fn.description}</p>
+                <div className="signature">{argSignature(fn.args)}</div>
+              </article>
+            )) : <p className="muted-copy">Kör ett giltigt dokument för att läsa in referensen.</p>}
+          </div>
+        </section>
+
+        <section id="execution" className="docs-section">
+          <p className="section-number">05</p>
+          <h2>Exekveringsmodell</h2>
+          <ol className="execution-list">
+            <li><span>1</span><div><strong>Lös includes</strong><p>Normalisera sökvägar och upptäck cirkulära beroenden.</p></div></li>
+            <li><span>2</span><div><strong>Registrera funktioner</strong><p>Validera namn, metadata och transform-kontrakt.</p></div></li>
+            <li><span>3</span><div><strong>Bygg blockträdet</strong><p>Matcha start, slut, nesting, argument och pipes.</p></div></li>
+            <li><span>4</span><div><strong>Kör inifrån och ut</strong><p>Resultatet från varje steg blir nästa stegs input.</p></div></li>
+            <li><span>5</span><div><strong>Rendera Markdown</strong><p>Visa bara slutresultatet utan kontrollsyntax.</p></div></li>
+          </ol>
+          <div className="security-note"><AlertTriangle /><p>Moduler körs isolerat från gränssnittet i en Web Worker, men denna första version är avsedd för betrodd modulkod. En full kapabilitetssandbox behövs innan externa moduler delas publikt.</p></div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export default function Home() {
+  const [files, setFiles] = useState<ProjectFile[]>(initialFiles);
+  const [activePath, setActivePath] = useState("document.md");
+  const [view, setView] = useState("docs");
+  const [mobilePane, setMobilePane] = useState<"editor" | "preview">("editor");
+  const [workerReady, setWorkerReady] = useState(false);
+  const [running, setRunning] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
+  const [result, setResult] = useState<RuntimeResult>({
+    ok: true,
+    output: "",
+    diagnostics: [],
+    functions: [],
+    modulesLoaded: 0,
+    duration: 0,
+  });
+
+  const workerRef = useRef<Worker | null>(null);
+  const runIdRef = useRef(0);
+  const activeFile = files.find((file) => file.path === activePath) ?? files[0];
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as ProjectFile[];
+        if (Array.isArray(parsed) && parsed.some((file) => file.kind === "document")) setFiles(parsed);
+      }
+    } catch {
+      window.localStorage.removeItem(storageKey);
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    window.localStorage.setItem(storageKey, JSON.stringify(files));
+  }, [files, hydrated]);
+
+  useEffect(() => {
+    const worker = new Worker("/runtime-worker.js");
+    workerRef.current = worker;
+    worker.onmessage = (event) => {
+      if (event.data.runId !== runIdRef.current) return;
+      setResult((previous) => ({
+        ok: event.data.ok,
+        output: event.data.ok ? event.data.output : previous.output,
+        error: event.data.error,
+        diagnostics: event.data.diagnostics ?? [],
+        functions: event.data.functions ?? previous.functions,
+        modulesLoaded: event.data.modulesLoaded ?? previous.modulesLoaded,
+        duration: event.data.duration ?? 0,
+      }));
+      setRunning(false);
+    };
+    worker.onerror = () => {
+      setResult((previous) => ({ ...previous, ok: false, error: "Körmotorn kunde inte starta." }));
+      setRunning(false);
+    };
+    setWorkerReady(true);
+    return () => worker.terminate();
+  }, []);
+
+  const execute = useCallback(() => {
+    const worker = workerRef.current;
+    if (!worker) return;
+    const documentFile = files.find((file) => file.kind === "document");
+    if (!documentFile) return;
+    const runId = runIdRef.current + 1;
+    runIdRef.current = runId;
+    setRunning(true);
+    worker.postMessage({
+      runId,
+      documentSource: documentFile.content,
+      modules: files.filter((file) => file.kind === "module"),
+    });
+  }, [files]);
+
+  useEffect(() => {
+    if (!workerReady) return;
+    const timer = window.setTimeout(execute, 260);
+    return () => window.clearTimeout(timer);
+  }, [execute, workerReady]);
+
+  const updateActiveFile = (content: string) => {
+    setFiles((current) => current.map((file) => file.path === activeFile.path ? { ...file, content } : file));
+  };
+
+  const addModule = () => {
+    let index = 1;
+    while (files.some((file) => file.path === `modules/custom-${index}.js`)) index += 1;
+    const path = `modules/custom-${index}.js`;
+    const module: ProjectFile = {
+      path,
+      kind: "module",
+      content: `define({\n  my_function: {\n    description: "Beskriv vad funktionen gör.",\n    args: {},\n    transform(input, args, context) {\n      return String(input);\n    }\n  }\n});`,
+    };
+    setFiles((current) => current.map((file) => file.kind === "document"
+      ? { ...file, content: `>>>> include "./${path}"\n${file.content}` }
+      : file).concat(module));
+    setActivePath(path);
+    toast.success("Ny modul skapad och inkluderad");
+  };
+
+  const resetProject = () => {
+    if (!window.confirm("Återställ exempeldokumentet och alla moduler?")) return;
+    setFiles(initialFiles);
+    setActivePath("document.md");
+    toast.success("Projektet återställdes");
+  };
+
+  const copyOutput = async () => {
+    await navigator.clipboard.writeText(result.output);
+    toast.success("Resultatet kopierades");
+  };
+
+  const downloadOutput = () => {
+    const blob = new Blob([result.output], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "textabana-output.md";
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Markdown-filen laddades ner");
+  };
+
+  return (
+    <TooltipProvider>
+      <div className="app-shell">
+        <header className="topbar">
+          <div className="brand-block">
+            <div className="brand-mark" aria-hidden="true"><Braces /></div>
+            <div><strong>Textabana</strong><span>Semantic text runtime</span></div>
+          </div>
+
+          <Tabs value={view} onValueChange={setView} className="top-tabs">
+            <TabsList>
+              <TabsTrigger value="docs"><BookOpen /> Specifikation</TabsTrigger>
+              <TabsTrigger value="workspace"><Code2 /> Playground</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="top-actions">
+            {view === "workspace" && (
+              <>
+                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={resetProject} aria-label="Återställ exempel"><RotateCcw /></Button></TooltipTrigger><TooltipContent>Återställ exempel</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={copyOutput} disabled={!result.ok} aria-label="Kopiera resultat"><Copy /></Button></TooltipTrigger><TooltipContent>Kopiera resultat</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={downloadOutput} disabled={!result.ok} aria-label="Ladda ner resultat"><Download /></Button></TooltipTrigger><TooltipContent>Ladda ner Markdown</TooltipContent></Tooltip>
+                <Button size="sm" onClick={execute}><Play /> Kör</Button>
+              </>
+            )}
+          </div>
+        </header>
+
+        {view === "workspace" ? (
+          <main className="workspace">
+            <aside className="file-rail">
+              <div className="rail-heading"><span>Projekt</span><Button variant="ghost" size="icon-xs" onClick={addModule} aria-label="Skapa modul"><Plus /></Button></div>
+              <div className="file-list">
+                {files.map((file) => (
+                  <button key={file.path} className={`file-item ${activePath === file.path ? "is-active" : ""}`} onClick={() => setActivePath(file.path)}>
+                    {file.kind === "document" ? <FileText /> : <Box />}
+                    <span>{file.path.split("/").at(-1)}</span>
+                    {file.kind === "module" && <small>JS</small>}
+                  </button>
+                ))}
+              </div>
+              <div className="rail-status">
+                <div><Layers3 /><span><strong>{result.modulesLoaded}</strong> moduler laddade</span></div>
+                <div><CircleDot /><span><strong>{result.functions.length}</strong> funktioner</span></div>
+                <div><Zap /><span><strong>{Math.round(result.duration)}</strong> ms</span></div>
+              </div>
+            </aside>
+
+            <div className="desktop-workspace">
+              <ResizablePanelGroup orientation="horizontal">
+                <ResizablePanel defaultSize="52%" minSize="32%">
+                  <section className="editor-shell">
+                    <div className="panel-bar">
+                      <div className="panel-title">{activeFile.kind === "document" ? <FileText /> : <Box />}{activeFile.path}</div>
+                      <span className="file-kind">{activeFile.kind === "document" ? "MARKDOWN + TEXTABANA" : "JAVASCRIPT MODULE"}</span>
+                    </div>
+                    <div className="editor-area"><CodeEditor file={activeFile} onChange={updateActiveFile} /></div>
+                  </section>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize="48%" minSize="30%"><Preview result={result} running={running} /></ResizablePanel>
+              </ResizablePanelGroup>
+            </div>
+
+            <div className="mobile-workspace">
+              <div className="mobile-switch">
+                <button className={mobilePane === "editor" ? "is-active" : ""} onClick={() => setMobilePane("editor")}>Källa</button>
+                <button className={mobilePane === "preview" ? "is-active" : ""} onClick={() => setMobilePane("preview")}>Resultat</button>
+              </div>
+              {mobilePane === "editor" ? (
+                <section className="editor-shell"><div className="panel-bar"><div className="panel-title">{activeFile.path}</div></div><div className="editor-area"><CodeEditor file={activeFile} onChange={updateActiveFile} /></div></section>
+              ) : <Preview result={result} running={running} />}
+            </div>
+          </main>
+        ) : <Specification functions={result.functions} />}
+
+        <footer className="statusbar">
+          <span><CheckCircle2 /> Language draft 0.2</span>
+          <span className="syntax-hint"><code>&gt;&gt;&gt;&gt;</code> block <ChevronRight /><code>&gt;&gt;&gt;&gt;+</code> intervall <ChevronRight /> inheritance</span>
+          <span>Normativ docs · Körbar referens</span>
+        </footer>
+      </div>
+      <Toaster position="bottom-right" />
+    </TooltipProvider>
+  );
+}
