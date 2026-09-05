@@ -79,6 +79,58 @@ const lineModule = {
   });`,
 };
 
+const descriptorKeyModule = {
+  path: "modules/keyed.js",
+  content: `define({
+    collect_keyed: {
+      channels: {
+        keyed_records: {
+          payloadKind: "object", mediaType: "application/json", schemaRef: "schema:keyed/v1",
+          delivery: "snapshot", persistence: "durable", ordering: "global-sequence",
+          key: ["payload.id"], schema: { type: "object", required: ["id", "text"] }
+        }
+      },
+      transform(input, args, context) {
+        String(input).trim().split("\\n").filter(Boolean).forEach((line, index) => {
+          const split = line.indexOf("|");
+          const payload = { id: line.slice(0, split), text: line.slice(split + 1) };
+          context.emit("keyed_records", payload, {
+            row: index + 1, rowId: "slot:" + (index + 1), rowSet: "slots", lineOffset: index,
+            kind: "keyed", mode: args.mode || "row"
+          });
+        });
+        return input;
+      }
+    }
+  });`,
+};
+
+const domainRecordModule = {
+  path: "modules/domain-records.js",
+  content: `define({
+    collect_records: {
+      channels: {
+        domain_records: {
+          payloadKind: "object", mediaType: "application/json", schemaRef: "schema:domain-record/v1",
+          delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: []
+        }
+      },
+      transform(input, _args, context) {
+        String(input).trim().split("\\n").filter(Boolean).forEach((line, index) => {
+          const split = line.indexOf("|");
+          const recordId = line.slice(0, split);
+          const payload = { recordId, text: line.slice(split + 1) };
+          context.emit("domain_records", payload, {
+            datasetId: "claims", recordId, row: index + 1, rowId: "slot:" + (index + 1),
+            rowSet: "slots", lineOffset: index, kind: "record"
+          });
+        });
+        return input;
+      }
+    }
+  });`,
+};
+
 function rowDocument(rows) {
   return `>>>>! include "./modules/rows.js"\n>>>> collect\n${rows.join("\n")}\n<<<< collect`;
 }
@@ -126,6 +178,7 @@ async function replaceDocument(harness, requestId, baseRevision, before, after) 
     requestId,
     documentId: "doc:test",
     baseRevision,
+    coordinateUnit: "unicode-code-point",
     changes: [{ range: { from: 0, to: Array.from(before).length }, insert: after }],
   });
 }
@@ -139,6 +192,7 @@ test("open, Unicode change and revision guards form one atomic document protocol
     requestId: "change:unicode",
     documentId: "doc:test",
     baseRevision: 1,
+    coordinateUnit: "unicode-code-point",
     changes: [{ range: { from: 2, to: 3 }, insert: "C" }],
   });
   assert.equal(changed.ok, true);
@@ -151,6 +205,7 @@ test("open, Unicode change and revision guards form one atomic document protocol
     requestId: "change:stale",
     documentId: "doc:test",
     baseRevision: 1,
+    coordinateUnit: "unicode-code-point",
     changes: [{ range: { from: 0, to: 1 }, insert: "X" }],
   });
   assert.equal(stale.ok, false);
@@ -162,6 +217,7 @@ test("open, Unicode change and revision guards form one atomic document protocol
     requestId: "change:no-op",
     documentId: "doc:test",
     baseRevision: 2,
+    coordinateUnit: "unicode-code-point",
     changes: [{ range: { from: 2, to: 3 }, insert: "C" }],
   });
   assert.equal(noOp.status, "unchanged");
@@ -183,6 +239,7 @@ test("invalid or overlapping ChangeSets never mutate the document head", async (
     requestId: "change:overlap",
     documentId: "doc:test",
     baseRevision: 1,
+    coordinateUnit: "unicode-code-point",
     changes: [
       { range: { from: 0, to: 3 }, insert: "A" },
       { range: { from: 2, to: 4 }, insert: "B" },
@@ -196,6 +253,7 @@ test("invalid or overlapping ChangeSets never mutate the document head", async (
     requestId: "change:range",
     documentId: "doc:test",
     baseRevision: 1,
+    coordinateUnit: "unicode-code-point",
     changes: [{ range: { from: 0, to: 99 }, insert: "X" }],
   });
   assert.equal(outOfRange.ok, false);
@@ -206,6 +264,7 @@ test("invalid or overlapping ChangeSets never mutate the document head", async (
     requestId: "change:order",
     documentId: "doc:test",
     baseRevision: 1,
+    coordinateUnit: "unicode-code-point",
     changes: [
       { range: { from: 4, to: 5 }, insert: "X" },
       { range: { from: 0, to: 1 }, insert: "Y" },
@@ -217,6 +276,123 @@ test("invalid or overlapping ChangeSets never mutate the document head", async (
   const run = await runRevision(harness, 2, 1);
   assert.equal(run.output, "abcdef");
   assert.equal(run.editorKernel.session.documentRevision, 1);
+});
+
+test("non-canonical coordinate units are rejected before an emoji document can mutate", async () => {
+  const harness = createHarness();
+  await openAndSubscribe(harness, "A😀B");
+  const rejected = await harness.send({
+    type: "change",
+    requestId: "change:utf16",
+    documentId: "doc:test",
+    baseRevision: 1,
+    coordinateUnit: "utf-16-code-unit",
+    changes: [{ range: { from: 2, to: 3 }, insert: "X" }],
+  });
+  assert.equal(rejected.ok, false);
+  assert.equal(rejected.error.code, "TBA-EDITOR-COORDINATE-UNIT-LAB");
+  assert.equal(rejected.error.details.expectedCoordinateUnit, "unicode-code-point");
+  const unchanged = await runRevision(harness, 19, 1);
+  assert.equal(unchanged.output, "A😀B");
+  assert.equal(unchanged.editorKernel.session.documentRevision, 1);
+});
+
+test("an idempotent reopen reports the real head revision for the next host run", async () => {
+  const harness = createHarness();
+  await openAndSubscribe(harness, "A");
+  await replaceDocument(harness, "change:to-b", 1, "A", "B");
+  await replaceDocument(harness, "change:back-to-a", 2, "B", "A");
+  const reopened = await harness.send({
+    type: "open",
+    requestId: "open:again",
+    document: { documentId: "doc:test", path: "document.md", source: "A", documentRevision: 1 },
+  });
+  assert.equal(reopened.status, "unchanged");
+  assert.equal(reopened.document.documentRevision, 3);
+  const result = await runRevision(harness, 23, reopened.document.documentRevision);
+  assert.equal(result.ok, true, result.error);
+  assert.equal(result.output, "A");
+  assert.equal(result.editorKernel.evaluatedSnapshot.documentRevision, 3);
+});
+
+test("typed document identity reaches IR, Result and every emitted Anchor", async () => {
+  const harness = createHarness();
+  const source = rowDocument(["a|Alpha"]);
+  const documentId = "logical:claims:aurora";
+  await harness.send({
+    type: "open",
+    requestId: "open:identity",
+    document: { documentId, path: "same.md", source, documentRevision: 1 },
+  });
+  await harness.send({
+    type: "subscribe",
+    requestId: "subscribe:identity",
+    documentId,
+    subscriptionId: "subscription:identity",
+    channels: ["*"],
+  });
+  await harness.send({
+    type: "run",
+    requestId: "run:identity",
+    runId: 20,
+    documentId,
+    documentRevision: 1,
+    modules: [rowModule],
+    options: { strictChannels: true },
+  });
+  const result = harness.runResult(20);
+  assert.equal(result.ok, true, result.error);
+  assert.equal(result.inspection.sourceRef.documentId, documentId);
+  assert.equal(result.resultEnvelope.source.documentId, documentId);
+  assert.equal(result.plan.sourceRef.documentId, documentId);
+  assert.equal(result.anchors.length > 0, true);
+  assert.equal(result.anchors.every((anchor) => anchor.target.resourceId === documentId), true);
+});
+
+test("a declared ChannelDescriptor key outranks changing row projections", async () => {
+  const harness = createHarness();
+  const before = `>>>>! include "./modules/keyed.js"\n>>>> collect_keyed\na|Alpha\nb|Beta\n<<<< collect_keyed`;
+  const after = `>>>>! include "./modules/keyed.js"\n>>>> collect_keyed\nb|Beta\na|Alpha\n<<<< collect_keyed`;
+  await openAndSubscribe(harness, before, ["keyed_records"]);
+  await runRevision(harness, 21, 1, [descriptorKeyModule]);
+  await replaceDocument(harness, "change:keyed-reorder", 1, before, after);
+  const result = await runRevision(harness, 22, 2, [descriptorKeyModule]);
+  const delta = result.editorKernel.metadataDelta;
+  assert.deepEqual(
+    { added: delta.summary.added, moved: delta.summary.moved, changed: delta.summary.changed, removed: delta.summary.removed },
+    { added: 0, moved: 2, changed: 0, removed: 0 },
+  );
+  assert.deepEqual(Array.from(delta.collections.moved, (item) => item.after.payload.id).sort(), ["a", "b"]);
+});
+
+test("explicit record identity outranks physical row slots without a descriptor key", async () => {
+  const harness = createHarness();
+  const before = `>>>>! include "./modules/domain-records.js"\n>>>> collect_records\na|Alpha\nb|Beta\n<<<< collect_records`;
+  const after = `>>>>! include "./modules/domain-records.js"\n>>>> collect_records\nb|Beta\na|Alpha\n<<<< collect_records`;
+  await openAndSubscribe(harness, before, ["domain_records"]);
+  await runRevision(harness, 24, 1, [domainRecordModule]);
+  await replaceDocument(harness, "change:domain-reorder", 1, before, after);
+  const result = await runRevision(harness, 25, 2, [domainRecordModule]);
+  const delta = result.editorKernel.metadataDelta;
+  assert.deepEqual(
+    { added: delta.summary.added, moved: delta.summary.moved, changed: delta.summary.changed, removed: delta.summary.removed },
+    { added: 0, moved: 2, changed: 0, removed: 0 },
+  );
+});
+
+test("changing target modality is semantic even when descriptor key and payload remain stable", async () => {
+  const harness = createHarness();
+  const before = `>>>>! include "./modules/keyed.js"\n>>>> collect_keyed mode=row\na|Alpha\n<<<< collect_keyed`;
+  const after = before.replace("mode=row", "mode=line");
+  await openAndSubscribe(harness, before, ["keyed_records"]);
+  await runRevision(harness, 26, 1, [descriptorKeyModule]);
+  await replaceDocument(harness, "change:mode", 1, before, after);
+  const result = await runRevision(harness, 27, 2, [descriptorKeyModule]);
+  const delta = result.editorKernel.metadataDelta;
+  assert.equal(delta.summary.changed, 1);
+  assert.equal(delta.summary.moved, 0);
+  assert.equal(delta.collections.changed[0].before.target.mode, "row");
+  assert.equal(delta.collections.changed[0].after.target.mode, "line");
 });
 
 test("metadata delta partitions added, moved, changed, removed and unchanged by stable identity", async () => {

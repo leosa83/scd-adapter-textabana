@@ -23,7 +23,7 @@ Fixturepaketet innehåller `scope-torture`, `editor-revision`, `editor-kernel-re
 
 ## Embedded Editor Kernel
 
-Textabana kan bäddas in som en dokumentkärna bakom editorer. Workern implementerar det versionssatta protokollet `textabana.editor-kernel/lab-v1`: hosten öppnar ett dokument, skickar atomiska Unicode-code-point-ChangeSets mot en explicit basrevision, prenumererar på kanaler och kör exakt valt snapshot. En lyckad run levererar ett separat `textabana.metadata-delta/lab-v1` med `added`, `removed`, `changed`, `moved` och `unchanged`, plus redovisad anchor continuity.
+Textabana kan bäddas in som en dokumentkärna bakom editorer. Workern implementerar det versionssatta protokollet `textabana.editor-kernel/lab-v1`: hosten öppnar ett dokument, skickar atomiska Unicode-code-point-ChangeSets mot en explicit basrevision, prenumererar på kanaler och kör exakt valt snapshot. Hosten avancerar sin head först från kärnans korrelerade acknowledgement, aldrig från en optimistiskt antagen revision. En lyckad run levererar ett separat `textabana.metadata-delta/lab-v1` med `added`, `removed`, `changed`, `moved` och `unchanged`, plus redovisad anchor continuity.
 
 Delta matchas med stabil channel-/domänidentitet, aldrig med run-lokala event-id:n. Failed och cancelled run lämnar föregående committade deltabaslinje orörd. Stabilt anchor-id har företräde; annars får en unik TextQuote + origin relinkas. Flera kandidater blir `ambiguous` och ingen kandidat blir `orphaned` — kärnan gissar inte.
 

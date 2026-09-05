@@ -96,6 +96,16 @@ test("editor-kernel fixture exposes authored identities suitable for changed and
   assert.doesNotMatch(result.output, />>>>|<<<<|row_id=/);
 });
 
+test("the playground advances Editor Kernel state only from correlated acknowledgements", () => {
+  assert.match(pageSource, /event\.data\.type === "kernel-response"/);
+  assert.match(pageSource, /const opened = await sendKernelCommand/);
+  assert.match(pageSource, /revision: opened\.document\.documentRevision/);
+  assert.match(pageSource, /const changed = await sendKernelCommand/);
+  assert.match(pageSource, /revision: changed\.document\.documentRevision/);
+  assert.match(pageSource, /baseDocumentVersion: kernelDocument\.documentVersion/);
+  assert.doesNotMatch(pageSource, /revision: kernelDocument\.revision \+ 1/);
+});
+
 test("channel fan-out keeps render separate from declared channels", async () => {
   const result = await run(template("channelFixtureDocument"));
 

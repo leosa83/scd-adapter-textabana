@@ -31,6 +31,7 @@ test("the Interop 0.6 specification preserves its foundational contracts", () =>
     "EDITOR-KERNEL-001",
     "EDITOR-KERNEL-002",
     "EDITOR-KERNEL-003",
+    "DOCUMENT-003",
     "CHANGE-001",
     "CHANGE-002",
     "CHANGE-003",
@@ -95,6 +96,7 @@ test("the Interop 0.6 specification preserves its foundational contracts", () =>
   assert.match(source, /Negativa fixtures.*exakt diagnostikkod.*atomiskt tom durable commit/s);
   assert.match(source, /kooperativ vid async- och stage-gränser.*synkron preemption/s);
   assert.match(source, /textabana\.editor-kernel\/lab-v1/);
+  assert.match(source, /korrelerade.*open.*change.*Optimistiskt antagen revision\/version/s);
   assert.match(source, /inkrementell input.*Implementerat.*inkrementell beräkning.*Ej implementerat.*inkrementell leverans.*Implementerat/is);
   assert.match(source, /run-lokala.*eventId.*sequence/s);
   assert.match(source, /Flera giltiga kandidater.*ambiguous.*ingen giltig kandidat.*orphaned/s);

@@ -1269,6 +1269,35 @@ function singleTextChange(before: string, after: string) {
   };
 }
 
+interface KernelDocumentHead {
+  documentId: string;
+  path: string;
+  source: string;
+  revision: number;
+  documentVersion: string;
+}
+
+interface KernelProtocolResponse {
+  type: "kernel-response";
+  requestId: string | null;
+  command: string;
+  ok: boolean;
+  status?: string;
+  document?: {
+    documentId: string;
+    path: string;
+    documentRevision: number;
+    documentVersion: string;
+  };
+  error?: { code?: string; message?: string };
+}
+
+interface PendingKernelRequest {
+  resolve: (response: KernelProtocolResponse) => void;
+  reject: (error: Error) => void;
+  timeout: number;
+}
+
 function CodeEditor({ file, onChange }: { file: ProjectFile; onChange: (value: string) => void }) {
   const extensions = useMemo(
     () => [file.kind === "document" ? markdown() : javascript()],
@@ -1334,7 +1363,9 @@ export default function Home() {
   const workerRef = useRef<Worker | null>(null);
   const runIdRef = useRef(0);
   const requestIdRef = useRef(0);
-  const kernelDocumentRef = useRef<{ documentId: string; path: string; source: string; revision: number } | null>(null);
+  const kernelDocumentRef = useRef<KernelDocumentHead | null>(null);
+  const kernelRequestsRef = useRef(new Map<string, PendingKernelRequest>());
+  const kernelCommandQueueRef = useRef<Promise<void>>(Promise.resolve());
   const lastResultRef = useRef<RuntimeResult | null>(null);
   const activeFile = files.find((file) => file.path === activePath) ?? files[0];
 
@@ -1369,8 +1400,22 @@ export default function Home() {
 
   useEffect(() => {
     const worker = new Worker("/runtime-worker.js");
+    const kernelRequests = kernelRequestsRef.current;
     workerRef.current = worker;
     worker.onmessage = (event) => {
+      if (event.data.type === "kernel-response") {
+        const pending = kernelRequests.get(event.data.requestId);
+        if (!pending) return;
+        window.clearTimeout(pending.timeout);
+        kernelRequests.delete(event.data.requestId);
+        if (event.data.ok) pending.resolve(event.data as KernelProtocolResponse);
+        else {
+          const error = new Error(event.data.error?.message || "Editor Kernel avvisade kommandot.");
+          Object.assign(error, { code: event.data.error?.code || "TBA-EDITOR-PROTOCOL-LAB" });
+          pending.reject(error);
+        }
+        return;
+      }
       if (event.data.runId !== runIdRef.current) return;
       const nextResult: RuntimeResult = {
         runId: event.data.runId,
@@ -1402,6 +1447,11 @@ export default function Home() {
       setRunning(false);
     };
     worker.onerror = () => {
+      for (const pending of kernelRequests.values()) {
+        window.clearTimeout(pending.timeout);
+        pending.reject(new Error("Körmotorn kunde inte starta."));
+      }
+      kernelRequests.clear();
       const failed = { ...emptyRuntimeResult, runId: runIdRef.current, ok: false, error: "Körmotorn kunde inte starta." };
       setPreviousResult(lastResultRef.current);
       lastResultRef.current = failed;
@@ -1411,66 +1461,102 @@ export default function Home() {
     const readyTimer = window.setTimeout(() => setWorkerReady(true), 0);
     return () => {
       window.clearTimeout(readyTimer);
+      for (const pending of kernelRequests.values()) {
+        window.clearTimeout(pending.timeout);
+        pending.reject(new Error("Editor Kernel stängdes innan kommandot besvarades."));
+      }
+      kernelRequests.clear();
       worker.terminate();
     };
   }, []);
 
-  const execute = useCallback(() => {
+  const sendKernelCommand = useCallback((command: Record<string, unknown>) => {
     const worker = workerRef.current;
-    if (!worker) return;
-    const documentFile = files.find((file) => file.kind === "document");
-    if (!documentFile) return;
+    if (!worker) return Promise.reject(new Error("Editor Kernel är inte startad."));
+    requestIdRef.current += 1;
+    const requestId = `request:${requestIdRef.current}`;
+    return new Promise<KernelProtocolResponse>((resolve, reject) => {
+      const timeout = window.setTimeout(() => {
+        kernelRequestsRef.current.delete(requestId);
+        reject(new Error(`Editor Kernel svarade inte på ${String(command.type || "kommandot")}.`));
+      }, 8_000);
+      kernelRequestsRef.current.set(requestId, { resolve, reject, timeout });
+      worker.postMessage({ ...command, requestId });
+    });
+  }, []);
+
+  const execute = useCallback(() => {
     const runId = runIdRef.current + 1;
-    const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
     runIdRef.current = runId;
     setRunning(true);
-    const documentId = `doc:playground:${documentFile.path}`;
-    let kernelDocument = kernelDocumentRef.current;
-    if (!kernelDocument || kernelDocument.documentId !== documentId) {
+    const task = async () => {
+      const worker = workerRef.current;
+      if (!worker) throw new Error("Editor Kernel är inte startad.");
+      const documentFile = files.find((file) => file.kind === "document");
+      if (!documentFile) throw new Error("Projektet saknar ett dokument att köra.");
+      const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
+      const documentId = `doc:playground:${documentFile.path}`;
+      let kernelDocument = kernelDocumentRef.current;
+      if (!kernelDocument || kernelDocument.documentId !== documentId) {
+        const opened = await sendKernelCommand({
+          type: "open",
+          document: { documentId, path: documentFile.path, source: documentFile.content, documentRevision: 1 },
+        });
+        if (!opened.document) throw new Error("Editor Kernel returnerade inget dokument efter open.");
+        kernelDocument = {
+          documentId: opened.document.documentId,
+          path: opened.document.path,
+          source: documentFile.content,
+          revision: opened.document.documentRevision,
+          documentVersion: opened.document.documentVersion,
+        };
+        kernelDocumentRef.current = kernelDocument;
+        await sendKernelCommand({
+          type: "subscribe",
+          documentId,
+          subscriptionId: `subscription:${documentId}:system.out`,
+          channels: ["system.out"],
+        });
+      } else if (kernelDocument.source !== documentFile.content) {
+        const change = singleTextChange(kernelDocument.source, documentFile.content);
+        const changed = await sendKernelCommand({
+          type: "change",
+          documentId,
+          baseRevision: kernelDocument.revision,
+          baseDocumentVersion: kernelDocument.documentVersion,
+          changeSetId: `change:${documentId}:${kernelDocument.revision + 1}`,
+          coordinateUnit: "unicode-code-point",
+          changes: [change],
+        });
+        if (!changed.document) throw new Error("Editor Kernel returnerade inget dokument efter change.");
+        kernelDocument = {
+          ...kernelDocument,
+          source: documentFile.content,
+          revision: changed.document.documentRevision,
+          documentVersion: changed.document.documentVersion,
+        };
+        kernelDocumentRef.current = kernelDocument;
+      }
       requestIdRef.current += 1;
       worker.postMessage({
-        type: "open",
+        type: "run",
         requestId: `request:${requestIdRef.current}`,
-        document: { documentId, path: documentFile.path, source: documentFile.content, documentRevision: 1 },
-      });
-      requestIdRef.current += 1;
-      worker.postMessage({
-        type: "subscribe",
-        requestId: `request:${requestIdRef.current}`,
+        runId,
         documentId,
-        subscriptionId: `subscription:${documentId}:system.out`,
-        channels: ["system.out"],
+        documentRevision: kernelDocument.revision,
+        modules: files.filter((file) => file.kind === "module"),
+        options: { fixtureId, strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review", "org.textabana.ml-lineage"] },
       });
-      kernelDocument = { documentId, path: documentFile.path, source: documentFile.content, revision: 1 };
-      kernelDocumentRef.current = kernelDocument;
-    } else if (kernelDocument.source !== documentFile.content) {
-      const change = singleTextChange(kernelDocument.source, documentFile.content);
-      requestIdRef.current += 1;
-      worker.postMessage({
-        type: "change",
-        requestId: `request:${requestIdRef.current}`,
-        documentId,
-        baseRevision: kernelDocument.revision,
-        changeSetId: `change:${documentId}:${kernelDocument.revision + 1}`,
-        changes: [change],
-      });
-      kernelDocument = { ...kernelDocument, source: documentFile.content, revision: kernelDocument.revision + 1 };
-      kernelDocumentRef.current = kernelDocument;
-    }
-    requestIdRef.current += 1;
-    worker.postMessage({
-      type: "run",
-      requestId: `request:${requestIdRef.current}`,
-      runId,
-      documentId,
-      documentRevision: kernelDocument.revision,
-      modules: files.filter((file) => file.kind === "module"),
-      options: { fixtureId, strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review", "org.textabana.ml-lineage"] },
+      if (fixture.conformance?.autoCancelAfterMs) {
+        window.setTimeout(() => worker.postMessage({ type: "cancel", runId, reason: "fixture" }), fixture.conformance.autoCancelAfterMs);
+      }
+    };
+    kernelCommandQueueRef.current = kernelCommandQueueRef.current.then(task, task).catch((error) => {
+      kernelDocumentRef.current = null;
+      setRunning(false);
+      toast.error(error instanceof Error ? error.message : String(error));
     });
-    if (fixture.conformance?.autoCancelAfterMs) {
-      window.setTimeout(() => worker.postMessage({ type: "cancel", runId, reason: "fixture" }), fixture.conformance.autoCancelAfterMs);
-    }
-  }, [files, fixtureId, strictChannels]);
+  }, [files, fixtureId, sendKernelCommand, strictChannels]);
 
   const cancelRun = useCallback(() => {
     if (!running || !workerRef.current) return;

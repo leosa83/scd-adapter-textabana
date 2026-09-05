@@ -85,7 +85,9 @@ Textabana Editor Kernel
 - Anchor continuity redovisar `retained`, `moved`, `relinked`, `ambiguous`, `orphaned` och `added` samt metod och confidence.
 - Editor Kernel Lab visar det verkliga workerprotokollet, revisionerna, delta, ankarkontinuitet och de uttryckliga begränsningarna.
 - Interop draft 0.6, README, fixturekatalog och conformance-baseline beskriver samma implementerade subset.
-- Releasegrind: 84 automatiska test passerar, ESLint passerar och produktionsbygget passerar. Chunkstorlek rapporteras som en icke-blockerande optimeringsvarning.
+- Releasegrind: 91 automatiska test passerar, inklusive 15 dedikerade Editor Kernel-test och ett host-controller-kontrakt för korrelerade acknowledgements. ESLint och produktionsbygget passerar. Chunkstorlek rapporteras som en icke-blockerande optimeringsvarning.
+- Slutrevisionen verifierar dessutom att typed `documentId` når IR, Result och Anchor, att deklarerad eller explicit domänidentitet har företräde framför row-projektioner, att target-modality ingår i semantisk förändring samt att främmande coordinate units avvisas före mutation.
+- Playground-hosten väntar på korrelerade `open`/`change`-acknowledgements och använder den revision/version som kärnan faktiskt accepterade; den avancerar aldrig dokument-head optimistiskt.
 
 ### Våg 2 — Formell parser, typed IR & felåterhämtning
 

@@ -180,6 +180,14 @@ function normalizeEditorChanges(document, rawChanges) {
 
 function applyEditorChange(payload) {
   const document = readEditorDocument(payload.documentId);
+  const coordinateUnit = payload.coordinateUnit == null ? "unicode-code-point" : String(payload.coordinateUnit);
+  if (coordinateUnit !== "unicode-code-point") {
+    throw editorProtocolError(
+      "TBA-EDITOR-COORDINATE-UNIT-LAB",
+      `Editor Kernel accepterar endast coordinateUnit “unicode-code-point”; fick “${coordinateUnit}”. Ingen text ändrades.`,
+      { expectedCoordinateUnit: "unicode-code-point", receivedCoordinateUnit: coordinateUnit },
+    );
+  }
   const baseRevision = Number(payload.baseRevision);
   if (!Number.isInteger(baseRevision) || baseRevision !== document.revision) {
     throw editorProtocolError(
@@ -304,42 +312,48 @@ function selectedEditorEvents(result, channels) {
     .flatMap(([, events]) => events || []);
 }
 
-function eventLogicalKey(event, descriptors) {
+function eventLogicalIdentity(event, descriptors) {
   const descriptor = descriptors?.[event.channel];
-  const declared = (descriptor?.key || []).map((path) => pathValue(event, path));
-  const domain = {
-    channel: event.channel,
-    kind: event.kind,
-    mode: event.target?.mode || event.type,
-    rowSet: event.target?.rowSet || "document",
-    rowId: event.target?.rowId || event.rowId,
-    datasetId: event.target?.datasetId || null,
-    recordId: event.target?.recordId || null,
-    notebookId: event.target?.notebookId || null,
-    cellId: event.target?.cellId || null,
-    setId: event.target?.setId || null,
-    annotationId: event.target?.annotationId || null,
-    annotationRevision: event.target?.revision ?? null,
-    columnName: event.target?.columnName || null,
-    declared,
+  const declaredPaths = descriptor?.key || [];
+  if (declaredPaths.length) {
+    const declared = declaredPaths.map((path) => ({ path, value: pathValue(event, path) }));
+    return {
+      logicalKey: canonicalJson({ channel: event.channel, descriptorKey: declared }),
+      stable: declared.every(({ value }) => value !== undefined && value !== null && value !== ""),
+    };
+  }
+  const target = event.target || {};
+  const domainKey = target.annotationId
+    ? { type: "annotation", setId: target.setId || "annotations", annotationId: target.annotationId }
+    : target.cellId
+      ? { type: "cell", notebookId: target.notebookId || "notebook", cellId: target.cellId }
+      : target.recordId
+        ? { type: "record", datasetId: target.datasetId || "dataset", recordId: target.recordId, columnName: target.columnName || null }
+        : (target.rowId || event.rowId)
+          ? { type: "row", rowSet: target.rowSet || "document", rowId: target.rowId || event.rowId }
+          : null;
+  return {
+    logicalKey: canonicalJson({ channel: event.channel, domainKey }),
+    stable: Boolean(domainKey),
   };
-  return canonicalJson(domain);
 }
 
 function indexedEditorEvents(events, descriptors) {
   const groups = new Map();
   for (const event of events) {
-    const key = eventLogicalKey(event, descriptors);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(event);
+    const identity = eventLogicalIdentity(event, descriptors);
+    if (!groups.has(identity.logicalKey)) groups.set(identity.logicalKey, { events: [], stable: identity.stable });
+    const group = groups.get(identity.logicalKey);
+    group.events.push(event);
+    group.stable = group.stable && identity.stable;
   }
   const index = new Map();
   for (const [logicalKey, group] of groups) {
-    if (group.length === 1) {
-      index.set(logicalKey, { identity: `metadata:${sourceHash(logicalKey)}`, logicalKey, event: group[0], stable: true });
+    if (group.events.length === 1) {
+      index.set(logicalKey, { identity: `metadata:${sourceHash(logicalKey)}`, logicalKey, event: group.events[0], stable: group.stable });
       continue;
     }
-    for (const event of group) {
+    for (const event of group.events) {
       const fallback = canonicalJson({ logicalKey, payload: event.payload, line: event.line, sequence: event.sequence });
       index.set(`${logicalKey}#${event.sequence}`, {
         identity: `metadata:duplicate:${sourceHash(fallback)}`,
@@ -386,6 +400,18 @@ function editorSemanticValue(event) {
     kind: event.kind,
     payload: event.payload,
     mapping: event.source?.mapping || null,
+    target: {
+      mode: event.target?.mode || event.type,
+      rowSet: event.target?.rowSet || null,
+      datasetId: event.target?.datasetId || null,
+      recordId: event.target?.recordId || null,
+      notebookId: event.target?.notebookId || null,
+      cellId: event.target?.cellId || null,
+      setId: event.target?.setId || null,
+      annotationId: event.target?.annotationId || null,
+      annotationRevision: event.target?.revision ?? null,
+      columnName: event.target?.columnName || null,
+    },
     origin: {
       function: event.origin?.function || null,
       module: event.origin?.module || null,
@@ -2339,7 +2365,7 @@ function serializationProblem(value, seen = new WeakSet(), path = "payload") {
   return null;
 }
 
-function createChannelBus({ runId, documentVersion, documentPath, documentSource, strictChannels = false, isCancelled = () => false }) {
+function createChannelBus({ runId, documentVersion, documentPath, documentId = null, documentSource, strictChannels = false, isCancelled = () => false }) {
   const channels = new Map();
   const descriptors = new Map();
   const anchors = new Map();
@@ -2394,22 +2420,25 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
     return { start, end: start + Array.from(exact).length, exact };
   };
 
+  const documentResourceId = documentId || `doc:${documentPath}`;
+  const anchorDocumentKey = documentId || documentPath;
+
   const createAnchor = ({ line, row, rowId, mode, column, endLine, execution, notebookId, cellId, setId, annotationId }) => {
     const position = positionForLine(line);
     const stablePart = annotationId
-      ? `annotation:${sourceHash(documentPath)}:${sourceHash(String(setId || "annotations"))}:${sourceHash(String(annotationId))}`
+      ? `annotation:${sourceHash(anchorDocumentKey)}:${sourceHash(String(setId || "annotations"))}:${sourceHash(String(annotationId))}`
       : cellId
-      ? `cell:${sourceHash(documentPath)}:${sourceHash(String(notebookId || "notebook"))}:${sourceHash(String(cellId))}`
+      ? `cell:${sourceHash(anchorDocumentKey)}:${sourceHash(String(notebookId || "notebook"))}:${sourceHash(String(cellId))}`
       : mode === "row" && rowId
-        ? `row:${sourceHash(documentPath)}:${sourceHash(String(rowId))}`
-      : `line:${documentVersion}:${line}:${column || 1}`;
+        ? `row:${sourceHash(anchorDocumentKey)}:${sourceHash(String(rowId))}`
+      : `line:${documentId ? `${sourceHash(documentId)}:` : ""}${documentVersion}:${line}:${column || 1}`;
     const anchorId = `anchor:${stablePart}`;
     const previousLine = documentLines[Math.max(0, line - 2)] || "";
     const nextLine = documentLines[line] || "";
     const anchor = {
       anchorId,
       target: {
-        resourceId: `doc:${documentPath}`,
+        resourceId: documentResourceId,
         version: `fnv1a:${documentVersion}`,
         view: "source",
         ...(notebookId ? { notebookId: String(notebookId) } : {}),
@@ -3039,7 +3068,7 @@ async function renderDocument(documentSource, registry, diagnostics, channelBus,
   return stripPropertySyntax((await renderSequence(0)).output);
 }
 
-function inspectDocument(documentSource, documentPath, config) {
+function inspectDocument(documentSource, documentPath, config, documentId = null) {
   const lines = documentSource.split("\n");
   const sourceLines = [];
   const nodes = [];
@@ -3192,7 +3221,7 @@ function inspectDocument(documentSource, documentPath, config) {
     schema: "textabana.ir/lab-v1",
     languageVersion: "0.4-playground-subset",
     sourceRef: {
-      documentId: `doc:${documentPath}`,
+      documentId: documentId || `doc:${documentPath}`,
       version: `fnv1a:${sourceHash(documentSource)}`,
     },
     configuration: { scopeOrder: config.scopeOrder, crossPolicy: "error" },
@@ -3289,7 +3318,7 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitSta
 }
 
 async function executeRun(payload) {
-  const { runId, documentSource, modules = [], documentPath = "document.md", options = {}, editorSnapshot = null } = payload;
+  const { runId, documentSource, modules = [], documentPath = "document.md", documentId = null, options = {}, editorSnapshot = null } = payload;
   const started = performance.now();
   const diagnostics = [];
   queuedRuns.delete(runId);
@@ -3301,6 +3330,7 @@ async function executeRun(payload) {
     runId,
     documentVersion: sourceHash(documentSource),
     documentPath,
+    documentId,
     documentSource,
     strictChannels: Boolean(options.strictChannels),
     isCancelled: () => cancelledRuns.has(runId),
@@ -3326,7 +3356,7 @@ async function executeRun(payload) {
         if (stage.args["scope-order"] === "declaration:desc") config.scopeOrder = "desc";
       }
     }
-    inspection = inspectDocument(documentSource, documentPath, config);
+    inspection = inspectDocument(documentSource, documentPath, config, documentId);
     channelBus.throwIfCancelled();
     const output = await renderDocument(documentSource, registry, diagnostics, channelBus, config);
     channelBus.throwIfCancelled();
