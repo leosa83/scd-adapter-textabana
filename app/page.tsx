@@ -270,6 +270,18 @@ const negativeUnclosedBlockFixtureDocument = `>>>>! include "./modules/core.js"
 >>>> uppercase
 Det här blocket saknar sin slutmarkör.`;
 
+const parserRecoveryFixtureDocument = `>>>>! include "./modules/core.js"
+
+# Parser recovery
+
+>>>> uppercase |
+Det första blocket har ett ofullständigt pipelineled.
+<<<< uppercase
+
+>>>> uppercase
+Det här giltiga syskonblocket finns kvar i CST, AST och IR.
+<<<< uppercase`;
+
 const cancellationProbeFixtureDocument = `>>>>! include "./modules/conformance.js"
 
 # Cancellation probe
@@ -284,6 +296,12 @@ const playgroundFixtures: PlaygroundFixture[] = [
     title: "Scope torture",
     summary: "Block, öppna intervall, order, inheritance, kanaler och Base64 i samma run.",
     document: sampleDocument,
+  },
+  {
+    id: "parser-recovery",
+    title: "Parser recovery",
+    summary: "Ett lokalt syntaxfel ger partial CST/AST/IR men noll modul- eller domänexekvering.",
+    document: parserRecoveryFixtureDocument,
   },
   {
     id: "editor-revision",
@@ -351,9 +369,9 @@ const playgroundFixtures: PlaygroundFixture[] = [
   {
     id: "negative-unclosed-block",
     title: "Negative · unclosed block",
-    summary: "En obalanserad blockmarkör ska ge TBA-PARSE-LAB och atomisk rollback.",
+    summary: "En obalanserad blockmarkör ger exakt recovery-kod och atomisk rollback.",
     document: negativeUnclosedBlockFixtureDocument,
-    conformance: { caseId: "negative-unclosed-block", expectedOutcome: "failed", expectedDiagnosticCode: "TBA-PARSE-LAB" },
+    conformance: { caseId: "negative-unclosed-block", expectedOutcome: "failed", expectedDiagnosticCode: "TBA-PARSE-BLOCK-UNCLOSED-LAB" },
   },
   {
     id: "cancellation-probe",
@@ -1679,7 +1697,7 @@ export default function Home() {
 
           <Tabs value={view} onValueChange={setView} className="top-tabs">
             <TabsList>
-              <TabsTrigger value="docs"><BookOpen /> Specifikation 0.6</TabsTrigger>
+              <TabsTrigger value="docs"><BookOpen /> Specifikation 0.7</TabsTrigger>
               <TabsTrigger value="workspace"><Code2 /> Playground Labs</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -1796,7 +1814,7 @@ export default function Home() {
         ) : <Specification />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Interop draft 0.6 · Language 0.4 · Editor Kernel + adapters lab-v1</span>
+          <span><CheckCircle2 /> Interop draft 0.7 · Language 0.4 · Parser/CST/AST lab-v1 · typed IR lab-v2</span>
           <span className="syntax-hint"><code>change</code> snapshot <ChevronRight /><code>run</code> result <ChevronRight /><code>delta</code></span>
           <span>Source-first · Typed · Positionsmedveten</span>
         </footer>

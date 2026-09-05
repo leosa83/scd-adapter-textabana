@@ -8,7 +8,7 @@ Den publicerade specifikationen och playgrounden finns på [textpipe-editor.leo-
 
 Åtta interaktiva labs visar samma källa och valda run från olika semantiska perspektiv:
 
-- **Language & Scope** — block, öppna intervall, inheritance, scope-segment och faktisk exekveringsordning.
+- **Language & Scope** — lossless CST, AST, typed IR, recovery, Unicode-spans, block, öppna intervall och faktisk exekveringsordning.
 - **Editor Kernel** — documentsession, revisionguardade ChangeSets, channel subscriptions, metadata-delta och anchor continuity.
 - **Editor Metadata** — `system.out`, row/line, Anchor, SourceMap och jämförelse mellan revisioner.
 - **Channel & Result** — deklarerade kanaldeskriptorer, strict validation, global eventtimeline och atomiskt result envelope.
@@ -19,15 +19,21 @@ Den publicerade specifikationen och playgrounden finns på [textpipe-editor.leo-
 
 Channel & Result innehåller även en adapterinspektör. Den visar det körbara kontraktet efter core commit utan att starta en separat run.
 
-Fixturepaketet innehåller `scope-torture`, `editor-revision`, `editor-kernel-revisions`, `channel-fanout`, `base64-inverse`, `failed-run`, `data-join`, `notebook-snapshot`, `annotation-review`, `conformance-golden`, två ytterligare negativa cases och `cancellation-probe`.
+Fixturepaketet innehåller bland annat `parser-recovery`, `scope-torture`, `editor-revision`, `editor-kernel-revisions`, `channel-fanout`, `base64-inverse`, `failed-run`, `data-join`, `notebook-snapshot`, `annotation-review`, `conformance-golden`, två ytterligare negativa cases och `cancellation-probe`.
 
 ## Embedded Editor Kernel
 
-Textabana kan bäddas in som en dokumentkärna bakom editorer. Workern implementerar det versionssatta protokollet `textabana.editor-kernel/lab-v1`: hosten öppnar ett dokument, skickar atomiska Unicode-code-point-ChangeSets mot en explicit basrevision, prenumererar på kanaler och kör exakt valt snapshot. Hosten avancerar sin head först från kärnans korrelerade acknowledgement, aldrig från en optimistiskt antagen revision. En lyckad run levererar ett separat `textabana.metadata-delta/lab-v1` med `added`, `removed`, `changed`, `moved` och `unchanged`, plus redovisad anchor continuity.
+Textabana kan bäddas in som en dokumentkärna bakom editorer. Workern implementerar det versionssatta protokollet `textabana.editor-kernel/lab-v1`: hosten öppnar ett dokument, skickar atomiska Unicode-code-point-ChangeSets mot en explicit basrevision, kör read-only `analyze`, prenumererar på kanaler och kör exakt valt snapshot. `analyze` returnerar CST, AST, partial typed IR och recovery utan att initiera moduler eller exekvera stages. Hosten avancerar sin head först från kärnans korrelerade acknowledgement, aldrig från en optimistiskt antagen revision.
 
 Delta matchas med stabil channel-/domänidentitet, aldrig med run-lokala event-id:n. Failed och cancelled run lämnar föregående committade deltabaslinje orörd. Stabilt anchor-id har företräde; annars får en unik TextQuote + origin relinkas. Flera kandidater blir `ambiguous` och ingen kandidat blir `orphaned` — kärnan gissar inte.
 
-Subseten ger inkrementell dokumenttransport och inkrementell metadataleverans. Den gör fortfarande full dokumentparse, bygger planen från den fulla execution trace och kör en fresh full run. Inkrementell parser/exekvering, persistent historik, OT/CRDT, generell strukturell re-anchor samt färdiga CodeMirror-/Monaco-/LSP-paket ligger i senare vågor i [Editor Kernel-planen](./EDITOR_KERNEL_PLAN.md).
+Subseten ger inkrementell dokumenttransport och inkrementell metadataleverans. Den använder nu en formell Lezer-parser och `textabana.ir/lab-v2`, men varje `analyze`/`run` gör fortfarande en full dokumentparse och en lyckad run exekveras fresh. Inkrementell parseråteranvändning och selektiv exekvering ligger i Våg 3 i [Editor Kernel-planen](./EDITOR_KERNEL_PLAN.md).
+
+## Parser och typed IR
+
+Dokumentet går genom exakt en auktoritativ kedja: `source → Lezer CST → Textabana AST → typed IR → compile gate`. Include-resolution, config, Language Lab och runtime läser samma resultat. Error-level recovery ger partial editorstruktur men blockerar modulinitiering, plan och domänexekvering. Fenced code och `\>>>>`/`\<<<<` är literal syntax; funktionsoutput reparsas aldrig. Alla publika spans använder halvöppna Unicode-code-point-offsets. Det körbara grammatikkontraktet, samtliga implementerade recoveryfamiljer, typed node-unionen och Lezer-beslutet finns i [parserkontraktet](./TEXTABANA_PARSER.md).
+
+Våg 2 kör ett giltigt snapshot fresh och projicerar därefter `textabana.execution-plan/lab-v1` från den observerade execution trace. Pre-execution typed edges, cache boundaries, inkrementell parseråteranvändning och selektiv exekvering hör till Våg 3.
 
 ## Conformance-grind
 
@@ -51,7 +57,7 @@ Annotation-subseten gör inga falska modell- eller verktygsanspråk. Den kör in
 
 ## Status
 
-Dokumentationen är **Textabana Language & Interop draft 0.6**. Webbmotorn implementerar uttryckligen avgränsade playground-subsets av `language-core/0.4`, `runtime-json/1`, `editor/1`, `editor-kernel/1`, `adapter-contract/1`, `data/1`, `notebook/1` och `annotation/1`; den gör ännu inte anspråk på full profilkonformitet. UI:t redovisar funktioner som ännu saknas som `contract-only`, `unsupported` eller `planned`.
+Dokumentationen är **Textabana Language & Interop draft 0.7**. Webbmotorn implementerar `textabana.parser/lab-v1`, `textabana.cst/lab-v1`, `textabana.ast/lab-v1`, `textabana.ir/lab-v2` och uttryckligen avgränsade playground-subsets av `language-core/0.4`, `runtime-json/1`, `editor/1`, `editor-kernel/1`, `adapter-contract/1`, `data/1`, `notebook/1` och `annotation/1`; den gör ännu inte anspråk på full profilkonformitet.
 
 ## Utveckling
 
@@ -69,7 +75,11 @@ Viktiga filer:
 - `app/specification.tsx` — språk- och interoperabilitetsspecifikation.
 - `app/page.tsx` — delad editor, fixtures och playgroundskal.
 - `app/playground-labs.tsx` — de åtta resultat- och editorprojektionerna.
-- `public/runtime-worker.js` — parser, modulruntime, kanaler, trace, resultatmodell och post-commit adapterregister.
+- `runtime/textabana.grammar` — versionssatt Lezer-grammatik för den radankrade syntaxytan.
+- `runtime/parser.js` — CST → AST → typed IR, Unicode-spans, diagnostics och recovery.
+- `runtime/worker-entry.js` — modulruntime, exekvering, kanaler, trace, resultatmodell och adapterregister.
+- `public/runtime-worker.js` — deterministiskt genererad klassisk Worker-bundle som UI och headless-test kör.
+- `TEXTABANA_PARSER.md` — formell grammatik, lagergränser, recoverymatris och parserarkitekturbeslut.
 - `IMPLEMENTATION_PLAN.md` — versionspolicy, sprintar och acceptansgrindar.
 - `EDITOR_KERNEL_PLAN.md` — nästa fem vågor från dokumentprotokoll till produktionskonformitet.
 - `tests/` — regressioner och fixturekontrakt.

@@ -168,6 +168,8 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
   const scopes = ir?.scopes ?? [];
   const blocks = ir?.blocks ?? [];
   const steps = result.plan?.steps ?? [];
+  const recoveries = ir?.nodes.filter((node) => node.kind === "Recovery") ?? [];
+  const parserDiagnostics = ir?.diagnostics ?? result.diagnostics.filter((diagnostic) => diagnostic.phase === "parsing");
 
   return (
     <>
@@ -176,6 +178,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
         onChange={setTab}
         items={[
           { id: "semantics", label: "Semantik", count: scopes.length + blocks.length, icon: Layers3 },
+          { id: "parser", label: "Parser", count: recoveries.length, icon: Rows3 },
           { id: "plan", label: "Körplan", count: steps.length, icon: Workflow },
           { id: "ir", label: "IR-projektion", icon: FileJson },
           { id: "render", label: "Render", icon: Sparkles },
@@ -184,8 +187,38 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
       {tab === "render" ? <RenderView output={result.output} /> : null}
       {tab === "ir" ? (
         <div className="lab-json-scroll">
-          <div className="subset-notice"><CircleDot /> Verklig runtimeprojektion · <code>textabana.ir/lab-v1</code> · inte full profilkonformitet</div>
+          <div className="subset-notice"><CircleDot /> Typed runtimeprojektion · <code>textabana.ir/lab-v2</code> · inte full profilkonformitet</div>
           <pre>{json(ir)}</pre>
+        </div>
+      ) : null}
+      {tab === "parser" ? (
+        <div className="lab-scroll parser-overview">
+          <div className="lab-metrics">
+            <article><span>Parser</span><strong>{ir?.parser.engine ?? "–"}</strong><small>{ir?.parser.schema ?? "ingen analys"}</small></article>
+            <article><span>Parse mode</span><strong>{ir?.parser.parseMode ?? "–"}</strong><small>inkrementell reuse: {ir?.parser.incrementalReuse ? "ja" : "nej"}</small></article>
+            <article><span>CST</span><strong>{ir?.syntax.cst.nodes.length ?? 0}</strong><small>{ir?.syntax.cst.lossless ? "lossless source coverage" : "ofullständig coverage"}</small></article>
+            <article><span>Recovery</span><strong>{recoveries.length}</strong><small>{ir?.validity.executable ? "körbar IR" : "all exekvering blockerad"}</small></article>
+          </div>
+          <div className={`subset-notice ${ir?.validity.executable ? "" : "is-warning"}`}>
+            {ir?.validity.executable ? <CheckCircle2 /> : <AlertTriangle />}
+            CST → AST → typed IR · Unicode code-point-spans · recovery nodes exekveras aldrig
+          </div>
+          {parserDiagnostics.length ? (
+            <div className="parser-diagnostics">
+              {parserDiagnostics.map((diagnostic) => (
+                <article key={diagnostic.diagnosticId ?? `${diagnostic.code}:${diagnostic.line}`}>
+                  <div><strong>{diagnostic.code ?? "TBA-PARSE-LAB"}</strong><code>{diagnostic.sourceSpan ? `L${diagnostic.sourceSpan.startLine}:${diagnostic.sourceSpan.startColumn} · [${diagnostic.sourceSpan.start}, ${diagnostic.sourceSpan.end})` : `L${diagnostic.line}`}</code></div>
+                  <p>{diagnostic.message}</p>
+                  {diagnostic.recoveryNodeId ? <small>{diagnostic.recoveryNodeId} · {diagnostic.diagnosticKey}</small> : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="lab-empty"><CheckCircle2 /> Inga parsediagnostiker i aktuell source snapshot.</div>
+          )}
+          <div className="lab-json-scroll parser-json">
+            <pre>{json({ parser: ir?.parser, validity: ir?.validity, recoveries, cst: ir?.syntax.cst, ast: ir?.syntax.ast })}</pre>
+          </div>
         </div>
       ) : null}
       {tab === "plan" ? (
@@ -295,7 +328,7 @@ function EditorKernelLab({
       <div className="lab-empty kernel-empty">
         <PanelsTopLeft aria-hidden="true" />
         <strong>Den här körningen saknar Editor Kernel-evidens.</strong>
-        <p>Öppna den versionshanterade fixturen för att köra <code>open → subscribe → change → run</code>.</p>
+        <p>Öppna den versionshanterade fixturen för att köra <code>open → subscribe → change → run</code>. Kärnan stöder även read-only <code>analyze</code> mellan changes.</p>
         <Button size="sm" onClick={() => onSelectFixture("editor-kernel-revisions")}>Ladda Kernel revisions</Button>
       </div>
     );
@@ -316,7 +349,7 @@ function EditorKernelLab({
       />
       {tab === "revision" ? (
         <div className="lab-scroll kernel-lab">
-          <div className="subset-notice"><CircleDot /> Körbar <code>editor-kernel/lab-v1</code> · inkrementell dokumenttransport · full omkörning per revision</div>
+          <div className="subset-notice"><CircleDot /> Körbar <code>editor-kernel/lab-v1</code> · read-only analyze + recovery · full parse per revision</div>
           <div className="lab-intro">
             <div><span>Öppen documentsession</span><strong>{session?.path ?? "document.md"} · revision {session?.documentRevision ?? "–"}</strong></div>
             <p>En accepterad textpatch flyttar document head. Metadata blir aktuell först efter en lyckad, atomisk run.</p>

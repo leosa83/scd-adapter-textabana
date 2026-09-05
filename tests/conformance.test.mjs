@@ -88,11 +88,11 @@ test("golden fixture publishes a passed machine-readable conformance gate", asyn
 
   assert.equal(result.ok, true, result.error);
   assert.equal(report.schema, "textabana.conformance-report/lab-v1");
-  assert.equal(report.suite.suiteId, "textabana.playground/interop-0.6");
-  assert.equal(report.suite.version, "1.1.0-lab.1");
+  assert.equal(report.suite.suiteId, "textabana.playground/interop-0.7");
+  assert.equal(report.suite.version, "1.2.0-lab.1");
   assert.equal(report.gate.status, "passed");
   assert.equal(report.golden.status, "passed");
-  assert.equal(report.golden.expectedStructuralDigest, "fnv1a-lab:1i5nwp3");
+  assert.equal(report.golden.expectedStructuralDigest, "fnv1a-lab:v0p8zi");
   assert.equal(report.golden.actualStructuralDigest, report.structuralDigest);
   assert.ok(report.reportId.startsWith("conformance:"));
 });
@@ -154,7 +154,7 @@ test("negative fixtures pass only on exact terminal status and diagnostic family
   const cases = [
     ["failedRunFixtureDocument", "failed-run", "TBA-TYPE-CHANNEL-LAB"],
     ["negativeUnknownFunctionFixtureDocument", "negative-unknown-function", "TBA-RUN-LAB"],
-    ["negativeUnclosedBlockFixtureDocument", "negative-unclosed-block", "TBA-PARSE-LAB"],
+    ["negativeUnclosedBlockFixtureDocument", "negative-unclosed-block", "TBA-PARSE-BLOCK-UNCLOSED-LAB"],
   ];
   let runId = 20;
   for (const [documentName, fixtureId, diagnosticCode] of cases) {

@@ -18,11 +18,16 @@ test("every documentation navigation target has a matching section", () => {
   }
 });
 
-test("the Interop 0.6 specification preserves its foundational contracts", () => {
+test("the Interop 0.7 specification preserves its foundational contracts", () => {
   const requiredContracts = [
     "STATUS-003",
     "HTML-ADAPTER-002",
     "INHERIT-001",
+    "PARSE-001",
+    "PARSE-002",
+    "PARSE-003",
+    "IR-003",
+    "IR-004",
     "SOURCEMAP-001",
     "RESULT-002",
     "CHANNEL-002",
@@ -32,6 +37,7 @@ test("the Interop 0.6 specification preserves its foundational contracts", () =>
     "EDITOR-KERNEL-002",
     "EDITOR-KERNEL-003",
     "DOCUMENT-003",
+    "ANALYZE-001",
     "CHANGE-001",
     "CHANGE-002",
     "CHANGE-003",
@@ -53,6 +59,8 @@ test("the Interop 0.6 specification preserves its foundational contracts", () =>
     "CONF-006",
     "CONF-007",
     "CONF-008",
+    "ERROR-002",
+    "ERROR-003",
     "PLAYGROUND-003",
   ];
 
@@ -65,6 +73,7 @@ test("the Interop 0.6 specification preserves its foundational contracts", () =>
   assert.match(source, /HTML beskriver ett dokumentträd.*Textabana beskriver vilka semantiska processer/s);
   assert.match(source, /Nuvarande Playground implementerar åtta avgränsade vyer/);
   assert.match(source, /Language & Scope Lab/);
+  assert.match(source, /Parser\/Recovery-flik/);
   assert.match(source, /Editor Kernel Lab/);
   assert.match(source, /Editor Metadata Lab/);
   assert.match(source, /Channel & Result Lab/);
@@ -96,9 +105,14 @@ test("the Interop 0.6 specification preserves its foundational contracts", () =>
   assert.match(source, /Negativa fixtures.*exakt diagnostikkod.*atomiskt tom durable commit/s);
   assert.match(source, /kooperativ vid async- och stage-gränser.*synkron preemption/s);
   assert.match(source, /textabana\.editor-kernel\/lab-v1/);
+  assert.match(source, /textabana\.parser\/lab-v1/);
+  assert.match(source, /textabana\.cst\/lab-v1/);
+  assert.match(source, /textabana\.ir\/lab-v2/);
+  assert.match(source, /analyze.*partial.*IR.*inga moduler eller stages/s);
   assert.match(source, /korrelerade.*open.*change.*Optimistiskt antagen revision\/version/s);
   assert.match(source, /inkrementell input.*Implementerat.*inkrementell beräkning.*Ej implementerat.*inkrementell leverans.*Implementerat/is);
   assert.match(source, /run-lokala.*eventId.*sequence/s);
   assert.match(source, /Flera giltiga kandidater.*ambiguous.*ingen giltig kandidat.*orphaned/s);
-  assert.match(source, /full dokumentparse.*fresh full exekvering/s);
+  assert.match(source, /full dokumentparse.*inkrementell trädåteranvändning.*Våg 3/s);
+  assert.match(source, /Recovery.*executable=false/s);
 });

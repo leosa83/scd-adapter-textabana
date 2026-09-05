@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Deterministic parser/runtime build artifacts. Lint their authored sources.
+    "public/runtime-worker.js",
+    "runtime/generated/**",
   ]),
   {
     files: ["components/ui/**/*.{ts,tsx}", "hooks/use-mobile.ts"],

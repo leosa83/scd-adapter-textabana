@@ -1,0 +1,48 @@
+@top Document { (Line | Newline)* }
+
+Line {
+  EscapedMarkerLine |
+  FenceLine |
+  DirectiveLine |
+  IntervalOpenLine |
+  IntervalCloseLine |
+  BlockOpenLine |
+  BlockCloseLine |
+  InvalidMarkerLine |
+  PipelineContinuationLine |
+  PropertyLine |
+  TextLine
+}
+
+@tokens {
+  horizontalSpace { " " | "\t" | "\r" }
+  backtickFence { "`" "`" "`" "`"* }
+  tildeFence { "~" "~" "~" "~"* }
+
+  Newline { "\n" }
+  EscapedMarkerLine { horizontalSpace* "\\" (">>>>" | "<<<<") ![\n]* }
+  FenceLine { horizontalSpace* (backtickFence | tildeFence) ![\n]* }
+  DirectiveLine { horizontalSpace* ">>>>!" ![\n]* }
+  IntervalOpenLine { horizontalSpace* ">>>>+" ![\n]* }
+  IntervalCloseLine { horizontalSpace* "<<<<+" ![\n]* }
+  BlockOpenLine { horizontalSpace* ">>>>" ![\n]* }
+  BlockCloseLine { horizontalSpace* "<<<<" ![\n]* }
+  InvalidMarkerLine { horizontalSpace* (">>>" | "<<<") ![\n]* }
+  PipelineContinuationLine { horizontalSpace* "|" ![\n]* }
+  PropertyLine { horizontalSpace* "{" ![\n]* "}" horizontalSpace* }
+  TextLine { ![\n]+ }
+
+  @precedence {
+    EscapedMarkerLine,
+    FenceLine,
+    DirectiveLine,
+    IntervalOpenLine,
+    IntervalCloseLine,
+    BlockOpenLine,
+    BlockCloseLine,
+    InvalidMarkerLine,
+    PipelineContinuationLine,
+    PropertyLine,
+    TextLine
+  }
+}

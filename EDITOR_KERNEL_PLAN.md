@@ -3,10 +3,10 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.0.1` |
-| Status | Pågår · Våg 1 genomförd |
+| Planversion | `1.0.3` |
+| Status | Pågår · Våg 1–2 genomförda · Våg 3 planerad |
 | Fastställd | 2026-09-05 |
-| Baseline | Interop draft 0.6 efter Våg 1, Language 0.4 och genomförd `TA-ADAPTER-PLAN` 1.0.5 |
+| Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
 
 ## Versionspolicy
@@ -23,7 +23,7 @@ Textabana Editor Kernel äger ett versionssatt dokument, tar emot explicita änd
 
 ```text
 Editor / Notebook / Pipeline host
-          │ open · change · subscribe · run · cancel
+          │ open · change · analyze · subscribe · run · cancel
           ▼
 Textabana Editor Kernel
           │ immutable document snapshot
@@ -91,13 +91,27 @@ Textabana Editor Kernel
 
 ### Våg 2 — Formell parser, typed IR & felåterhämtning
 
-**Status:** planerad
+**Status:** genomförd 2026-09-05
 
 **Mål:** Ersätta radregex som grammatisk auktoritet med en versionssatt parser och typed IR som kan behålla partiell struktur under redigering.
 
-**Leveranser:** formell grammatik, CST/AST/IR-gränser, source spans, escaping/literal-läge, recovery nodes, diagnosstabilitet och parser-fixtures. Biblioteksval mellan Lezer och Tree-sitter görs först mot host-, storleks- och Worker-krav.
+**Leveranser:** versionssatt Lezer-grammatik, en auktoritativ `parseDocument`-gräns, lossless CST, normaliserad AST, typed IR lab-v2, Unicode-code-point-spans, escaping/fenced literal-läge, lokal recovery, stabila diagnostiknycklar, read-only `analyze` och parser-fixtures. Den genererade parsern och runtimekoden buntas till den befintliga klassiska `/runtime-worker.js`.
 
-**Acceptans:** samma giltiga källa behåller existerande semantik; ofullständig editsyntax ger lokal recovery i stället för fabricerad körbar struktur; alla IR-noder har verifierbara spans.
+**Acceptans:** samma giltiga källa behåller existerande render-, scope-, inheritance-, channel- och adaptersemantik; ofullständig editsyntax ger partial CST/AST/IR med icke-körbar lokal recovery; alla publika syntaxobjekt har verifierbara spans; parsefel stoppar före modulinitiering och ger noll plan, stage-anrop eller durable commit.
+
+**Genomförandebeslut:** Lezer valdes framför Tree-sitter eftersom parsern kan genereras offline, köras som JavaScript i befintlig Worker och senare återanvändas inkrementellt utan separat Wasm-runtime, grammar-Wasm eller hoststyrd asset-resolution. Lezer står för lossless radklassificering; Textabanas egen lowering äger stage-/value-syntax, blockträd och den separata intervallgrafen bakom samma `parseDocument`-operation.
+
+**Acceptansevidens:**
+
+- Hela snapshotet sänks `source → textabana.cst/lab-v1 → textabana.ast/lab-v1 → textabana.ir/lab-v2` innan include-resolution eller modulinitiering.
+- Renderer, config, dokumentincludes, Language Lab och Editor Kernels `analyze` konsumerar samma parserprodukt. De gamla separata document-scanners för render och inspection är borttagna ur authored worker source.
+- Typed IR har discriminated nodes/stages, portabel JSON utan `undefined`, funktioner eller icke-finita tal samt halvöppna Unicode-code-point-spans med line/column-projektioner.
+- Block är ett träd; intervall är open/close-events med scope-segment. Pipeline-recovery gör ägande block/intervall och stages icke-körbara, och ancestor-close återhämtas med explicit syntetisk zero-width-close.
+- Fenced code och escapade markörer förblir literal. Authored properties sänks exakt en gång, medan propertylik funktionsoutput aldrig reparsas eller raderas.
+- Stabil diagnostik skiljer snapshotbundet `diagnosticId` från logiskt `diagnosticKey`; upprepade fel får unika nycklar som består vid orelaterad radinfogning.
+- `analyze` är revisionsbundet och read-only och returnerar `textabana.editor-analysis/lab-v1` med partial inspection utan modul- eller stage-effekter.
+- Releasegrind: 117 automatiska test, ESLint och Sites produktionsbygge passerar. Golden-baselinen är omfryst först efter att parser-, legacysemantik-, kanal-, adapter-, data-, notebook-, annotation- och Editor Kernel-regressionerna passerat.
+- Avgränsning: varje `analyze`/`run` gör fortfarande full dokumentparse; lyckad run är fresh och ExecutionPlan projiceras post-execution. Inkrementell trädåteranvändning och pre-execution typed-edge-plan hör till Våg 3.
 
 ### Våg 3 — Inkrementell planering och exekveringsgraf
 
@@ -141,6 +155,18 @@ Textabana Editor Kernel
 
 ## Ändringslogg
 
+### 1.0.3 — 2026-09-05
+
+- Våg 2 markerad som genomförd med Lezer, lossless CST, normaliserad AST, typed IR lab-v2 och en parse-before-module compile gate.
+- Lokal icke-körbar recovery, exakta Unicode-spans, literal fences/escapes, typed controls och read-only editoranalys verifierade.
+- Baseline flyttad till Interop draft 0.7; inkrementell parseråteranvändning och pre-execution planering förblir avgränsade till Våg 3.
+
+### 1.0.2 — 2026-09-05
+
+- Våg 2 aktiverad med en parse-before-run-grind som förhindrar partiell domänexekvering vid sena syntaxfel.
+- En gemensam CST → AST → typed IR-kedja fastställd som enda grammatisk auktoritet för både rendering och metadata.
+- Recovery nodes avgränsade till editor- och diagnostikprojektion; de är aldrig exekverbara.
+
 ### 1.0.1 — 2026-09-05
 
 - Våg 1 markerad som genomförd efter samstämmig leverans i protokoll, runtime, labb, dokumentation och tester.
@@ -151,4 +177,4 @@ Textabana Editor Kernel
 
 - Ny femvågsplan fastställd ovanpå den avslutade adapterplanen.
 - Våg 1 aktiverad med dokumentprotokoll, metadata-delta och anchor continuity som första leverans.
-- Formell inkrementell parser och selektiv exekvering avgränsade till Våg 2 respektive Våg 3.
+- Formell parser avgränsad till Våg 2; inkrementell parseråteranvändning och selektiv exekvering avgränsade till Våg 3.

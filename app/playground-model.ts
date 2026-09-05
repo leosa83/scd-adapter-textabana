@@ -126,6 +126,8 @@ export type ExecutionStep = {
   modality: "block" | "interval" | string;
   scopeId: string | null;
   line: number;
+  syntaxStageRef: string | null;
+  syntaxSpan: SourceSpan | null;
   source: { path: string; startLine: number; endLine: number };
   args: Record<string, unknown>;
   orderKey: [number, number, number];
@@ -136,6 +138,105 @@ export type ExecutionStep = {
   error?: string;
 };
 
+export type SourceSpan = {
+  start: number;
+  end: number;
+  unit: "unicode-code-point";
+  startLine: number;
+  startColumn: number;
+  endLine: number;
+  endColumn: number;
+  synthetic?: boolean;
+};
+
+export type SyntaxArgument = {
+  name: string;
+  value: unknown;
+  valueKind: string;
+  sourceSpan: SourceSpan;
+};
+
+export type SyntaxStage = {
+  stageId: string;
+  kind: "FunctionStage" | "IntervalInjectionStage";
+  name: string;
+  args: Record<string, unknown>;
+  controls: Record<string, unknown>;
+  arguments: SyntaxArgument[];
+  line: number;
+  sourceSpan: SourceSpan;
+  executable: boolean;
+};
+
+type IrNodeBase = {
+  nodeId: string;
+  sourceSpan: SourceSpan;
+  executable: boolean;
+};
+
+export type IrNode =
+  | (IrNodeBase & {
+      kind: "Text" | "Blank" | "Literal";
+      line: number;
+      text: string;
+      renderText: string;
+      activeScopeIds: string[];
+      activeBlockIds: string[];
+      detail: Record<string, unknown>;
+    })
+  | (IrNodeBase & {
+      kind: "Property";
+      line: number;
+      attributes: Record<string, unknown>;
+      raw: string;
+      standalone: boolean;
+      ownerNodeId: string | null;
+    })
+  | (IrNodeBase & {
+      kind: "IncludeDirective";
+      specifier: string;
+      path: string;
+      legacy: boolean;
+    })
+  | (IrNodeBase & {
+      kind: "ConfigDirective";
+      values: Record<string, unknown>;
+      stage: SyntaxStage;
+    })
+  | (IrNodeBase & {
+      kind: "IntervalOpen";
+      scopeId: string;
+      id: string;
+      stage: SyntaxStage;
+    })
+  | (IrNodeBase & {
+      kind: "IntervalClose";
+      scopeId: string;
+      id: string;
+      target: string;
+    })
+  | (IrNodeBase & {
+      kind: "Block";
+      blockId: string;
+      name: string;
+      openSpan: SourceSpan;
+      closeSpan: SourceSpan | null;
+      activeScopeIds: string[];
+      inherit: string;
+      cross: string;
+      pipeline: SyntaxStage[];
+      complete: boolean;
+    })
+  | (IrNodeBase & {
+      kind: "Recovery";
+      recoveryId: string;
+      recoveryKind: string;
+      actual: string | null;
+      expected: string | null;
+      synthetic: boolean;
+      detail: Record<string, unknown>;
+    });
+
 export type ScopeInspection = {
   scopeId: string;
   id: string;
@@ -145,32 +246,38 @@ export type ScopeInspection = {
   declarationOrder: number;
   openLine: number;
   closeLine: number | null;
+  openSpan: SourceSpan;
+  closeSpan: SourceSpan | null;
+  sourceSpan: SourceSpan;
   blockId: string | null;
-  segments: Array<{ startLine: number; endLine: number }>;
+  segments: Array<{ startLine: number; endLine: number; sourceSpan: SourceSpan }>;
+  complete: boolean;
 };
 
 export type BlockInspection = {
   blockId: string;
   name: string;
+  nodeId: string;
+  sourceSpan: SourceSpan;
+  openSpan: SourceSpan;
+  closeSpan: SourceSpan | null;
   openLine: number;
+  headerEndLine: number;
   closeLine: number | null;
   parentBlockId: string | null;
   activeScopeIds: string[];
   inherit: string;
   cross: string;
-  pipeline: Array<{
-    stage: number;
-    name: string;
-    args: Record<string, unknown>;
-    controls: Record<string, unknown>;
-    line: number;
-  }>;
+  complete: boolean;
+  executable: boolean;
+  pipeline: Array<SyntaxStage & { stage: number }>;
 };
 
 export type SourceLineInspection = {
   line: number;
   text: string;
   kind: string;
+  sourceSpan: SourceSpan;
   activeScopeIds: string[];
   activeBlockIds: string[];
   detail: Record<string, unknown>;
@@ -179,11 +286,39 @@ export type SourceLineInspection = {
 export type RuntimeInspection = {
   schema: string;
   languageVersion: string;
+  parser: {
+    schema: string;
+    engine: string;
+    grammarVersion: string;
+    parseMode: string;
+    coordinateUnit: string;
+    recovery: string;
+    incrementalReuse: boolean;
+  };
   sourceRef: { documentId: string; version: string };
+  sourceSpan: SourceSpan;
+  validity: {
+    status: "valid" | "recovered";
+    executable: boolean;
+    diagnosticCount: number;
+    recoveryCount: number;
+  };
   configuration: { scopeOrder: string; crossPolicy: string };
-  nodes: Array<Record<string, unknown>>;
+  syntax: {
+    cst: {
+      schema: string;
+      grammarVersion: string;
+      sourceSpan: SourceSpan;
+      lossless: boolean;
+      nodes: Array<{ nodeId: string; kind: string; lexeme: string; sourceSpan: SourceSpan }>;
+    };
+    ast: Record<string, unknown>;
+  };
+  nodes: IrNode[];
   scopes: ScopeInspection[];
   blocks: BlockInspection[];
+  directives: IrNode[];
+  diagnostics: RuntimeDiagnostic[];
   sourceLines: SourceLineInspection[];
   unsupported: string[];
 };
@@ -205,6 +340,10 @@ export type RuntimeDiagnostic = {
   line: number;
   message: string;
   phase?: string;
+  diagnosticKey?: string;
+  sourceSpan?: SourceSpan;
+  recoveryNodeId?: string;
+  related?: Array<{ message: string; sourceSpan: SourceSpan }>;
 };
 
 export type AdapterSupport = "playground-subset" | "contract-only" | "unsupported";
@@ -491,6 +630,11 @@ export type EditorKernelRun = {
     documentTransport: string;
     coordinateUnit: string;
     parseMode: string;
+    parser: string;
+    parserSchema: string;
+    irSchema: string;
+    errorRecovery: string;
+    commands: string[];
     planConstruction: string;
     executionMode: string;
     deltaMode: string;

@@ -1998,7 +1998,7 @@ a {
   .channel-event-head > code { width: 100%; margin-left: 0; }
 }
 
-/* Language & Interop 0.6 documentation */
+/* Language & Interop 0.7 documentation */
 .spec-skip {
   position: fixed;
   z-index: 100;
@@ -3309,6 +3309,61 @@ a {
   width: 14px;
   flex: 0 0 auto;
   color: #b8f34b;
+}
+
+.subset-notice.is-warning {
+  border-color: #825f31;
+  color: #ffd6a0;
+  background: rgba(255, 174, 72, 0.08);
+}
+
+.subset-notice.is-warning svg {
+  color: #ffae48;
+}
+
+.parser-overview > .subset-notice,
+.parser-diagnostics,
+.parser-json {
+  width: min(100%, 980px);
+  margin-inline: auto;
+}
+
+.parser-diagnostics {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.parser-diagnostics article {
+  border: 1px solid #d9b27b;
+  border-radius: 9px;
+  padding: 12px 14px;
+  background: #fff8ed;
+}
+
+.parser-diagnostics article > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.parser-diagnostics p {
+  margin: 7px 0 4px;
+  color: #4f463c;
+  font-size: 12px;
+}
+
+.parser-diagnostics small,
+.parser-diagnostics code {
+  color: #89633c;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.parser-json {
+  min-height: 320px;
+  border-radius: 10px;
 }
 
 .lab-intro {
