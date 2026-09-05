@@ -288,26 +288,35 @@ const adapterManifests = [
   }),
   adapterManifest({
     adapterId: "org.textabana.notebook",
-    version: "1.0.0-contract.1",
+    version: "1.0.0-lab.1",
     profile: "notebook/1",
-    support: "contract-only",
+    support: "playground-subset",
     accepts: {
-      resultSchemas: ["textabana.result/v1", "textabana.result/lab-v1"],
+      resultSchemas: ["textabana.result/lab-v1"],
       profiles: ["runtime-json/1", "notebook/1"],
-      channels: [],
+      channels: [
+        { name: "notebook.snapshot", schemaRef: "schema:textabana/notebook-snapshot/lab-v1", required: true },
+        { name: "notebook.cells", schemaRef: "schema:textabana/notebook-cell/lab-v1", required: true },
+        { name: "notebook.outputs", schemaRef: "schema:textabana/notebook-output/lab-v1", required: true },
+        { name: "notebook.state", schemaRef: "schema:textabana/notebook-state/lab-v1", required: true },
+      ],
       artifactKinds: [],
     },
     produces: [{
-      projectionKind: "mime-bundle",
-      valueKind: "mime-bundle",
-      mediaType: "application/vnd.jupyter.widget-view+json",
-      schemaRef: "textabana.notebook-projection/v1",
+      projectionKind: "notebook-view",
+      valueKind: "notebook",
+      mediaType: "application/json",
+      schemaRef: "textabana.notebook-projection/lab-v1",
     }],
     capabilities: {
-      required: ["stable-cell-id", "whole-snapshot"],
-      optional: ["jupyter-messaging", "attached-kernel"],
+      required: ["stable-cell-id", "whole-snapshot", "mime-bundle", "stale-output-detection"],
+      optional: ["jupyter-messaging", "nbformat-roundtrip", "session-kernel", "attached-kernel"],
     },
-    fidelity: { mode: "selective", requiresSourceResult: true, omittedPaths: [] },
+    fidelity: {
+      mode: "selective",
+      requiresSourceResult: true,
+      omittedPaths: ["render", "channelSnapshots.<non-notebook>", "artifacts", "provenance.entities"],
+    },
   }),
   adapterManifest({
     adapterId: "org.textabana.annotation-review",
@@ -357,6 +366,10 @@ const playgroundImplementedCapabilities = [
   "cell-lineage",
   "derived-aggregation",
   "derived-multi-input-source-map",
+  "stable-cell-id",
+  "whole-snapshot",
+  "mime-bundle",
+  "stale-output-detection",
 ];
 
 function adapterDiagnostic(code, message, adapterId, severity = "error") {
@@ -613,9 +626,136 @@ function buildDataTableProjection(result, manifest) {
   };
 }
 
+function buildNotebookProjection(result, manifest) {
+  const snapshots = result.channelSnapshots || {};
+  const snapshotEvents = snapshots["notebook.snapshot"]?.events || [];
+  const cellEvents = snapshots["notebook.cells"]?.events || [];
+  const outputEvents = snapshots["notebook.outputs"]?.events || [];
+  const stateEvents = snapshots["notebook.state"]?.events || [];
+  if (snapshotEvents.length !== 1) throw new Error("notebook.snapshot måste innehålla exakt en whole snapshot");
+  if (stateEvents.length !== 1) throw new Error("notebook.state måste innehålla exakt en explicit stateprofil");
+
+  const snapshot = snapshotEvents[0].payload || {};
+  const state = stateEvents[0].payload || {};
+  if (snapshot.wholeSnapshot !== true || state.wholeSnapshot !== true) throw new Error("notebookadaptern accepterar endast whole snapshots");
+  const notebookId = String(snapshot.notebookId || "");
+  const snapshotId = String(snapshot.snapshotId || "");
+  if (!notebookId || !snapshotId || state.notebookId !== notebookId || state.snapshotId !== snapshotId) throw new Error("notebook- och snapshotidentitet måste vara konsekvent");
+  if (!["fresh", "session", "attached"].includes(state.requestedProfile) || state.profile !== snapshot.profile) throw new Error("notebook.state saknar en giltig explicit profil");
+  if (state.requestedProfile === "fresh" && (state.executionSupport !== "playground-subset" || state.kernelState !== "not-used")) throw new Error("fresh-profilen måste vara strukturell och kernel-fri");
+  if (state.requestedProfile !== "fresh" && (state.executionSupport !== "contract-only" || state.kernelState !== "external-unverified")) throw new Error("session och attached får inte simulera kernelstate");
+
+  const orderedCellIds = cellEvents.map((event) => String(event.payload?.cellId || ""));
+  if (!orderedCellIds.length || orderedCellIds.some((cellId) => !cellId) || new Set(orderedCellIds).size !== orderedCellIds.length) throw new Error("notebook.cells måste ha unika stabila cellId");
+  if (snapshot.cellCount !== cellEvents.length || canonicalJson(snapshot.cellIds || []) !== canonicalJson(orderedCellIds)) throw new Error("snapshotens cellista måste matcha den författade cellordningen");
+  if (outputEvents.length !== cellEvents.length) throw new Error("varje notebookcell måste ha exakt en output");
+
+  const outputByCell = new Map(outputEvents.map((event) => [event.payload?.cellId, event]));
+  const knownAnchors = new Set((result.anchors || []).map((anchor) => anchor.anchorId));
+  const knownActivities = new Set((result.provenance?.activities || []).map((activity) => activity.activityId));
+  const sourceMapByOutput = new Map((result.sourceMaps || []).map((mapping) => [mapping.outputRef, mapping]));
+  const mimeTypes = ["text/plain", "text/markdown", "application/vnd.textabana.result+json"];
+
+  const cells = cellEvents.map((cellEvent, index) => {
+    const cell = cellEvent.payload || {};
+    const outputEvent = outputByCell.get(cell.cellId);
+    if (!outputEvent || outputEvent.payload?.notebookId !== notebookId || outputEvent.payload?.snapshotId !== snapshotId) throw new Error(`cellen ${cell.cellId} saknar matchande snapshot-bunden output`);
+    const output = outputEvent.payload;
+    if (cell.notebookId !== notebookId || cell.snapshotId !== snapshotId || cell.index !== index) throw new Error(`cellen ${cell.cellId} har inkonsekvent identitet eller ordning`);
+    if (output.sourceDigest !== cell.sourceDigest || output.status !== "fresh") throw new Error(`output för ${cell.cellId} är stale mot aktuell cellkälla`);
+    if (!output.mimeBundle || mimeTypes.some((mimeType) => !Object.hasOwn(output.mimeBundle, mimeType))) throw new Error(`output för ${cell.cellId} saknar obligatorisk MIME-representation`);
+    const cellMap = sourceMapByOutput.get(cellEvent.eventId);
+    const outputMap = sourceMapByOutput.get(outputEvent.eventId);
+    for (const [event, mapping] of [[cellEvent, cellMap], [outputEvent, outputMap]]) {
+      if (!knownAnchors.has(event.target?.anchorRef) || !mapping || !knownActivities.has(mapping.generatingActivity)) throw new Error(`cellen ${cell.cellId} har en oresolverbar Anchor, SourceMap eller provenanceaktivitet`);
+      if (mapping.outputSelector?.type !== "CellSelector" || mapping.outputSelector.notebookId !== notebookId || mapping.outputSelector.cellId !== cell.cellId) throw new Error(`cellen ${cell.cellId} saknar matchande CellSelector`);
+    }
+    if (outputMap.mapping !== "derived" || !outputMap.inputAnchorRefs?.includes(cellEvent.target.anchorRef)) throw new Error(`output för ${cell.cellId} saknar derived källbindning`);
+    return {
+      cellId: cell.cellId,
+      title: cell.title,
+      index: cell.index,
+      language: cell.language,
+      source: cell.source,
+      sourceDigest: cell.sourceDigest,
+      metadata: cell.metadata,
+      mimeBundle: output.mimeBundle,
+      output: {
+        outputDigest: output.outputDigest,
+        sourceDigest: output.sourceDigest,
+        outputSourceDigest: output.sourceDigest,
+        stale: false,
+        eventRef: outputEvent.eventId,
+        anchorRef: outputEvent.target.anchorRef,
+        sourceMapRef: outputMap.mappingId,
+        provenanceRef: outputEvent.provenanceRef,
+      },
+    };
+  });
+  if (outputByCell.size !== cellEvents.length) throw new Error("notebook.outputs innehåller okända eller duplicerade celler");
+
+  const consumedEvents = [...snapshotEvents, ...stateEvents, ...cellEvents, ...outputEvents];
+  const eventRefs = uniqueStrings(consumedEvents.map((event) => event.eventId));
+  const consumedSet = new Set(eventRefs);
+  const sourceMaps = (result.sourceMaps || []).filter((mapping) => consumedSet.has(mapping.outputRef));
+  const data = {
+    schema: "textabana.notebook-projection/lab-v1",
+    notebook: {
+      notebookId,
+      snapshotId,
+      stateProfile: state.requestedProfile,
+      executionSupport: state.executionSupport,
+      kernelState: state.kernelState,
+      wholeSnapshot: true,
+      cellOrder: orderedCellIds,
+      metadata: snapshot.metadata || {},
+    },
+    cells,
+    state,
+  };
+  const projectionSeed = {
+    adapterId: manifest.adapterId,
+    adapterVersion: manifest.version,
+    manifestDigest: manifest.manifestDigest,
+    sourceResultId: result.resultId,
+    output: data,
+  };
+  return {
+    schema: "textabana.adapter-projection/lab-v1",
+    projectionId: `projection:${sourceHash(canonicalJson(projectionSeed))}`,
+    adapterRef: { adapterId: manifest.adapterId, version: manifest.version, manifestDigest: manifest.manifestDigest },
+    sourceResultRef: { resultId: result.resultId, resultSchema: result.schema, sourceVersion: result.source?.version || "unknown" },
+    status: "succeeded",
+    output: { ...manifest.produces[0], data, artifactRefs: [] },
+    mapping: "derived",
+    fidelity: manifest.fidelity,
+    references: {
+      eventRefs,
+      anchorRefs: uniqueStrings([
+        ...consumedEvents.map((event) => event.target?.anchorRef),
+        ...sourceMaps.flatMap((mapping) => mapping.inputAnchorRefs || []),
+      ]),
+      sourceMapRefs: uniqueStrings(sourceMaps.map((mapping) => mapping.mappingId)),
+      provenanceRefs: uniqueStrings([
+        ...consumedEvents.map((event) => event.provenanceRef),
+        ...sourceMaps.map((mapping) => mapping.generatingActivity),
+      ]),
+    },
+    diagnostics: [],
+    extensions: {
+      "textabana.playground": {
+        canonical: false,
+        subset: "host-neutral notebook snapshot projection",
+        unsupported: ["Jupyter Messaging", "nbformat roundtrip", "session/attached kernel execution", "Comms/widgets"],
+      },
+    },
+  };
+}
+
 const adapterImplementations = new Map([
   ["org.textabana.result-summary", buildResultSummaryProjection],
   ["org.textabana.data-table", buildDataTableProjection],
+  ["org.textabana.notebook", buildNotebookProjection],
 ]);
 
 function validateAdapterProjection(projection, result, manifest) {
@@ -786,7 +926,7 @@ function buildCapabilities(inspection) {
       "editor/1": "playground-subset",
       "adapter-contract/1": "playground-subset",
       "data/1": "playground-subset",
-      "notebook/1": "contract-only",
+      "notebook/1": "playground-subset",
       "ml-lineage/1": "contract-only",
     },
     adapters: adapterManifests.map((manifest) => ({
@@ -811,6 +951,11 @@ function buildCapabilities(inspection) {
       "duckdb",
       "artifact-store",
       "openlineage-export",
+      "jupyter-messaging",
+      "nbformat-roundtrip",
+      "session-kernel-execution",
+      "attached-kernel-execution",
+      "jupyter-comms-widgets",
     ])],
   };
 }
@@ -927,10 +1072,12 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
     return { start, end: start + Array.from(exact).length, exact };
   };
 
-  const createAnchor = ({ line, row, rowId, mode, column, endLine, source, execution }) => {
+  const createAnchor = ({ line, row, rowId, mode, column, endLine, execution, notebookId, cellId }) => {
     const position = positionForLine(line);
-    const stablePart = mode === "row" && rowId
-      ? `row:${sourceHash(documentPath)}:${sourceHash(String(rowId))}`
+    const stablePart = cellId
+      ? `cell:${sourceHash(documentPath)}:${sourceHash(String(notebookId || "notebook"))}:${sourceHash(String(cellId))}`
+      : mode === "row" && rowId
+        ? `row:${sourceHash(documentPath)}:${sourceHash(String(rowId))}`
       : `line:${documentVersion}:${line}:${column || 1}`;
     const anchorId = `anchor:${stablePart}`;
     const previousLine = documentLines[Math.max(0, line - 2)] || "";
@@ -941,7 +1088,8 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
         resourceId: `doc:${documentPath}`,
         version: `fnv1a:${documentVersion}`,
         view: "source",
-        cellId: null,
+        ...(notebookId ? { notebookId: String(notebookId) } : {}),
+        cellId: cellId ? String(cellId) : null,
       },
       selectors: [
         {
@@ -1023,7 +1171,17 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
     const rowId = location.rowId === undefined
       ? `${documentVersion}:${execution.functionName}:${line}:${row}`
       : String(location.rowId);
-    const anchor = createAnchor({ line, row, rowId, mode, column, endLine, source, execution });
+    const anchor = createAnchor({
+      line,
+      row,
+      rowId,
+      mode,
+      column,
+      endLine,
+      execution,
+      notebookId: location.notebookId,
+      cellId: location.cellId,
+    });
     const explicitInputAnchorRefs = location.inputAnchorRefs === undefined
       ? null
       : Array.isArray(location.inputAnchorRefs)
@@ -1048,6 +1206,12 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
             recordId: String(location.recordId),
             ...(location.columnName ? { column: String(location.columnName) } : {}),
           }
+        : location.notebookId && location.cellId
+          ? {
+              type: "CellSelector",
+              notebookId: String(location.notebookId),
+              cellId: String(location.cellId),
+            }
         : undefined
       : serializableValue(location.outputSelector);
 
@@ -1073,6 +1237,8 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
         line,
         ...(location.datasetId ? { datasetId: String(location.datasetId) } : {}),
         ...(location.recordId ? { recordId: String(location.recordId) } : {}),
+        ...(location.notebookId ? { notebookId: String(location.notebookId) } : {}),
+        ...(location.cellId ? { cellId: String(location.cellId) } : {}),
         ...(location.columnName ? { columnName: String(location.columnName) } : {}),
         ...(Number.isInteger(column) && column > 0 ? { column } : {}),
         ...(Number.isInteger(endLine) && endLine >= line ? { endLine } : {}),
@@ -1466,6 +1632,7 @@ async function renderDocument(documentSource, registry, diagnostics, channelBus,
           startLine: Math.min(lines.length, cursor + 1),
           endLine: Math.max(Math.min(lines.length, cursor + 1), inner.nextIndex - 1),
         };
+        const authoredInput = lines.slice(blockSource.startLine - 1, blockSource.endLine).join("\n");
         const explicitIntervalStage = stages.some((stage) => stage.name === "@intervals");
         for (const stage of stages) {
           if (stage.name === "@intervals") {
@@ -1478,6 +1645,7 @@ async function renderDocument(documentSource, registry, diagnostics, channelBus,
             value = await callFunction(stage, value, registry, diagnostics, channelBus, {
               modality: "block",
               source: blockSource,
+              authoredInput,
             });
           }
         }

@@ -3,7 +3,7 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-ADAPTER-PLAN` |
-| Planversion | `1.0.2` |
+| Planversion | `1.0.3` |
 | Status | Aktiv |
 | Fastställd | 2026-09-05 |
 | Baseline | Textabana Language & Interop draft 0.4, playground `lab-v1` |
@@ -56,7 +56,7 @@ Source → Compile → Run → immutable TextabanaResult
 - Capability negotiation före adapterkörning.
 - Oberoende post-commit fan-out, explicit fidelity/loss report och adapterdiagnostik.
 - En körbar, selektiv `result-summary`-referensadapter.
-- Contract-only-deskriptorer för Data, Notebook och Annotation utan simulerad output.
+- Contract-only-deskriptorer för Data, Notebook och Annotation utan simulerad output vid Sprint 1-baslinjen.
 - Playgroundinspektion av manifest, projektion, referenser och informationsförlust.
 - Runtime-härdning för stabila content IDs, unika invocation/activity IDs och verkligt fresh modulstate.
 
@@ -74,7 +74,7 @@ Source → Compile → Run → immutable TextabanaResult
 **Acceptansevidens:**
 
 - Referensadaptern körs efter commit och publiceras utanför canonical `TextabanaResult`.
-- Data, Notebook och Annotation registreras som `contract-only` utan domänoutput.
+- Data, Notebook och Annotation registrerades vid Sprint 1-grinden som `contract-only` utan domänoutput.
 - Projektionens event-, anchor-, SourceMap- och activity-referenser valideras mot källresultatet.
 - Before/after-digest verifierar att adapter fan-out inte muterar källresultatet.
 - Resultat- och projektionidentitet är stabil över olika transport-`runId`.
@@ -106,13 +106,26 @@ Source → Compile → Run → immutable TextabanaResult
 
 ### Sprint 3 — Notebook Interop Lab
 
-**Status:** planerad
+**Status:** genomförd 2026-09-05
 
 **Mål:** Göra Textabana användbart i notebookvärdar utan att cellordning eller kernelstate blir dold språksemantik.
 
 **Leveranser:** stabila cell-ID:n, whole-snapshot-regel, MIME bundles, stale-output-detektion och profilerna `fresh`, `session` och `attached`. Riktig Jupyter Messaging blir ett separat verifierat transportsteg.
 
 **Acceptans:** samma snapshot ger stabil cellprojektion; stateprofil är explicit; celloutput binds till source och run; ingen celladapter får skriva om canonical source.
+
+**Acceptansevidens:**
+
+- Fixturen `notebook-snapshot` behandlar ett helt block som en versionerad snapshot och producerar tre celler med explicita, unika cell-id:n.
+- Cellidentitet och cellankare överlever infogade rader och omordning; projektionen behåller den aktuella författade presentationsordningen utan att göra den till kernelstate.
+- Identisk snapshot ger samma `snapshotId`, semantiska `resultId` och `projectionId` över olika transport-`runId`.
+- Varje cell och output binds via `CellSelector`, Anchor, SourceMap och provenanceaktivitet. Notebookadaptern verifierar alla referenser före publicering.
+- Varje celloutput innehåller verkliga representationer för `text/plain`, `text/markdown` och `application/vnd.textabana.result+json` samt matchande source/output digest.
+- Revisionsjämförelsen klassificerar en äldre output som stale exakt när dess source digest skiljer sig från den aktuella cellens, utan att presentera den som aktuell output.
+- `fresh`, `session` och `attached` är explicita. Endast `fresh` är en körbar strukturell subset; övriga profiler deklarerar `contract-only` execution och `external-unverified` kernelstate.
+- Saknade eller duplicerade cell-id:n och ogiltig profil stoppar körningen atomiskt. Malformerad adapterinput ger adapterfel utan att ändra ett committat canonical Result.
+- Jupyter Messaging, nbformat-roundtrip, session/attached kernelkörning samt Comms/widgets är explicit unsupported.
+- 54 automatiska kontrakts-, runtime-, data-, notebook-, dokumentations-, renderings- och UI-test utgör sprintens regressionsgrind.
 
 ### Sprint 4 — Annotation & AI Review Lab
 
@@ -145,6 +158,12 @@ Source → Compile → Run → immutable TextabanaResult
 | 5 · Conformance | Sprint 1–4 | Verifierbara profilanspråk |
 
 ## Ändringslogg
+
+### 1.0.3 — 2026-09-05
+
+- Sprint 3 markerad som genomförd med körbart Notebook Interop Lab och acceptansevidens.
+- `notebook/1` flyttad från contract-only till en explicit host-neutral JSON-baserad playground-subset.
+- Nästa aktiva leverans är Sprint 4 — Annotation & AI Review Lab.
 
 ### 1.0.2 — 2026-09-05
 

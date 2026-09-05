@@ -242,7 +242,7 @@ export function Specification() {
         <div className="spec-version">
           <span>Textabana</span>
           <strong>Language & Interop draft 0.5</strong>
-          <small>Language 0.4 · Adapter + Data lab-v1</small>
+          <small>Language 0.4 · Adapter + Data + Notebook lab-v1</small>
         </div>
         <SpecNav />
         <div className="spec-legend" aria-label="Statusförklaring">
@@ -263,7 +263,7 @@ export function Specification() {
           <div className="hero-status">
             <StatusBadge tone="normative">Interop draft 0.5</StatusBadge>
             <StatusBadge tone="implemented">Språkkärna 0.4-subset</StatusBadge>
-            <StatusBadge tone="partial">Fyra labs · adaptergrund + data live</StatusBadge>
+            <StatusBadge tone="partial">Fem labs · data + notebook live</StatusBadge>
           </div>
           <h1 id="definition-title">Läsbar text som körbar, positionsmedveten och flerkanalig semantisk källa.</h1>
           <p className="hero-definition">Textabana gör läsbar text till en körbar, positionsmedveten och flerkanalig semantisk källa — oberoende av hur resultatet senare presenteras. Det är ett <em>source-first</em>, host-neutralt lager som kompilerar texten till en explicit plan och producerar en primär render samt valfritt många typade outputs.</p>
@@ -296,7 +296,7 @@ export function Specification() {
           </div>
           <Requirement id="STATUS-001">En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.</Requirement>
           <Requirement id="STATUS-002">Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.</Requirement>
-          <Requirement id="STATUS-003">Nuvarande Playground implementerar uttryckligen avgränsade subsets för Language & Scope, Editor Metadata, Channel & Result och Data & Lineage samt en körbar lab-version av det gemensamma adapterkontraktet. Data-labbet implementerar JSON-baserade dataset/schema-events, stabila <code>recordId</code>, deterministisk inner join, cellselektorer, derived aggregation och multi-input-lineage. Notebook- och annotationsadaptrarna är fortfarande contract-only. Ingen interaktiv subset eller kontraktsregistrering är full profilkonformitet.</Requirement>
+          <Requirement id="STATUS-003">Nuvarande Playground implementerar fem avgränsade vyer: Language & Scope, Editor Metadata, Channel & Result, Data & Lineage och Notebook Interop samt en körbar lab-version av det gemensamma adapterkontraktet. Data-subseten omfattar typade JSON-records och multi-input-lineage. Notebook-subseten omfattar whole snapshots, stabila cell-id:n, MIME bundles, source digests, stale detection och explicita stateprofiler. Annotation är fortfarande contract-only. Ingen interaktiv subset eller kontraktsregistrering är full profilkonformitet.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="html">
@@ -1173,60 +1173,79 @@ export function Specification() {
           <Requirement id="ADAPTER-005">Ett adapterfel FÅR inte ändra core run status eller mutera ett committat Result. Felet returneras som adapterdiagnostik i adapterkörningen.</Requirement>
           <Requirement id="ADAPTER-006">En contract-only-deskriptor får förhandlas och inspekteras men får inte producera simulerad output eller användas som stöd för profilkonformitet.</Requirement>
           <Callout title="Adaptergrunden i playgrounden" icon={<Network />} tone="success">
-            <code>org.textabana.result-summary</code> körs som en ren referensadapter efter commit. Adapterfliken visar manifest, source-result-bindning, stabil projektionidentitet, fidelity och resolverbara referenser. Dataadaptern är körbar som avgränsad JSON-subset. Notebook och Annotation är contract-only och producerar ännu ingen domänoutput.
+            <code>org.textabana.result-summary</code> körs som en ren referensadapter efter commit. Adapterfliken visar manifest, source-result-bindning, stabil projektionidentitet, fidelity och resolverbara referenser. Data- och notebookadaptrarna är körbara, avgränsade JSON-subsets. Annotation är contract-only och producerar ännu ingen domänoutput.
           </Callout>
         </section>
 
         <section className="docs-section spec-section" id="notebooks">
-          <SectionHeading number="21" layer="Adapter profile" title="Jupyter är värd och projektion — inte Textabanas kärna" normative={false} implementation="planned" />
-          <p className="lead">Notebookintegration ska byggas i lager. Då kan Textabana använda det Jupyter redan gör väl utan att offra den kanoniska texten, öppna intervall eller resultatmodellen.</p>
-          <Callout title="Sprintstatus" icon={<CircleDashed />} tone="info"><code>notebook/1</code> är registrerad som contract-only. Cellprojektion, MIME bundle och kerneltransport är ännu inte körbara.</Callout>
+          <SectionHeading number="21" layer="Adapter profile" title="Notebook är en positionsmedveten projektion — inte dold exekveringsordning" implementation="partial" />
+          <p className="lead">Textabana modellerar notebookinteroperabilitet som en komplett, versionerad snapshot med stabila cellidentiteter. Kärnan producerar kanoniska events; en ren post-commit-adapter skapar en host-neutral JSON-vy. Jupyter, nbformat och kernels är separata transport- och hostlager.</p>
+          <Callout title="Körbar Notebook Interop-subset" icon={<CheckCircle2 />} tone="success"><code>notebook/1</code> kör whole-snapshot, explicita cell-id:n, tre verkliga MIME-representationer, source digests, stale-jämförelse samt profilerna <code>fresh</code>, <code>session</code> och <code>attached</code>. Endast <code>fresh</code> har körbar strukturell projektion. Jupyter Messaging, nbformat-roundtrip, session/attached kernelkörning och Comms/widgets är uttryckligen unsupported.</Callout>
           <SpecTable
-            caption="Jupyterprofilens fyra lager"
-            headers={["Lager", "Jupytermekanism", "Textabanaansvar"]}
+            caption="Exakt exekverad notebookmodell i playgrounden"
+            headers={["Kanal", "Payload", "Semantik"]}
             rows={[
-              ["Persistens", "nbformat / .ipynb", "Projection med stabilt cell.id och metadata.textabana; .tba eller .tba.md är normalt canonical source."],
-              ["Exekvering", "Jupyter messaging", "Adapter till Compile/Execute; execution_count är inte runId."],
-              ["Presentation", "MIME bundle", "text/plain fallback, text/markdown render och application/vnd.textabana.result+json."],
-              ["Live UI", "Comms / widgets / JupyterLab", "Tentative events, editor metadata och whole-document snapshot."],
+              [<code key="snapshot">notebook.snapshot</code>, "notebookId, snapshotId, profile, wholeSnapshot, cellIds", "Exakt en komplett snapshot; cellistan följer författad presentationsordning."],
+              [<code key="cells">notebook.cells</code>, "cellId, title, source, sourceDigest, metadata", "En post per stabil cell med CellSelector, Anchor och bevarad författad metadata."],
+              [<code key="outputs">notebook.outputs</code>, "outputDigest, sourceDigest, status, mimeBundle", "Output binds till samma cells källa och provenanceaktivitet; aktuell output är fresh."],
+              [<code key="state">notebook.state</code>, "requestedProfile, executionSupport, kernelState, limitations", "Gör profil och faktisk support explicit utan att fabricera kernelstate."],
             ]}
           />
           <CodeExample
-            title="Cell-local integration"
-            language="python"
-            status="Informativ Python API"
+            title="Whole snapshot med lätta cellmarkörer"
+            language="textabana"
+            status="Körbar fixture · notebook-snapshot"
             code={code(
-              "%%textabana --profile fresh",
-              '>>>>! include "pkg:textabana/claims@2" as claims',
-              ">>>> claims.extract",
-              "A claim in readable text.",
-              "<<<< claims.extract",
+              '>>>>! include "./modules/notebook.js"',
               "",
-              "# Python-side result API",
-              "result.render",
-              'result.channel("claims").to_arrow()',
-              'result.channel("claims").to_pandas()',
-              "result.annotations",
-              "result.provenance"
+              '>>>> notebook_snapshot profile="fresh" notebook_id="voyage-analysis"',
+              '## Cell: Source overview {#cell-source owner="research"}',
+              "Aurora lämnade Göteborg den 4 maj.",
+              "",
+              '## Cell: Route summary {#cell-route audience="operations"}',
+              "**Sista kända rutt:** Göteborg → Guayaquil.",
+              "",
+              '## Cell: Confidence {#cell-confidence kind="metric"}',
+              '{"confidence": 0.82, "status": "candidate"}',
+              "<<<< notebook_snapshot"
+            )}
+          />
+          <CodeExample
+            title="Host-neutral notebookprojektion"
+            language="json"
+            status="Körbar lab-envelope · application/json"
+            code={code(
+              "{",
+              '  "schema": "textabana.notebook-projection/lab-v1",',
+              '  "notebook": { "notebookId": "voyage-analysis", "snapshotId": "snapshot:...", "stateProfile": "fresh", "wholeSnapshot": true },',
+              '  "cells": [{',
+              '    "cellId": "cell-source",',
+              '    "sourceDigest": "fnv1a:...",',
+              '    "mimeBundle": { "text/plain": "...", "text/markdown": "...", "application/vnd.textabana.result+json": {} },',
+              '    "output": { "outputSourceDigest": "fnv1a:...", "stale": false, "sourceMapRef": "mapping:..." }',
+              "  }]",
+              "}"
             )}
           />
           <div className="profile-cards">
-            <article><strong>1 · Cell magic</strong><p>Cellen är komplett SourceDocument. Öppna scopes vid cellslut avvisas.</p></article>
-            <article><strong>2 · Document-backed notebook</strong><p>Celler visar och styr en kanonisk .tba-snapshot.</p></article>
-            <article><strong>3 · JupyterLab editor</strong><p>En native editor för .tba med anchors, diagnostics och channels.</p></article>
-            <article><strong>4 · Existing kernel host</strong><p>Python/R/Julia används via attached runtimeprofil. Egen Textabana-kernel byggs sist.</p></article>
+            <article><strong>fresh</strong><p>Ny strukturell snapshot och projektion utan dold eller beständig kernelstate.</p></article>
+            <article><strong>session</strong><p>Profilnamnet kan förhandlas, men exekvering mot en extern session är contract-only.</p></article>
+            <article><strong>attached</strong><p>En host får deklarera extern kernel, men playgrounden verifierar eller kör den inte.</p></article>
+            <article><strong>Framtida Jupyter-host</strong><p>Messaging, nbformat, Comms och widgets kräver egna verifierade adaptrar.</p></article>
           </div>
-          <Requirement id="JUPYTER-001">Standard <code>execute_request</code> innehåller kod men inte cell-id eller hela notebooken. Cross-cell-intervall kräver därför att en frontend skickar en hel, versionerad notebook snapshot med stabila <code>cell.id</code>.</Requirement>
-          <Requirement id="JUPYTER-002">MIME-alternativ representerar samma logiska värde. Textabanaoutputs som <code>render</code>, <code>claims</code> och <code>search.index</code> är separata resultatdelar och får inte modelleras som MIME-alternativ.</Requirement>
+          <Requirement id="JUPYTER-001">Standard <code>execute_request</code> innehåller kod men inte cell-id eller hela notebooken. Cross-cell-semantik kräver därför att hosten skickar en hel, versionerad notebook snapshot med stabila <code>cell.id</code>. Playgrounden avvisar partial snapshots.</Requirement>
+          <Requirement id="JUPYTER-002">MIME-alternativen <code>text/plain</code>, <code>text/markdown</code> och <code>application/vnd.textabana.result+json</code> representerar samma logiska cellvärde. Separata Textabanakanaler får inte modelleras som MIME-alternativ.</Requirement>
           <Requirement id="JUPYTER-003">Jupyter streams och displays ska mappas till namespaced adapterkanaler som <code>host.jupyter.stdout</code>, <code>host.jupyter.stderr</code> och <code>host.jupyter.display</code> — aldrig till <code>system.out</code> som process-stdout.</Requirement>
-          <Requirement id="JUPYTER-004">En adapter MÅSTE bevara okänd notebookmetadata, lagra Textabanafält under <code>metadata.textabana</code> och märka output med source digest för stale detection.</Requirement>
-          <Requirement id="JUPYTER-005"><code>parent_header</code> binder Jupyteroutput till invocationen. <code>update_display_data</code> FÅR användas för tentative preview; committed TextabanaResult MÅSTE vara immutable.</Requirement>
+          <Requirement id="JUPYTER-004">En notebookadapter MÅSTE bevara okänd författad metadata, reservera <code>metadata.textabana</code> för adapterfält och märka varje output med cells source digest.</Requirement>
+          <Requirement id="JUPYTER-005">Cellordning är presentationsordning och FÅR inte bli implicit exekverings- eller kernelstate. Notebookens begärda stateprofil är skild från kärnans <code>Result.run.profile</code>.</Requirement>
+          <Requirement id="JUPYTER-006">En äldre output är stale exakt när <code>previousOutput.sourceDigest !== currentCell.sourceDigest</code>. En stale output FÅR visas som revisionsmetadata men aldrig som aktuell output.</Requirement>
+          <Requirement id="JUPYTER-007">Varje cell MÅSTE ha explicit, unik identitet. Saknat eller duplicerat cell-id stoppar körningen atomiskt före channel commit.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="data-ai">
           <SectionHeading number="22" layer="Adapter profile" title="Data, analytics, AI och ML delar samma kontrakt" normative={false} implementation="partial" />
           <p className="lead">Bindings ska vara externa och typed. DataFrames, modeller och dataset serialiseras inte in i källtexten; de binds som inputs eller ArtifactRefs och spåras i run-proveniens.</p>
-          <Callout title="Körbar Data & Lineage-subset" icon={<Database />} tone="success"><code>data/1</code> körs som en avgränsad playground-subset: typade JSON-records, dataset/schema-events, stabila <code>recordId</code>, deterministisk inner join, kolumnbundna <code>DataSelector</code>, derived aggregation och SourceMaps som förenar båda inputankarna. Arrow IPC, Parquet, DuckDB, beständiga ArtifactRefs, OpenLineage-export och full <code>data/1</code>-konformitet är fortfarande unsupported.</Callout>
+          <Callout title="Körbar Data & Lineage-subset" icon={<Database />} tone="success"><code>data/1</code> körs som en avgränsad playground-subset: typade JSON-records, dataset/schema-events, stabila <code>recordId</code>, deterministisk inner join, kolumnbundna <code>DataSelector</code>, derived aggregation och multi-input-lineage via SourceMaps som förenar båda inputankarna. Arrow IPC, Parquet, DuckDB, beständiga ArtifactRefs, OpenLineage-export och full <code>data/1</code>-konformitet är fortfarande unsupported.</Callout>
           <SpecTable
             caption="Exakt exekverad datamodell i playgrounden"
             headers={["Lager", "Körbar representation", "Identitet och mapping"]}
@@ -1376,14 +1395,14 @@ export function Specification() {
               [<code key="runtime">runtime-json/1</code>, "IR, Plan, Run, Result, JSON channels och atomisk commit.", <StatusBadge key="c2" tone="partial">Playground subset</StatusBadge>],
               [<code key="editor">editor/1</code>, "Anchor, SourceMap, system.out och LSP-projektion.", <StatusBadge key="c3" tone="partial">Playground subset</StatusBadge>],
               [<code key="adapter">adapter-contract/1</code>, "Manifest, negotiation, immutable fan-out, fidelity, referenser och failure isolation.", <StatusBadge key="c7" tone="partial">Playground subset</StatusBadge>],
-              [<code key="notebook">notebook/1</code>, "Cell ids, MIME bundle, state profiles och whole-snapshot-regler.", <StatusBadge key="c4" tone="planned">Planerad</StatusBadge>],
+              [<code key="notebook">notebook/1</code>, "Whole snapshot, stabila cell-id:n, MIME bundle, stateprofiler, stale detection och host-neutral JSON-projektion; full profil omfattar även verifierad Jupytertransport.", <StatusBadge key="c4" tone="partial">Playground subset</StatusBadge>],
               [<code key="data">data/1</code>, "Dataset/schema-events, record identity, JSON table projection och multi-input lineage; full profil omfattar även dataplan och artifacts.", <StatusBadge key="c5" tone="partial">Playground subset</StatusBadge>],
               [<code key="ml">ml-lineage/1</code>, "AI invocation, PROV, OpenLineage, MLflow och OTel correlation.", <StatusBadge key="c6" tone="planned">Planerad</StatusBadge>],
             ]}
           />
           <div className="conformance-grid">
-            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, stage trace, deklarerade JSON-kanaler, atomisk success/failure-envelope, system.out med Anchor-projektion, adaptermanifest och failure isolation samt typade dataset-events, stabila records, inner join, cell-lineage och derived aggregation.</p></article>
-            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies samt Notebook- och Annotation-projektionerna.</p></article>
+            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, adapterisolering, typade data med lineage samt notebook-snapshots med cellidentitet, MIME, state och stale detection.</p></article>
+            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets och Annotation-projektionen.</p></article>
           </div>
           <Requirement id="CONF-001">En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.</Requirement>
           <Requirement id="CONF-002">Varje profil MÅSTE ha golden fixtures för source → IR → plan → result och negativa fixtures för fel, cancellation och mapping claims.</Requirement>
@@ -1428,14 +1447,14 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section playground-contract-section" id="playgrounds">
-          <SectionHeading number="27" layer="Interactive implementation" title="Fyra playgrounds visar samma run från olika håll" normative={false} implementation="partial" />
-          <p className="lead">Language & Scope, Editor Metadata, Channel & Result och Data & Lineage är fyra liveprojektioner av samma källa, fixture, run-id och result envelope. Adaptergrunden registrerar, förhandlar och kör oberoende projektioner efter commit utan att mutera resultatet. Ett labbyte startar ingen ny exekvering. Notebook-, Annotation- och Conformance-labben är nästa implementeringslager.</p>
+          <SectionHeading number="27" layer="Interactive implementation" title="Fem playgrounds visar samma valda run från olika håll" normative={false} implementation="partial" />
+          <p className="lead">Language & Scope, Editor Metadata, Channel & Result, Data & Lineage och Notebook Interop använder samma valda källa, fixture, run-id och result envelope. Adaptergrunden registrerar, förhandlar och kör oberoende projektioner efter commit utan att mutera resultatet. Ett labbyte startar ingen ny exekvering eller byter fixture. Annotation och Conformance är nästa implementeringslager.</p>
           <div className="playground-grid">
             <article><span>01</span><Code2 aria-hidden="true" /><strong>Language & Scope Lab</strong><p>Scope-segment, blockträd, inheritance, faktisk stageordning, IR-projektion och render.</p><small>Live · scope-torture + base64-inverse</small></article>
             <article><span>02</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>system.out, metadatagutter, row/line, Anchor, SourceMap och jämförelse med föregående run.</p><small>Live · editor-revision</small></article>
             <article><span>03</span><RadioTower aria-hidden="true" /><strong>Channel & Result Lab</strong><p>ChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.</p><small>Live · channel-fanout + failed-run</small></article>
             <article><span>04</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>JSON-tabell, schema-events, stabila recordId, deterministisk inner join, derived aggregation och cell-/record-lineage.</p><small>Live · data-join · data/1 playground-subset</small></article>
-            <article><span>05</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Cell magic, whole-document mode, MIME bundle, Python API och stale output.</p><small>Planned lab · descriptor contract-only</small></article>
+            <article><span>05</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Whole-snapshot, stabila cell-id:n, tre MIME-representationer, explicit state och digest-baserad stale detection.</p><small>Live · notebook-snapshot · notebook/1 playground-subset</small></article>
             <article><span>06</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>AI-kandidater, confidence, provenance, human review och standardexport.</p><small>Planned lab · descriptor contract-only</small></article>
             <article><span>07</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability negotiation, golden result, fel, cancel och strukturell diff.</p><small>Planned UI · headless regressioner finns</small></article>
           </div>

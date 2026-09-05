@@ -98,9 +98,14 @@ test("adapter registry publishes a machine-readable post-commit contract", async
   assert.equal(data.produces[0].mediaType, "application/json");
   assert.equal(data.produces[0].schemaRef, "textabana.data-table-projection/lab-v1");
 
-  for (const adapterId of ["org.textabana.notebook", "org.textabana.annotation-review"]) {
-    assert.equal(result.adapterRun.manifests.find((manifest) => manifest.adapterId === adapterId).support, "contract-only");
-  }
+  const notebook = result.adapterRun.manifests.find((manifest) => manifest.adapterId === "org.textabana.notebook");
+  assert.equal(notebook.version, "1.0.0-lab.1");
+  assert.equal(notebook.support, "playground-subset");
+  assert.equal(notebook.produces[0].mediaType, "application/json");
+  assert.equal(notebook.produces[0].schemaRef, "textabana.notebook-projection/lab-v1");
+  assert.equal(JSON.stringify(notebook.accepts.channels.map((channel) => channel.name)), JSON.stringify(["notebook.snapshot", "notebook.cells", "notebook.outputs", "notebook.state"]));
+  for (const capability of ["stable-cell-id", "whole-snapshot", "mime-bundle", "stale-output-detection"]) assert.ok(notebook.capabilities.required.includes(capability));
+  assert.equal(result.adapterRun.manifests.find((manifest) => manifest.adapterId === "org.textabana.annotation-review").support, "contract-only");
 });
 
 test("reference projection is source-bound, selective and fully resolvable", async () => {
@@ -141,12 +146,12 @@ test("semantic result and projection ids are stable across transport run ids", a
   assert.deepEqual(first.adapterRun.projections[0].output.data, second.adapterRun.projections[0].output.data);
 });
 
-test("contract-only adapters never fabricate domain output or invalidate core success", async () => {
+test("contract-only annotation adapters never fabricate domain output or invalidate core success", async () => {
   const run = createHarness();
   const result = await run({
     documentSource: fixture,
     modules: fixtureModules,
-    options: { strictChannels: true, adapters: ["org.textabana.notebook"] },
+    options: { strictChannels: true, adapters: ["org.textabana.annotation-review"] },
   });
   const projection = result.adapterRun.projections[0];
 
@@ -157,6 +162,7 @@ test("contract-only adapters never fabricate domain output or invalidate core su
   assert.equal(projection.diagnostics[0].code, "TBA-ADAPTER-CONTRACT-ONLY-LAB");
   assert.equal(result.adapterRun.verification.immutable, true);
   assert.equal(result.capabilities.profiles["data/1"], "playground-subset");
+  assert.equal(result.capabilities.profiles["notebook/1"], "playground-subset");
 });
 
 test("failed core runs skip all post-commit adapters", async () => {

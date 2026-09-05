@@ -18,6 +18,7 @@ import {
   FileText,
   GitBranch,
   Layers3,
+  NotebookTabs,
   PanelRight,
   Play,
   Plus,
@@ -192,6 +193,21 @@ const dataJoinFixtureDocument = `>>>>! include "./modules/data.js"
 | ship:isabela | instruments | 45000 |
 <<<< relational_join`;
 
+const notebookFixtureDocument = `>>>>! include "./modules/notebook.js"
+
+# Notebook snapshot
+
+>>>> notebook_snapshot profile="fresh" notebook_id="voyage-analysis"
+## Cell: Source overview {#cell-source owner="research"}
+Aurora lämnade Göteborg den 4 maj.
+
+## Cell: Route summary {#cell-route audience="operations"}
+**Sista kända rutt:** Göteborg → Guayaquil.
+
+## Cell: Confidence {#cell-confidence kind="metric"}
+{"confidence": 0.82, "status": "candidate"}
+<<<< notebook_snapshot`;
+
 const playgroundFixtures: PlaygroundFixture[] = [
   {
     id: "scope-torture",
@@ -228,6 +244,12 @@ const playgroundFixtures: PlaygroundFixture[] = [
     title: "Data join",
     summary: "Två Markdown-tabeller blir typade records, en deterministisk inner join och spårbar JSON-tabell.",
     document: dataJoinFixtureDocument,
+  },
+  {
+    id: "notebook-snapshot",
+    title: "Notebook snapshot",
+    summary: "Stabila cell-id:n, whole-snapshot, MIME bundles, explicit state och stale output.",
+    document: notebookFixtureDocument,
   },
 ];
 
@@ -657,6 +679,128 @@ define({
   }
 });`;
 
+const notebookModule = `function notebookHash(value) {
+  let hash = 2166136261;
+  const source = String(value);
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function notebookCanonical(value) {
+  if (Array.isArray(value)) return "[" + value.map(notebookCanonical).join(",") + "]";
+  if (value && typeof value === "object") {
+    return "{" + Object.keys(value).sort().map(key => JSON.stringify(key) + ":" + notebookCanonical(value[key])).join(",") + "}";
+  }
+  return JSON.stringify(value);
+}
+
+function notebookProperties(source) {
+  const properties = {};
+  const pattern = /([A-Za-z_][\\w.-]*)=("([^"]*)"|'([^']*)'|([^\\s]+))/g;
+  let match;
+  while ((match = pattern.exec(source)) !== null) properties[match[1]] = match[3] ?? match[4] ?? match[5];
+  return properties;
+}
+
+function notebookCells(source) {
+  const lines = String(source).replace(/\\r\\n?/g, "\\n").split("\\n");
+  const starts = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!/^##\\s+Cell:/.test(lines[index])) continue;
+    const match = lines[index].match(/^##\\s+Cell:\\s*(.+?)\\s+\\{#([A-Za-z][A-Za-z0-9_.:-]*)([^}]*)\\}\\s*$/);
+    if (!match) throw new Error("Notebookcellen på blockrad " + (index + 1) + " måste ha syntaxen ## Cell: Titel {#stabilt-cell-id}.");
+    starts.push({ index, title: match[1].trim(), cellId: match[2], authored: notebookProperties(match[3]) });
+  }
+  if (!starts.length) throw new Error("notebook_snapshot kräver minst en ## Cell med explicit cell-id.");
+  const ids = starts.map(cell => cell.cellId);
+  if (new Set(ids).size !== ids.length) throw new Error("notebook_snapshot har duplicerade cell-id:n.");
+  return starts.map((cell, index) => {
+    const end = starts[index + 1]?.index ?? lines.length;
+    const sourceText = lines.slice(cell.index + 1, end).join("\\n").trim();
+    const sourceDigest = "fnv1a:" + notebookHash(sourceText);
+    return { ...cell, source: sourceText, sourceDigest };
+  });
+}
+
+define({
+  notebook_snapshot: {
+    description: "Projekterar ett helt dokumentblock till stabila notebookceller och MIME bundles utan kernelstate.",
+    behavior: "segment-preserving",
+    outputs: ["render", "notebook.snapshot", "notebook.cells", "notebook.outputs", "notebook.state"],
+    channels: {
+      "notebook.snapshot": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/notebook-snapshot/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.snapshotId"],
+        schema: { type: "object", required: ["notebookId", "snapshotId", "profile", "wholeSnapshot", "cellIds", "cellCount"] }
+      },
+      "notebook.cells": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/notebook-cell/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.cellId"],
+        schema: { type: "object", required: ["notebookId", "snapshotId", "cellId", "title", "index", "sourceDigest", "source", "language", "metadata"] }
+      },
+      "notebook.outputs": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/notebook-output/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.cellId"],
+        schema: { type: "object", required: ["notebookId", "snapshotId", "cellId", "sourceDigest", "outputDigest", "status", "mimeBundle", "metadata"] }
+      },
+      "notebook.state": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/notebook-state/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.notebookId"],
+        schema: { type: "object", required: ["notebookId", "snapshotId", "profile", "requestedProfile", "executionSupport", "wholeSnapshot", "kernelState", "limitations"] }
+      }
+    },
+    args: {
+      profile: { type: "string", default: "fresh", description: "fresh, session eller attached" },
+      notebook_id: { type: "string", description: "Stabil notebook-identitet" }
+    },
+    transform(input, args, context) {
+      const profile = String(args.profile || "fresh");
+      if (!["fresh", "session", "attached"].includes(profile)) throw new Error("notebook_snapshot profile måste vara fresh, session eller attached.");
+      const notebookId = String(args.notebook_id || "notebook").trim();
+      if (!notebookId) throw new Error("notebook_snapshot kräver notebook_id.");
+      const cells = notebookCells(context.authoredInput ?? input);
+      const snapshotId = "snapshot:" + notebookHash(notebookCanonical({ notebookId, cells: cells.map(cell => ({ cellId: cell.cellId, sourceDigest: cell.sourceDigest, metadata: cell.authored })) }));
+      const executionSupport = profile === "fresh" ? "playground-subset" : "contract-only";
+      const limitations = profile === "fresh"
+        ? ["structural-projection-only", "no-jupyter-messaging", "no-nbformat-roundtrip", "no-kernel"]
+        : ["kernel-profile-declared-not-executed", "no-jupyter-messaging", "no-nbformat-roundtrip", "no-comms-or-widgets"];
+      const prepared = cells.map((cell, index) => {
+        const resultValue = { notebookId, cellId: cell.cellId, sourceDigest: cell.sourceDigest, profile, status: "fresh" };
+        const mimeBundle = {
+          "text/plain": cell.source,
+          "text/markdown": cell.source,
+          "application/vnd.textabana.result+json": resultValue
+        };
+        return {
+          cell: {
+            notebookId, snapshotId, cellId: cell.cellId, title: cell.title, index,
+            sourceDigest: cell.sourceDigest, source: cell.source, language: "markdown",
+            metadata: { authored: cell.authored, textabana: { notebookId, snapshotId, cellId: cell.cellId } }
+          },
+          output: {
+            notebookId, snapshotId, cellId: cell.cellId, sourceDigest: cell.sourceDigest,
+            outputDigest: "fnv1a:" + notebookHash(notebookCanonical(mimeBundle)), status: "fresh", mimeBundle,
+            metadata: { textabana: { notebookId, snapshotId, cellId: cell.cellId, sourceDigest: cell.sourceDigest } }
+          },
+          lineOffset: cell.index
+        };
+      });
+
+      context.emit("notebook.snapshot", { notebookId, snapshotId, profile, wholeSnapshot: true, cellIds: cells.map(cell => cell.cellId), cellCount: cells.length, metadata: { textabana: { format: "markdown-cell-headings", digestAlgorithm: "fnv1a-lab" } } }, { mode: "row", rowId: "snapshot:" + notebookId, rowSet: notebookId, lineOffset: cells[0].index, kind: "notebook-snapshot", notebookId });
+      context.emit("notebook.state", { notebookId, snapshotId, profile, requestedProfile: profile, executionSupport, wholeSnapshot: true, kernelState: profile === "fresh" ? "not-used" : "external-unverified", limitations }, { mode: "row", rowId: "state:" + notebookId, rowSet: notebookId, lineOffset: cells[0].index, kind: "notebook-state", notebookId });
+      for (const item of prepared) {
+        const selector = { type: "CellSelector", notebookId, cellId: item.cell.cellId };
+        const cellEvent = context.emit("notebook.cells", item.cell, { mode: "row", row: item.cell.index + 1, rowId: notebookId + ":" + item.cell.cellId, rowSet: notebookId, lineOffset: item.lineOffset, kind: "notebook-cell", notebookId, cellId: item.cell.cellId, outputSelector: selector });
+        context.emit("notebook.outputs", item.output, { mode: "row", row: item.cell.index + 1, rowId: notebookId + ":" + item.cell.cellId, rowSet: notebookId, lineOffset: item.lineOffset, kind: "notebook-output", notebookId, cellId: item.cell.cellId, mapping: "derived", inputAnchorRefs: [cellEvent.target.anchorRef], inputSelectors: [selector], outputSelector: selector });
+      }
+      return input;
+    }
+  }
+});`;
+
 const initialFiles: ProjectFile[] = [
   { path: "document.md", kind: "document", content: sampleDocument },
   { path: "modules/core.js", kind: "module", content: coreModule },
@@ -664,9 +808,10 @@ const initialFiles: ProjectFile[] = [
   { path: "modules/base64.js", kind: "module", content: base64Module },
   { path: "modules/metadata.js", kind: "module", content: metadataModule },
   { path: "modules/data.js", kind: "module", content: dataModule },
+  { path: "modules/notebook.js", kind: "module", content: notebookModule },
 ];
 
-const storageKey = "textabana-project-v7-data-lineage";
+const storageKey = "textabana-project-v8-notebook-interop";
 
 function filesForFixture(fixtureId: string): ProjectFile[] {
   const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
@@ -825,7 +970,7 @@ export default function Home() {
       documentPath: documentFile.path,
       documentSource: documentFile.content,
       modules: files.filter((file) => file.kind === "module"),
-      options: { strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table"] },
+      options: { strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook"] },
     });
   }, [files, strictChannels]);
 
@@ -933,6 +1078,9 @@ export default function Home() {
                 <button type="button" role="tab" aria-selected={lab === "data"} className={lab === "data" ? "is-active" : ""} onClick={() => setLab("data")}>
                   <Database /><span><strong>Data & Lineage</strong><small>Typade records, join och källspårning</small></span>
                 </button>
+                <button type="button" role="tab" aria-selected={lab === "notebook"} className={lab === "notebook" ? "is-active" : ""} onClick={() => setLab("notebook")}>
+                  <NotebookTabs /><span><strong>Notebook Interop</strong><small>Celler, MIME, state och stale output</small></span>
+                </button>
               </div>
               <div className="lab-controls">
                 <span className="shared-run-id"><CircleDot /> {running ? "running" : `run ${result.runId ?? "–"}`}</span>
@@ -1003,7 +1151,7 @@ export default function Home() {
         ) : <Specification />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Adapter + Data lab-v1</span>
+          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Data + Notebook lab-v1</span>
           <span className="syntax-hint"><code>source</code> IR <ChevronRight /><code>run</code> result <ChevronRight /><code>adapters</code></span>
           <span>Source-first · Typed · Positionsmedveten</span>
         </footer>

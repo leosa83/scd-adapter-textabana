@@ -4,7 +4,7 @@ export type ProjectFile = {
   content: string;
 };
 
-export type LabId = "language" | "editor" | "channels" | "data";
+export type LabId = "language" | "editor" | "channels" | "data" | "notebook";
 
 export type FunctionMeta = {
   name: string;
@@ -39,6 +39,7 @@ export type RuntimeAnchor = {
     resourceId: string;
     version: string;
     view: string;
+    notebookId?: string | null;
     cellId?: string | null;
   };
   selectors: Array<Record<string, unknown>>;
@@ -83,6 +84,8 @@ export type ChannelEvent = {
     line: number;
     datasetId?: string;
     recordId?: string;
+    notebookId?: string;
+    cellId?: string;
     columnName?: string;
     column?: number;
     endLine?: number;
@@ -296,6 +299,8 @@ export type RuntimeSourceMap = {
     type: string;
     datasetId?: string;
     recordId?: string;
+    notebookId?: string;
+    cellId?: string;
     column?: string;
   };
   inputSelectors?: Array<Record<string, unknown>>;

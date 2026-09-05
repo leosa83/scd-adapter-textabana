@@ -4794,6 +4794,319 @@ a {
   max-height: calc(100vh - 250px);
 }
 
+.notebook-lab {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.notebook-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.notebook-summary > div,
+.mime-head > div:first-child {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #dfe4dd;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8f9f6;
+  min-width: 0;
+}
+
+.notebook-summary span,
+.mime-head span {
+  color: #848d8d;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.notebook-summary strong,
+.mime-head strong {
+  color: #273132;
+  font-size: 12px;
+}
+
+.notebook-summary small,
+.mime-head small {
+  color: #7a8585;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notebook-cell-stack {
+  display: grid;
+  gap: 7px;
+}
+
+.notebook-cell-stack > button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) minmax(90px, .45fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid #dfe4dd;
+  border-radius: 9px;
+  padding: 10px;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.notebook-cell-stack > button:hover,
+.notebook-cell-stack > button.is-selected {
+  border-color: #9bab6e;
+  box-shadow: 0 0 0 2px rgb(135 155 79 / 10%);
+}
+
+.notebook-cell-stack > button > span {
+  color: #8b956d;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.notebook-cell-stack > button > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.notebook-cell-stack strong {
+  color: #283233;
+  font-size: 12px;
+}
+
+.notebook-cell-stack small,
+.notebook-cell-stack code {
+  color: #737e7e;
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.notebook-cell-stack pre {
+  margin: 2px 0 0;
+  color: #505b5b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  white-space: pre-wrap;
+}
+
+.notebook-cell-stack aside {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  text-align: right;
+}
+
+.notebook-cell-stack aside small,
+.notebook-cell-stack aside code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mime-head {
+  display: grid;
+  grid-template-columns: minmax(130px, .4fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.mime-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 5px;
+  border: 1px solid #dfe4dd;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+}
+
+.mime-picker button {
+  border: 1px solid #d9ded7;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #f7f8f5;
+  color: #637071;
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.mime-picker button.is-active {
+  border-color: #82934d;
+  background: #eef2df;
+  color: #465322;
+}
+
+.mime-value,
+.state-envelope {
+  border: 1px solid #dfe4dd;
+  border-radius: 9px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.mime-value h3,
+.state-envelope h3 {
+  margin: 0;
+  border-bottom: 1px solid #e5e8e2;
+  padding: 9px 11px;
+  color: #596565;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.mime-value pre,
+.state-envelope pre {
+  margin: 0;
+  padding: 12px;
+  color: #394646;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.state-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.state-profile-grid article {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 132px;
+  border: 1px solid #dfe4dd;
+  border-radius: 9px;
+  padding: 11px;
+  background: #f8f9f6;
+}
+
+.state-profile-grid article.is-current {
+  border-color: #8fa052;
+  background: #f1f4e6;
+}
+
+.state-profile-grid span {
+  color: #879090;
+  font-size: 8px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.state-profile-grid strong {
+  color: #303b3b;
+  font-size: 14px;
+}
+
+.state-profile-grid code {
+  color: #65723f;
+  font-size: 8px;
+}
+
+.state-profile-grid p {
+  margin: 0;
+  color: #687373;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.notebook-history-empty {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px dashed #d8ddd4;
+  border-radius: 9px;
+  padding: 18px;
+  background: #fafbf8;
+}
+
+.notebook-history-empty svg {
+  width: 18px;
+  color: #8a965e;
+}
+
+.notebook-history-empty strong {
+  color: #35403f;
+  font-size: 11px;
+}
+
+.notebook-history-empty p {
+  margin: 5px 0 0;
+  color: #737d7d;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.stale-list {
+  display: grid;
+  gap: 7px;
+}
+
+.stale-list article {
+  display: grid;
+  grid-template-columns: minmax(140px, .45fr) minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid #dfe4dd;
+  border-left: 3px solid #8ca04f;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+}
+
+.stale-list article.is-stale {
+  border-left-color: #b4674e;
+  background: #fcf7f4;
+}
+
+.stale-list article > div {
+  display: grid;
+  gap: 4px;
+}
+
+.stale-list span,
+.stale-list dt,
+.stale-list dd {
+  color: #7b8585;
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.stale-list strong {
+  color: #34403f;
+  font-size: 10px;
+}
+
+.stale-list dl {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.stale-list dl > div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 7px;
+}
+
+.stale-list dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 1180px) {
   .lab-switcher > button {
     min-width: 44px;
@@ -4851,7 +5164,8 @@ a {
   }
 
   .data-summary,
-  .dataset-grid {
+  .dataset-grid,
+  .notebook-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -4892,6 +5206,21 @@ a {
   .data-adapter-json,
   .cell-lineage-section > div {
     grid-template-columns: 1fr;
+  }
+
+  .notebook-summary,
+  .state-profile-grid,
+  .mime-head,
+  .stale-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .notebook-cell-stack > button {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .notebook-cell-stack aside {
+    display: none;
   }
 
   .lineage-chain {

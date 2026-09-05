@@ -18,6 +18,7 @@ const modules = [
   { path: "modules/metadata.js", content: template("metadataModule") },
   { path: "modules/base64.js", content: template("base64Module") },
   { path: "modules/data.js", content: template("dataModule") },
+  { path: "modules/notebook.js", content: template("notebookModule") },
 ];
 
 async function run(documentSource, runId = 1) {
@@ -121,4 +122,15 @@ test("data-join fixture produces typed records and clean Markdown", async () => 
   assert.equal(result.channels["data.output.records"][0].payload.values.estimated_value_usd, 120000);
   assert.match(result.output, /\| ship:aurora \| Aurora \| Göteborg \| silver \| 120000 \|/);
   assert.doesNotMatch(result.output, />>>>|<<<<|### ships|### manifests/);
+});
+
+test("notebook-snapshot fixture exposes stable cells and a clean Markdown render", async () => {
+  const result = await run(template("notebookFixtureDocument"));
+
+  assert.equal(result.ok, true, result.error);
+  assert.equal(JSON.stringify(result.channels["notebook.cells"].map((event) => event.payload.cellId)), JSON.stringify(["cell-source", "cell-route", "cell-confidence"]));
+  assert.equal(result.channels["notebook.snapshot"][0].payload.wholeSnapshot, true);
+  assert.equal(result.channels["notebook.outputs"].length, 3);
+  assert.match(result.output, /## Cell: Source overview/);
+  assert.doesNotMatch(result.output, />>>>|<<<<|\{#cell-/);
 });

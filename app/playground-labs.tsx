@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -15,6 +15,7 @@ import {
   GitBranch,
   Layers3,
   MapPin,
+  NotebookTabs,
   PanelRight,
   RadioTower,
   Rows3,
@@ -45,6 +46,7 @@ const labCopy: Record<LabId, { title: string; icon: typeof Braces }> = {
   editor: { title: "Editor Metadata", icon: PanelRight },
   channels: { title: "Channel & Result", icon: RadioTower },
   data: { title: "Data & Lineage", icon: Database },
+  notebook: { title: "Notebook Interop", icon: NotebookTabs },
 };
 
 function json(value: unknown) {
@@ -271,8 +273,8 @@ function EditorLab({
   onOpenLab,
 }: Pick<PlaygroundOutputProps, "result" | "previousResult" | "onOpenLab">) {
   const [tab, setTab] = useState("editor");
-  const events = result.channels["system.out"] ?? [];
-  const previousEvents = previousResult?.channels["system.out"] ?? [];
+  const events = useMemo(() => result.channels["system.out"] ?? [], [result.channels]);
+  const previousEvents = useMemo(() => previousResult?.channels["system.out"] ?? [], [previousResult]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = events.find((event) => event.id === selectedId) ?? events[0] ?? null;
   const anchor = selected ? result.anchors.find((item) => item.anchorId === selected.target.anchorRef) ?? null : null;
@@ -284,10 +286,6 @@ function EditorLab({
   };
   const moved = events.filter((event) => eventState(event) === "re-anchored").length;
   const orphaned = previousEvents.filter((event) => !events.some((current) => current.rowId === event.rowId)).length;
-
-  useEffect(() => {
-    if (selectedId && !events.some((event) => event.id === selectedId)) setSelectedId(null);
-  }, [events, selectedId]);
 
   return (
     <>
@@ -497,6 +495,49 @@ type DataProjection = {
   aggregates: Array<{ aggregationId: string; operation: string; mapping: string; inputRecordIds: string[]; value: number }>;
 };
 
+type NotebookCellProjection = {
+  cellId: string;
+  title: string;
+  index: number;
+  language: string;
+  source: string;
+  sourceDigest: string;
+  metadata: { authored?: Record<string, unknown>; textabana?: Record<string, unknown> };
+  mimeBundle: Record<string, unknown>;
+  output: {
+    outputDigest: string;
+    sourceDigest: string;
+    outputSourceDigest: string;
+    stale: boolean;
+    eventRef: string;
+    anchorRef: string;
+    sourceMapRef: string;
+    provenanceRef: string;
+  };
+};
+
+type NotebookProjection = {
+  schema: string;
+  notebook: {
+    notebookId: string;
+    snapshotId: string;
+    stateProfile: "fresh" | "session" | "attached";
+    executionSupport: string;
+    kernelState: string;
+    wholeSnapshot: boolean;
+    cellOrder: string[];
+    metadata: Record<string, unknown>;
+  };
+  cells: NotebookCellProjection[];
+  state: {
+    profile: string;
+    requestedProfile: string;
+    executionSupport: string;
+    kernelState: string;
+    limitations: string[];
+  };
+};
+
 function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "onOpenLab">) {
   const [tab, setTab] = useState("table");
   const manifest = result.adapterRun?.manifests.find((item) => item.adapterId === "org.textabana.data-table") ?? null;
@@ -514,10 +555,6 @@ function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "
   const selectedCells = selectedRow ? data?.cellLineage.filter((lineage) => lineage.output.recordId === selectedRow.recordId) ?? [] : [];
   const provenance = (result.resultEnvelope?.provenance as { activities?: Array<{ activityId: string; function: string }> } | undefined)?.activities ?? [];
   const activity = selectedOutputEvent ? provenance.find((item) => item.activityId === selectedOutputEvent.provenanceRef) ?? null : null;
-
-  useEffect(() => {
-    if (selectedRecordId && !data?.rows.some((row) => row.recordId === selectedRecordId)) setSelectedRecordId(null);
-  }, [data?.rows, selectedRecordId]);
 
   const empty = (
     <div className="data-empty">
@@ -621,6 +658,135 @@ function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "
   );
 }
 
+function notebookProjection(result: RuntimeResult | null) {
+  const projection = result?.adapterRun?.projections.find((item) => item.adapterRef.adapterId === "org.textabana.notebook") ?? null;
+  return projection?.status === "succeeded" ? projection.output?.data as NotebookProjection | undefined : undefined;
+}
+
+function NotebookLab({ result, previousResult, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "previousResult" | "onOpenLab">) {
+  const [tab, setTab] = useState("cells");
+  const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
+  const [mimeType, setMimeType] = useState("text/plain");
+  const manifest = result.adapterRun?.manifests.find((item) => item.adapterId === "org.textabana.notebook") ?? null;
+  const projection = result.adapterRun?.projections.find((item) => item.adapterRef.adapterId === "org.textabana.notebook") ?? null;
+  const data = notebookProjection(result);
+  const previousData = notebookProjection(previousResult);
+  const selectedCell = data?.cells.find((cell) => cell.cellId === selectedCellId) ?? data?.cells[0] ?? null;
+  const displayedMimeType = selectedCell && Object.hasOwn(selectedCell.mimeBundle, mimeType)
+    ? mimeType
+    : Object.keys(selectedCell?.mimeBundle ?? {})[0] ?? "text/plain";
+  const cellEvents = result.channels["notebook.cells"] ?? [];
+  const outputEvents = result.channels["notebook.outputs"] ?? [];
+  const selectedEvent = selectedCell ? outputEvents.find((event) => (event.payload as { cellId?: string })?.cellId === selectedCell.cellId) ?? null : null;
+  const selectedSourceMap = selectedEvent ? result.sourceMaps.find((mapping) => mapping.outputRef === selectedEvent.eventId) ?? null : null;
+  const sameNotebookHistory = Boolean(data && previousData && data.notebook.notebookId === previousData.notebook.notebookId);
+  const staleComparisons = data?.cells.map((cell) => {
+    const previous = sameNotebookHistory ? previousData?.cells.find((candidate) => candidate.cellId === cell.cellId) ?? null : null;
+    return {
+      cell,
+      previous,
+      stale: Boolean(previous && previous.output.sourceDigest !== cell.sourceDigest),
+    };
+  }) ?? [];
+
+  const empty = (
+    <div className="data-empty notebook-empty">
+      <NotebookTabs />
+      <div><strong>Ingen kompatibel notebookprojektion i denna run</strong><p>Välj fixturen <b>Notebook snapshot</b> för att producera celler, MIME bundles och explicit state.</p></div>
+      {projection?.diagnostics[0] ? <small>{projection.diagnostics[0].code} · {projection.diagnostics[0].message}</small> : null}
+    </div>
+  );
+
+  return (
+    <>
+      <LabTabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: "cells", label: "Cells", count: data?.cells.length, icon: NotebookTabs },
+          { id: "mime", label: "MIME", count: selectedCell ? Object.keys(selectedCell.mimeBundle).length : undefined, icon: Layers3 },
+          { id: "state", label: "State", icon: CircleDot },
+          { id: "stale", label: "Stale", count: staleComparisons.filter((item) => item.stale).length, icon: AlertTriangle },
+          { id: "adapter", label: "Adapter", icon: Braces },
+        ]}
+      />
+      {tab === "cells" ? (
+        <div className="lab-scroll notebook-lab">
+          {!data ? empty : (
+            <>
+              <div className="canonical-notice"><CheckCircle2 /> Canonical runtime-events · <code>notebook.snapshot</code> + <code>notebook.cells</code></div>
+              <div className="notebook-summary">
+                <div><span>Notebook</span><strong>{data.notebook.notebookId}</strong><small>{data.notebook.snapshotId}</small></div>
+                <div><span>Snapshot</span><strong>{data.notebook.wholeSnapshot ? "whole" : "partial"}</strong><small>{data.cells.length} stabila cell-id:n</small></div>
+                <div><span>State</span><strong>{data.notebook.stateProfile}</strong><small>{data.notebook.executionSupport}</small></div>
+              </div>
+              <div className="notebook-cell-stack">{data.cells.map((cell) => {
+                const event = cellEvents.find((candidate) => (candidate.payload as { cellId?: string })?.cellId === cell.cellId);
+                return <button type="button" key={cell.cellId} className={selectedCell?.cellId === cell.cellId ? "is-selected" : ""} onClick={() => setSelectedCellId(cell.cellId)}>
+                  <span>{String(cell.index + 1).padStart(2, "0")}</span>
+                  <div><small>{cell.cellId}</small><strong>{cell.title}</strong><pre>{cell.source}</pre></div>
+                  <aside><code>{cell.sourceDigest}</code><small>{event?.target.anchorRef}</small></aside>
+                </button>;
+              })}</div>
+              <div className="data-table-foot"><span>Författad ordning är presentation, inte dold kernelstate.</span><Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Visa raw events</Button></div>
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "mime" ? (
+        <div className="lab-scroll notebook-lab mime-lab">
+          {!data || !selectedCell ? empty : (
+            <>
+              <div className="projection-notice"><CircleDot /> Adapterprojektion · inte canonical Result · <code>application/json</code></div>
+              <div className="mime-head"><div><span>Cell</span><strong>{selectedCell.cellId}</strong><small>{selectedCell.output.outputDigest}</small></div><div className="mime-picker">{Object.keys(selectedCell.mimeBundle).map((type) => <button type="button" key={type} className={displayedMimeType === type ? "is-active" : ""} onClick={() => setMimeType(type)}>{type}</button>)}</div></div>
+              <section className="mime-value"><h3>{displayedMimeType}</h3><pre>{typeof selectedCell.mimeBundle[displayedMimeType] === "string" ? String(selectedCell.mimeBundle[displayedMimeType]) : json(selectedCell.mimeBundle[displayedMimeType])}</pre></section>
+              <div className="lineage-detail-grid"><section><h3>CellSelector + SourceMap</h3><pre>{json(selectedSourceMap)}</pre></section><section><h3>Output binding</h3><pre>{json(selectedCell.output)}</pre></section></div>
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "state" ? (
+        <div className="lab-scroll notebook-lab state-lab">
+          {!data ? empty : (
+            <>
+              <div className="canonical-notice"><CheckCircle2 /> Canonical runtime-event · <code>notebook.state</code> · kärnans runprofil förblir fresh</div>
+              <div className="state-profile-grid">
+                {[
+                  { id: "fresh", support: "playground-subset", detail: "Strukturell snapshot och projektion utan kernel." },
+                  { id: "session", support: "contract-only execution", detail: "Profilen är explicit; extern session körs inte här." },
+                  { id: "attached", support: "contract-only execution", detail: "Extern kernel får inte antas eller simuleras." },
+                ].map((profile) => <article key={profile.id} className={data.state.requestedProfile === profile.id ? "is-current" : ""}><span>{data.state.requestedProfile === profile.id ? "requested" : "available token"}</span><strong>{profile.id}</strong><code>{profile.support}</code><p>{profile.detail}</p></article>)}
+              </div>
+              <section className="state-envelope"><h3>Committed state descriptor</h3><pre>{json(data.state)}</pre></section>
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "stale" ? (
+        <div className="lab-scroll notebook-lab stale-lab">
+          {!data ? empty : (
+            <>
+              <div className="projection-notice"><CircleDot /> View-only revision comparison · tidigare output blir aldrig aktuell output</div>
+              {!sameNotebookHistory ? <div className="notebook-history-empty"><AlertTriangle /><div><strong>Ingen jämförbar föregående snapshot</strong><p>Ändra texten i en cell utan att ändra dess cell-id. Nästa run kan då klassificera den äldre outputen.</p></div></div> : (
+                <div className="stale-list">{staleComparisons.map(({ cell, previous, stale }) => <article key={cell.cellId} className={stale ? "is-stale" : "is-fresh"}>
+                  <div><span>{cell.cellId}</span><strong>{stale ? "previous output · stale" : previous ? "previous output · still valid" : "new cell · no previous output"}</strong></div>
+                  <dl><div><dt>previous source</dt><dd>{previous?.output.sourceDigest ?? "–"}</dd></div><div><dt>current source</dt><dd>{cell.sourceDigest}</dd></div><div><dt>rule</dt><dd>previous.output.sourceDigest {stale ? "≠" : "="} current.cell.sourceDigest</dd></div></dl>
+                </article>)}</div>
+              )}
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "adapter" ? (
+        <div className="lab-json-scroll split-json data-adapter-json">
+          <section><h3>AdapterManifest</h3><pre>{json(manifest)}</pre></section>
+          <section><h3>ProjectionEnvelope</h3><pre>{json(projection)}</pre></section>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "onOpenLab">) {
   const [tab, setTab] = useState("timeline");
   const events = useMemo(
@@ -628,16 +794,13 @@ function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" 
     [result.channels],
   );
   const channelNames = useMemo(() => Object.keys(result.channels), [result.channels]);
-  const selectedChannel = channelNames.includes(tab) ? tab : null;
-
-  useEffect(() => {
-    if (!["timeline", "result", "adapters", "render", ...channelNames].includes(tab)) setTab("timeline");
-  }, [channelNames, tab]);
+  const activeTab = ["timeline", "result", "adapters", "render", ...channelNames].includes(tab) ? tab : "timeline";
+  const selectedChannel = channelNames.includes(activeTab) ? activeTab : null;
 
   return (
     <>
       <LabTabs
-        value={tab}
+        value={activeTab}
         onChange={setTab}
         items={[
           { id: "timeline", label: "Global timeline", count: events.length, icon: Workflow },
@@ -647,9 +810,9 @@ function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" 
           ...channelNames.map((name) => ({ id: name, label: name, count: result.channels[name].length, icon: name === "system.out" ? Rows3 : RadioTower })),
         ]}
       />
-      {tab === "render" ? <RenderView output={result.output} /> : null}
-      {tab === "adapters" ? <AdapterRunView result={result} /> : null}
-      {tab === "result" ? (
+      {activeTab === "render" ? <RenderView output={result.output} /> : null}
+      {activeTab === "adapters" ? <AdapterRunView result={result} /> : null}
+      {activeTab === "result" ? (
         <div className="lab-json-scroll">
           <div className="subset-notice"><CircleDot /> Atomisk playground-envelope · failed runs publicerar tom render och tomma domänkanaler</div>
           <pre>{json(result.resultEnvelope)}</pre>
@@ -669,7 +832,7 @@ function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" 
           <div className="channel-events">{result.channels[selectedChannel].map((event) => <EventCard event={event} key={event.id} />)}</div>
         </div>
       ) : null}
-      {tab === "timeline" ? (
+      {activeTab === "timeline" ? (
         <div className="lab-scroll channel-timeline">
           <div className="lab-metrics">
             <article><span>Run</span><strong>{result.runId ?? "–"}</strong><small>committed</small></article>
@@ -714,6 +877,7 @@ export function PlaygroundOutput(props: PlaygroundOutputProps) {
       {props.lab === "editor" ? <EditorLab result={props.result} previousResult={props.previousResult} onOpenLab={props.onOpenLab} /> : null}
       {props.lab === "channels" ? <ChannelLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
       {props.lab === "data" ? <DataLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
+      {props.lab === "notebook" ? <NotebookLab result={props.result} previousResult={props.previousResult} onOpenLab={props.onOpenLab} /> : null}
     </ResultShell>
   );
 }
