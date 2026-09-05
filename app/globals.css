@@ -1998,7 +1998,7 @@ a {
   .channel-event-head > code { width: 100%; margin-left: 0; }
 }
 
-/* Language & Interop 0.4 documentation */
+/* Language & Interop 0.5 documentation */
 .spec-skip {
   position: fixed;
   z-index: 100;
@@ -4119,6 +4119,256 @@ a {
   background: #e5ebd9;
 }
 
+.adapter-contract-view > .subset-notice {
+  margin-bottom: 14px;
+}
+
+.adapter-section {
+  width: min(100%, 980px);
+  margin: 0 auto 28px;
+}
+
+.adapter-manifest-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.adapter-manifest {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  border: 1px solid #d5dad1;
+  border-radius: 10px;
+  padding: 14px;
+  background: rgba(255,255,255,.88);
+}
+
+.adapter-manifest.is-contract-only {
+  border-style: dashed;
+  background: rgba(247,248,244,.78);
+}
+
+.adapter-manifest-head,
+.adapter-projection-head,
+.projection-binding,
+.projection-reference-counts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adapter-manifest-head {
+  justify-content: space-between;
+}
+
+.adapter-support,
+.adapter-projection-head span {
+  border-radius: 999px;
+  padding: 3px 7px;
+  color: #53672a;
+  background: #e7eed8;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.adapter-manifest.is-contract-only .adapter-support {
+  color: #686f72;
+  background: #e9ece8;
+}
+
+.adapter-manifest-head code,
+.adapter-manifest > small {
+  overflow: hidden;
+  color: #879093;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adapter-manifest > strong {
+  overflow-wrap: anywhere;
+  color: #273034;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.adapter-manifest > p {
+  margin: -3px 0 0;
+  color: #727c7f;
+  font-size: 11px;
+}
+
+.adapter-manifest dl {
+  display: grid;
+  gap: 5px;
+  margin: 2px 0;
+}
+
+.adapter-manifest dl > div {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.adapter-manifest dt,
+.adapter-manifest dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 10px;
+}
+
+.adapter-manifest dt {
+  color: #8a9294;
+}
+
+.adapter-manifest dd {
+  color: #505a5d;
+  overflow-wrap: anywhere;
+}
+
+.adapter-projection-list {
+  display: grid;
+  gap: 10px;
+}
+
+.adapter-projection {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #cfd6c7;
+  border-radius: 10px;
+  background: rgba(255,255,255,.92);
+}
+
+.adapter-projection.is-unsupported,
+.adapter-projection.is-failed {
+  border-color: #dfca9c;
+}
+
+.adapter-projection-head {
+  justify-content: space-between;
+  border-bottom: 1px solid #e1e5dd;
+  padding: 11px 13px;
+  background: #f1f4ed;
+}
+
+.adapter-projection-head > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adapter-projection-head strong {
+  color: #2e373a;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.adapter-projection-head > code,
+.projection-binding code {
+  min-width: 0;
+  overflow: hidden;
+  color: #687376;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projection-binding {
+  min-width: 0;
+  padding: 13px;
+}
+
+.projection-binding > span {
+  flex: 0 0 auto;
+  color: #778184;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.projection-binding > code {
+  flex: 1;
+  border-radius: 5px;
+  padding: 5px 7px;
+  background: #eef1eb;
+}
+
+.projection-binding svg {
+  width: 14px;
+  flex: 0 0 auto;
+  color: #80934f;
+}
+
+.projection-reference-counts {
+  flex-wrap: wrap;
+  padding: 0 13px 12px;
+}
+
+.projection-reference-counts span {
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #596569;
+  background: #edf0ec;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.fidelity-report {
+  margin: 0 13px 13px;
+  border-left: 3px solid #9bad65;
+  padding: 8px 10px;
+  color: #566064;
+  background: #f1f4eb;
+}
+
+.fidelity-report strong {
+  font-size: 11px;
+}
+
+.fidelity-report p {
+  margin: 3px 0 0;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.adapter-projection details {
+  border-top: 1px solid #e1e5de;
+}
+
+.adapter-projection summary {
+  padding: 10px 13px;
+  color: #53672c;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.adapter-projection details pre {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  border-top: 1px solid #28313c;
+  padding: 15px;
+  color: #cbd5df;
+  background: #111720;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.adapter-diagnostic {
+  margin: 0;
+  border-top: 1px solid #ebd9b6;
+  padding: 10px 13px;
+  color: #785b26;
+  background: #fff8e8;
+  font-size: 10px;
+}
+
 @media (max-width: 1180px) {
   .lab-switcher > button {
     min-width: 44px;
@@ -4203,6 +4453,7 @@ a {
 
   .scope-cards,
   .block-cards,
+  .adapter-manifest-grid,
   .descriptor-list,
   .split-json {
     grid-template-columns: 1fr;

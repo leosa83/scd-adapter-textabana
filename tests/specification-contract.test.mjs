@@ -18,7 +18,7 @@ test("every documentation navigation target has a matching section", () => {
   }
 });
 
-test("the Interop 0.4 specification preserves its foundational contracts", () => {
+test("the Interop 0.5 specification preserves its foundational contracts", () => {
   const requiredContracts = [
     "STATUS-003",
     "HTML-ADAPTER-002",
@@ -30,6 +30,8 @@ test("the Interop 0.4 specification preserves its foundational contracts", () =>
     "MANIFEST-001",
     "JUPYTER-001",
     "DATA-001",
+    "ADAPTER-001",
+    "ADAPTER-006",
     "PLAYGROUND-003",
   ];
 
@@ -44,5 +46,9 @@ test("the Interop 0.4 specification preserves its foundational contracts", () =>
   assert.match(source, /Language & Scope Lab/);
   assert.match(source, /Editor Metadata Lab/);
   assert.match(source, /Channel & Result Lab/);
+  assert.match(source, /textabana\.adapter-manifest\/lab-v1/);
+  assert.match(source, /textabana\.adapter-projection\/lab-v1/);
+  assert.match(source, /adapter-contract\/1/);
+  assert.match(source, /contract-only.*producerar ännu ingen domänoutput/s);
   assert.match(source, /En interaktiv subset är inte full profilkonformitet/);
 });

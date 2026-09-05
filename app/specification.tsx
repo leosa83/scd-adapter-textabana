@@ -77,6 +77,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Interop-profiler",
     items: [
+      { id: "adapter-contract", label: "Adapterkontrakt" },
       { id: "notebooks", label: "Jupyter & notebooks" },
       { id: "data-ai", label: "Data, AI & ML" },
       { id: "annotation-observability", label: "Annotation & observability" },
@@ -129,10 +130,10 @@ function SectionHeading({
   implementation?: "implemented" | "defined" | "partial" | "planned";
 }) {
   const implementationLabel = {
-    implemented: "Körbar 0.4-subset",
-    defined: "Definierat 0.4",
+    implemented: "Körbar language 0.4-subset",
+    defined: "Definierat i draft 0.5",
     partial: "Interaktiv subset",
-    planned: "Adapterprofil",
+    planned: "Contract-only / planerad",
   }[implementation];
 
   return (
@@ -240,29 +241,29 @@ export function Specification() {
       <aside className="docs-index spec-index">
         <div className="spec-version">
           <span>Textabana</span>
-          <strong>Language & Interop draft 0.4</strong>
-          <small>Web runtime: interaktiv 0.4-subset</small>
+          <strong>Language & Interop draft 0.5</strong>
+          <small>Language 0.4 · Adapter contract lab-v1</small>
         </div>
         <SpecNav />
         <div className="spec-legend" aria-label="Statusförklaring">
-          <span><i className="implemented" /> Körbart i playgroundens 0.4-subset</span>
-          <span><i className="defined" /> Normativt definierat för 0.4</span>
+          <span><i className="implemented" /> Körbart i playgroundens deklarerade subset</span>
+          <span><i className="defined" /> Normativt definierat i draft 0.5</span>
           <span><i className="planned" /> Definierat men ännu inte körbart här</span>
         </div>
       </aside>
 
       <main className="docs-content spec-content" id="spec-main" tabIndex={-1}>
         <details className="mobile-spec-index">
-          <summary>Innehåll · Interop 0.4</summary>
+          <summary>Innehåll · Interop 0.5</summary>
           <SpecNav mobile />
         </details>
 
         <section className="spec-hero" id="definition" aria-labelledby="definition-title">
           <div className="spec-kicker"><ShieldCheck aria-hidden="true" /> Language & Interop Specification</div>
           <div className="hero-status">
-            <StatusBadge tone="normative">Interop draft 0.4</StatusBadge>
+            <StatusBadge tone="normative">Interop draft 0.5</StatusBadge>
             <StatusBadge tone="implemented">Språkkärna 0.4-subset</StatusBadge>
-            <StatusBadge tone="partial">Tre interaktiva labs</StatusBadge>
+            <StatusBadge tone="partial">Tre labs · adaptergrund live</StatusBadge>
           </div>
           <h1 id="definition-title">Läsbar text som körbar, positionsmedveten och flerkanalig semantisk källa.</h1>
           <p className="hero-definition">Textabana gör läsbar text till en körbar, positionsmedveten och flerkanalig semantisk källa — oberoende av hur resultatet senare presenteras. Det är ett <em>source-first</em>, host-neutralt lager som kompilerar texten till en explicit plan och producerar en primär render samt valfritt många typade outputs.</p>
@@ -285,7 +286,7 @@ export function Specification() {
             headers={["Dimension", "Värden", "Betydelse"]}
             rows={[
               [<code key="n">Kravstatus</code>, "Normativt · Informativt", "Anger om texten definierar konformt beteende eller beskriver en adapter/rekommendation."],
-              [<code key="i">Implementation</code>, "Körbar 0.4-subset · Interaktiv subset · Definierat 0.4 · Adapterprofil", "Anger vad webbplaygrounden faktiskt kör, vad den endast visualiserar delvis och vad som fortfarande är ett kontrakt för kommande implementation."],
+              [<code key="i">Implementation</code>, "Körbar language 0.4-subset · Interaktiv subset · Definierat i draft 0.5 · Contract-only", "Anger vad webbplaygrounden faktiskt kör, vad den endast visualiserar delvis och vad som fortfarande är ett kontrakt för kommande implementation."],
             ]}
           />
           <div className="norm-terms">
@@ -295,7 +296,7 @@ export function Specification() {
           </div>
           <Requirement id="STATUS-001">En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.</Requirement>
           <Requirement id="STATUS-002">Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.</Requirement>
-          <Requirement id="STATUS-003">Nuvarande Playground implementerar uttryckligen avgränsade 0.4-subsets för Language & Scope, Editor Metadata samt Channel & Result. En interaktiv subset är inte full profilkonformitet; allt som visas som unsupported, planned eller en lab-projektion ska betraktas som ännu ej konformt implementerat.</Requirement>
+          <Requirement id="STATUS-003">Nuvarande Playground implementerar uttryckligen avgränsade 0.4-subsets för Language & Scope, Editor Metadata samt Channel & Result, och en körbar lab-version av det gemensamma adapterkontraktet. Data-, notebook- och annotationsadaptrarna är endast registrerade som contract-only tills deras respektive projektioner finns. En interaktiv subset är inte full profilkonformitet; inte heller är en kontraktsregistrering det.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="html">
@@ -1102,9 +1103,84 @@ export function Specification() {
           <Requirement id="SECURITY-004">Kanal- och artifactdescriptors BÖR ange classification, retention och åtkomstpolicy. Adaptrar får inte sänka skyddsnivån tyst.</Requirement>
         </section>
 
+        <section className="docs-section spec-section" id="adapter-contract">
+          <SectionHeading number="20" layer="Adapter contract" title="Adaptrar projicerar ett resultat — de skriver inte om kärnan" implementation="partial" />
+          <p className="lead">En adapter är en explicit, versionssatt post-commit-projektion av ett redan producerat <code>TextabanaResult</code>. Den får välja representation för en värd eller standard, men den får inte mutera källan, kärnresultatet eller dess semantiska identiteter.</p>
+          <div className="architecture-flow" aria-label="Adapter fan-out efter atomisk commit">
+            <div><FileJson aria-hidden="true" /><strong>Immutable Result</strong><span>exakt committad input</span></div>
+            <ArrowDown aria-hidden="true" />
+            <div className="architecture-primary"><Network aria-hidden="true" /><strong>Adapter fan-out</strong><span>manifest · negotiation · pure projection</span></div>
+            <ArrowDown aria-hidden="true" />
+            <div><Route aria-hidden="true" /><strong>Projection envelopes</strong><span>separata · versionssatta · source-bound</span></div>
+          </div>
+          <SpecTable
+            caption="AdapterManifest — kontrakt före körning"
+            headers={["Fält", "Semantik", "Sprint 1"]}
+            rows={[
+              [<code key="adapter-id">adapterId / version / profile</code>, "Oberoende adapteridentitet och profilanspråk.", "Obligatoriskt och digestbundet."],
+              [<code key="accepts">accepts</code>, "Tillåtna Result-scheman, profiler, channels och artifact kinds.", "Förhandlas före projektion."],
+              [<code key="produces">produces</code>, "Projection kind, value kind, mediaType och schemaRef.", "Exakt en output för referensadaptern."],
+              [<code key="capabilities">capabilities</code>, "Required och optional host-/runtimeförmågor.", "Saknad required capability ger unsupported."],
+              [<code key="support">support</code>, "playground-subset · contract-only · unsupported.", "Contract-only får aldrig producera låtsasoutput."],
+              [<code key="fidelity">fidelity</code>, "lossless · selective · lossy samt omittedPaths.", "Selektiv output måste behålla sourceResultRef."],
+            ]}
+          />
+          <CodeExample
+            title="AdapterManifest"
+            language="json"
+            status="Körbar lab-envelope"
+            code={code(
+              "{",
+              '  "schema": "textabana.adapter-manifest/lab-v1",',
+              '  "adapterId": "org.textabana.result-summary",',
+              '  "version": "1.0.0-lab.1",',
+              '  "contract": "adapter-contract/1",',
+              '  "profile": "adapter-contract/1",',
+              '  "support": "playground-subset",',
+              '  "phase": "post-commit",',
+              '  "execution": "pure",',
+              '  "accepts": { "resultSchemas": ["textabana.result/lab-v1"], "profiles": ["runtime-json/1"], "channels": [], "artifactKinds": [] },',
+              '  "produces": [{ "projectionKind": "result-summary", "valueKind": "object", "mediaType": "application/json", "schemaRef": "textabana.result-summary/lab-v1" }],',
+              '  "capabilities": { "required": ["atomic-success-result"], "optional": ["anchors"] },',
+              '  "deterministic": true,',
+              '  "fidelity": { "mode": "selective", "requiresSourceResult": true, "omittedPaths": ["render.data"] }',
+              "}"
+            )}
+          />
+          <CodeExample
+            title="AdapterProjection"
+            language="json"
+            status="Körbar lab-envelope"
+            code={code(
+              "{",
+              '  "schema": "textabana.adapter-projection/lab-v1",',
+              '  "projectionId": "projection:...",',
+              '  "adapterRef": { "adapterId": "org.textabana.result-summary", "version": "1.0.0-lab.1", "manifestDigest": "fnv1a:..." },',
+              '  "sourceResultRef": { "resultId": "lab:...", "resultSchema": "textabana.result/lab-v1", "sourceVersion": "fnv1a:..." },',
+              '  "status": "succeeded",',
+              '  "output": { "projectionKind": "result-summary", "mediaType": "application/json", "schemaRef": "textabana.result-summary/lab-v1", "data": {} },',
+              '  "mapping": "derived",',
+              '  "fidelity": { "mode": "selective", "requiresSourceResult": true, "omittedPaths": ["render.data"] },',
+              '  "references": { "eventRefs": [], "anchorRefs": [], "sourceMapRefs": [], "provenanceRefs": [] },',
+              '  "diagnostics": []',
+              "}"
+            )}
+          />
+          <Requirement id="ADAPTER-001">En adapter MÅSTE deklarera id, version, profil, accepterade resultatscheman, producerade representationer, kapabilitetsbehov och fidelity-policy innan den körs.</Requirement>
+          <Requirement id="ADAPTER-002">Varje projektion MÅSTE referera till exakt <code>source resultId</code> och manifestdigest. Samma deterministiska input, manifestversion och konfiguration MÅSTE ge samma <code>projectionId</code>.</Requirement>
+          <Requirement id="ADAPTER-003">Adaptrar läser samma immutable Result som oberoende fan-out. Adapter-till-adapter-dataflöde kräver en explicit, acyklisk dependency edge; list- eller UI-ordning är aldrig semantik.</Requirement>
+          <Requirement id="ADAPTER-004">Event identity, Anchor, SourceMap, artifact och provenance MÅSTE bevaras genom referens eller redovisas individuellt som förlust. Ett tomt loss-fält är ett verifierbart påstående.</Requirement>
+          <Requirement id="ADAPTER-005">Ett adapterfel FÅR inte ändra core run status eller mutera ett committat Result. Felet returneras som adapterdiagnostik i adapterkörningen.</Requirement>
+          <Requirement id="ADAPTER-006">En contract-only-deskriptor får förhandlas och inspekteras men får inte producera simulerad output eller användas som stöd för profilkonformitet.</Requirement>
+          <Callout title="Sprint 1 i playgrounden" icon={<Network />} tone="success">
+            <code>org.textabana.result-summary</code> körs nu som en ren referensadapter efter commit. Adapterfliken visar manifest, source-result-bindning, stabil projektionidentitet, fidelity och resolverbara referenser. Data, Notebook och Annotation är registrerade som contract-only och producerar ännu ingen domänoutput.
+          </Callout>
+        </section>
+
         <section className="docs-section spec-section" id="notebooks">
-          <SectionHeading number="20" layer="Adapter profile" title="Jupyter är värd och projektion — inte Textabanas kärna" normative={false} implementation="planned" />
+          <SectionHeading number="21" layer="Adapter profile" title="Jupyter är värd och projektion — inte Textabanas kärna" normative={false} implementation="planned" />
           <p className="lead">Notebookintegration ska byggas i lager. Då kan Textabana använda det Jupyter redan gör väl utan att offra den kanoniska texten, öppna intervall eller resultatmodellen.</p>
+          <Callout title="Sprintstatus" icon={<CircleDashed />} tone="info"><code>notebook/1</code> är registrerad som contract-only. Cellprojektion, MIME bundle och kerneltransport är ännu inte körbara.</Callout>
           <SpecTable
             caption="Jupyterprofilens fyra lager"
             headers={["Lager", "Jupytermekanism", "Textabanaansvar"]}
@@ -1148,8 +1224,9 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="data-ai">
-          <SectionHeading number="21" layer="Adapter profile" title="Data, analytics, AI och ML delar samma kontrakt" normative={false} implementation="planned" />
+          <SectionHeading number="22" layer="Adapter profile" title="Data, analytics, AI och ML delar samma kontrakt" normative={false} implementation="planned" />
           <p className="lead">Bindings ska vara externa och typed. DataFrames, modeller och dataset serialiseras inte in i källtexten; de binds som inputs eller ArtifactRefs och spåras i run-proveniens.</p>
+          <Callout title="Sprintstatus" icon={<CircleDashed />} tone="info"><code>data/1</code> är registrerad som contract-only. Tabell-, Arrow-, Parquet- och lineageprojektioner är ännu inte körbara.</Callout>
           <SpecTable
             caption="Data- och analyticsprofil"
             headers={["Behov", "Primär standard", "Textabanaregel"]}
@@ -1192,8 +1269,9 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="annotation-observability">
-          <SectionHeading number="22" layer="Adapter profile" title="En intern modell, tydliga standardprojektioner" normative={false} implementation="planned" />
+          <SectionHeading number="23" layer="Adapter profile" title="En intern modell, tydliga standardprojektioner" normative={false} implementation="planned" />
           <p className="lead">Textabana lagrar en kompakt intern sanning och mappar den till etablerade ekosystem. Varje standard får göra det den är byggd för.</p>
+          <Callout title="Sprintstatus" icon={<CircleDashed />} tone="info"><code>ml-lineage/1</code> och annotationsexport är registrerade som contract-only. Kandidatgranskning och standardexport är ännu inte körbara.</Callout>
           <SpecTable
             caption="Interopmappning"
             headers={["Teknik", "Roll", "Textabana mapping"]}
@@ -1242,7 +1320,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section use-cases-section" id="use-cases">
-          <SectionHeading number="23" layer="Value" title="Verkliga problem Textabana kan lösa" normative={false} implementation="defined" />
+          <SectionHeading number="24" layer="Value" title="Verkliga problem Textabana kan lösa" normative={false} implementation="defined" />
           <p className="lead">Kärnans första mål är att göra editorprogram för metadata betydligt enklare. Samma mekanik skalar sedan till data- och AI-arbetsflöden.</p>
           <div className="use-case-grid">
             <article><PanelRight aria-hidden="true" /><div><strong>Metadataeditorer utan ny parser</strong><p>Återanvänd syntaxanalys, source mapping, modulkörning, eventmodell och synk mellan text och sidopanel.</p></div></article>
@@ -1258,7 +1336,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="conformance">
-          <SectionHeading number="24" layer="Conformance" title="Implementationsanspråk görs per profil" implementation="defined" />
+          <SectionHeading number="25" layer="Conformance" title="Implementationsanspråk görs per profil" implementation="defined" />
           <SpecTable
             caption="Konformitetsprofiler"
             headers={["Profil", "Måste täcka", "Web runtime idag"]}
@@ -1266,14 +1344,15 @@ export function Specification() {
               [<code key="lang">language-core/0.4</code>, "Source, syntax, block, intervall, property, pipeline, inheritance och cross=error.", <StatusBadge key="c1" tone="partial">Playground subset</StatusBadge>],
               [<code key="runtime">runtime-json/1</code>, "IR, Plan, Run, Result, JSON channels och atomisk commit.", <StatusBadge key="c2" tone="partial">Playground subset</StatusBadge>],
               [<code key="editor">editor/1</code>, "Anchor, SourceMap, system.out och LSP-projektion.", <StatusBadge key="c3" tone="partial">Playground subset</StatusBadge>],
+              [<code key="adapter">adapter-contract/1</code>, "Manifest, negotiation, immutable fan-out, fidelity, referenser och failure isolation.", <StatusBadge key="c7" tone="partial">Playground subset</StatusBadge>],
               [<code key="notebook">notebook/1</code>, "Cell ids, MIME bundle, state profiles och whole-snapshot-regler.", <StatusBadge key="c4" tone="planned">Planerad</StatusBadge>],
               [<code key="data">data/1</code>, "Arrow, Parquet, record identity och provenance fields.", <StatusBadge key="c5" tone="planned">Planerad</StatusBadge>],
               [<code key="ml">ml-lineage/1</code>, "AI invocation, PROV, OpenLineage, MLflow och OTel correlation.", <StatusBadge key="c6" tone="planned">Planerad</StatusBadge>],
             ]}
           />
           <div className="conformance-grid">
-            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, stage trace, deklarerade JSON-kanaler, atomisk success/failure-envelope och system.out med Anchor-projektion.</p></article>
-            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, artifacts, polyglotta runtimes och resterande cross-policies.</p></article>
+            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, stage trace, deklarerade JSON-kanaler, atomisk success/failure-envelope, system.out med Anchor-projektion samt adaptermanifest, registry, immutable fan-out och failure isolation.</p></article>
+            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, artifacts, polyglotta runtimes, resterande cross-policies och de tre domänprojektionerna.</p></article>
           </div>
           <Requirement id="CONF-001">En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.</Requirement>
           <Requirement id="CONF-002">Varje profil MÅSTE ha golden fixtures för source → IR → plan → result och negativa fixtures för fel, cancellation och mapping claims.</Requirement>
@@ -1281,7 +1360,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="errors">
-          <SectionHeading number="25" layer="Conformance" title="Fel är strukturerade, positionsbundna och versionssatta" implementation="defined" />
+          <SectionHeading number="26" layer="Conformance" title="Fel är strukturerade, positionsbundna och versionssatta" implementation="defined" />
           <SpecTable
             caption="Felkodsfamiljer"
             headers={["Prefix", "Fas", "Exempel"]}
@@ -1318,15 +1397,15 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section playground-contract-section" id="playgrounds">
-          <SectionHeading number="26" layer="Interactive implementation" title="Tre playgrounds visar samma run från olika håll" normative={false} implementation="partial" />
-          <p className="lead">Language & Scope, Editor Metadata och Channel & Result är nu tre liveprojektioner av samma källa, fixture, run-id och result envelope. Ett labbyte startar ingen ny exekvering. Data-, notebook-, annotation- och conformance-labben ligger kvar som nästa implementeringslager.</p>
+          <SectionHeading number="27" layer="Interactive implementation" title="Tre playgrounds visar samma run från olika håll" normative={false} implementation="partial" />
+          <p className="lead">Language & Scope, Editor Metadata och Channel & Result är tre liveprojektioner av samma källa, fixture, run-id och result envelope. Den gemensamma adaptergrunden kan nu registrera, förhandla och köra lab-adaptrar efter commit utan att mutera resultatet. Ett labbyte startar ingen ny exekvering. Data-, notebook-, annotation- och conformance-labben är fortfarande nästa implementeringslager.</p>
           <div className="playground-grid">
             <article><span>01</span><Code2 aria-hidden="true" /><strong>Language & Scope Lab</strong><p>Scope-segment, blockträd, inheritance, faktisk stageordning, IR-projektion och render.</p><small>Live · scope-torture + base64-inverse</small></article>
             <article><span>02</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>system.out, metadatagutter, row/line, Anchor, SourceMap och jämförelse med föregående run.</p><small>Live · editor-revision</small></article>
             <article><span>03</span><RadioTower aria-hidden="true" /><strong>Channel & Result Lab</strong><p>ChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.</p><small>Live · channel-fanout + failed-run</small></article>
-            <article><span>04</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>Arrow-tabell, ArtifactRef, joins, aggregation och cell-/record-lineage.</p><small>Planned · data-join</small></article>
-            <article><span>05</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Cell magic, whole-document mode, MIME bundle, Python API och stale output.</p><small>Planned · notebook-state</small></article>
-            <article><span>06</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>AI-kandidater, confidence, provenance, human review och standardexport.</p><small>Planned · annotation-review</small></article>
+            <article><span>04</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>Arrow-tabell, ArtifactRef, joins, aggregation och cell-/record-lineage.</p><small>Planned lab · descriptor contract-only</small></article>
+            <article><span>05</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Cell magic, whole-document mode, MIME bundle, Python API och stale output.</p><small>Planned lab · descriptor contract-only</small></article>
+            <article><span>06</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>AI-kandidater, confidence, provenance, human review och standardexport.</p><small>Planned lab · descriptor contract-only</small></article>
             <article><span>07</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability negotiation, golden result, fel, cancel och strukturell diff.</p><small>Planned UI · headless regressioner finns</small></article>
           </div>
           <h3>Gemensamt playgroundkontrakt</h3>
@@ -1337,7 +1416,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="glossary">
-          <SectionHeading number="27" layer="Referens" title="Kärnbegrepp" normative={false} implementation="defined" />
+          <SectionHeading number="28" layer="Referens" title="Kärnbegrepp" normative={false} implementation="defined" />
           <SpecTable
             caption="Glossary"
             headers={["Begrepp", "Definition"]}
@@ -1356,7 +1435,7 @@ export function Specification() {
               [<code key="system">system.out</code>, "Reserverad channel för editor- och positionsbunden metadata."],
               [<code key="artifact-ref">ArtifactRef</code>, "Content-addressed referens till stor eller binär payload."],
               [<code key="run">Run</code>, "En versionerad compilation/execution med explicit profil och livscykel."],
-              [<code key="adapter">Adapter</code>, "Projection mellan Textabanas kontrakt och en extern host, standard eller tjänst."],
+              [<code key="adapter">Adapter</code>, "Versionssatt post-commit-projektion mellan ett immutable TextabanaResult och en extern host, standard eller tjänst."],
             ]}
           />
           <Callout title="Specifikationens riktning" icon={<Box />} tone="success">

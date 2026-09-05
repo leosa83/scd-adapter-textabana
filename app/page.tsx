@@ -485,6 +485,7 @@ const emptyRuntimeResult: RuntimeResult = {
   plan: null,
   executionTrace: [],
   resultEnvelope: null,
+  adapterRun: null,
   capabilities: null,
   emissions: 0,
   functions: [],
@@ -559,6 +560,7 @@ export default function Home() {
         plan: event.data.plan ?? null,
         executionTrace: event.data.executionTrace ?? [],
         resultEnvelope: event.data.resultEnvelope ?? null,
+        adapterRun: event.data.adapterRun ?? null,
         capabilities: event.data.capabilities ?? null,
         emissions: event.data.emissions ?? 0,
         functions: event.data.functions ?? [],
@@ -597,7 +599,7 @@ export default function Home() {
       documentPath: documentFile.path,
       documentSource: documentFile.content,
       modules: files.filter((file) => file.kind === "module"),
-      options: { strictChannels },
+      options: { strictChannels, adapters: ["org.textabana.result-summary"] },
     });
   }, [files, strictChannels]);
 
@@ -672,7 +674,7 @@ export default function Home() {
 
           <Tabs value={view} onValueChange={setView} className="top-tabs">
             <TabsList>
-              <TabsTrigger value="docs"><BookOpen /> Specifikation 0.4</TabsTrigger>
+              <TabsTrigger value="docs"><BookOpen /> Specifikation 0.5</TabsTrigger>
               <TabsTrigger value="workspace"><Code2 /> Playground Labs</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -700,7 +702,7 @@ export default function Home() {
                   <PanelRight /><span><strong>Editor Metadata</strong><small>Anchors, row, line och SourceMap</small></span>
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "channels"} className={lab === "channels" ? "is-active" : ""} onClick={() => setLab("channels")}>
-                  <RadioTower /><span><strong>Channel & Result</strong><small>Descriptors, timeline och atomiskt resultat</small></span>
+                  <RadioTower /><span><strong>Channel & Result</strong><small>Descriptors, atomiskt resultat och adapters</small></span>
                 </button>
               </div>
               <div className="lab-controls">
@@ -772,7 +774,7 @@ export default function Home() {
         ) : <Specification />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Interop draft 0.4 · Playground subset 0.4</span>
+          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Adapter contract lab-v1</span>
           <span className="syntax-hint"><code>source</code> IR <ChevronRight /><code>run</code> result <ChevronRight /><code>adapters</code></span>
           <span>Source-first · Typed · Positionsmedveten</span>
         </footer>

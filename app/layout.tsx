@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Textabana — Language & Interop Specification",
   description:
-    "Textabana Language & Interop draft 0.4: normativ semantik för text, IR, öppna intervall, typade kanaler, anchors, notebooks, data och AI/ML-adaptrar.",
+    "Textabana Language & Interop draft 0.5: normativ semantik för text, IR, öppna intervall, typade kanaler, anchors och versionssatta post-commit-adaptrar.",
   icons: {
     icon: "/favicon-textabana.svg",
     shortcut: "/favicon-textabana.svg",

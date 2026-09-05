@@ -379,6 +379,87 @@ function AnchorSummary({ anchor }: { anchor: RuntimeAnchor }) {
   );
 }
 
+function AdapterRunView({ result }: { result: RuntimeResult }) {
+  const adapterRun = result.adapterRun;
+  if (!adapterRun) return <div className="lab-empty">Ingen adapterkörning finns för detta resultat.</div>;
+  const executable = adapterRun.manifests.filter((manifest) => manifest.support === "playground-subset");
+  const contractOnly = adapterRun.manifests.filter((manifest) => manifest.support === "contract-only");
+
+  return (
+    <div className="lab-scroll adapter-contract-view">
+      <div className="subset-notice">
+        <CircleDot /> Post-commit fan-out · <code>adapter-contract/1</code> playground-subset · canonical Result muteras inte
+      </div>
+      <div className="lab-metrics">
+        <article><span>Adapter run</span><strong>{adapterRun.status}</strong><small>{adapterRun.verification.immutable ? "immutable verified" : "mutation detected"}</small></article>
+        <article><span>Körbara</span><strong>{executable.length}</strong><small>ren referensadapter</small></article>
+        <article><span>Contract-only</span><strong>{contractOnly.length}</strong><small>ingen simulerad output</small></article>
+        <article><span>Projektioner</span><strong>{adapterRun.projections.length}</strong><small>separata från Result</small></article>
+      </div>
+
+      <section className="adapter-section">
+        <div className="semantic-section-title"><Braces /><div><strong>Adapterregister</strong><span>Version, profil, capabilities och fidelity deklareras före körning</span></div></div>
+        <div className="adapter-manifest-grid">
+          {adapterRun.manifests.map((manifest) => (
+            <article key={manifest.adapterId} className={`adapter-manifest is-${manifest.support}`}>
+              <div className="adapter-manifest-head">
+                <span className="adapter-support">{manifest.support}</span>
+                <code>{manifest.version}</code>
+              </div>
+              <strong>{manifest.adapterId}</strong>
+              <p>{manifest.profile} · {manifest.phase} · {manifest.execution}</p>
+              <dl>
+                <div><dt>Produces</dt><dd>{manifest.produces.map((item) => item.projectionKind).join(" · ")}</dd></div>
+                <div><dt>Requires</dt><dd>{manifest.capabilities.required.join(" · ") || "inga"}</dd></div>
+                <div><dt>Fidelity</dt><dd>{manifest.fidelity.mode}{manifest.fidelity.requiresSourceResult ? " · source-bound" : ""}</dd></div>
+              </dl>
+              <small>{manifest.manifestDigest}</small>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="adapter-section">
+        <div className="semantic-section-title"><Workflow /><div><strong>ProjectionEnvelopes</strong><span>Varje output pekar tillbaka på exakt source result</span></div></div>
+        {adapterRun.projections.length ? (
+          <div className="adapter-projection-list">
+            {adapterRun.projections.map((projection) => (
+              <article key={`${projection.adapterRef.adapterId}:${projection.projectionId}`} className={`adapter-projection is-${projection.status}`}>
+                <div className="adapter-projection-head">
+                  <div><span>{projection.status}</span><strong>{projection.adapterRef.adapterId}</strong></div>
+                  <code>{projection.projectionId}</code>
+                </div>
+                <div className="projection-binding">
+                  <span>immutable source</span><code>{projection.sourceResultRef.resultId}</code><ArrowRight /><span>{projection.output?.projectionKind ?? "ingen output"}</span>
+                </div>
+                <div className="projection-reference-counts">
+                  <span>{projection.references.eventRefs.length} events</span>
+                  <span>{projection.references.anchorRefs.length} anchors</span>
+                  <span>{projection.references.sourceMapRefs.length} mappings</span>
+                  <span>{projection.references.provenanceRefs.length} activities</span>
+                </div>
+                <div className="fidelity-report">
+                  <strong>Fidelity · {projection.fidelity.mode}</strong>
+                  <p>{projection.fidelity.omittedPaths.length
+                    ? `Projektionen utelämnar ${projection.fidelity.omittedPaths.join(" · ")} och kräver därför källresultatet.`
+                    : "Ingen informationsförlust deklarerad för denna projektion."}</p>
+                </div>
+                {projection.output ? (
+                  <details>
+                    <summary>Visa faktisk adapteroutput</summary>
+                    <pre>{json(projection.output)}</pre>
+                  </details>
+                ) : null}
+                {projection.diagnostics.map((diagnostic) => <p className="adapter-diagnostic" key={diagnostic.diagnosticId ?? diagnostic.message}>{diagnostic.code} · {diagnostic.message}</p>)}
+              </article>
+            ))}
+          </div>
+        ) : <div className="lab-empty">Core run gav ingen adapterprojektion. Failed runs skippas efter den atomiska resultatgränsen.</div>}
+      </section>
+    </div>
+  );
+}
+
 function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "onOpenLab">) {
   const [tab, setTab] = useState("timeline");
   const events = useMemo(
@@ -389,7 +470,7 @@ function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" 
   const selectedChannel = channelNames.includes(tab) ? tab : null;
 
   useEffect(() => {
-    if (!["timeline", "result", "render", ...channelNames].includes(tab)) setTab("timeline");
+    if (!["timeline", "result", "adapters", "render", ...channelNames].includes(tab)) setTab("timeline");
   }, [channelNames, tab]);
 
   return (
@@ -400,11 +481,13 @@ function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" 
         items={[
           { id: "timeline", label: "Global timeline", count: events.length, icon: Workflow },
           { id: "result", label: "Result JSON", icon: FileJson },
+          { id: "adapters", label: "Adapters", count: result.adapterRun?.projections.length ?? 0, icon: Braces },
           { id: "render", label: "Render", icon: Sparkles },
           ...channelNames.map((name) => ({ id: name, label: name, count: result.channels[name].length, icon: name === "system.out" ? Rows3 : RadioTower })),
         ]}
       />
       {tab === "render" ? <RenderView output={result.output} /> : null}
+      {tab === "adapters" ? <AdapterRunView result={result} /> : null}
       {tab === "result" ? (
         <div className="lab-json-scroll">
           <div className="subset-notice"><CircleDot /> Atomisk playground-envelope · failed runs publicerar tom render och tomma domänkanaler</div>

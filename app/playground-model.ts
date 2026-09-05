@@ -51,6 +51,7 @@ export type RuntimeAnchor = {
   };
   origin: {
     stageId: string;
+    invocationId?: string;
     function: string;
     module: string;
   };
@@ -92,6 +93,7 @@ export type ChannelEvent = {
   };
   origin: {
     stageId: string;
+    invocationId?: string;
     function: string;
     module: string;
     modality: string;
@@ -106,6 +108,8 @@ export type ExecutionStep = {
   schema: string;
   step: number;
   stageId: string;
+  invocationId: string;
+  activityId: string;
   function: string;
   module: string;
   modality: "block" | "interval" | string;
@@ -192,6 +196,93 @@ export type RuntimeDiagnostic = {
   phase?: string;
 };
 
+export type AdapterSupport = "playground-subset" | "contract-only" | "unsupported";
+
+export type AdapterManifest = {
+  schema: "textabana.adapter-manifest/lab-v1";
+  adapterId: string;
+  version: string;
+  contract: "adapter-contract/1";
+  profile: string;
+  support: AdapterSupport;
+  phase: "post-commit";
+  execution: "pure" | string;
+  accepts: {
+    resultSchemas: string[];
+    profiles: string[];
+    channels: Array<{ name: string; schemaRef?: string; required: boolean }>;
+    artifactKinds: string[];
+  };
+  produces: Array<{
+    projectionKind: string;
+    valueKind: string;
+    mediaType: string;
+    schemaRef: string;
+  }>;
+  capabilities: { required: string[]; optional: string[] };
+  deterministic: boolean;
+  fidelity: {
+    mode: "lossless" | "selective" | "lossy";
+    requiresSourceResult: boolean;
+    omittedPaths: string[];
+  };
+  manifestDigest: string;
+};
+
+export type AdapterProjection = {
+  schema: "textabana.adapter-projection/lab-v1";
+  projectionId: string;
+  adapterRef: {
+    adapterId: string;
+    version: string;
+    manifestDigest: string;
+  };
+  sourceResultRef: {
+    resultId: string;
+    resultSchema: string;
+    sourceVersion: string;
+  };
+  status: "succeeded" | "failed" | "unsupported";
+  output?: {
+    projectionKind: string;
+    valueKind: string;
+    mediaType: string;
+    schemaRef: string;
+    data: unknown;
+    artifactRefs: string[];
+  };
+  mapping: "exact" | "derived" | "synthetic";
+  fidelity: {
+    mode: "lossless" | "selective" | "lossy";
+    requiresSourceResult: boolean;
+    omittedPaths: string[];
+  };
+  references: {
+    eventRefs: string[];
+    anchorRefs: string[];
+    sourceMapRefs: string[];
+    provenanceRefs: string[];
+  };
+  diagnostics: RuntimeDiagnostic[];
+  extensions: Record<string, unknown>;
+};
+
+export type AdapterRun = {
+  schema: "textabana.adapter-run/lab-v1";
+  adapterRunId: string;
+  sourceResultRef: string;
+  status: "succeeded" | "partial" | "failed" | "skipped";
+  requested: string[];
+  manifests: AdapterManifest[];
+  projections: AdapterProjection[];
+  diagnostics: RuntimeDiagnostic[];
+  verification: {
+    beforeDigest: string;
+    afterDigest: string;
+    immutable: boolean;
+  };
+};
+
 export type RuntimeResult = {
   runId?: number;
   ok: boolean;
@@ -206,6 +297,7 @@ export type RuntimeResult = {
   plan: RuntimePlan | null;
   executionTrace: ExecutionStep[];
   resultEnvelope: Record<string, unknown> | null;
+  adapterRun: AdapterRun | null;
   capabilities: Record<string, unknown> | null;
   emissions: number;
   functions: FunctionMeta[];

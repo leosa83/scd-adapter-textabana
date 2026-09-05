@@ -3,7 +3,7 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-ADAPTER-PLAN` |
-| Planversion | `1.0.0` |
+| Planversion | `1.0.1` |
 | Status | Aktiv |
 | Fastställd | 2026-09-05 |
 | Baseline | Textabana Language & Interop draft 0.4, playground `lab-v1` |
@@ -45,7 +45,7 @@ Source → Compile → Run → immutable TextabanaResult
 
 ### Sprint 1 — Gemensamt adapterkontrakt
 
-**Status:** planerad
+**Status:** genomförd 2026-09-05
 
 **Mål:** Bevisa att ett committat resultat kan projiceras deterministiskt och säkert utan att ny domänsemantik byggs in i kärnan.
 
@@ -70,6 +70,16 @@ Source → Compile → Run → immutable TextabanaResult
 - Dokumentation och UI skiljer canonical result från adapterprojektion.
 
 **Utanför sprinten:** Arrow/Parquet, riktig notebook-kernel, annotationsexport, sinks och full profilkonformitet.
+
+**Acceptansevidens:**
+
+- Referensadaptern körs efter commit och publiceras utanför canonical `TextabanaResult`.
+- Data, Notebook och Annotation registreras som `contract-only` utan domänoutput.
+- Projektionens event-, anchor-, SourceMap- och activity-referenser valideras mot källresultatet.
+- Before/after-digest verifierar att adapter fan-out inte muterar källresultatet.
+- Resultat- och projektionidentitet är stabil över olika transport-`runId`.
+- Unika invocation/activity-ID:n, dokumentbundna row anchors och isolerat fresh-state är regressionstestade.
+- 36 automatiska kontrakts-, runtime-, dokumentations-, renderings- och UI-test passerar.
 
 ### Sprint 2 — Data & Lineage Lab
 
@@ -122,6 +132,11 @@ Source → Compile → Run → immutable TextabanaResult
 | 5 · Conformance | Sprint 1–4 | Verifierbara profilanspråk |
 
 ## Ändringslogg
+
+### 1.0.1 — 2026-09-05
+
+- Sprint 1 markerad som genomförd med acceptansevidens.
+- Nästa aktiva leverans är Sprint 2 — Data & Lineage Lab.
 
 ### 1.0.0 — 2026-09-05
 
