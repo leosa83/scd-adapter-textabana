@@ -242,7 +242,7 @@ export function Specification() {
         <div className="spec-version">
           <span>Textabana</span>
           <strong>Language & Interop draft 0.5</strong>
-          <small>Language 0.4 · Adapter + Data + Notebook + Annotation lab-v1</small>
+          <small>Language 0.4 · Adapter + Data + Notebook + Annotation + Conformance lab-v1</small>
         </div>
         <SpecNav />
         <div className="spec-legend" aria-label="Statusförklaring">
@@ -263,7 +263,7 @@ export function Specification() {
           <div className="hero-status">
             <StatusBadge tone="normative">Interop draft 0.5</StatusBadge>
             <StatusBadge tone="implemented">Språkkärna 0.4-subset</StatusBadge>
-            <StatusBadge tone="partial">Sex labs · data + notebook + annotation live</StatusBadge>
+            <StatusBadge tone="partial">Sju labs · conformance gate live</StatusBadge>
           </div>
           <h1 id="definition-title">Läsbar text som körbar, positionsmedveten och flerkanalig semantisk källa.</h1>
           <p className="hero-definition">Textabana gör läsbar text till en körbar, positionsmedveten och flerkanalig semantisk källa — oberoende av hur resultatet senare presenteras. Det är ett <em>source-first</em>, host-neutralt lager som kompilerar texten till en explicit plan och producerar en primär render samt valfritt många typade outputs.</p>
@@ -296,7 +296,7 @@ export function Specification() {
           </div>
           <Requirement id="STATUS-001">En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.</Requirement>
           <Requirement id="STATUS-002">Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.</Requirement>
-          <Requirement id="STATUS-003">Nuvarande Playground implementerar sex avgränsade vyer: Language & Scope, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop och Annotation & Review samt en körbar lab-version av det gemensamma adapterkontraktet. Annotation-subseten producerar de fyra kanoniska kanalerna <code>annotation.set</code>, <code>annotation.candidates</code>, <code>annotation.reviews</code> och <code>annotation.revisions</code>. <code>annotation/1</code> är en playground-subset; verklig modellkörning och <code>ml-lineage/1</code> är fortsatt contract-only. Ingen interaktiv subset eller kontraktsregistrering är full profilkonformitet.</Requirement>
+          <Requirement id="STATUS-003">Nuvarande Playground implementerar sju avgränsade vyer: Language & Scope, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Alla läser samma run. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. <code>annotation/1</code> är en playground-subset; verklig modellkörning och <code>ml-lineage/1</code> är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="html">
@@ -816,7 +816,7 @@ export function Specification() {
           <Requirement id="RESULT-002">Ett failed eller cancelled resultat MÅSTE ha tom committed render och tomma committed domain channels, men FÅR bära control-plane diagnostics.</Requirement>
           <Requirement id="RESULT-003">Timestamps är transportmetadata och får inte styra semantisk hash eller eventordning.</Requirement>
           <Callout title="Resultatet som playgrounden visar" icon={<FileJson />} tone="info">
-            <code>textabana.result/lab-v1</code> samlar render, channel snapshots, anchors, SourceMaps, provenanceprojektion och diagnostics i en och samma run. Success committas atomiskt; ett failed run visar tom committed render och tomma domänkanaler. SHA-256-identitet, cancellation och artifacts återstår före full <code>runtime-json/1</code>-konformitet.
+            <code>textabana.result/lab-v1</code> samlar render, channel snapshots, anchors, SourceMaps, provenanceprojektion och diagnostics i en och samma run. Success committas atomiskt; failed och cancelled visar tom committed render och tomma domänkanaler. Playgrounden stödjer kooperativ cancellation vid stage-gränser. SHA-256-identitet, synkron preemption, deadline/backpressure, extern rollback och artifacts återstår före full <code>runtime-json/1</code>-konformitet.
           </Callout>
         </section>
 
@@ -1452,7 +1452,8 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="conformance">
-          <SectionHeading number="25" layer="Conformance" title="Implementationsanspråk görs per profil" implementation="defined" />
+          <SectionHeading number="25" layer="Conformance" title="Implementationsanspråk härleds ur evidens" implementation="partial" />
+          <p className="lead">Conformance Lab utvärderar ett valt, versionssatt case efter core run och adapter fan-out. Rapporten skiljer deklarerad support från observerat testutfall: endast en tillämplig playground-subset vars samtliga krav passerar blir <code>claimable</code> för den aktuella körningen.</p>
           <SpecTable
             caption="Konformitetsprofiler"
             headers={["Profil", "Måste täcka", "Web runtime idag"]}
@@ -1464,16 +1465,55 @@ export function Specification() {
               [<code key="notebook">notebook/1</code>, "Whole snapshot, stabila cell-id:n, MIME bundle, stateprofiler, stale detection och host-neutral JSON-projektion; full profil omfattar även verifierad Jupytertransport.", <StatusBadge key="c4" tone="partial">Playground subset</StatusBadge>],
               [<code key="data">data/1</code>, "Dataset/schema-events, record identity, JSON table projection och multi-input lineage; full profil omfattar även dataplan och artifacts.", <StatusBadge key="c5" tone="partial">Playground subset</StatusBadge>],
               [<code key="annotation">annotation/1</code>, "Immutable kandidater, review-revisioner, supersede-kedjor, resolverbara targets samt W3C- och Label Studio-projektion.", <StatusBadge key="c8" tone="partial">Playground subset</StatusBadge>],
-              [<code key="ml">ml-lineage/1</code>, "AI invocation, PROV, OpenLineage, MLflow och OTel correlation.", <StatusBadge key="c6" tone="planned">Planerad</StatusBadge>],
+              [<code key="ml">ml-lineage/1</code>, "AI invocation, PROV, OpenLineage, MLflow och OTel correlation.", <StatusBadge key="c6" tone="planned">Contract-only · ej claimable</StatusBadge>],
             ]}
           />
+          <SpecTable
+            caption="Maskinläsbar ConformanceReport"
+            headers={["Fält", "Betydelse", "Nuvarande lab-semantik"]}
+            rows={[
+              [<code key="report">schema / reportId</code>, "Versionssatt rapporttyp och deterministisk rapportidentitet.", <code key="report-v">textabana.conformance-report/lab-v1</code>],
+              [<code key="subject">sourceResultRef</code>, "Binder evidensen till exakt semantiskt Result.", "Transport-run-id ingår inte i strukturdigesten."],
+              [<code key="suite">suite / case</code>, "Suiteversion, fixture, förväntat och faktiskt terminalutfall.", "Negativa cases kräver både exakt status och diagnostikkod."],
+              [<code key="profiles">profiles</code>, "Deklarerad support, tillämplighet, kravutfall, härledd support och claimable.", "Ej emitterade domänprofiler blir not-run; contract-only blir aldrig claimable."],
+              [<code key="stages">stages</code>, "Source → IR → Plan → Result → Projection med evidensreferenser.", "Ett negativt case gör inget positivt plan- eller projektionsanspråk."],
+              [<code key="snapshot">structuralSnapshot</code>, "Normaliserad labbsnapshot och incheckad golden digest.", "FNV-1a-lab är icke-kryptografisk och canonical=false."],
+              [<code key="gate">gate</code>, "Samlad blockeringslista härledd ur misslyckade krav och stages.", "Regression eller golden-diff tar bort runnens subset-anspråk."],
+            ]}
+          />
+          <CodeExample
+            title="Conformance report · förkortat exempel"
+            language="json"
+            status="Körbar playground-subset"
+            code={code(
+              "{",
+              '  "schema": "textabana.conformance-report/lab-v1",',
+              '  "suite": { "suiteId": "textabana.playground/interop-0.5", "version": "1.0.0-lab.1" },',
+              '  "case": { "caseId": "golden-core-chain", "expectedOutcome": "succeeded", "actualOutcome": "succeeded" },',
+              '  "profiles": [{',
+              '    "profile": "runtime-json/1", "declaredSupport": "playground-subset",',
+              '    "status": "passed", "derivedSupport": "playground-subset", "claimable": true,',
+              '    "requirements": [{ "requirementId": "RUNTIME-ATOMIC-TERMINAL", "status": "passed", "evidenceRefs": ["lab:…"] }]',
+              "  }],",
+              '  "normalization": { "policy": "textabana.structural-snapshot/lab-v1", "ignoredPaths": ["/transport/runId", "/plan/steps/*/duration"] },',
+              '  "golden": { "status": "passed", "expectedStructuralDigest": "fnv1a-lab:…", "actualStructuralDigest": "fnv1a-lab:…" },',
+              '  "gate": { "status": "passed", "blockingRequirementIds": [] },',
+              '  "extensions": { "textabana.playground": { "canonical": false, "fullConformance": false } }',
+              "}"
+            )}
+          />
           <div className="conformance-grid">
-            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, adapterisolering, typade data med lineage, notebook-snapshots samt immutable annotationskandidater, review-revisioner och resolverbara standardprojektioner.</p></article>
-            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets, verklig modellkörning, persistent review store, full annotationsontologi/tool-roundtrip samt W3C PROV, OpenLineage, MLflow och OTel.</p></article>
+            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, adapterisolering, typade data med lineage, notebook-snapshots, immutable annotationskandidater, run-bundna konformitetskrav, normalized golden snapshots, exakta negativa cases samt kooperativ cancellation vid stage-gränser.</p></article>
+            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, preemption av synkrona CPU-loopar, timeout/backpressure och extern side-effect rollback, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets, verklig modellkörning, persistent review store, full annotationsontologi/tool-roundtrip samt W3C PROV, OpenLineage, MLflow och OTel.</p></article>
           </div>
           <Requirement id="CONF-001">En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.</Requirement>
-          <Requirement id="CONF-002">Varje profil MÅSTE ha golden fixtures för source → IR → plan → result och negativa fixtures för fel, cancellation och mapping claims.</Requirement>
+          <Requirement id="CONF-002">Ett profilanspråk MÅSTE bindas till en versionssatt suite och verifiera source → IR → plan → result → projection. Profiler utan relevant input MÅSTE vara <code>not-run</code>, inte passerade.</Requirement>
           <Requirement id="CONF-003">En adapter får inte förändra Language Core-semantik för att passa hostens exekveringsmodell.</Requirement>
+          <Requirement id="CONF-004">Deklarerad support och verifieringsutfall MÅSTE vara separata. Ett saknat eller misslyckat obligatoriskt krav blockerar <code>claimable</code> även när capability-katalogen säger playground-subset.</Requirement>
+          <Requirement id="CONF-005"><code>contract-only</code> och <code>unsupported</code> får aldrig härledas till ett lyckat implementeringsanspråk. Ett passerat no-fabrication-krav verifierar endast kontraktsgränsen.</Requirement>
+          <Requirement id="CONF-006">En structural snapshot MÅSTE publicera normaliseringspolicy, ignorerade transportfält, digestalgoritm, actual digest och versionssatt expected digest när en golden baseline finns.</Requirement>
+          <Requirement id="CONF-007">Negativa fixtures MÅSTE köras isolerat och kräva förväntad terminalstatus, exakt diagnostikkod och atomiskt tom durable commit. Ett negativt pass får aldrig skriva om core-resultatet till succeeded.</Requirement>
+          <Requirement id="CONF-008">Cancellation MÅSTE ha eget terminaltillstånd. Den aktuella subseten är kooperativ vid async- och stage-gränser; den hävdar inte synkron preemption, deadline/backpressure eller rollback av externa sidoeffekter.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="errors">
@@ -1514,8 +1554,8 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section playground-contract-section" id="playgrounds">
-          <SectionHeading number="27" layer="Interactive implementation" title="Sex playgrounds visar samma valda run från olika håll" normative={false} implementation="partial" />
-          <p className="lead">Language & Scope, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop och Annotation & Review använder samma valda källa, fixture, run-id och result envelope. Adaptergrunden registrerar, förhandlar och kör oberoende projektioner efter commit utan att mutera resultatet. Ett labbyte startar ingen ny exekvering eller byter fixture. Conformance är nästa implementeringslager.</p>
+          <SectionHeading number="27" layer="Interactive implementation" title="Sju playgrounds visar samma valda run från olika håll" normative={false} implementation="partial" />
+          <p className="lead">Language & Scope, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance använder samma valda källa, fixture, run-id och result envelope. Adaptergrunden registrerar, förhandlar och kör oberoende projektioner efter commit utan att mutera resultatet. Conformance läser samma körning efter fan-out och härleder sina claims från kravutfall. Ett labbyte startar ingen ny exekvering eller byter fixture.</p>
           <div className="playground-grid">
             <article><span>01</span><Code2 aria-hidden="true" /><strong>Language & Scope Lab</strong><p>Scope-segment, blockträd, inheritance, faktisk stageordning, IR-projektion och render.</p><small>Live · scope-torture + base64-inverse</small></article>
             <article><span>02</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>system.out, metadatagutter, row/line, Anchor, SourceMap och jämförelse med föregående run.</p><small>Live · editor-revision</small></article>
@@ -1523,7 +1563,7 @@ export function Specification() {
             <article><span>04</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>JSON-tabell, schema-events, stabila recordId, deterministisk inner join, derived aggregation och cell-/record-lineage.</p><small>Live · data-join · data/1 playground-subset</small></article>
             <article><span>05</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Whole-snapshot, stabila cell-id:n, tre MIME-representationer, explicit state och digest-baserad stale detection.</p><small>Live · notebook-snapshot · notebook/1 playground-subset</small></article>
             <article><span>06</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>Immutable AI-kandidater, confidence method, append-only human review, revisionskedja, Anchor-targets samt W3C- och Label Studio-export.</p><small>Live · annotation-review · annotation/1 playground-subset</small></article>
-            <article><span>07</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability negotiation, golden result, fel, cancel och strukturell diff.</p><small>Planned UI · headless regressioner finns</small></article>
+            <article><span>07</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability response, stage gates, normalized golden snapshot, strukturell diff, exakta negativa cases och kooperativ cancellation.</p><small>Live · conformance-golden · report/lab-v1</small></article>
           </div>
           <h3>Gemensamt playgroundkontrakt</h3>
           <Requirement id="PLAYGROUND-001">Alla labs BÖR använda samma lilla dokument, modulmanifest, inputdata och förväntade resultatsnapshot så att relationen mellan vyerna är verifierbar.</Requirement>
@@ -1556,6 +1596,10 @@ export function Specification() {
               [<code key="candidate">Candidate</code>, "Immutable modell- eller verktygsförslag på revision 0, utan mänskligt decision state."],
               [<code key="review">Review revision</code>, "Append-only mänsklig handling och ny revision som accepterar, avvisar eller ersätter en kandidat."],
               [<code key="current">Current view</code>, "Härledd lista över nu accepterade annotationer; den raderar aldrig historiska kandidater eller revisioner."],
+              [<code key="conf-report">ConformanceReport</code>, "Maskinläsbar, source-result-bunden evidens för ett versionssatt suite-case; separat från canonical Result och CI-status."],
+              [<code key="golden">Golden fixture</code>, "Incheckad input och expected structural digest som inte beräknas från samma aktuella run."],
+              [<code key="claim">Declared vs claimable</code>, "Declared support beskriver katalogen; claimable kräver att alla tillämpliga krav passerar. Contract-only är aldrig claimable."],
+              [<code key="gate">Conformance gate</code>, "Härledd blockeringslista för failed requirements, stagefel och golden-regressioner i det aktuella caset."],
             ]}
           />
           <Callout title="Specifikationens riktning" icon={<Box />} tone="success">

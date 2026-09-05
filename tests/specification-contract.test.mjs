@@ -35,6 +35,11 @@ test("the Interop 0.5 specification preserves its foundational contracts", () =>
     "ANNOTATION-006",
     "ADAPTER-001",
     "ADAPTER-006",
+    "CONF-004",
+    "CONF-005",
+    "CONF-006",
+    "CONF-007",
+    "CONF-008",
     "PLAYGROUND-003",
   ];
 
@@ -45,13 +50,14 @@ test("the Interop 0.5 specification preserves its foundational contracts", () =>
   assert.match(source, /render.*resultatfält, inte en emitterbar kanal/s);
   assert.match(source, /row och line är projektioner/);
   assert.match(source, /HTML beskriver ett dokumentträd.*Textabana beskriver vilka semantiska processer/s);
-  assert.match(source, /Nuvarande Playground implementerar sex avgränsade vyer/);
+  assert.match(source, /Nuvarande Playground implementerar sju avgränsade vyer/);
   assert.match(source, /Language & Scope Lab/);
   assert.match(source, /Editor Metadata Lab/);
   assert.match(source, /Channel & Result Lab/);
   assert.match(source, /Data & Lineage Lab/);
   assert.match(source, /Notebook Interop Lab/);
   assert.match(source, /Annotation & AI Review Lab/);
+  assert.match(source, /Conformance Lab/);
   assert.match(source, /textabana\.adapter-manifest\/lab-v1/);
   assert.match(source, /textabana\.adapter-projection\/lab-v1/);
   assert.match(source, /adapter-contract\/1/);
@@ -68,5 +74,11 @@ test("the Interop 0.5 specification preserves its foundational contracts", () =>
   assert.match(source, /ml-lineage\/1.*contract-only/s);
   assert.match(source, /stabila.*recordId.*deterministisk inner join.*multi-input-lineage/s);
   assert.match(source, /Arrow IPC, Parquet, DuckDB, beständiga ArtifactRefs, OpenLineage-export.*unsupported/s);
-  assert.match(source, /Ingen interaktiv subset eller kontraktsregistrering är full profilkonformitet/);
+  assert.match(source, /Ingen interaktiv subset.*kontraktsregistrering är full profilkonformitet/);
+  assert.match(source, /textabana\.conformance-report\/lab-v1/);
+  assert.match(source, /deklarerad support från observerat testutfall/);
+  assert.match(source, /Contract-only.*aldrig claimable/s);
+  assert.match(source, /normaliseringspolicy.*actual digest.*expected digest/s);
+  assert.match(source, /Negativa fixtures.*exakt diagnostikkod.*atomiskt tom durable commit/s);
+  assert.match(source, /kooperativ vid async- och stage-gränser.*synkron preemption/s);
 });

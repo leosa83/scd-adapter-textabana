@@ -4,7 +4,7 @@ export type ProjectFile = {
   content: string;
 };
 
-export type LabId = "language" | "editor" | "channels" | "data" | "notebook" | "annotation";
+export type LabId = "language" | "editor" | "channels" | "data" | "notebook" | "annotation" | "conformance";
 
 export type FunctionMeta = {
   name: string;
@@ -129,7 +129,7 @@ export type ExecutionStep = {
   source: { path: string; startLine: number; endLine: number };
   args: Record<string, unknown>;
   orderKey: [number, number, number];
-  status: "succeeded" | "failed";
+  status: "succeeded" | "failed" | "cancelled";
   input: { kind: string; length: number; hash: string; preview: string };
   output: { kind: string; length: number; hash: string; preview: string };
   duration: number;
@@ -294,6 +294,84 @@ export type AdapterRun = {
   };
 };
 
+export type ConformanceStatus = "passed" | "failed" | "not-run";
+
+export type ConformanceRequirement = {
+  requirementId: string;
+  status: ConformanceStatus;
+  message: string;
+  evidenceRefs: string[];
+};
+
+export type ConformanceProfile = {
+  profile: string;
+  declaredSupport: AdapterSupport;
+  status: ConformanceStatus;
+  derivedSupport: AdapterSupport | null;
+  applicable: boolean;
+  claimable: boolean;
+  requirements: ConformanceRequirement[];
+};
+
+export type ConformanceReport = {
+  schema: "textabana.conformance-report/lab-v1";
+  reportId: string;
+  sourceResultRef: string;
+  suite: { suiteId: string; version: string };
+  case: {
+    caseId: string;
+    fixtureId: string;
+    expectedOutcome: "succeeded" | "failed" | "cancelled";
+    actualOutcome: "succeeded" | "failed" | "cancelled";
+    expectedDiagnosticCode?: string;
+    registered?: boolean;
+    requirements?: ConformanceRequirement[];
+  };
+  selectedProfiles: string[];
+  profiles: ConformanceProfile[];
+  stages: Array<{
+    stage: "source" | "ir" | "plan" | "result" | "projection";
+    status: ConformanceStatus;
+    message: string;
+    evidenceRefs: string[];
+  }>;
+  structuralSnapshot: Record<string, unknown>;
+  structuralDigest: string;
+  normalization?: { policy: string; ignoredPaths: string[] };
+  golden?: {
+    baselineId: string | null;
+    expectedStructuralDigest: string | null;
+    actualStructuralDigest: string;
+    status: ConformanceStatus;
+  };
+  negativeFixtures: Array<{
+    fixtureId: string;
+    caseId: string;
+    expectedOutcome: "failed";
+    expectedDiagnosticCode: string;
+    purpose: string;
+  }>;
+  cancellation: {
+    support: "cooperative-stage-boundary";
+    status: ConformanceStatus;
+    requested: boolean;
+    observed: boolean;
+    diagnosticCode: string;
+    limitation: string;
+  };
+  summary: {
+    passed: number;
+    failed: number;
+    notRun: number;
+    claimableProfiles: string[];
+  };
+  gate: {
+    status: "passed" | "failed";
+    blockingRequirementIds: string[];
+  };
+  extensions: Record<string, unknown>;
+};
+
 export type RuntimeSourceMap = {
   mappingId: string;
   outputRef: string;
@@ -329,7 +407,9 @@ export type RuntimeResult = {
   executionTrace: ExecutionStep[];
   resultEnvelope: Record<string, unknown> | null;
   adapterRun: AdapterRun | null;
+  conformanceReport: ConformanceReport | null;
   capabilities: Record<string, unknown> | null;
+  cancelled?: boolean;
   emissions: number;
   functions: FunctionMeta[];
   modulesLoaded: number;
@@ -341,4 +421,10 @@ export type PlaygroundFixture = {
   title: string;
   summary: string;
   document: string;
+  conformance?: {
+    caseId: string;
+    expectedOutcome: "succeeded" | "failed" | "cancelled";
+    expectedDiagnosticCode?: string;
+    autoCancelAfterMs?: number;
+  };
 };

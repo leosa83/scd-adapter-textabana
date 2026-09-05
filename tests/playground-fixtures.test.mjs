@@ -20,6 +20,7 @@ const modules = [
   { path: "modules/data.js", content: template("dataModule") },
   { path: "modules/notebook.js", content: template("notebookModule") },
   { path: "modules/annotation.js", content: template("annotationModule") },
+  { path: "modules/conformance.js", content: template("conformanceModule") },
 ];
 
 async function run(documentSource, runId = 1) {
@@ -33,6 +34,8 @@ async function run(documentSource, runId = 1) {
     Uint8Array,
     btoa,
     atob,
+    setTimeout,
+    clearTimeout,
     self: { postMessage: resolveMessage },
   });
   vm.runInContext(workerSource, context);
@@ -149,4 +152,16 @@ test("annotation-review fixture exposes immutable review channels and clean Mark
   assert.match(result.output, /## Annotation: Route/);
   assert.match(result.output, /Positionen kräver extern verifiering/);
   assert.doesNotMatch(result.output, />>>>|<<<<|\{#ann-/);
+});
+
+test("conformance-golden fixture emits typed probes and a clean render", async () => {
+  const result = await run(template("conformanceGoldenFixtureDocument"));
+
+  assert.equal(result.ok, true, result.error);
+  assert.equal(result.channels["conformance.probes"].length, 2);
+  assert.equal(result.channels["system.out"].length, 2);
+  assert.equal(result.channelDescriptors["conformance.probes"].declared, true);
+  assert.equal(result.conformanceReport.schema, "textabana.conformance-report/lab-v1");
+  assert.match(result.output, /Alpha är den första/);
+  assert.doesNotMatch(result.output, />>>>|<<<</);
 });

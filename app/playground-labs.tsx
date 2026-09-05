@@ -20,6 +20,7 @@ import {
   PanelRight,
   RadioTower,
   Rows3,
+  ShieldCheck,
   Sparkles,
   Table2,
   Workflow,
@@ -31,6 +32,7 @@ import type {
   ExecutionStep,
   LabId,
   RuntimeAnchor,
+  ConformanceProfile,
   RuntimeResult,
 } from "./playground-model";
 
@@ -40,6 +42,7 @@ type PlaygroundOutputProps = {
   previousResult: RuntimeResult | null;
   running: boolean;
   onOpenLab: (lab: LabId) => void;
+  onSelectFixture: (fixtureId: string) => void;
 };
 
 const labCopy: Record<LabId, { title: string; icon: typeof Braces }> = {
@@ -49,6 +52,7 @@ const labCopy: Record<LabId, { title: string; icon: typeof Braces }> = {
   data: { title: "Data & Lineage", icon: Database },
   notebook: { title: "Notebook Interop", icon: NotebookTabs },
   annotation: { title: "Annotation & Review", icon: Bot },
+  conformance: { title: "Conformance", icon: ShieldCheck },
 };
 
 function json(value: unknown) {
@@ -68,14 +72,14 @@ function ResultShell({
         <div className="panel-title"><Icon aria-hidden="true" />{labCopy[lab].title}</div>
         <span className={`runtime-state ${result.ok ? "is-ok" : "is-error"}`} aria-live="polite">
           <span />
-          {running ? "Kompilerar" : result.ok ? `Run ${result.runId ?? "–"} · committed` : "Run failed"}
+          {running ? "Kompilerar" : result.ok ? `Run ${result.runId ?? "–"} · committed` : result.cancelled ? "Run cancelled" : "Run failed"}
         </span>
       </div>
       {!result.ok ? (
         <div className="error-state lab-error-banner" role="alert">
           <div className="error-icon"><AlertTriangle aria-hidden="true" /></div>
           <div>
-            <p className="error-kicker">Körningen publicerade inget domänresultat</p>
+            <p className="error-kicker">{result.cancelled ? "Körningen avbröts atomiskt" : "Körningen publicerade inget domänresultat"}</p>
             <h3>{result.error}</h3>
             <p>{result.diagnostics[0]?.code ?? "TBA-RUN-LAB"} · committed render och channels är tomma.</p>
           </div>
@@ -984,6 +988,197 @@ function AnnotationLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "resul
   );
 }
 
+type StructuralDiffEntry = {
+  path: string;
+  operation: "add" | "remove" | "replace";
+  before?: unknown;
+  after?: unknown;
+};
+
+function pointerPart(value: string) {
+  return value.replace(/~/g, "~0").replace(/\//g, "~1");
+}
+
+function structuralDiff(before: unknown, after: unknown, path = "", changes: StructuralDiffEntry[] = []): StructuralDiffEntry[] {
+  if (changes.length >= 120 || Object.is(before, after)) return changes;
+  const beforeObject = before !== null && typeof before === "object";
+  const afterObject = after !== null && typeof after === "object";
+  if (!beforeObject || !afterObject || Array.isArray(before) !== Array.isArray(after)) {
+    changes.push({ path: path || "/", operation: "replace", before, after });
+    return changes;
+  }
+  const left = before as Record<string, unknown>;
+  const right = after as Record<string, unknown>;
+  const keys = [...new Set([...Object.keys(left), ...Object.keys(right)])].sort();
+  for (const key of keys) {
+    const childPath = `${path}/${pointerPart(key)}`;
+    if (!Object.hasOwn(left, key)) changes.push({ path: childPath, operation: "add", after: right[key] });
+    else if (!Object.hasOwn(right, key)) changes.push({ path: childPath, operation: "remove", before: left[key] });
+    else structuralDiff(left[key], right[key], childPath, changes);
+    if (changes.length >= 120) break;
+  }
+  return changes;
+}
+
+function diffValue(value: unknown) {
+  const serialized = typeof value === "string" ? value : JSON.stringify(value);
+  if (serialized === undefined) return "∅";
+  return serialized.length > 180 ? `${serialized.slice(0, 177)}…` : serialized;
+}
+
+function ConformanceStatusMark({ status }: { status: "passed" | "failed" | "not-run" }) {
+  return (
+    <span className={`conformance-status is-${status}`}>
+      {status === "passed" ? <CheckCircle2 aria-hidden="true" /> : status === "failed" ? <AlertTriangle aria-hidden="true" /> : <CircleDot aria-hidden="true" />}
+      {status === "passed" ? "passed" : status === "failed" ? "blocked" : "not run"}
+    </span>
+  );
+}
+
+function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<PlaygroundOutputProps, "result" | "previousResult" | "onSelectFixture">) {
+  const [tab, setTab] = useState("gate");
+  const report = result.conformanceReport;
+  const profiles = report?.profiles ?? [];
+  const [selectedProfileId, setSelectedProfileId] = useState("language-core/0.4");
+  const selectedProfile = profiles.find((profile) => profile.profile === selectedProfileId) ?? profiles[0] ?? null;
+  const changes = useMemo(
+    () => report && previousResult?.conformanceReport
+      ? structuralDiff(previousResult.conformanceReport.structuralSnapshot, report.structuralSnapshot)
+      : [],
+    [previousResult, report],
+  );
+  const capabilities = result.capabilities as { implemented?: string[]; unsupported?: string[]; limits?: Record<string, string> } | null;
+
+  if (!report) return <div className="lab-empty">Kör en fixture för att skapa en maskinläsbar konformitetsrapport.</div>;
+
+  return (
+    <>
+      <LabTabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: "gate", label: "Gate", icon: ShieldCheck },
+          { id: "profiles", label: "Profiler", count: profiles.length, icon: Layers3 },
+          { id: "diff", label: "Strukturell diff", count: changes.length, icon: GitBranch },
+          { id: "negative", label: "Negativa cases", count: report.negativeFixtures.length + 1, icon: AlertTriangle },
+          { id: "report", label: "Report JSON", icon: FileJson },
+        ]}
+      />
+      {tab === "gate" ? (
+        <div className="lab-scroll conformance-lab">
+          <div className="subset-notice"><ShieldCheck /> Run-bunden evidens · <code>{report.schema}</code> · ingen full profilkonformitet</div>
+          <section className={`conformance-gate is-${report.gate.status}`}>
+            <div>
+              <span>Conformance gate</span>
+              <strong>{report.gate.status === "passed" ? "Caset kan göra avgränsade subset-anspråk" : "Profilanspråk blockeras"}</strong>
+              <p><code>{report.case.caseId}</code> gav <b>{report.case.actualOutcome}</b>; förväntat var <b>{report.case.expectedOutcome}</b>.</p>
+            </div>
+            <ConformanceStatusMark status={report.gate.status === "passed" ? "passed" : "failed"} />
+          </section>
+          <div className="lab-metrics">
+            <article><span>Passed profiles</span><strong>{report.summary.passed}</strong><small>endast aktiva krav</small></article>
+            <article><span>Blocked profiles</span><strong>{report.summary.failed}</strong><small>{report.gate.blockingRequirementIds.join(" · ") || "inga blockers"}</small></article>
+            <article><span>Not run</span><strong>{report.summary.notRun}</strong><small>inga relevanta inputs</small></article>
+            <article><span>Claimable subset</span><strong>{report.summary.claimableProfiles.length}</strong><small>contract-only räknas aldrig</small></article>
+          </div>
+          <section className="conformance-stage-list" aria-label="Conformance pipeline">
+            {report.stages.map((stage, index) => (
+              <article key={stage.stage} className={`is-${stage.status}`}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <div><strong>{stage.stage}</strong><p>{stage.message}</p>{stage.evidenceRefs.length ? <code>{stage.evidenceRefs.join(" · ")}</code> : null}</div>
+                <ConformanceStatusMark status={stage.status} />
+              </article>
+            ))}
+          </section>
+          <section className="conformance-golden-card">
+            <div><span>Normalized golden</span><strong>{report.golden?.status === "passed" ? "0 strukturella skillnader mot baseline" : report.golden?.status === "failed" ? "Golden regression blockerar caset" : "Ingen golden baseline för denna fixture"}</strong></div>
+            <dl>
+              <div><dt>Suite</dt><dd>{report.suite.suiteId}@{report.suite.version}</dd></div>
+              <div><dt>Baseline</dt><dd>{report.golden?.expectedStructuralDigest ?? "not applicable"}</dd></div>
+              <div><dt>Actual</dt><dd>{report.structuralDigest}</dd></div>
+            </dl>
+          </section>
+          <section className="conformance-capabilities">
+            <div className="semantic-section-title"><Braces /><div><strong>Capability response</strong><span>Deklaration visas separat från verifierat utfall</span></div></div>
+            <div><article><span>Implemented subset</span><p>{capabilities?.implemented?.join(" · ") || "–"}</p></article><article><span>Explicit unsupported</span><p>{capabilities?.unsupported?.join(" · ") || "–"}</p></article></div>
+          </section>
+        </div>
+      ) : null}
+      {tab === "profiles" ? (
+        <div className="lab-scroll conformance-profile-view">
+          <div className="conformance-profile-bar" role="list" aria-label="Välj konformitetsprofil">
+            {profiles.map((profile) => (
+              <button type="button" className={profile.profile === selectedProfile?.profile ? "is-active" : ""} onClick={() => setSelectedProfileId(profile.profile)} key={profile.profile}>
+                <code>{profile.profile}</code>
+                <span>{profile.declaredSupport}</span>
+                <ConformanceStatusMark status={profile.status} />
+              </button>
+            ))}
+          </div>
+          {selectedProfile ? <ConformanceProfileDetail profile={selectedProfile} /> : null}
+        </div>
+      ) : null}
+      {tab === "diff" ? (
+        <div className="lab-scroll conformance-diff-view">
+          <div className="subset-notice"><GitBranch /> RFC 6901-sökvägar · {report.normalization?.ignoredPaths.length ?? 0} explicit ignorerade transportfält · max 120 visade ändringar</div>
+          {!previousResult?.conformanceReport ? <div className="lab-empty">Ändra texten eller kör igen för att jämföra med föregående run.</div> : changes.length === 0 ? (
+            <div className="conformance-zero-diff"><CheckCircle2 /><strong>0 strukturella skillnader</strong><p>Transport-id:n och mätt duration ingår inte; den publicerade normaliseringspolicyn syns i rapporten.</p></div>
+          ) : (
+            <div className="conformance-diff-list">{changes.map((change, index) => (
+              <article key={`${change.path}:${index}`}>
+                <div><span>{change.operation}</span><code>{change.path}</code></div>
+                <dl><div><dt>före</dt><dd>{diffValue(change.before)}</dd></div><div><dt>efter</dt><dd>{diffValue(change.after)}</dd></div></dl>
+              </article>
+            ))}</div>
+          )}
+        </div>
+      ) : null}
+      {tab === "negative" ? (
+        <div className="lab-scroll negative-case-view">
+          <div className="lab-intro"><div><span>Isolerade regressionsfall</span><strong>Fel måste vara exakta och atomiska</strong></div><p>Ett passerat negativt case ändrar inte core-resultatet till succeeded. Det bevisar att rätt felgräns aktiverades.</p></div>
+          <div className="negative-case-list">
+            {report.negativeFixtures.map((fixture) => (
+              <article className={report.case.fixtureId === fixture.fixtureId ? `is-active is-${report.gate.status}` : ""} key={fixture.fixtureId}>
+                <AlertTriangle /><div><strong>{fixture.caseId}</strong><p>{fixture.purpose}</p><code>{fixture.expectedOutcome} · {fixture.expectedDiagnosticCode}</code></div>
+                <Button size="sm" variant="outline" onClick={() => onSelectFixture(fixture.fixtureId)}>Kör fixture</Button>
+              </article>
+            ))}
+            <article className={report.case.fixtureId === "cancellation-probe" ? `is-active is-${report.cancellation.status}` : ""}>
+              <CircleDot /><div><strong>cooperative-cancellation</strong><p>{report.cancellation.limitation}</p><code>cancelled · {report.cancellation.diagnosticCode}</code></div>
+              <Button size="sm" variant="outline" onClick={() => onSelectFixture("cancellation-probe")}>Kör cancel</Button>
+            </article>
+          </div>
+        </div>
+      ) : null}
+      {tab === "report" ? (
+        <div className="lab-json-scroll conformance-report-json">
+          <div className="projection-notice"><CircleDot /> Maskinläsbar playground-subset-evidens · source-bound · canonical=false</div>
+          <pre>{json(report)}</pre>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function ConformanceProfileDetail({ profile }: { profile: ConformanceProfile }) {
+  return (
+    <section className={`conformance-profile-detail is-${profile.status}`}>
+      <header>
+        <div><span>Selected profile</span><strong>{profile.profile}</strong><p>Deklarerat: <code>{profile.declaredSupport}</code> · Härlett: <code>{profile.derivedSupport ?? "not evaluated"}</code></p></div>
+        <div className="profile-claim-state"><ConformanceStatusMark status={profile.status} /><small>{profile.claimable ? "claimable playground-subset" : profile.derivedSupport === "contract-only" ? "contract-only · aldrig claimable" : "inget aktivt anspråk"}</small></div>
+      </header>
+      <div className="conformance-requirement-list">
+        {profile.requirements.map((requirement) => (
+          <article key={requirement.requirementId}>
+            <ConformanceStatusMark status={requirement.status} />
+            <div><strong>{requirement.requirementId}</strong><p>{requirement.message}</p>{requirement.evidenceRefs.length ? <code>{requirement.evidenceRefs.join(" · ")}</code> : null}</div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "onOpenLab">) {
   const [tab, setTab] = useState("timeline");
   const events = useMemo(
@@ -1076,6 +1271,7 @@ export function PlaygroundOutput(props: PlaygroundOutputProps) {
       {props.lab === "data" ? <DataLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
       {props.lab === "notebook" ? <NotebookLab result={props.result} previousResult={props.previousResult} onOpenLab={props.onOpenLab} /> : null}
       {props.lab === "annotation" ? <AnnotationLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
+      {props.lab === "conformance" ? <ConformanceLab result={props.result} previousResult={props.previousResult} onSelectFixture={props.onSelectFixture} /> : null}
     </ResultShell>
   );
 }

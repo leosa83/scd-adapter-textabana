@@ -1,5 +1,18 @@
 const moduleCache = new Map();
 let scopeSequence = 0;
+const activeRuns = new Set();
+const cancelledRuns = new Set();
+const queuedRuns = new Set();
+let runQueue = Promise.resolve();
+
+const cancellationDiagnosticCode = "TBA-RUN-CANCELLED-LAB";
+
+function cancellationError() {
+  const error = new Error("Körningen avbröts vid en kooperativ stage-gräns.");
+  error.name = "AbortError";
+  error.code = cancellationDiagnosticCode;
+  return error;
+}
 
 const channelNamePattern = /^[A-Za-z][A-Za-z0-9_.:-]*$/;
 
@@ -408,6 +421,7 @@ const playgroundImplementedCapabilities = [
   "anchor-target",
   "w3c-web-annotation",
   "label-studio-task-subset",
+  "cooperative-cancellation",
 ];
 
 function adapterDiagnostic(code, message, adapterId, severity = "error") {
@@ -1239,12 +1253,24 @@ function buildCapabilities(inspection) {
       support: manifest.support,
       manifestDigest: manifest.manifestDigest,
     })),
+    limits: {
+      digest: "fnv1a-lab-non-cryptographic",
+      channelPayload: "structured-clone-compatible JSON subset",
+      cancellation: "cooperative stage boundaries; synchronous transforms are not preempted",
+      artifacts: "inline control plane only",
+    },
+    valueKinds: ["text", "object", "array", "number", "boolean", "null"],
+    runtimes: [{ id: "browser-worker", support: "playground-subset", moduleLanguage: "javascript" }],
+    extensions: { namespace: "textabana.playground", canonical: false },
     implemented: playgroundImplementedCapabilities,
     unsupported: [...new Set([
       ...(inspection?.unsupported || []),
       "reanchor",
       "lsp",
-      "cancellation",
+      "preemptive-synchronous-cancellation",
+      "deadline-timeout",
+      "backpressure",
+      "external-side-effect-rollback",
       "artifacts",
       "adapter-dependency-graph",
       "stateful-adapters",
@@ -1267,6 +1293,366 @@ function buildCapabilities(inspection) {
       "mlflow-export",
       "otel-correlation",
     ])],
+  };
+}
+
+const negativeConformanceFixtures = [
+  {
+    fixtureId: "failed-run",
+    caseId: "negative-undeclared-channel",
+    expectedOutcome: "failed",
+    expectedDiagnosticCode: "TBA-TYPE-CHANNEL-LAB",
+    purpose: "En odeklarerad kanal måste stoppas atomiskt i strict mode.",
+  },
+  {
+    fixtureId: "negative-unknown-function",
+    caseId: "negative-unknown-function",
+    expectedOutcome: "failed",
+    expectedDiagnosticCode: "TBA-RUN-LAB",
+    purpose: "En okänd funktion får inte ge ett partiellt resultat.",
+  },
+  {
+    fixtureId: "negative-unclosed-block",
+    caseId: "negative-unclosed-block",
+    expectedOutcome: "failed",
+    expectedDiagnosticCode: "TBA-PARSE-LAB",
+    purpose: "En obalanserad blockmarkör måste ge ett positionsbundet parse-fel.",
+  },
+];
+
+const conformanceCases = new Map([
+  ["conformance-golden", { caseId: "golden-core-chain", expectedOutcome: "succeeded" }],
+  ["cancellation-probe", { caseId: "cooperative-cancellation", expectedOutcome: "cancelled", expectedDiagnosticCode: cancellationDiagnosticCode }],
+  ...negativeConformanceFixtures.map((fixture) => [fixture.fixtureId, fixture]),
+]);
+
+const conformanceGoldenBaselines = {
+  "conformance-golden": "fnv1a-lab:7p9j31",
+};
+
+const conformanceProfileOrder = [
+  "language-core/0.4",
+  "runtime-json/1",
+  "editor/1",
+  "adapter-contract/1",
+  "data/1",
+  "notebook/1",
+  "annotation/1",
+  "ml-lineage/1",
+];
+
+function conformanceRequirement(requirementId, status, message, evidenceRefs = []) {
+  return { requirementId, status, message, evidenceRefs: uniqueStrings(evidenceRefs) };
+}
+
+function checkedRequirement(requirementId, condition, passMessage, failMessage, evidenceRefs = []) {
+  return conformanceRequirement(requirementId, condition ? "passed" : "failed", condition ? passMessage : failMessage, evidenceRefs);
+}
+
+function notRunRequirement(requirementId, message) {
+  return conformanceRequirement(requirementId, "not-run", message, []);
+}
+
+function profileResult(profile, declaredSupport, applicable, requirements) {
+  const failed = requirements.some((requirement) => requirement.status === "failed");
+  const passed = requirements.length > 0 && requirements.every((requirement) => requirement.status === "passed");
+  const status = applicable ? (failed ? "failed" : passed ? "passed" : "not-run") : "not-run";
+  const derivedSupport = status === "failed"
+    ? "unsupported"
+    : status !== "passed"
+      ? null
+      : declaredSupport === "contract-only"
+        ? "contract-only"
+        : "playground-subset";
+  return {
+    profile,
+    declaredSupport,
+    status,
+    derivedSupport,
+    applicable,
+    claimable: status === "passed" && derivedSupport === "playground-subset",
+    requirements,
+  };
+}
+
+function committedBindingsResolve(result) {
+  const events = allCommittedEvents(result);
+  const anchors = new Set((result.anchors || []).map((anchor) => anchor.anchorId));
+  const mappings = new Map((result.sourceMaps || []).map((mapping) => [mapping.outputRef, mapping]));
+  const activities = new Set((result.provenance?.activities || []).map((activity) => activity.activityId));
+  return events.every((event) => {
+    const mapping = mappings.get(event.eventId);
+    return anchors.has(event.target?.anchorRef)
+      && mapping
+      && mapping.inputAnchorRefs?.every((anchorRef) => anchors.has(anchorRef))
+      && activities.has(event.provenanceRef)
+      && mapping.generatingActivity === event.provenanceRef;
+  });
+}
+
+function buildStructuralSnapshot({ result, inspection, plan, adapterRun, capabilities, modules }) {
+  const channels = Object.fromEntries(Object.entries(result.channelSnapshots || {}).map(([name, snapshot]) => [
+    name,
+    {
+      descriptor: snapshot.descriptor,
+      events: (snapshot.events || []).map((event) => ({
+        sequence: event.sequence,
+        channel: event.channel,
+        kind: event.kind,
+        target: event.target,
+        payload: event.payload,
+        source: event.source,
+        origin: withoutKeys(event.origin, ["invocationId"]),
+        state: event.state,
+      })),
+    },
+  ]));
+  return canonicalValue({
+    normalization: {
+      policy: "textabana.structural-snapshot/lab-v1",
+      ignoredPaths: [
+        "/transport/runId",
+        "/result/extensions/textabana.playground/duration",
+        "/events/*/runId",
+        "/events/*/runRef",
+        "/events/*/eventId",
+        "/events/*/id",
+        "/plan/steps/*/duration",
+        "/adapterRun/adapterRunId",
+        "/diagnostics/*/diagnosticId",
+        "/cancellation/cancelToken",
+      ],
+    },
+    source: result.source,
+    modules: [...(modules || [])]
+      .map((module) => ({ path: normalizePath(module.path), digest: `fnv1a-lab:${sourceHash(String(module.content || ""))}` }))
+      .sort((left, right) => left.path.localeCompare(right.path)),
+    ir: inspection ? {
+      schema: inspection.schema,
+      languageVersion: inspection.languageVersion,
+      sourceRef: inspection.sourceRef,
+      configuration: inspection.configuration,
+      nodes: inspection.nodes.map((node) => ({ kind: node.kind, sourceSpan: node.sourceSpan, activeScopeIds: node.activeScopeIds, activeBlockIds: node.activeBlockIds, detail: node.detail })),
+      scopes: inspection.scopes,
+      blocks: inspection.blocks,
+      unsupported: inspection.unsupported,
+    } : null,
+    plan: plan ? {
+      schema: plan.schema,
+      languageVersion: plan.languageVersion,
+      sourceRef: plan.sourceRef,
+      deterministic: plan.deterministic,
+      steps: plan.steps.map((step) => withoutKeys(step, ["duration", "invocationId", "activityId"])),
+      unsupported: plan.unsupported,
+    } : null,
+    result: {
+      schema: result.schema,
+      resultId: result.resultId,
+      status: result.run.status,
+      committed: result.run.committed,
+      render: { kind: result.render.kind, mediaType: result.render.mediaType, digest: `fnv1a-lab:${sourceHash(String(result.render.data || ""))}` },
+      channels,
+      anchors: result.anchors,
+      sourceMaps: result.sourceMaps,
+      diagnostics: (result.diagnostics || []).map((diagnostic) => withoutKeys(diagnostic, ["diagnosticId"])),
+    },
+    projection: adapterRun ? {
+      status: adapterRun.status,
+      immutable: adapterRun.verification?.immutable === true,
+      manifests: adapterRun.manifests.map((manifest) => ({ adapterId: manifest.adapterId, version: manifest.version, profile: manifest.profile, support: manifest.support, manifestDigest: manifest.manifestDigest })),
+      projections: adapterRun.projections.map((projection) => ({
+        adapterId: projection.adapterRef.adapterId,
+        projectionId: projection.projectionId,
+        status: projection.status,
+        outputDigest: projection.output ? `fnv1a-lab:${sourceHash(canonicalJson(projection.output))}` : null,
+        fidelity: projection.fidelity,
+      })),
+    } : null,
+    capabilities: {
+      profiles: capabilities.profiles,
+      implemented: capabilities.implemented,
+      unsupported: capabilities.unsupported,
+      limits: capabilities.limits,
+    },
+  });
+}
+
+function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan, adapterRun, capabilities, modules }) {
+  const knownCase = conformanceCases.get(fixtureId);
+  const expected = knownCase || { caseId: fixtureId === "ad-hoc" ? "ad-hoc-success" : `unregistered:${fixtureId}`, expectedOutcome: "succeeded" };
+  const actualOutcome = ["succeeded", "failed", "cancelled"].includes(result.run.status) ? result.run.status : "failed";
+  const isSuccessful = actualOutcome === "succeeded" && result.run.committed;
+  const isTerminalWithoutCommit = actualOutcome !== "succeeded" && !result.run.committed
+    && result.render.data === ""
+    && Object.keys(result.channelSnapshots || {}).length === 0
+    && (result.anchors || []).length === 0
+    && (result.sourceMaps || []).length === 0
+    && (result.provenance?.activities || []).length === 0;
+  const diagnosticCodes = (result.diagnostics || []).map((diagnostic) => diagnostic.code).filter(Boolean);
+  const events = allCommittedEvents(result);
+  const channelNames = Object.keys(result.channelSnapshots || {});
+  const projectionFor = (profile) => adapterRun?.projections.find((projection) => {
+    const manifest = adapterRun.manifests.find((candidate) => candidate.adapterId === projection.adapterRef.adapterId);
+    return manifest?.profile === profile;
+  });
+  const resultRef = result.resultId;
+  const irRef = inspection?.sourceRef?.version || "ir:not-produced";
+  const planRef = plan?.schema || "plan:not-produced";
+  const adapterRef = adapterRun?.sourceResultRef || "adapter:not-run";
+
+  const languageApplicable = isSuccessful;
+  const languageRequirements = languageApplicable ? [
+    checkedRequirement("LANG-SOURCE-IR", Boolean(inspection && inspection.sourceRef?.version === result.source?.version), "IR är bunden till exakt source snapshot.", "IR saknas eller pekar på en annan source snapshot.", [irRef, result.source?.version]),
+    checkedRequirement("LANG-DETERMINISTIC-PLAN", Boolean(plan?.deterministic && plan.steps.every((step) => step.status === "succeeded")), "Den explicita planen är deterministisk och alla stages lyckades.", "Planen saknas, är icke-deterministisk eller innehåller ett misslyckat stage.", [planRef]),
+    checkedRequirement("LANG-SYNTAX-ERASED", !/>>>>|<<<<|^\s*\{[.#]/m.test(result.render.data), "Textabana-markörer är borttagna ur renderingen.", "Textabana-markörer läckte till renderingen.", [resultRef]),
+  ] : [notRunRequirement("LANG-ACTIVE-SUCCESS", "Language-profilen verifieras endast på en lyckad core run; detta case verifierar terminalfel.")];
+
+  const runtimeRequirements = [
+    checkedRequirement("RUNTIME-RESULT-SCHEMA", result.schema === "textabana.result/lab-v1", "Result-envelope har förväntat playgroundschema.", "Result-envelope saknar förväntat schema.", [resultRef]),
+    checkedRequirement("RUNTIME-ATOMIC-TERMINAL", isSuccessful || isTerminalWithoutCommit, "Terminalstatus och commitgräns är atomiskt konsistenta.", "Terminalstatus läckte render, channels, anchors, SourceMaps eller provenance.", [resultRef]),
+    checkedRequirement("RUNTIME-DESCRIPTORS", !isSuccessful || Object.values(result.channelSnapshots || {}).every((snapshot) => snapshot.descriptor?.declared !== false && snapshot.events.every((event) => event.state === "committed")), "Alla durable snapshots har deklarerade descriptors och committed events.", "Ett committed snapshot saknar descriptor eller innehåller tentative events.", [resultRef]),
+  ];
+
+  const editorApplicable = isSuccessful && events.length > 0;
+  const editorRequirements = editorApplicable ? [
+    checkedRequirement("EDITOR-BINDINGS", committedBindingsResolve(result), "Varje event löser till Anchor, SourceMap och provenanceaktivitet.", "Minst ett event har en oresolverbar Anchor-, SourceMap- eller provenance-referens.", [resultRef]),
+    checkedRequirement("EDITOR-POSITIONS", events.every((event) => Number.isInteger(event.line) && event.line > 0 && event.target?.anchorRef), "Alla events har fysisk line och logisk anchorRef.", "Ett event saknar line eller anchorRef.", events.map((event) => event.target?.anchorRef)),
+  ] : [notRunRequirement("EDITOR-EVENTS", "Aktuell fixture emitterade inga positionsbundna events.")];
+
+  const contractApplicable = isSuccessful;
+  const resultSummary = projectionFor("adapter-contract/1");
+  const contractOnlySucceeded = adapterRun?.projections.some((projection) => {
+    const manifest = adapterRun.manifests.find((candidate) => candidate.adapterId === projection.adapterRef.adapterId);
+    return manifest?.support === "contract-only" && projection.status === "succeeded";
+  });
+  const adapterRequirements = contractApplicable ? [
+    checkedRequirement("ADAPTER-IMMUTABLE", adapterRun?.verification?.immutable === true && adapterRun.verification.beforeDigest === adapterRun.verification.afterDigest, "Post-commit fan-out lämnade canonical Result byte-ekvivalent.", "Adapterkörningen muterade eller kunde inte verifiera sitt source result.", [adapterRef]),
+    checkedRequirement("ADAPTER-REFERENCE", resultSummary?.status === "succeeded" && resultSummary.sourceResultRef.resultId === resultRef, "Referensadaptern gav en source-bound projektion.", "Referensadaptern saknas, misslyckades eller pekar på fel resultat.", [resultSummary?.projectionId, resultRef]),
+    checkedRequirement("ADAPTER-CONTRACT-BOUNDARY", !contractOnlySucceeded, "Contract-only-adaptrar producerade ingen fabricerad output.", "En contract-only-adapter producerade en lyckad projektion.", adapterRun?.manifests.filter((manifest) => manifest.support === "contract-only").map((manifest) => manifest.adapterId)),
+    checkedRequirement("ADAPTER-NO-FAILED-PROJECTION", !adapterRun?.projections.some((projection) => projection.status === "failed"), "Ingen begärd adapterprojektion misslyckades.", "Minst en begärd adapterprojektion misslyckades.", [adapterRef, ...(adapterRun?.projections.filter((projection) => projection.status === "failed").map((projection) => projection.projectionId) || [])]),
+  ] : [notRunRequirement("ADAPTER-POST-COMMIT", "Adapters är korrekt skippade när core run inte committar.")];
+
+  const domainProfile = (profile, prefix, requirementId) => {
+    const applicable = isSuccessful && channelNames.some((name) => name.startsWith(prefix));
+    const projection = projectionFor(profile);
+    const requirements = applicable ? [
+      checkedRequirement(requirementId, projection?.status === "succeeded" && projection.sourceResultRef.resultId === resultRef, `${profile} producerade en verifierad source-bound projektion.`, `${profile} saknar en lyckad source-bound projektion.`, [projection?.projectionId, resultRef]),
+    ] : [notRunRequirement(requirementId, `Aktuell fixture emitterade inga ${prefix}*-kanaler.`)];
+    return { applicable, requirements };
+  };
+  const data = domainProfile("data/1", "data.", "DATA-PROJECTION");
+  const notebook = domainProfile("notebook/1", "notebook.", "NOTEBOOK-PROJECTION");
+  const annotation = domainProfile("annotation/1", "annotation.", "ANNOTATION-PROJECTION");
+  const mlManifest = adapterRun?.manifests.find((manifest) => manifest.profile === "ml-lineage/1");
+  const mlProjection = projectionFor("ml-lineage/1");
+  const mlRequirements = [
+    checkedRequirement("ML-CONTRACT-ONLY", mlManifest?.support === "contract-only" && mlProjection?.status !== "succeeded", "ml-lineage/1 stannar vid en deklarerad, icke-claimable kontraktsgräns.", "ml-lineage/1 saknar contract-only-markering eller fabricerade en lyckad projektion.", [mlManifest?.adapterId, mlProjection?.projectionId]),
+  ];
+
+  const profiles = [
+    profileResult("language-core/0.4", capabilities.profiles["language-core/0.4"], languageApplicable, languageRequirements),
+    profileResult("runtime-json/1", capabilities.profiles["runtime-json/1"], true, runtimeRequirements),
+    profileResult("editor/1", capabilities.profiles["editor/1"], editorApplicable, editorRequirements),
+    profileResult("adapter-contract/1", capabilities.profiles["adapter-contract/1"], contractApplicable, adapterRequirements),
+    profileResult("data/1", capabilities.profiles["data/1"], data.applicable, data.requirements),
+    profileResult("notebook/1", capabilities.profiles["notebook/1"], notebook.applicable, notebook.requirements),
+    profileResult("annotation/1", capabilities.profiles["annotation/1"], annotation.applicable, annotation.requirements),
+    profileResult("ml-lineage/1", capabilities.profiles["ml-lineage/1"], true, mlRequirements),
+  ];
+
+  const stages = [
+    { stage: "source", status: result.source ? "passed" : "failed", message: result.source ? "Versionerad source snapshot finns." : "Source snapshot saknas.", evidenceRefs: result.source ? [result.source.version] : [] },
+    { stage: "ir", status: inspection ? "passed" : "failed", message: inspection ? "IR-projektion producerades." : "IR-projektion saknas.", evidenceRefs: inspection ? [inspection.schema, inspection.sourceRef.version] : [] },
+    { stage: "plan", status: isSuccessful ? (plan?.deterministic && plan.steps.every((step) => step.status === "succeeded") ? "passed" : "failed") : "not-run", message: isSuccessful ? "Körplanen verifierades mot lyckad run." : "Planclaim görs inte för terminalt felcase.", evidenceRefs: plan ? [plan.schema] : [] },
+    { stage: "result", status: isSuccessful || isTerminalWithoutCommit ? "passed" : "failed", message: isSuccessful ? "Resultatet är atomiskt committed." : isTerminalWithoutCommit ? "Terminalfelet rullade tillbaka all durable output." : "Resultatgränsen är inkonsistent.", evidenceRefs: [resultRef] },
+    { stage: "projection", status: isSuccessful ? (adapterRun?.verification?.immutable ? "passed" : "failed") : "not-run", message: isSuccessful ? "Post-commit-projektioner kördes isolerat." : "Adapters skippades före commit.", evidenceRefs: adapterRun ? [adapterRef] : [] },
+  ];
+
+  const caseRequirements = [
+    checkedRequirement("CASE-OUTCOME", actualOutcome === expected.expectedOutcome, `Caset gav förväntad terminalstatus ${expected.expectedOutcome}.`, `Caset väntade ${expected.expectedOutcome} men gav ${actualOutcome}.`, [resultRef]),
+    ...(expected.expectedDiagnosticCode ? [checkedRequirement("CASE-DIAGNOSTIC", diagnosticCodes.includes(expected.expectedDiagnosticCode), `Förväntad diagnostikkod ${expected.expectedDiagnosticCode} observerades.`, `Förväntad diagnostikkod ${expected.expectedDiagnosticCode} saknas.`, diagnosticCodes)] : []),
+  ];
+
+  const structuralSnapshot = buildStructuralSnapshot({ result, inspection, plan, adapterRun, capabilities, modules });
+  const structuralDigest = `fnv1a-lab:${sourceHash(canonicalJson(structuralSnapshot))}`;
+  const expectedStructuralDigest = conformanceGoldenBaselines[fixtureId] || null;
+  const goldenStatus = expectedStructuralDigest
+    ? expectedStructuralDigest === structuralDigest ? "passed" : "failed"
+    : "not-run";
+  if (expectedStructuralDigest) {
+    caseRequirements.push(checkedRequirement("GOLDEN-STRUCTURE", goldenStatus === "passed", "Aktuell normaliserad struktur matchar den versionssatta golden-baselinen.", "Aktuell struktur avviker från den versionssatta golden-baselinen.", [expectedStructuralDigest, structuralDigest]));
+  }
+
+  const cancellationRequested = expected.expectedOutcome === "cancelled" || actualOutcome === "cancelled";
+  const cancellationObserved = actualOutcome === "cancelled" && diagnosticCodes.includes(cancellationDiagnosticCode) && isTerminalWithoutCommit;
+  const cancellation = {
+    support: "cooperative-stage-boundary",
+    status: cancellationRequested ? cancellationObserved ? "passed" : "failed" : "not-run",
+    requested: cancellationRequested,
+    observed: cancellationObserved,
+    diagnosticCode: cancellationDiagnosticCode,
+    limitation: "Avbrytning kontrolleras före och efter stages samt emits; synkrona CPU-loopar preempteras inte och externa sidoeffekter kan inte rullas tillbaka.",
+  };
+  if (cancellation.status === "failed") caseRequirements.push(conformanceRequirement("CANCELLATION-ATOMIC", "failed", "Cancellation nådde inte en atomisk cancelled-terminalstatus.", [resultRef]));
+
+  const profileBlockers = profiles.flatMap((profile) => profile.requirements.filter((requirement) => requirement.status === "failed").map((requirement) => requirement.requirementId));
+  const caseBlockers = caseRequirements.filter((requirement) => requirement.status === "failed").map((requirement) => requirement.requirementId);
+  const stageBlockers = stages.filter((stage) => stage.status === "failed").map((stage) => `STAGE-${stage.stage.toUpperCase()}`);
+  const blockingRequirementIds = uniqueStrings([...caseBlockers, ...profileBlockers, ...stageBlockers]);
+  const counts = profiles.reduce((summary, profile) => ({ ...summary, [profile.status]: summary[profile.status] + 1 }), { passed: 0, failed: 0, "not-run": 0 });
+  const reportSeed = {
+    suite: "textabana.playground/interop-0.5",
+    suiteVersion: "1.0.0-lab.1",
+    fixtureId,
+    caseId: expected.caseId,
+    sourceResultRef: resultRef,
+    structuralDigest,
+    profiles: profiles.map((profile) => ({ profile: profile.profile, status: profile.status, derivedSupport: profile.derivedSupport, claimable: profile.claimable })),
+    gate: blockingRequirementIds,
+  };
+  return {
+    schema: "textabana.conformance-report/lab-v1",
+    reportId: `conformance:${sourceHash(canonicalJson(reportSeed))}`,
+    sourceResultRef: resultRef,
+    suite: { suiteId: "textabana.playground/interop-0.5", version: "1.0.0-lab.1" },
+    case: {
+      caseId: expected.caseId,
+      fixtureId,
+      expectedOutcome: expected.expectedOutcome,
+      actualOutcome,
+      ...(expected.expectedDiagnosticCode ? { expectedDiagnosticCode: expected.expectedDiagnosticCode } : {}),
+      registered: Boolean(knownCase || fixtureId === "ad-hoc"),
+      requirements: caseRequirements,
+    },
+    selectedProfiles: conformanceProfileOrder,
+    profiles,
+    stages,
+    normalization: structuralSnapshot.normalization,
+    structuralSnapshot,
+    structuralDigest,
+    golden: {
+      baselineId: expectedStructuralDigest ? `${fixtureId}@1.0.0-lab.1` : null,
+      expectedStructuralDigest,
+      actualStructuralDigest: structuralDigest,
+      status: goldenStatus,
+    },
+    negativeFixtures: negativeConformanceFixtures,
+    cancellation,
+    summary: {
+      passed: counts.passed,
+      failed: counts.failed,
+      notRun: counts["not-run"],
+      claimableProfiles: profiles.filter((profile) => profile.claimable).map((profile) => profile.profile),
+    },
+    gate: { status: blockingRequirementIds.length ? "failed" : "passed", blockingRequirementIds },
+    extensions: {
+      "textabana.playground": {
+        canonical: false,
+        fullConformance: false,
+        digestAlgorithm: "fnv1a-lab-non-cryptographic",
+        note: "Rapporten verifierar endast aktiv fixture och deklarerade playground-subsets; den känner inte CI-status och utgör inte full profilkonformitet.",
+      },
+    },
   };
 }
 
@@ -1331,7 +1717,7 @@ function serializationProblem(value, seen = new WeakSet(), path = "payload") {
   return null;
 }
 
-function createChannelBus({ runId, documentVersion, documentPath, documentSource, strictChannels = false }) {
+function createChannelBus({ runId, documentVersion, documentPath, documentSource, strictChannels = false, isCancelled = () => false }) {
   const channels = new Map();
   const descriptors = new Map();
   const anchors = new Map();
@@ -1341,6 +1727,10 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
   let sequence = 0;
   let stageSequence = 0;
   let invocationSequence = 0;
+
+  const throwIfCancelled = () => {
+    if (isCancelled()) throw cancellationError();
+  };
 
   const declare = (name, rawDescriptor = {}) => {
     const channel = String(name || "").trim();
@@ -1438,6 +1828,7 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
   };
 
   const emit = (channelName, value, location = {}, execution = {}) => {
+    throwIfCancelled();
     const channel = String(channelName || "").trim();
     if (!channelNamePattern.test(channel)) {
       throw new Error(`Ogiltigt kanalnamn “${channel}”. Använd bokstäver, siffror, punkt, kolon, bindestreck eller understreck.`);
@@ -1613,6 +2004,8 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
   return {
     declare,
     emit,
+    isCancelled,
+    throwIfCancelled,
     createExecution(base) {
       invocationSequence += 1;
       const ordinal = String(invocationSequence).padStart(4, "0");
@@ -1724,6 +2117,7 @@ function stringifyResult(value) {
 }
 
 async function callFunction(stage, input, registry, diagnostics, channelBus, contextExtra = {}) {
+  channelBus.throwIfCancelled();
   const entry = registry.get(stage.name);
   if (!entry) throw new Error(`Rad ${stage.line}: okänd funktion “${stage.name}”.`);
   for (const [channelName, descriptor] of Object.entries(entry.descriptor.channels || {})) {
@@ -1753,6 +2147,22 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
     modulePath: entry.modulePath,
     source: { ...source, stageLine: stage.line },
     emit,
+    signal: {
+      get aborted() { return channelBus.isCancelled(); },
+      throwIfAborted() { channelBus.throwIfCancelled(); },
+    },
+    checkpoint() {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          try {
+            channelBus.throwIfCancelled();
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        }, 0);
+      });
+    },
     system: { out: systemOut },
     annotate(value, location = {}) { return emit("system.out", value, { ...location, kind: location.kind || "annotation" }); },
     warn(message, location) {
@@ -1766,6 +2176,7 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
   let output;
   try {
     output = await entry.descriptor.transform(input, args, context);
+    channelBus.throwIfCancelled();
     channelBus.recordStage({
       execution,
       args,
@@ -1780,7 +2191,7 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
       args,
       input,
       output: null,
-      status: "failed",
+      status: error?.code === cancellationDiagnosticCode ? "cancelled" : "failed",
       duration: performance.now() - started,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -1824,6 +2235,7 @@ function selectScopes(scopes, controls = {}) {
 async function applyScopes(value, scopes, registry, diagnostics, channelBus, source, controls = {}) {
   let output = value;
   for (const scope of selectScopes(scopes, controls)) {
+    channelBus.throwIfCancelled();
     output = await callFunction(
       { name: scope.name, args: scope.args, line: scope.openLine },
       output,
@@ -1857,6 +2269,7 @@ async function renderDocument(documentSource, registry, diagnostics, channelBus,
     let scopes = [];
 
     const flush = async () => {
+      channelBus.throwIfCancelled();
       if (!buffer) return;
       const source = {
         path: config.documentPath,
@@ -1878,6 +2291,7 @@ async function renderDocument(documentSource, registry, diagnostics, channelBus,
     };
 
     while (index < lines.length) {
+      channelBus.throwIfCancelled();
       const line = lines[index];
       const blockClose = line.match(blockClosePattern);
       if (blockClose) {
@@ -2185,11 +2599,12 @@ function buildPlan(ir, trace) {
   };
 }
 
-function buildResultEnvelope({ runId, profile = "fresh", ok, output, error, diagnostics, channels, descriptors, anchors, sourceMaps, plan, ir, duration }) {
-  const status = ok ? "succeeded" : "failed";
-  const committedChannels = ok ? channels : {};
+function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitStatus, output, error, diagnostics, channels, descriptors, anchors, sourceMaps, plan, ir, duration }) {
+  const status = explicitStatus || (ok ? "succeeded" : "failed");
+  const committed = ok && status === "succeeded";
+  const committedChannels = committed ? channels : {};
   const channelSnapshots = Object.fromEntries(Object.entries(descriptors)
-    .filter(([name]) => ok && descriptors[name].persistence !== "transient" && (committedChannels[name] || descriptors[name].required))
+    .filter(([name]) => committed && descriptors[name].persistence !== "transient" && (committedChannels[name] || descriptors[name].required))
     .map(([name, descriptor]) => [name, { descriptor, events: committedChannels[name] || [] }]));
   const semanticChannelSnapshots = Object.fromEntries(Object.entries(channelSnapshots).map(([name, snapshot]) => [
     name,
@@ -2201,7 +2616,7 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, output, error, diag
   const semanticSeed = canonicalJson({
     status,
     source: ir?.sourceRef || null,
-    output: ok ? output : "",
+    output: committed ? output : "",
     channels: semanticChannelSnapshots,
     diagnostics: diagnostics.map((diagnostic) => withoutKeys(diagnostic, ["diagnosticId"])),
   });
@@ -2212,21 +2627,21 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, output, error, diag
       runId: `run:${runId}`,
       profile,
       status,
-      committed: ok,
+      committed,
     },
     source: ir?.sourceRef || null,
     render: {
       kind: "text",
       mediaType: "text/markdown",
-      data: ok ? output : "",
+      data: committed ? output : "",
     },
     channelSnapshots,
-    anchors: ok ? anchors : [],
-    sourceMaps: ok ? sourceMaps : [],
+    anchors: committed ? anchors : [],
+    sourceMaps: committed ? sourceMaps : [],
     artifacts: [],
     provenance: {
       entities: [],
-      activities: ok ? (plan?.steps || []).map((step) => ({
+      activities: committed ? (plan?.steps || []).map((step) => ({
         activityId: step.activityId,
         stageId: step.stageId,
         invocationId: step.invocationId,
@@ -2251,10 +2666,12 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, output, error, diag
   };
 }
 
-self.onmessage = async (event) => {
-  const { runId, documentSource, modules, documentPath = "document.md", options = {} } = event.data;
+async function executeRun(payload) {
+  const { runId, documentSource, modules = [], documentPath = "document.md", options = {} } = payload;
   const started = performance.now();
   const diagnostics = [];
+  queuedRuns.delete(runId);
+  activeRuns.add(runId);
   scopeSequence = 0;
   const runProfile = "fresh";
   moduleCache.clear();
@@ -2264,12 +2681,18 @@ self.onmessage = async (event) => {
     documentPath,
     documentSource,
     strictChannels: Boolean(options.strictChannels),
+    isCancelled: () => cancelledRuns.has(runId),
   });
   const registry = new Map();
   const loaded = new Set();
   let inspection = null;
   try {
-    const files = Object.fromEntries(modules.map((module) => [normalizePath(module.path), module.content]));
+    channelBus.throwIfCancelled();
+    const normalizedModules = modules.map((module) => ({ ...module, path: normalizePath(module.path) }));
+    if (new Set(normalizedModules.map((module) => module.path)).size !== normalizedModules.length) {
+      throw new Error("Modulmanifestet innehåller duplicerade normaliserade sökvägar.");
+    }
+    const files = Object.fromEntries(normalizedModules.map((module) => [module.path, module.content]));
     const loading = new Set();
     const config = { scopeOrder: "asc", documentPath };
     for (const line of documentSource.split("\n")) {
@@ -2282,7 +2705,9 @@ self.onmessage = async (event) => {
       }
     }
     inspection = inspectDocument(documentSource, documentPath, config);
+    channelBus.throwIfCancelled();
     const output = await renderDocument(documentSource, registry, diagnostics, channelBus, config);
+    channelBus.throwIfCancelled();
     const channels = channelBus.snapshot();
     const channelDescriptors = channelBus.descriptorSnapshot();
     const executionTrace = channelBus.traceSnapshot();
@@ -2304,6 +2729,17 @@ self.onmessage = async (event) => {
     });
     const capabilities = buildCapabilities(inspection);
     const adapterRun = runAdapters(resultEnvelope, options.adapters, capabilities.implemented);
+    const conformanceReport = buildConformanceReport({
+      fixtureId: String(options.fixtureId || "ad-hoc"),
+      result: resultEnvelope,
+      inspection,
+      plan,
+      adapterRun,
+      capabilities,
+      modules,
+    });
+    activeRuns.delete(runId);
+    cancelledRuns.delete(runId);
     self.postMessage({
       runId,
       ok: true,
@@ -2319,6 +2755,7 @@ self.onmessage = async (event) => {
       executionTrace,
       resultEnvelope,
       adapterRun,
+      conformanceReport,
       capabilities,
       functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath)),
       modulesLoaded: loaded.size,
@@ -2326,9 +2763,10 @@ self.onmessage = async (event) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    const cancelled = error?.code === cancellationDiagnosticCode;
     const diagnostic = {
       diagnosticId: `diag:run:${runId}:${String(diagnostics.length + 1).padStart(3, "0")}`,
-      code: /include|Modulen|Cirkulär/.test(message) ? "TBA-RESOLVE-LAB" : /kanal|ChannelDescriptor|payload/.test(message) ? "TBA-TYPE-CHANNEL-LAB" : /Rad|block|intervall|markör/.test(message) ? "TBA-PARSE-LAB" : "TBA-RUN-LAB",
+      code: cancelled ? cancellationDiagnosticCode : /include|Modulen|Cirkulär/.test(message) ? "TBA-RESOLVE-LAB" : /kanal|ChannelDescriptor|payload/.test(message) ? "TBA-TYPE-CHANNEL-LAB" : /okänd funktion/.test(message) ? "TBA-RUN-LAB" : /Rad|block|intervall|markör/.test(message) ? "TBA-PARSE-LAB" : "TBA-RUN-LAB",
       severity: "error",
       level: "error",
       message,
@@ -2342,6 +2780,7 @@ self.onmessage = async (event) => {
       runId,
       profile: runProfile,
       ok: false,
+      status: cancelled ? "cancelled" : "failed",
       output: "",
       error: message,
       diagnostics,
@@ -2355,9 +2794,21 @@ self.onmessage = async (event) => {
     });
     const capabilities = buildCapabilities(inspection);
     const adapterRun = runAdapters(resultEnvelope, options.adapters, capabilities.implemented);
+    const conformanceReport = buildConformanceReport({
+      fixtureId: String(options.fixtureId || "ad-hoc"),
+      result: resultEnvelope,
+      inspection,
+      plan,
+      adapterRun,
+      capabilities,
+      modules,
+    });
+    activeRuns.delete(runId);
+    cancelledRuns.delete(runId);
     self.postMessage({
       runId,
       ok: false,
+      cancelled,
       output: "",
       error: message,
       diagnostics,
@@ -2371,10 +2822,24 @@ self.onmessage = async (event) => {
       executionTrace: channelBus.traceSnapshot(),
       resultEnvelope,
       adapterRun,
+      conformanceReport,
       capabilities,
       functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath)),
       modulesLoaded: loaded.size,
       duration,
     });
   }
+}
+
+self.onmessage = (event) => {
+  const payload = event.data || {};
+  if (payload.type === "cancel") {
+    const runId = payload.runId;
+    if (activeRuns.has(runId) || queuedRuns.has(runId)) cancelledRuns.add(runId);
+    return Promise.resolve();
+  }
+  queuedRuns.add(payload.runId);
+  const task = runQueue.then(() => executeRun(payload));
+  runQueue = task.catch(() => undefined);
+  return task;
 };

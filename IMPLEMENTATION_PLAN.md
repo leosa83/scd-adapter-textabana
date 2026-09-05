@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-ADAPTER-PLAN` |
-| Planversion | `1.0.4` |
-| Status | Aktiv |
+| Planversion | `1.0.5` |
+| Status | Genomförd |
 | Fastställd | 2026-09-05 |
 | Baseline | Textabana Language & Interop draft 0.4, playground `lab-v1` |
 | Mål | Textabana Language & Interop draft 0.5 med en gemensam adaptergräns |
@@ -152,13 +152,25 @@ Source → Compile → Run → immutable TextabanaResult
 
 ### Sprint 5 — Conformance Lab
 
-**Status:** planerad
+**Status:** genomförd 2026-09-05
 
 **Mål:** Göra profilanspråk verifierbara över hela kedjan source → IR → plan → result → projection.
 
 **Leveranser:** profilval, capabilities, golden fixtures, strukturell diff, negativa fixtures, cancellation och maskinläsbar rapport.
 
 **Acceptans:** varje stödstatus kan härledas till passerade krav; contract-only visas aldrig som implementerat; regressioner blockerar profilanspråk.
+
+**Acceptansevidens:**
+
+- Varje worker-run producerar en separat `textabana.conformance-report/lab-v1` efter core-resultat och adapter fan-out. Rapporten binder suite, case, source result, profiler, krav, stages, structural snapshot och gate i samma maskinläsbara kontrakt.
+- Deklarerad support, tillämplighet, kravstatus, härledd support och `claimable` är separata fält. Data-, Notebook- och Annotation-profiler utan relevanta inputkanaler blir `not-run`; de godkänns inte på tom evidens.
+- `ml-lineage/1` verifieras endast som `contract-only`. No-fabrication-kravet kan passera, men profilen blir aldrig `claimable` och producerar ingen lyckad projektion.
+- Fixturen `conformance-golden` verifierar ett incheckat, versionssatt structural digest över källa, moduldigests, IR, plan, Result, anchors, SourceMaps, capabilities och adapterprojektioner. Regression ändrar actual digest och blockerar grinden.
+- Normaliseringspolicyn publicerar vilka transportfält som ignoreras. Digesten är ärligt märkt `fnv1a-lab`, `canonical=false` och används inte som kryptografiskt eller fullständigt konformitetsanspråk.
+- Tre negativa fixtures verifierar odeklarerad kanal, okänd funktion och obalanserat block. De passerar endast vid exakt terminalstatus, exakt diagnostikkod och atomiskt tom durable commit; core-resultatet förblir `failed`.
+- Kooperativ cancellation har ett eget `cancelled`-tillstånd, run-scopad signal, stage/checkpoint-kontroller, cancelled execution step och atomisk rollback av tentativa outputs. Synkron preemption och externa sidoeffekter är fortsatt explicit unsupported.
+- Conformance Lab erbjuder Gate, profiler, strukturell diff, negativa cases och rå rapport utan att starta en ny run vid labbyte.
+- 74 automatiska kontrakts-, runtime-, data-, notebook-, annotation-, conformance-, dokumentations-, renderings- och UI-test utgör slutgrinden för den versionshanterade femsprintsplanen.
 
 ## Beroenden och ordning
 
@@ -171,6 +183,12 @@ Source → Compile → Run → immutable TextabanaResult
 | 5 · Conformance | Sprint 1–4 | Verifierbara profilanspråk |
 
 ## Ändringslogg
+
+### 1.0.5 — 2026-09-05
+
+- Sprint 5 markerad som genomförd med körbart Conformance Lab och maskinläsbar, run-bunden evidensrapport.
+- Golden structural snapshot, härledda profilanspråk, negativa fixtures och kooperativ cancellation lades till med explicit avgränsning mot full konformitet.
+- Alla fem sprintar i `TA-ADAPTER-PLAN` är genomförda; planen är stängd vid denna baseline.
 
 ### 1.0.4 — 2026-09-05
 

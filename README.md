@@ -6,7 +6,7 @@ Den publicerade specifikationen och playgrounden finns på [textpipe-editor.leo-
 
 ## Playground Labs
 
-Sex interaktiva labs visar olika projektioner av samma worker-run:
+Sju interaktiva labs visar olika projektioner av samma worker-run:
 
 - **Language & Scope** — block, öppna intervall, inheritance, scope-segment och faktisk exekveringsordning.
 - **Editor Metadata** — `system.out`, row/line, Anchor, SourceMap och jämförelse mellan revisioner.
@@ -14,10 +14,19 @@ Sex interaktiva labs visar olika projektioner av samma worker-run:
 - **Data & Lineage** — typade dataset/schema-events, stabila records, deterministisk inner join, cell-/record-lineage, derived aggregation och en source-bound JSON-tabellprojektion.
 - **Notebook Interop** — whole snapshots, stabila cell-id:n, tre MIME-representationer, explicit stateprofil och digest-baserad stale detection.
 - **Annotation & Review** — immutable modellkandidater, modell-/prompt-/inputdigests, confidence method, append-only accept/reject/supersede och resolverbara W3C-/Label Studio-projektioner.
+- **Conformance** — profilval, stage gates, härledda subset-anspråk, versionssatt normalized golden snapshot, strukturell diff, exakta negativa cases och kooperativ cancellation.
 
 Channel & Result innehåller även en adapterinspektör. Den visar det körbara kontraktet efter core commit utan att starta en separat run.
 
-Fixturepaketet innehåller `scope-torture`, `editor-revision`, `channel-fanout`, `base64-inverse`, `failed-run`, `data-join`, `notebook-snapshot` och `annotation-review`.
+Fixturepaketet innehåller `scope-torture`, `editor-revision`, `channel-fanout`, `base64-inverse`, `failed-run`, `data-join`, `notebook-snapshot`, `annotation-review`, `conformance-golden`, två ytterligare negativa cases och `cancellation-probe`.
+
+## Conformance-grind
+
+Varje worker-run producerar en separat `textabana.conformance-report/lab-v1`. Rapporten binder evidens till samma semantiska `TextabanaResult`, skiljer deklarerad support från observerat kravutfall och gör endast en tillämplig playground-subset `claimable` när samtliga krav passerar. Domänprofiler utan relevanta kanaler är `not-run`; `ml-lineage/1` förblir `contract-only` och kan aldrig bli claimable.
+
+`conformance-golden` jämför source, moduldigests, IR, plan, Result, Anchor/SourceMap, capabilities och adapterprojektioner mot ett incheckat structural digest. Transport-id:n och mätt duration exkluderas genom en publicerad normaliseringspolicy. Digesten är uttryckligen icke-kryptografisk `fnv1a-lab` och snapshoten är `canonical=false`.
+
+Negativa cases passerar endast när både terminalstatus och exakt diagnostikkod matchar och den durable committen är tom. Cancellation är ett eget `cancelled`-tillstånd med atomisk rollback, men subseten är kooperativ vid async- och stage-gränser: den preempterar inte synkrona CPU-loopar och lovar ingen rollback av externa sidoeffekter. Webbrapporten känner inte CI-status och är inte full profilkonformitet.
 
 ## Adaptergrund
 
@@ -50,7 +59,7 @@ Viktiga filer:
 
 - `app/specification.tsx` — språk- och interoperabilitetsspecifikation.
 - `app/page.tsx` — delad editor, fixtures och playgroundskal.
-- `app/playground-labs.tsx` — de sex resultatprojektionerna.
+- `app/playground-labs.tsx` — de sju resultatprojektionerna.
 - `public/runtime-worker.js` — parser, modulruntime, kanaler, trace, resultatmodell och post-commit adapterregister.
 - `IMPLEMENTATION_PLAN.md` — versionspolicy, sprintar och acceptansgrindar.
 - `tests/` — regressioner och fixturekontrakt.

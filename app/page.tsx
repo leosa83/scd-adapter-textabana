@@ -25,6 +25,8 @@ import {
   Plus,
   RadioTower,
   RotateCcw,
+  ShieldCheck,
+  Square,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -227,6 +229,36 @@ Positionen är en granskningskandidat.
 Positionen kräver extern verifiering.
 <<<< annotation_review`;
 
+const conformanceGoldenFixtureDocument = `>>>>! include "./modules/conformance.js"
+
+# Conformance golden
+
+>>>> conformance_probe suite="core-chain"
+Alpha är den första positionsbundna observationen.
+Beta är den andra positionsbundna observationen.
+<<<< conformance_probe`;
+
+const negativeUnknownFunctionFixtureDocument = `# Negativ fixture: okänd funktion
+
+>>>> missing_transform
+Den här texten får aldrig committas.
+<<<< missing_transform`;
+
+const negativeUnclosedBlockFixtureDocument = `>>>>! include "./modules/core.js"
+
+# Negativ fixture: obalanserat block
+
+>>>> uppercase
+Det här blocket saknar sin slutmarkör.`;
+
+const cancellationProbeFixtureDocument = `>>>>! include "./modules/conformance.js"
+
+# Cancellation probe
+
+>>>> conformance_probe suite="cancellation" wait_ms=280
+Den här tentativa emissionen ska rullas tillbaka när run avbryts.
+<<<< conformance_probe`;
+
 const playgroundFixtures: PlaygroundFixture[] = [
   {
     id: "scope-torture",
@@ -257,6 +289,7 @@ const playgroundFixtures: PlaygroundFixture[] = [
     title: "Failed run",
     summary: "En odeklarerad kanal visar strict validation och atomisk rollback.",
     document: failedRunFixtureDocument,
+    conformance: { caseId: "negative-undeclared-channel", expectedOutcome: "failed", expectedDiagnosticCode: "TBA-TYPE-CHANNEL-LAB" },
   },
   {
     id: "data-join",
@@ -275,6 +308,34 @@ const playgroundFixtures: PlaygroundFixture[] = [
     title: "Annotation & AI review",
     summary: "Immutable modellkandidater, mänskliga review-revisioner och resolverbara standardprojektioner.",
     document: annotationReviewFixtureDocument,
+  },
+  {
+    id: "conformance-golden",
+    title: "Conformance golden",
+    summary: "Versionssatt source → IR → plan → result → projection-snapshot med härledd profilgrind.",
+    document: conformanceGoldenFixtureDocument,
+    conformance: { caseId: "golden-core-chain", expectedOutcome: "succeeded" },
+  },
+  {
+    id: "negative-unknown-function",
+    title: "Negative · unknown function",
+    summary: "Exakt terminalstatus och diagnostikkod verifieras utan committed output.",
+    document: negativeUnknownFunctionFixtureDocument,
+    conformance: { caseId: "negative-unknown-function", expectedOutcome: "failed", expectedDiagnosticCode: "TBA-RUN-LAB" },
+  },
+  {
+    id: "negative-unclosed-block",
+    title: "Negative · unclosed block",
+    summary: "En obalanserad blockmarkör ska ge TBA-PARSE-LAB och atomisk rollback.",
+    document: negativeUnclosedBlockFixtureDocument,
+    conformance: { caseId: "negative-unclosed-block", expectedOutcome: "failed", expectedDiagnosticCode: "TBA-PARSE-LAB" },
+  },
+  {
+    id: "cancellation-probe",
+    title: "Cancellation probe",
+    summary: "En async stage emitterar tentativt, tar emot cancel och avslutas som cancelled utan durable output.",
+    document: cancellationProbeFixtureDocument,
+    conformance: { caseId: "cooperative-cancellation", expectedOutcome: "cancelled", expectedDiagnosticCode: "TBA-RUN-CANCELLED-LAB", autoCancelAfterMs: 60 },
   },
 ];
 
@@ -1050,6 +1111,63 @@ define({
   }
 });`;
 
+const conformanceModule = `function probeKey(suite, text) {
+  let hash = 2166136261;
+  const source = suite + ":" + text;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return "probe:" + (hash >>> 0).toString(36);
+}
+
+define({
+  conformance_probe: {
+    description: "Emitterar deterministiska, positionsbundna probes och erbjuder en riktig kooperativ cancellation-gräns.",
+    behavior: "segment-preserving",
+    outputs: ["render", "system.out", "conformance.probes"],
+    channels: {
+      "conformance.probes": {
+        payloadKind: "object",
+        mediaType: "application/json",
+        schemaRef: "schema:textabana/conformance-probe/lab-v1",
+        delivery: "snapshot",
+        persistence: "durable",
+        ordering: "global-sequence",
+        key: ["payload.probeId"],
+        schema: {
+          type: "object",
+          required: ["probeId", "suite", "text"],
+          properties: { probeId: { type: "string" }, suite: { type: "string" }, text: { type: "string" } }
+        }
+      }
+    },
+    args: {
+      suite: { type: "string", default: "core-chain" },
+      wait_ms: { type: "number", default: 0 }
+    },
+    async transform(input, args, context) {
+      const suite = String(args.suite || "core-chain");
+      let row = 0;
+      String(input).split("\\n").forEach((sourceLine, lineOffset) => {
+        const text = sourceLine.trim();
+        if (!text) return;
+        row += 1;
+        const probeId = probeKey(suite, text);
+        const payload = { probeId, suite, text };
+        const location = { row, rowId: probeId, rowSet: "conformance-probes", lineOffset, kind: "conformance-probe" };
+        context.emit("conformance.probes", payload, location);
+        context.system.out.row(probeId, payload, location);
+      });
+      const wait = Math.max(0, Number(args.wait_ms || 0));
+      if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
+      await context.checkpoint();
+      context.signal.throwIfAborted();
+      return input;
+    }
+  }
+});`;
+
 const initialFiles: ProjectFile[] = [
   { path: "document.md", kind: "document", content: sampleDocument },
   { path: "modules/core.js", kind: "module", content: coreModule },
@@ -1059,9 +1177,10 @@ const initialFiles: ProjectFile[] = [
   { path: "modules/data.js", kind: "module", content: dataModule },
   { path: "modules/notebook.js", kind: "module", content: notebookModule },
   { path: "modules/annotation.js", kind: "module", content: annotationModule },
+  { path: "modules/conformance.js", kind: "module", content: conformanceModule },
 ];
 
-const storageKey = "textabana-project-v9-annotation-review";
+const storageKey = "textabana-project-v10-conformance";
 
 function filesForFixture(fixtureId: string): ProjectFile[] {
   const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
@@ -1107,6 +1226,7 @@ const emptyRuntimeResult: RuntimeResult = {
   executionTrace: [],
   resultEnvelope: null,
   adapterRun: null,
+  conformanceReport: null,
   capabilities: null,
   emissions: 0,
   functions: [],
@@ -1182,7 +1302,9 @@ export default function Home() {
         executionTrace: event.data.executionTrace ?? [],
         resultEnvelope: event.data.resultEnvelope ?? null,
         adapterRun: event.data.adapterRun ?? null,
+        conformanceReport: event.data.conformanceReport ?? null,
         capabilities: event.data.capabilities ?? null,
+        cancelled: event.data.cancelled === true,
         emissions: event.data.emissions ?? 0,
         functions: event.data.functions ?? [],
         modulesLoaded: event.data.modulesLoaded ?? 0,
@@ -1213,6 +1335,7 @@ export default function Home() {
     const documentFile = files.find((file) => file.kind === "document");
     if (!documentFile) return;
     const runId = runIdRef.current + 1;
+    const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
     runIdRef.current = runId;
     setRunning(true);
     worker.postMessage({
@@ -1220,9 +1343,18 @@ export default function Home() {
       documentPath: documentFile.path,
       documentSource: documentFile.content,
       modules: files.filter((file) => file.kind === "module"),
-      options: { strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review"] },
+      options: { fixtureId, strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review", "org.textabana.ml-lineage"] },
     });
-  }, [files, strictChannels]);
+    if (fixture.conformance?.autoCancelAfterMs) {
+      window.setTimeout(() => worker.postMessage({ type: "cancel", runId, reason: "fixture" }), fixture.conformance.autoCancelAfterMs);
+    }
+  }, [files, fixtureId, strictChannels]);
+
+  const cancelRun = useCallback(() => {
+    if (!running || !workerRef.current) return;
+    workerRef.current.postMessage({ type: "cancel", runId: runIdRef.current, reason: "user" });
+    toast.info("Avbrytning begärd vid nästa kooperativa stage-gräns");
+  }, [running]);
 
   useEffect(() => {
     if (!workerReady) return;
@@ -1306,7 +1438,9 @@ export default function Home() {
                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={resetProject} aria-label="Återställ exempel"><RotateCcw /></Button></TooltipTrigger><TooltipContent>Återställ exempel</TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={copyOutput} disabled={!result.ok} aria-label="Kopiera resultat"><Copy /></Button></TooltipTrigger><TooltipContent>Kopiera resultat</TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={downloadOutput} disabled={!result.ok} aria-label="Ladda ner resultat"><Download /></Button></TooltipTrigger><TooltipContent>Ladda ner Markdown</TooltipContent></Tooltip>
-                <Button size="sm" onClick={execute}><Play /> Kör</Button>
+                {running
+                  ? <Button size="sm" variant="outline" onClick={cancelRun}><Square /> Avbryt</Button>
+                  : <Button size="sm" onClick={execute}><Play /> Kör</Button>}
               </>
             )}
           </div>
@@ -1333,6 +1467,9 @@ export default function Home() {
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "annotation"} className={lab === "annotation" ? "is-active" : ""} onClick={() => setLab("annotation")}>
                   <Bot /><span><strong>Annotation & Review</strong><small>AI-kandidater, revisioner och export</small></span>
+                </button>
+                <button type="button" role="tab" aria-selected={lab === "conformance"} className={lab === "conformance" ? "is-active" : ""} onClick={() => setLab("conformance")}>
+                  <ShieldCheck /><span><strong>Conformance</strong><small>Profiler, krav, golden diff och grind</small></span>
                 </button>
               </div>
               <div className="lab-controls">
@@ -1387,7 +1524,7 @@ export default function Home() {
                   </section>
                 </ResizablePanel>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize="50%" minSize="30%"><PlaygroundOutput lab={lab} result={result} previousResult={previousResult} running={running} onOpenLab={setLab} /></ResizablePanel>
+                <ResizablePanel defaultSize="50%" minSize="30%"><PlaygroundOutput lab={lab} result={result} previousResult={previousResult} running={running} onOpenLab={setLab} onSelectFixture={selectFixture} /></ResizablePanel>
               </ResizablePanelGroup>
             </div>
 
@@ -1398,13 +1535,13 @@ export default function Home() {
               </div>
               {mobilePane === "editor" ? (
                 <section className="editor-shell"><div className="panel-bar"><div className="panel-title">{activeFile.path}</div></div><div className="editor-area"><CodeEditor file={activeFile} onChange={updateActiveFile} /></div></section>
-              ) : <PlaygroundOutput lab={lab} result={result} previousResult={previousResult} running={running} onOpenLab={setLab} />}
+              ) : <PlaygroundOutput lab={lab} result={result} previousResult={previousResult} running={running} onOpenLab={setLab} onSelectFixture={selectFixture} />}
             </div>
           </main>
         ) : <Specification />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Data + Notebook + Annotation lab-v1</span>
+          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Data + Notebook + Annotation + Conformance lab-v1</span>
           <span className="syntax-hint"><code>source</code> IR <ChevronRight /><code>run</code> result <ChevronRight /><code>adapters</code></span>
           <span>Source-first · Typed · Positionsmedveten</span>
         </footer>
