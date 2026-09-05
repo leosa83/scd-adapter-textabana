@@ -1,6 +1,8 @@
 const moduleCache = new Map();
 let scopeSequence = 0;
 
+const channelNamePattern = /^[A-Za-z][A-Za-z0-9_.:-]*$/;
+
 const includePattern = /^\s*>>>>!?\s*include\s+["']([^"']+)["']\s*$/;
 const directivePattern = /^\s*>>>>!\s*(.+?)\s*$/;
 const scopeOpenPattern = /^\s*>>>>\+\s*(.+?)\s*$/;
@@ -133,6 +135,111 @@ function serializableMeta(name, descriptor, modulePath) {
     accepts: descriptor.accepts || "text",
     returns: descriptor.returns || "text",
     behavior: descriptor.behavior || "unspecified",
+    outputs: Array.isArray(descriptor.outputs) && descriptor.outputs.length
+      ? descriptor.outputs.map(String)
+      : ["render"],
+  };
+}
+
+function serializableValue(value, seen = new WeakSet()) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : String(value);
+  if (typeof value === "bigint") return value.toString();
+  if (typeof value === "function" || typeof value === "symbol") return String(value);
+  if (Array.isArray(value)) return value.map((item) => serializableValue(item, seen));
+  if (typeof value === "object") {
+    if (seen.has(value)) return "[Circular]";
+    seen.add(value);
+    const result = {};
+    for (const [key, item] of Object.entries(value)) result[key] = serializableValue(item, seen);
+    seen.delete(value);
+    return result;
+  }
+  return String(value);
+}
+
+function createChannelBus({ runId, documentVersion }) {
+  const channels = new Map();
+  let sequence = 0;
+
+  const emit = (channelName, value, location = {}, execution = {}) => {
+    const channel = String(channelName || "").trim();
+    if (!channelNamePattern.test(channel)) {
+      throw new Error(`Ogiltigt kanalnamn “${channel}”. Använd bokstäver, siffror, punkt, kolon, bindestreck eller understreck.`);
+    }
+    if (channel === "render") {
+      throw new Error("Kanalen “render” skrivs med funktionens return-värde, inte med context.emit(...).");
+    }
+    if (channel.startsWith("system.") && channel !== "system.out") {
+      throw new Error(`Kanalnamnet “${channel}” är reserverat av Textabana-kärnan.`);
+    }
+
+    const source = execution.source || { startLine: execution.stageLine || 1, endLine: execution.stageLine || 1 };
+    const row = Number.isInteger(Number(location.row)) && Number(location.row) > 0
+      ? Number(location.row)
+      : 1;
+    const explicitLine = Number(location.line);
+    const lineOffset = Number(location.lineOffset);
+    const line = Number.isInteger(explicitLine) && explicitLine > 0
+      ? explicitLine
+      : Number.isInteger(lineOffset)
+        ? Math.max(1, source.startLine + lineOffset)
+        : source.startLine;
+    const column = Number(location.column);
+    const endLine = Number(location.endLine);
+    const requestedMapping = location.mapping || source.mapping;
+    const mapping = ["exact", "derived", "synthetic"].includes(requestedMapping)
+      ? requestedMapping
+      : "exact";
+    const type = String(location.type || (channel === "system.out" ? "annotation" : "event"));
+    const rowId = location.rowId === undefined
+      ? `${documentVersion}:${execution.functionName}:${line}:${row}`
+      : String(location.rowId);
+
+    sequence += 1;
+    const event = {
+      schema: channel === "system.out"
+        ? "textabana.system.out/v1"
+        : "textabana.channel-event/v1",
+      id: `${documentVersion}:${channel}:${String(sequence).padStart(4, "0")}`,
+      runId,
+      documentVersion,
+      sequence,
+      channel,
+      type,
+      row,
+      rowId,
+      line,
+      payload: serializableValue(value),
+      source: {
+        path: source.path || "document.md",
+        startLine: source.startLine,
+        endLine: source.endLine,
+        mapping,
+      },
+      origin: {
+        function: execution.functionName,
+        module: execution.modulePath,
+        modality: execution.modality || "block",
+        stageLine: execution.stageLine,
+        ...(execution.scopeId ? { scopeId: execution.scopeId } : {}),
+      },
+      ...(Number.isInteger(column) && column > 0 ? { column } : {}),
+      ...(Number.isInteger(endLine) && endLine >= line ? { endLine } : {}),
+    };
+
+    if (!channels.has(channel)) channels.set(channel, []);
+    channels.get(channel).push(event);
+    return event;
+  };
+
+  return {
+    emit,
+    snapshot() {
+      return Object.fromEntries([...channels.entries()].map(([name, events]) => [name, [...events]]));
+    },
+    get size() { return sequence; },
   };
 }
 
@@ -191,18 +298,55 @@ function stringifyResult(value) {
   return `\n\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\`\n`;
 }
 
-async function callFunction(stage, input, registry, diagnostics, contextExtra = {}) {
+async function callFunction(stage, input, registry, diagnostics, channelBus, contextExtra = {}) {
   const entry = registry.get(stage.name);
   if (!entry) throw new Error(`Rad ${stage.line}: okänd funktion “${stage.name}”.`);
   const warnings = [];
-  const context = {
+  const source = contextExtra.source || { startLine: stage.line, endLine: stage.line };
+  const execution = {
     functionName: stage.name,
     modulePath: entry.modulePath,
-    warn(message) { warnings.push(String(message)); },
+    modality: contextExtra.modality || "block",
+    scopeId: contextExtra.scopeId,
+    stageLine: stage.line,
+    source,
+  };
+  const emit = (channel, value, location) => channelBus.emit(channel, value, location, execution);
+  const systemOut = (value, location) => emit("system.out", value, location);
+  systemOut.line = (value, location = {}) => emit("system.out", value, { ...location, type: location.type || "line" });
+  systemOut.row = (rowId, value, location = {}) => emit("system.out", value, {
+    ...location,
+    rowId,
+    type: location.type || "row",
+  });
+  const context = {
     ...contextExtra,
+    functionName: stage.name,
+    modulePath: entry.modulePath,
+    source: { ...source, stageLine: stage.line },
+    emit,
+    system: { out: systemOut },
+    annotate(value, location = {}) { return emit("system.out", value, { ...location, type: location.type || "annotation" }); },
+    warn(message, location) {
+      const normalized = String(message);
+      warnings.push({ message: normalized, location });
+      emit("diagnostics", { level: "warning", message: normalized }, location);
+    },
   };
   const output = await entry.descriptor.transform(input, withoutSystemArgs(stage.args), context);
-  for (const message of warnings) diagnostics.push({ level: "warning", line: stage.line, message });
+  for (const warning of warnings) {
+    const warningLine = Number(warning.location?.line);
+    const warningOffset = Number(warning.location?.lineOffset);
+    diagnostics.push({
+      level: "warning",
+      line: Number.isInteger(warningLine) && warningLine > 0
+        ? warningLine
+        : Number.isInteger(warningOffset)
+          ? Math.max(1, source.startLine + warningOffset)
+          : source.startLine,
+      message: warning.message,
+    });
+  }
   return output;
 }
 
@@ -225,15 +369,16 @@ function selectScopes(scopes, controls = {}) {
   return sortScopes(selected, controls.order || "asc");
 }
 
-async function applyScopes(value, scopes, registry, diagnostics, line, controls = {}) {
+async function applyScopes(value, scopes, registry, diagnostics, channelBus, source, controls = {}) {
   let output = value;
   for (const scope of selectScopes(scopes, controls)) {
     output = await callFunction(
-      { name: scope.name, args: scope.args, line },
+      { name: scope.name, args: scope.args, line: scope.openLine },
       output,
       registry,
       diagnostics,
-      { modality: "interval", scopeId: scope.id },
+      channelBus,
+      { modality: "interval", scopeId: scope.id, source },
     );
   }
   return output;
@@ -242,24 +387,42 @@ async function applyScopes(value, scopes, registry, diagnostics, line, controls 
 function stripPropertySyntax(source) {
   return source
     .split("\n")
-    .filter((line) => !/^\s*\{(?:[.#][\w-]+|[\w-]+=(?:"[^"]*"|'[^']*'|[^\s}]+))(?:\s+(?:[.#][\w-]+|[\w-]+=(?:"[^"]*"|'[^']*'|[^\s}]+)))*\}\s*$/.test(line))
-    .map((line) => line.replace(/^(#{1,6}\s+.*?)\s+\{[^{}]+\}\s*$/, "$1"))
+    .map((line) => /^\s*\{(?:[.#][\w-]+|[\w-]+=(?:"[^"]*"|'[^']*'|[^\s}]+))(?:\s+(?:[.#][\w-]+|[\w-]+=(?:"[^"]*"|'[^']*'|[^\s}]+)))*\}\s*$/.test(line)
+      ? ""
+      : line.replace(/^(#{1,6}\s+.*?)\s+\{[^{}]+\}\s*$/, "$1"))
     .join("\n");
 }
 
-async function renderDocument(documentSource, registry, diagnostics, config) {
+async function renderDocument(documentSource, registry, diagnostics, channelBus, config) {
   const lines = documentSource.split("\n");
 
   async function renderSequence(startIndex, expectedClose = null, inheritedForbidden = [], blockCross = "error") {
     let index = startIndex;
     let output = "";
     let buffer = "";
+    let bufferStartLine = null;
+    let bufferEndLine = null;
     let scopes = [];
 
-    const flush = async (line) => {
+    const flush = async () => {
       if (!buffer) return;
-      output += stringifyResult(await applyScopes(stripPropertySyntax(buffer), scopes, registry, diagnostics, line, { order: config.scopeOrder }));
+      const source = {
+        path: config.documentPath,
+        startLine: bufferStartLine || 1,
+        endLine: bufferEndLine || bufferStartLine || 1,
+      };
+      output += stringifyResult(await applyScopes(
+        stripPropertySyntax(buffer),
+        scopes,
+        registry,
+        diagnostics,
+        channelBus,
+        source,
+        { order: config.scopeOrder },
+      ));
       buffer = "";
+      bufferStartLine = null;
+      bufferEndLine = null;
     };
 
     while (index < lines.length) {
@@ -270,18 +433,22 @@ async function renderDocument(documentSource, registry, diagnostics, config) {
         if (blockClose[1] !== expectedClose) {
           throw new Error(`Rad ${index + 1}: väntade <<<< ${expectedClose}, men hittade <<<< ${blockClose[1]}.`);
         }
-        await flush(index + 1);
+        await flush();
         if (scopes.length) {
           throw new Error(`Blocket “${expectedClose}” stängs medan intervallet “${scopes.at(-1).id}” fortfarande är öppet. Ange en korsningspolicy eller stäng intervallet först.`);
         }
         return { output, nextIndex: index + 1 };
       }
 
-      if (includePattern.test(line) || directivePattern.test(line)) { index += 1; continue; }
+      if (includePattern.test(line) || directivePattern.test(line)) {
+        await flush();
+        index += 1;
+        continue;
+      }
 
       const scopeOpen = line.match(scopeOpenPattern);
       if (scopeOpen) {
-        await flush(index + 1);
+        await flush();
         const stage = parseStage(scopeOpen[1], index + 1);
         if (stage.name.startsWith("@")) throw new Error(`Rad ${index + 1}: ett intervall måste öppna en funktion.`);
         scopeSequence += 1;
@@ -291,6 +458,7 @@ async function renderDocument(documentSource, registry, diagnostics, config) {
           id: String(stage.args["@id"] || `${stage.name}-${scopeSequence}`),
           order: stage.args["@order"] === undefined ? null : Number(stage.args["@order"]),
           sequence: scopeSequence,
+          openLine: stage.line,
         });
         index += 1;
         continue;
@@ -298,7 +466,7 @@ async function renderDocument(documentSource, registry, diagnostics, config) {
 
       const scopeClose = line.match(scopeClosePattern);
       if (scopeClose) {
-        await flush(index + 1);
+        await flush();
         const rawTarget = scopeClose[1].trim();
         const target = rawTarget.startsWith("@id=") ? rawTarget.slice(4) : rawTarget.replace(/^@/, "");
         let found = -1;
@@ -318,35 +486,44 @@ async function renderDocument(documentSource, registry, diagnostics, config) {
 
       const blockOpen = line.match(blockOpenPattern);
       if (blockOpen) {
-        await flush(index + 1);
-        let header = blockOpen[1].trim();
+        await flush();
+        const stageSources = splitExpression(blockOpen[1].trim()).map((source) => ({ source, line: index + 1 }));
         let cursor = index + 1;
         while (cursor < lines.length && /^\s*(?:\||@)/.test(lines[cursor])) {
-          header += ` ${lines[cursor].trim()}`;
+          const continuation = lines[cursor].trim().replace(/^\|\s*/, "");
+          for (const source of splitExpression(continuation)) stageSources.push({ source, line: cursor + 1 });
           cursor += 1;
         }
-        const stages = splitExpression(header).map((part) => parseStage(part, index + 1));
+        const stages = stageSources.map((part) => parseStage(part.source, part.line));
         const first = stages[0];
         if (!first || first.name.startsWith("@")) throw new Error(`Rad ${index + 1}: blocket måste börja med en funktion.`);
         const cross = String(first.args["@cross"] || "error");
         const ambient = [...scopes];
         const inner = await renderSequence(cursor, first.name, ambient.flatMap((scope) => [scope.id, scope.name]), cross);
         let value = inner.output;
+        const blockSource = {
+          path: config.documentPath,
+          startLine: Math.min(lines.length, cursor + 1),
+          endLine: Math.max(Math.min(lines.length, cursor + 1), inner.nextIndex - 1),
+        };
         const explicitIntervalStage = stages.some((stage) => stage.name === "@intervals");
         for (const stage of stages) {
           if (stage.name === "@intervals") {
-            value = await applyScopes(value, ambient, registry, diagnostics, stage.line, {
+            value = await applyScopes(value, ambient, registry, diagnostics, channelBus, blockSource, {
               mode: stage.args.only ? "only" : stage.args.except ? "except" : "default",
               selection: stage.args.only || stage.args.except || [],
               order: stage.args.order || config.scopeOrder,
             });
           } else {
-            value = await callFunction(stage, value, registry, diagnostics, { modality: "block" });
+            value = await callFunction(stage, value, registry, diagnostics, channelBus, {
+              modality: "block",
+              source: blockSource,
+            });
           }
         }
         const inheritMode = String(first.args["@inherit"] || "default");
         if (!explicitIntervalStage && inheritMode !== "none" && inheritMode !== "explicit") {
-          value = await applyScopes(value, ambient, registry, diagnostics, index + 1, {
+          value = await applyScopes(value, ambient, registry, diagnostics, channelBus, blockSource, {
             mode: inheritMode,
             selection: first.args["@intervals"] || [],
             order: config.scopeOrder,
@@ -357,11 +534,13 @@ async function renderDocument(documentSource, registry, diagnostics, config) {
         continue;
       }
 
+      if (bufferStartLine === null) bufferStartLine = index + 1;
+      bufferEndLine = index + 1;
       buffer += `${line}${index < lines.length - 1 ? "\n" : ""}`;
       index += 1;
     }
 
-    await flush(lines.length);
+    await flush();
     if (expectedClose) throw new Error(`Blocket “${expectedClose}” saknar slutmarkören <<<< ${expectedClose}.`);
     if (scopes.length) throw new Error(`Intervallet “${scopes.at(-1).id}” är fortfarande öppet vid dokumentets slut.`);
     return { output, nextIndex: index };
@@ -371,15 +550,17 @@ async function renderDocument(documentSource, registry, diagnostics, config) {
 }
 
 self.onmessage = async (event) => {
-  const { runId, documentSource, modules } = event.data;
+  const { runId, documentSource, modules, documentPath = "document.md" } = event.data;
   const started = performance.now();
   const diagnostics = [];
+  scopeSequence = 0;
+  const channelBus = createChannelBus({ runId, documentVersion: sourceHash(documentSource) });
   try {
     const files = Object.fromEntries(modules.map((module) => [normalizePath(module.path), module.content]));
     const registry = new Map();
     const loaded = new Set();
     const loading = new Set();
-    const config = { scopeOrder: "asc" };
+    const config = { scopeOrder: "asc", documentPath };
     for (const line of documentSource.split("\n")) {
       const include = line.match(includePattern);
       if (include) await loadModule(normalizePath(include[1]), files, registry, loaded, loading);
@@ -389,11 +570,13 @@ self.onmessage = async (event) => {
         if (stage.args["scope-order"] === "declaration:desc") config.scopeOrder = "desc";
       }
     }
-    const output = await renderDocument(documentSource, registry, diagnostics, config);
+    const output = await renderDocument(documentSource, registry, diagnostics, channelBus, config);
     self.postMessage({
       runId,
       ok: true,
       output,
+      channels: channelBus.snapshot(),
+      emissions: channelBus.size,
       diagnostics,
       functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath)),
       modulesLoaded: loaded.size,
@@ -405,6 +588,8 @@ self.onmessage = async (event) => {
       ok: false,
       error: error instanceof Error ? error.message : String(error),
       diagnostics,
+      channels: {},
+      emissions: 0,
       duration: performance.now() - started,
     });
   }

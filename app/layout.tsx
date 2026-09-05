@@ -4,10 +4,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Textabana — Semantic text runtime",
   description:
-    "Normativ specifikation och körbar playground för block, intervall, inheritance och lättviktig semantisk text.",
+    "Normativ specifikation och körbar playground för block, intervall, inheritance, flerkanalig output och positionsmedveten metadata.",
   icons: {
     icon: "/favicon-textabana.svg",
     shortcut: "/favicon-textabana.svg",
+  },
+  other: {
+    "codex-preview": "development",
   },
 };
 

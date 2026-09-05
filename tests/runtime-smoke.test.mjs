@@ -112,3 +112,119 @@ test("nested Base64 interval functions compose to an inverse", async () => {
   assert.equal(result.ok, true);
   assert.equal(result.output.trim(), "Textabana kan transformera den här texten");
 });
+
+test("functions can emit to unlimited named channels without changing render", async () => {
+  const result = await runRuntime(
+    `>>>>! include "./modules/metadata.js"\n>>>> collect channel="records"\nAlpha\nBeta\n<<<< collect`,
+    [{
+      path: "modules/metadata.js",
+      content: `define({\n  collect: {\n    transform(input, args, context) {\n      const lines = String(input).trim().split("\\n");\n      lines.forEach((text, index) => {\n        const location = { row: index + 1, rowId: "record-" + (index + 1), lineOffset: index };\n        context.emit(args.channel, { text }, location);\n        context.emit("search.index", { text: text.toLowerCase() }, location);\n      });\n      return input;\n    }\n  }\n});`,
+    }],
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.output.trim(), "Alpha\nBeta");
+  assert.deepEqual(Object.keys(result.channels), ["records", "search.index"]);
+  assert.equal(result.channels.records.length, 2);
+  assert.equal(result.channels["search.index"].length, 2);
+  assert.equal(result.channels.records[0].payload.text, "Alpha");
+  assert.equal(result.channels.records[0].line, 3);
+  assert.equal(result.channels.records[1].line, 4);
+  assert.equal(result.channels.records[1].rowId, "record-2");
+});
+
+test("system.out guarantees row, line, schema and execution provenance", async () => {
+  const result = await runRuntime(
+    `>>>>! include "./modules/metadata.js"\n>>>> inspect\nFörsta posten\nAndra posten\n<<<< inspect`,
+    [{
+      path: "modules/metadata.js",
+      content: `define({\n  inspect: {\n    transform(input, _args, context) {\n      String(input).trim().split("\\n").forEach((text, index) => {\n        context.system.out.row("item-" + (index + 1), { kind: "statement", text }, { row: index + 1, lineOffset: index });\n      });\n      return input;\n    }\n  }\n});`,
+    }],
+  );
+
+  assert.equal(result.ok, true);
+  const [first, second] = result.channels["system.out"];
+  assert.equal(first.schema, "textabana.system.out/v1");
+  assert.equal(first.type, "row");
+  assert.equal(first.row, 1);
+  assert.equal(first.rowId, "item-1");
+  assert.equal(first.line, 3);
+  assert.equal(first.source.startLine, 3);
+  assert.equal(first.source.endLine, 4);
+  assert.equal(first.source.mapping, "exact");
+  assert.equal(first.origin.function, "inspect");
+  assert.equal(first.origin.module, "modules/metadata.js");
+  assert.equal(first.origin.modality, "block");
+  assert.equal(second.row, 2);
+  assert.equal(second.line, 4);
+  assert.equal(result.emissions, 2);
+});
+
+test("system.out.line and warnings retain physical source lines", async () => {
+  const result = await runRuntime(
+    `>>>>! include "./modules/metadata.js"\n>>>> inspect\nFörsta raden\nAndra raden\n<<<< inspect`,
+    [{
+      path: "modules/metadata.js",
+      content: `define({ inspect: { transform(input, _args, context) { context.warn("Kontrollera första raden", { lineOffset: 0 }); context.system.out.line({ text: "Andra raden" }, { row: 2, rowId: "line-two", lineOffset: 1 }); return input; } } });`,
+    }],
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.diagnostics[0].line, 3);
+  assert.equal(result.channels.diagnostics[0].line, 3);
+  assert.equal(result.channels.diagnostics[0].payload.level, "warning");
+  assert.equal(result.channels["system.out"][0].type, "line");
+  assert.equal(result.channels["system.out"][0].line, 4);
+  assert.equal(result.channels["system.out"][0].rowId, "line-two");
+});
+
+test("interval inheritance controls both transformation and channel emissions", async () => {
+  const modules = [{
+    path: "modules/core.js",
+    content: `define({\n  block: input => "B(" + String(input).trim() + ")",\n  observe: { transform(input, _args, context) { context.annotate({ seen: String(input).trim() }); return "I(" + String(input).trim() + ")"; } }\n});`,
+  }];
+  const inherited = await runRuntime(
+    `>>>>! include "./modules/core.js"\n>>>>+ observe @id=watch\n>>>> block\nx\n<<<< block\n<<<<+ @id=watch`,
+    modules,
+  );
+  const isolated = await runRuntime(
+    `>>>>! include "./modules/core.js"\n>>>>+ observe @id=watch\n>>>> block @inherit=none\nx\n<<<< block\n<<<<+ @id=watch`,
+    modules,
+  );
+
+  assert.equal(inherited.output.trim(), "I(B(x))");
+  assert.equal(inherited.channels["system.out"].length, 1);
+  assert.equal(inherited.channels["system.out"][0].origin.modality, "interval");
+  assert.equal(inherited.channels["system.out"][0].origin.scopeId, "watch");
+  assert.equal(inherited.channels["system.out"][0].line, 4);
+  assert.equal(isolated.output.trim(), "B(x)");
+  assert.equal(isolated.channels["system.out"], undefined);
+});
+
+test("channel sequence follows deterministic pipeline execution order", async () => {
+  const result = await runRuntime(
+    `>>>>! include "./modules/core.js"\n>>>> first | second\nx\n<<<< first`,
+    [{
+      path: "modules/core.js",
+      content: `define({\n  first: { transform(input, _args, context) { context.emit("audit", { step: "first" }); return input; } },\n  second: { transform(input, _args, context) { context.emit("audit", { step: "second" }); return input; } }\n});`,
+    }],
+  );
+
+  assert.equal(JSON.stringify(result.channels.audit.map((event) => event.payload.step)), JSON.stringify(["first", "second"]));
+  assert.equal(JSON.stringify(result.channels.audit.map((event) => event.sequence)), JSON.stringify([1, 2]));
+});
+
+test("a failed run publishes no partial channel snapshot", async () => {
+  const result = await runRuntime(
+    `>>>>! include "./modules/core.js"\n>>>> fail\nx\n<<<< fail`,
+    [{
+      path: "modules/core.js",
+      content: `define({ fail: { transform(input, _args, context) { context.emit("audit", { partial: true }); context.emit("system.private", {}); return input; } } });`,
+    }],
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(Object.keys(result.channels).length, 0);
+  assert.equal(result.emissions, 0);
+  assert.match(result.error, /reserverat/);
+});

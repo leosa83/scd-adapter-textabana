@@ -21,7 +21,9 @@ import {
   Layers3,
   Play,
   Plus,
+  RadioTower,
   RotateCcw,
+  Rows3,
   Sparkles,
   Zap,
 } from "lucide-react";
@@ -56,6 +58,25 @@ type FunctionMeta = {
   args: Record<string, { type?: string; default?: unknown; description?: string }>;
   accepts: string;
   returns: string;
+  outputs: string[];
+};
+
+type ChannelEvent = {
+  schema: string;
+  id: string;
+  runId: number;
+  documentVersion: string;
+  sequence: number;
+  channel: string;
+  type: string;
+  row: number;
+  rowId: string;
+  line: number;
+  column?: number;
+  endLine?: number;
+  payload: unknown;
+  source: { path: string; startLine: number; endLine: number; mapping: "exact" | "derived" | "synthetic" };
+  origin: { function: string; module: string; modality: string; stageLine: number; scopeId?: string };
 };
 
 type RuntimeResult = {
@@ -63,6 +84,8 @@ type RuntimeResult = {
   output: string;
   error?: string;
   diagnostics: Array<{ level: string; line: number; message: string }>;
+  channels: Record<string, ChannelEvent[]>;
+  emissions: number;
   functions: FunctionMeta[];
   modulesLoaded: number;
   duration: number;
@@ -71,6 +94,7 @@ type RuntimeResult = {
 const sampleDocument = `>>>>! include "./modules/core.js"
 >>>>! include "./modules/editorial.js"
 >>>>! include "./modules/base64.js"
+>>>>! include "./modules/metadata.js"
 >>>>! config scope-order="declaration:asc"
 
 >>>>+ normalize @id=clean @order=10
@@ -105,6 +129,15 @@ Ett stycke kan bära lättviktiga properties.
 Nu är bara annotate aktiv.
 
 <<<<+ @id=provenance
+
+## Samma text, flera outputkanaler
+
+>>>>+ collect_rows channel="records" kind="claim" @id=metadata
+
+Varje icke-tom rad kan bli en logisk metadatapost.
+Editorn får både ett logiskt row-id och den fysiska källraden.
+
+<<<<+ @id=metadata
 
 ## Base64 som intervallfunktion
 
@@ -241,6 +274,44 @@ define({
   }
 });`;
 
+const metadataModule = `function rowKey(kind, text) {
+  let hash = 2166136261;
+  const source = kind + ":" + text;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return kind + ":" + (hash >>> 0).toString(36);
+}
+
+define({
+  collect_rows: {
+    description: "Behåller texten och publicerar varje icke-tom rad som strukturerad metadata.",
+    behavior: "segment-preserving",
+    outputs: ["render", "system.out", "records"],
+    args: {
+      channel: { type: "string", default: "records", description: "Valfri namngiven kanal" },
+      kind: { type: "string", default: "row", description: "Metadatapostens typ" }
+    },
+    transform(input, args, context) {
+      let row = 0;
+      String(input).split("\\n").forEach((sourceLine, lineOffset) => {
+        const text = sourceLine.trim();
+        if (!text) return;
+        row += 1;
+        const kind = String(args.kind ?? "row");
+        const rowId = rowKey(kind, text);
+        const payload = { kind, text };
+        const location = { row, rowId, lineOffset, type: "row" };
+
+        context.system.out.row(rowId, payload, location);
+        context.emit(String(args.channel ?? "records"), payload, location);
+      });
+      return input;
+    }
+  }
+});`;
+
 const base64Module = `function encodeUtf8(value) {
   const bytes = new TextEncoder().encode(value);
   let binary = "";
@@ -292,17 +363,10 @@ const initialFiles: ProjectFile[] = [
   { path: "modules/core.js", kind: "module", content: coreModule },
   { path: "modules/editorial.js", kind: "module", content: editorialModule },
   { path: "modules/base64.js", kind: "module", content: base64Module },
+  { path: "modules/metadata.js", kind: "module", content: metadataModule },
 ];
 
-const storageKey = "textabana-project-v4";
-
-function argSignature(args: FunctionMeta["args"]) {
-  const entries = Object.entries(args);
-  if (!entries.length) return "inga argument";
-  return entries
-    .map(([name, value]) => `${name}${value.default === undefined ? "" : `=${JSON.stringify(value.default)}`}`)
-    .join(" · ");
-}
+const storageKey = "textabana-project-v5";
 
 function CodeEditor({ file, onChange }: { file: ProjectFile; onChange: (value: string) => void }) {
   const extensions = useMemo(
@@ -329,13 +393,54 @@ function CodeEditor({ file, onChange }: { file: ProjectFile; onChange: (value: s
   );
 }
 
+function ChannelInspector({ name, events }: { name: string; events: ChannelEvent[] }) {
+  return (
+    <div className="channel-scroll">
+      <div className="channel-intro">
+        <div>
+          <span className="channel-name">{name}</span>
+          <strong>{events.length} {events.length === 1 ? "händelse" : "händelser"}</strong>
+        </div>
+        <p>{name === "system.out"
+          ? "Kärnans positionsmedvetna metadataflöde för editorer."
+          : "Append-only-output från funktionerna i aktuell körning."}</p>
+      </div>
+      <div className="channel-events">
+        {events.map((event) => (
+          <article className="channel-event" key={event.id}>
+            <div className="channel-event-head">
+              <span className="event-sequence">#{event.sequence}</span>
+              <span className="event-position"><Rows3 /> row {event.row}</span>
+              <span className="event-position">line {event.line}</span>
+              <span className={`mapping-badge is-${event.source.mapping}`}>{event.source.mapping}</span>
+              <code>{event.origin.function}</code>
+            </div>
+            <pre>{typeof event.payload === "string" ? event.payload : JSON.stringify(event.payload, null, 2)}</pre>
+            <div className="channel-event-foot">
+              <span><strong>row-id</strong> {event.rowId}</span>
+              <span><strong>source</strong> {event.source.path ?? "document.md"}:{event.source.startLine}{event.source.endLine !== event.source.startLine ? `–${event.source.endLine}` : ""}</span>
+              <span><strong>origin</strong> {event.origin.modality}{event.origin.scopeId ? ` · ${event.origin.scopeId}` : ""}</span>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Preview({ result, running }: { result: RuntimeResult; running: boolean }) {
+  const [activeOutput, setActiveOutput] = useState("render");
+  const channelNames = Object.keys(result.channels);
+  const selectedOutput = activeOutput === "render" || Object.hasOwn(result.channels, activeOutput)
+    ? activeOutput
+    : "render";
+
   return (
     <section className="preview-shell" aria-label="Renderat resultat">
       <div className="panel-bar">
         <div className="panel-title">
-          <Sparkles aria-hidden="true" />
-          Resultat
+          <RadioTower aria-hidden="true" />
+          Outputs
         </div>
         <span className={`runtime-state ${result.ok ? "is-ok" : "is-error"}`}>
           <span />
@@ -344,11 +449,29 @@ function Preview({ result, running }: { result: RuntimeResult; running: boolean 
       </div>
 
       {result.ok ? (
-        <div className="preview-scroll">
-          <article className="rendered-markdown">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.output}</ReactMarkdown>
-          </article>
-        </div>
+        <>
+          <div className="output-tabs" role="tablist" aria-label="Outputkanaler">
+            <button type="button" role="tab" aria-selected={selectedOutput === "render"} className={selectedOutput === "render" ? "is-active" : ""} onClick={() => setActiveOutput("render")}>
+              <Sparkles /> Render
+            </button>
+            {channelNames.map((name) => (
+              <button type="button" role="tab" aria-selected={selectedOutput === name} className={selectedOutput === name ? "is-active" : ""} onClick={() => setActiveOutput(name)} key={name}>
+                {name === "system.out" ? <Rows3 /> : <RadioTower />}
+                {name}
+                <small>{result.channels[name].length}</small>
+              </button>
+            ))}
+          </div>
+          {selectedOutput === "render" ? (
+            <div className="preview-scroll">
+              <article className="rendered-markdown">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.output}</ReactMarkdown>
+              </article>
+            </div>
+          ) : (
+            <ChannelInspector name={selectedOutput} events={result.channels[selectedOutput] ?? []} />
+          )}
+        </>
       ) : (
         <div className="error-state">
           <div className="error-icon"><AlertTriangle aria-hidden="true" /></div>
@@ -360,108 +483,6 @@ function Preview({ result, running }: { result: RuntimeResult; running: boolean 
         </div>
       )}
     </section>
-  );
-}
-
-function WorkspaceDocs({ functions }: { functions: FunctionMeta[] }) {
-  return (
-    <div className="docs-layout">
-      <aside className="docs-index">
-        <p className="eyebrow">Textabana Docs</p>
-        <a href="#start">Kom igång</a>
-        <a href="#blocks">Block och piping</a>
-        <a href="#modules">Includes och moduler</a>
-        <a href="#arguments">Argument</a>
-        <a href="#reference">Funktionsreferens</a>
-        <a href="#execution">Exekveringsmodell</a>
-      </aside>
-
-      <main className="docs-content">
-        <section id="start" className="docs-hero">
-          <div>
-            <span className="docs-badge"><Zap /> 5 minuters start</span>
-            <h1>Skriv text. Koppla funktioner. Visa bara resultatet.</h1>
-            <p>Textabana är vanlig Markdown med explicita transformationsblock. Det gör dokumentet läsbart även innan det körs.</p>
-          </div>
-          <div className="docs-flow" aria-label="Textabana körflöde">
-            <span>Källtext</span><ChevronRight /><span>Funktion</span><ChevronRight /><span>Ren output</span>
-          </div>
-        </section>
-
-        <section id="blocks" className="docs-section">
-          <p className="section-number">01</p>
-          <h2>Block och piping</h2>
-          <p>Startmarkören anger första funktionen. Varje pipe tar emot föregående funktions resultat. Slutmarkören matchar alltid den första funktionen.</p>
-          <pre><code>{`>>>> summarize sentences=3
-  | uppercase
-
-Texten som ska bearbetas.
-<<<< summarize`}</code></pre>
-          <div className="rule-grid">
-            <div><strong>Vänster till höger</strong><span>Pipeline-steg körs i skriven ordning.</span></div>
-            <div><strong>Nästlingsbart</strong><span>Inre block renderas före yttre block.</span></div>
-            <div><strong>Osynlig syntax</strong><span>Markörer och includes tas bort ur resultatet.</span></div>
-          </div>
-        </section>
-
-        <section id="modules" className="docs-section">
-          <p className="section-number">02</p>
-          <h2>Includes och moduler</h2>
-          <p>En include laddar en textbaserad JavaScript-modul. Varje unik modul evalueras en gång per version, även när flera moduler refererar till den.</p>
-          <pre><code>{`>>>> include "./modules/core.js"`}</code></pre>
-          <pre><code>{`define({
-  uppercase: {
-    description: "Gör text till versaler.",
-    args: {},
-    transform(input) {
-      return String(input).toUpperCase();
-    }
-  }
-});`}</code></pre>
-          <div className="callout"><Box /><p><strong>Modulcache.</strong> Sökvägen normaliseras och källan innehållshashas. Oförändrade moduler återanvänds; ändrad kod laddas som en ny version.</p></div>
-        </section>
-
-        <section id="arguments" className="docs-section">
-          <p className="section-number">03</p>
-          <h2>Argument</h2>
-          <p>Strängar, tal, booleans, null, JSON-listor och JSON-objekt stöds direkt.</p>
-          <div className="argument-table">
-            <code>tone=&quot;formal&quot;</code><span>sträng</span>
-            <code>length=240</code><span>tal</span>
-            <code>strict=true</code><span>boolean</span>
-            <code>tags=[&quot;a&quot;,&quot;b&quot;]</code><span>lista</span>
-          </div>
-        </section>
-
-        <section id="reference" className="docs-section">
-          <p className="section-number">04</p>
-          <h2>Funktionsreferens</h2>
-          <p>Referensen genereras direkt ur de moduler som dokumentet inkluderar.</p>
-          <div className="function-grid">
-            {functions.length ? functions.map((fn) => (
-              <article key={`${fn.modulePath}:${fn.name}`} className="function-card">
-                <div className="function-card-head"><code>{fn.name}</code><span>{fn.modulePath}</span></div>
-                <p>{fn.description}</p>
-                <div className="signature">{argSignature(fn.args)}</div>
-              </article>
-            )) : <p className="muted-copy">Kör ett giltigt dokument för att läsa in referensen.</p>}
-          </div>
-        </section>
-
-        <section id="execution" className="docs-section">
-          <p className="section-number">05</p>
-          <h2>Exekveringsmodell</h2>
-          <ol className="execution-list">
-            <li><span>1</span><div><strong>Lös includes</strong><p>Normalisera sökvägar och upptäck cirkulära beroenden.</p></div></li>
-            <li><span>2</span><div><strong>Registrera funktioner</strong><p>Validera namn, metadata och transform-kontrakt.</p></div></li>
-            <li><span>3</span><div><strong>Bygg blockträdet</strong><p>Matcha start, slut, nesting, argument och pipes.</p></div></li>
-            <li><span>4</span><div><strong>Kör inifrån och ut</strong><p>Resultatet från varje steg blir nästa stegs input.</p></div></li>
-            <li><span>5</span><div><strong>Rendera Markdown</strong><p>Visa bara slutresultatet utan kontrollsyntax.</p></div></li>
-          </ol>
-          <div className="security-note"><AlertTriangle /><p>Moduler körs isolerat från gränssnittet i en Web Worker, men denna första version är avsedd för betrodd modulkod. En full kapabilitetssandbox behövs innan externa moduler delas publikt.</p></div>
-        </section>
-      </main>
-    </div>
   );
 }
 
@@ -477,6 +498,8 @@ export default function Home() {
     ok: true,
     output: "",
     diagnostics: [],
+    channels: {},
+    emissions: 0,
     functions: [],
     modulesLoaded: 0,
     duration: 0,
@@ -487,16 +510,21 @@ export default function Home() {
   const activeFile = files.find((file) => file.path === activePath) ?? files[0];
 
   useEffect(() => {
+    let storedFiles: ProjectFile[] | null = null;
     try {
       const stored = window.localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored) as ProjectFile[];
-        if (Array.isArray(parsed) && parsed.some((file) => file.kind === "document")) setFiles(parsed);
+        if (Array.isArray(parsed) && parsed.some((file) => file.kind === "document")) storedFiles = parsed;
       }
     } catch {
       window.localStorage.removeItem(storageKey);
     }
-    setHydrated(true);
+    const hydrationTimer = window.setTimeout(() => {
+      if (storedFiles) setFiles(storedFiles);
+      setHydrated(true);
+    }, 0);
+    return () => window.clearTimeout(hydrationTimer);
   }, []);
 
   useEffect(() => {
@@ -514,6 +542,8 @@ export default function Home() {
         output: event.data.ok ? event.data.output : previous.output,
         error: event.data.error,
         diagnostics: event.data.diagnostics ?? [],
+        channels: event.data.channels ?? {},
+        emissions: event.data.emissions ?? 0,
         functions: event.data.functions ?? previous.functions,
         modulesLoaded: event.data.modulesLoaded ?? previous.modulesLoaded,
         duration: event.data.duration ?? 0,
@@ -524,8 +554,11 @@ export default function Home() {
       setResult((previous) => ({ ...previous, ok: false, error: "Körmotorn kunde inte starta." }));
       setRunning(false);
     };
-    setWorkerReady(true);
-    return () => worker.terminate();
+    const readyTimer = window.setTimeout(() => setWorkerReady(true), 0);
+    return () => {
+      window.clearTimeout(readyTimer);
+      worker.terminate();
+    };
   }, []);
 
   const execute = useCallback(() => {
@@ -538,6 +571,7 @@ export default function Home() {
     setRunning(true);
     worker.postMessage({
       runId,
+      documentPath: documentFile.path,
       documentSource: documentFile.content,
       modules: files.filter((file) => file.kind === "module"),
     });
@@ -557,14 +591,14 @@ export default function Home() {
     let index = 1;
     while (files.some((file) => file.path === `modules/custom-${index}.js`)) index += 1;
     const path = `modules/custom-${index}.js`;
-    const module: ProjectFile = {
+    const newModule: ProjectFile = {
       path,
       kind: "module",
-      content: `define({\n  my_function: {\n    description: "Beskriv vad funktionen gör.",\n    args: {},\n    transform(input, args, context) {\n      return String(input);\n    }\n  }\n});`,
+      content: `define({\n  my_function: {\n    description: "Beskriv vad funktionen gör.",\n    outputs: ["render", "my.channel"],\n    args: {},\n    transform(input, args, context) {\n      context.emit("my.channel", { message: "Metadata från funktionen" });\n      return String(input);\n    }\n  }\n});`,
     };
     setFiles((current) => current.map((file) => file.kind === "document"
       ? { ...file, content: `>>>> include "./${path}"\n${file.content}` }
-      : file).concat(module));
+      : file).concat(newModule));
     setActivePath(path);
     toast.success("Ny modul skapad och inkluderad");
   };
@@ -636,6 +670,7 @@ export default function Home() {
               <div className="rail-status">
                 <div><Layers3 /><span><strong>{result.modulesLoaded}</strong> moduler laddade</span></div>
                 <div><CircleDot /><span><strong>{result.functions.length}</strong> funktioner</span></div>
+                <div><RadioTower /><span><strong>{Object.keys(result.channels).length}</strong> kanaler · {result.emissions} events</span></div>
                 <div><Zap /><span><strong>{Math.round(result.duration)}</strong> ms</span></div>
               </div>
             </aside>
@@ -669,9 +704,9 @@ export default function Home() {
         ) : <Specification functions={result.functions} />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Language draft 0.2</span>
-          <span className="syntax-hint"><code>&gt;&gt;&gt;&gt;</code> block <ChevronRight /><code>&gt;&gt;&gt;&gt;+</code> intervall <ChevronRight /> inheritance</span>
-          <span>Normativ docs · Körbar referens</span>
+          <span><CheckCircle2 /> Language draft 0.3</span>
+          <span className="syntax-hint"><code>return</code> render <ChevronRight /><code>emit</code> channels <ChevronRight /><code>system.out</code></span>
+          <span>Positionsmedveten · Flerkanalig</span>
         </footer>
       </div>
       <Toaster position="bottom-right" />
