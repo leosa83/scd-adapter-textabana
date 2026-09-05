@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.0.3` |
-| Status | Pågår · Våg 1–2 genomförda · Våg 3 planerad |
+| Planversion | `1.1.0` |
+| Status | Pågår · Våg 1–2 genomförda · Våg 3 aktiv |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -115,13 +115,23 @@ Textabana Editor Kernel
 
 ### Våg 3 — Inkrementell planering och exekveringsgraf
 
-**Status:** planerad
+**Status:** aktiv · sprint 3.1 pågår
 
 **Mål:** Göra ändringsmängder beräkningsmässigt värdefulla genom att ogiltigförklara och köra om endast beroende delgraf.
 
 **Leveranser:** typed edges, cache keys, invalidation, pure/effect-gräns, deterministisk merge, streaming/backpressure, timeout och resursbudget.
 
 **Acceptans:** oförändrade pure stages återanvänds med bevisad input-/module-digest; effectful stages cachas aldrig implicit; cancellation och atomisk commit gäller även parallella grenar.
+
+#### Sprint 3.1 — Pre-execution graph och konservativ invalidation
+
+**Status:** aktiv
+
+**Leverans:** ersätt den post-execution-projicerade planen med `textabana.execution-plan/lab-v2`, bygg en deterministisk DAG efter modulinitiering men före första stage-anropet och ge varje source-, stage-, merge- och rendernod stabil typ, order key och explicit beroende. Funktionskontraktet skiljer `behavior` från `state`, `determinism` och deklarerade observable effects. Varje stage får ett cache-key-recept med stage-lokala source- och IR-beroendedigests samt module-, input-, args-, config-, profile- och environment-digest, men cacheläsning, cacheskrivning och reuse förblir avstängda tills receptet kan verifieras över två revisioner.
+
+**Acceptans:** planen existerar före första transform, typed edges formar en acyklisk graf, faktisk trace binds tillbaka till planerade stage-noder och avvikelse stoppar körningen. Legacyfunktioner utan fullständigt kontrakt klassas konservativt som `unknown` och aldrig cachebara. En första run rapporterar `cold/no-baseline`; med en lyckad editorbaslinje skiljer previewn `directlyAffected`, `transitivelyAffected`, `unchanged`, `added` och `removed`. Alla stages körs ändå fresh, och `cacheReads`, `cacheWrites` samt `reused` är noll. Render, kanaler, atomisk commit och stageordning är oförändrade.
+
+**Avgränsning:** sprinten återanvänder ännu varken parserträd eller stageoutput, kör inget parallellt och inför inte streaming, backpressure, timeout eller resursbudget. Dessa förmågor förblir explicit unsupported tills senare sprintar i Våg 3.
 
 ### Våg 4 — Host-SDK:er och säkra modulpaket
 
@@ -154,6 +164,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.1.0 — 2026-09-05
+
+- Våg 3 aktiverad med en första planning-only-sprint för pre-execution DAG, typed edges, cache-key-recept och konservativ invalidation.
+- Pure/effect-gränsen separeras från transformationsbeteende; odokumenterade legacyfunktioner blir aldrig implicit cachebara.
+- Faktisk reuse, parallell exekvering och streaming hålls avsiktligt avstängda tills graf- och digestinvarianterna är verifierade.
 
 ### 1.0.3 — 2026-09-05
 
