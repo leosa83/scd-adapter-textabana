@@ -3053,7 +3053,7 @@ a {
   }
 }
 
-/* Playground labs — three projections of one shared run */
+/* Playground labs — four projections of one shared run */
 .workspace {
   grid-template-rows: 62px minmax(0, 1fr);
 }
@@ -4369,6 +4369,431 @@ a {
   font-size: 10px;
 }
 
+.data-lab {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.projection-notice,
+.canonical-notice {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #cfdbc0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #53632e;
+  background: #edf3e4;
+  font-size: 11px;
+}
+
+.projection-notice {
+  border-color: #c6d4e2;
+  color: #455e78;
+  background: #eaf0f6;
+}
+
+.projection-notice svg,
+.canonical-notice svg {
+  width: 13px;
+}
+
+.projection-notice code,
+.canonical-notice code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.data-empty {
+  width: min(100%, 720px);
+  min-height: 170px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-content: center;
+  gap: 7px 12px;
+  margin: 20px auto;
+  border: 1px dashed #cdd4ca;
+  border-radius: 12px;
+  padding: 24px;
+  color: #687175;
+  background: rgba(255,255,255,.72);
+}
+
+.data-empty > svg {
+  width: 30px;
+  color: #7d9161;
+}
+
+.data-empty strong {
+  color: #2e373a;
+  font-size: 14px;
+}
+
+.data-empty p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.data-empty > small {
+  grid-column: 2;
+  color: #8a7040;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.data-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.data-summary > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  border: 1px solid #d9ded4;
+  border-radius: 9px;
+  padding: 11px;
+  background: rgba(255,255,255,.88);
+}
+
+.data-summary span,
+.data-summary small {
+  overflow: hidden;
+  color: #818a8c;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-summary strong {
+  overflow: hidden;
+  color: #293235;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-table-wrap {
+  overflow: auto;
+  border: 1px solid #d1d7ce;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(48,56,46,.07);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.data-table th,
+.data-table td {
+  border-right: 1px solid #e3e7df;
+  border-bottom: 1px solid #e3e7df;
+  padding: 9px 11px;
+  text-align: left;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: #485155;
+  background: #edf1ea;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.data-table thead small {
+  display: block;
+  margin-top: 2px;
+  color: #8a9394;
+  font-weight: 400;
+}
+
+.data-table tbody tr:hover,
+.data-table tbody tr.is-selected {
+  background: #f2f6eb;
+}
+
+.data-table tbody th button {
+  border: 0;
+  padding: 0;
+  color: #52672a;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.data-table td em {
+  color: #9a8264;
+}
+
+.data-table-foot {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.data-table-foot > span {
+  min-width: 0;
+  overflow: hidden;
+  color: #8a9294;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.dataset-grid > article {
+  min-width: 0;
+  border: 1px solid #d6dcd2;
+  border-radius: 10px;
+  padding: 13px;
+  background: rgba(255,255,255,.9);
+}
+
+.dataset-grid > article.is-output {
+  border-color: #aabc83;
+  box-shadow: inset 0 3px 0 #9aad67;
+}
+
+.dataset-grid article > div {
+  display: grid;
+  gap: 2px;
+}
+
+.dataset-grid article > div span {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 6px;
+  color: #5c672f;
+  background: #e9efdc;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.dataset-grid article > div strong {
+  color: #2e3639;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.dataset-grid article > div small,
+.dataset-grid article > small,
+.dataset-grid article > p {
+  overflow: hidden;
+  margin: 3px 0;
+  color: #7c8587;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataset-grid ul {
+  display: grid;
+  gap: 4px;
+  margin: 11px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dataset-grid li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid #edf0ea;
+  padding-top: 4px;
+  color: #687174;
+  font-size: 10px;
+}
+
+.record-picker {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.record-picker button {
+  border: 1px solid #d0d6cb;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #596367;
+  background: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.record-picker button.is-active {
+  border-color: #91a55e;
+  color: #40521c;
+  background: #e9f0dc;
+}
+
+.lineage-chain {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) 24px minmax(0, 1.2fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.lineage-chain > svg {
+  width: 18px;
+  color: #829057;
+}
+
+.lineage-chain > section {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  border: 1px solid #d5dbd1;
+  border-radius: 10px;
+  padding: 13px;
+  background: #fff;
+}
+
+.lineage-chain > section > span,
+.lineage-inputs > span {
+  color: #7c8587;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.lineage-chain > section > strong,
+.lineage-inputs article > strong {
+  overflow-wrap: anywhere;
+  color: #30383b;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.lineage-chain code {
+  color: #64723f;
+  font-size: 10px;
+}
+
+.lineage-inputs article {
+  display: grid;
+  gap: 2px;
+  border-top: 1px solid #e7eae3;
+  padding-top: 7px;
+}
+
+.lineage-inputs article p {
+  margin: 0;
+  color: #697274;
+  font-size: 11px;
+}
+
+.lineage-detail-grid,
+.data-adapter-json {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lineage-detail-grid > section,
+.cell-lineage-section {
+  min-width: 0;
+  border: 1px solid #d8ddd5;
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(255,255,255,.86);
+}
+
+.lineage-detail-grid h3,
+.cell-lineage-section h3,
+.data-adapter-json h3 {
+  margin: 0 0 7px;
+  color: #333c3f;
+  font-size: 11px;
+}
+
+.lineage-detail-grid pre {
+  max-height: 190px;
+  overflow: auto;
+  margin: 0;
+  color: #586266;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  white-space: pre-wrap;
+}
+
+.cell-lineage-section > p {
+  margin: -3px 0 10px;
+  color: #798285;
+  font-size: 11px;
+}
+
+.cell-lineage-section > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.cell-lineage-section article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(70px, .55fr) 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #e1e5de;
+  border-radius: 7px;
+  padding: 7px;
+  color: #626c70;
+  background: #f7f8f5;
+  font-size: 9px;
+}
+
+.cell-lineage-section article strong,
+.cell-lineage-section article span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-lineage-section article svg {
+  width: 12px;
+}
+
+.cell-lineage-section article small {
+  color: #63733a;
+}
+
+.lineage-event-count {
+  color: #838c8e;
+  font-size: 10px;
+}
+
+.data-adapter-json {
+  align-content: start;
+}
+
+.data-adapter-json > section {
+  min-width: 0;
+}
+
+.data-adapter-json pre {
+  max-height: calc(100vh - 250px);
+}
+
 @media (max-width: 1180px) {
   .lab-switcher > button {
     min-width: 44px;
@@ -4425,6 +4850,11 @@ a {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .data-summary,
+  .dataset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .metadata-workbench {
     grid-template-columns: 1fr;
   }
@@ -4455,8 +4885,22 @@ a {
   .block-cards,
   .adapter-manifest-grid,
   .descriptor-list,
-  .split-json {
+  .split-json,
+  .data-summary,
+  .dataset-grid,
+  .lineage-detail-grid,
+  .data-adapter-json,
+  .cell-lineage-section > div {
     grid-template-columns: 1fr;
+  }
+
+  .lineage-chain {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-chain > svg {
+    transform: rotate(90deg);
+    justify-self: center;
   }
 
   .lab-scroll {

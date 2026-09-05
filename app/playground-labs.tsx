@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   CircleDot,
   Code2,
+  Database,
   FileJson,
   GitBranch,
   Layers3,
@@ -18,6 +19,7 @@ import {
   RadioTower,
   Rows3,
   Sparkles,
+  Table2,
   Workflow,
 } from "lucide-react";
 
@@ -42,6 +44,7 @@ const labCopy: Record<LabId, { title: string; icon: typeof Braces }> = {
   language: { title: "Language & Scope", icon: Braces },
   editor: { title: "Editor Metadata", icon: PanelRight },
   channels: { title: "Channel & Result", icon: RadioTower },
+  data: { title: "Data & Lineage", icon: Database },
 };
 
 function json(value: unknown) {
@@ -460,6 +463,164 @@ function AdapterRunView({ result }: { result: RuntimeResult }) {
   );
 }
 
+type DataField = { name: string; type: string; nullable: boolean };
+type DataRow = {
+  recordId: string;
+  values: Record<string, unknown>;
+  _textabana: {
+    eventRef: string;
+    anchorRef: string;
+    sourceMapRef: string | null;
+    provenanceRef: string;
+    lineageEventRef: string | null;
+    inputRecordIds: string[];
+    inputAnchorRefs: string[];
+  };
+};
+type DataLineage = {
+  lineageId: string;
+  operation: string;
+  granularity: "record" | "cell";
+  mapping: "derived";
+  output: { datasetId: string; recordId: string; column?: string };
+  inputs: Array<{ type: string; datasetId: string; recordId: string; column?: string }>;
+  inputRecordIds?: string[];
+  inputAnchorRefs: string[];
+};
+type DataProjection = {
+  schema: string;
+  dataset: { datasetId: string; schemaRef: string; role: string; key: string[]; fields: DataField[]; recordCount: number };
+  columns: DataField[];
+  rows: DataRow[];
+  recordLineage: DataLineage[];
+  cellLineage: DataLineage[];
+  aggregates: Array<{ aggregationId: string; operation: string; mapping: string; inputRecordIds: string[]; value: number }>;
+};
+
+function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "onOpenLab">) {
+  const [tab, setTab] = useState("table");
+  const manifest = result.adapterRun?.manifests.find((item) => item.adapterId === "org.textabana.data-table") ?? null;
+  const projection = result.adapterRun?.projections.find((item) => item.adapterRef.adapterId === "org.textabana.data-table") ?? null;
+  const data = projection?.status === "succeeded" ? projection.output?.data as DataProjection | undefined : undefined;
+  const datasetEvents = result.channels["data.datasets"] ?? [];
+  const inputEvents = result.channels["data.input.records"] ?? [];
+  const outputEvents = result.channels["data.output.records"] ?? [];
+  const lineageEvents = result.channels["data.lineage"] ?? [];
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+  const selectedRow = data?.rows.find((row) => row.recordId === selectedRecordId) ?? data?.rows[0] ?? null;
+  const selectedLineage = selectedRow ? data?.recordLineage.find((lineage) => lineage.output.recordId === selectedRow.recordId) ?? null : null;
+  const selectedOutputEvent = selectedRow ? outputEvents.find((event) => (event.payload as { recordId?: string })?.recordId === selectedRow.recordId) ?? null : null;
+  const selectedSourceMap = selectedOutputEvent ? result.sourceMaps.find((mapping) => mapping.outputRef === selectedOutputEvent.eventId) ?? null : null;
+  const selectedCells = selectedRow ? data?.cellLineage.filter((lineage) => lineage.output.recordId === selectedRow.recordId) ?? [] : [];
+  const provenance = (result.resultEnvelope?.provenance as { activities?: Array<{ activityId: string; function: string }> } | undefined)?.activities ?? [];
+  const activity = selectedOutputEvent ? provenance.find((item) => item.activityId === selectedOutputEvent.provenanceRef) ?? null : null;
+
+  useEffect(() => {
+    if (selectedRecordId && !data?.rows.some((row) => row.recordId === selectedRecordId)) setSelectedRecordId(null);
+  }, [data?.rows, selectedRecordId]);
+
+  const empty = (
+    <div className="data-empty">
+      <Database />
+      <div><strong>Ingen kompatibel dataprojektion i denna run</strong><p>Välj fixturen <b>Data join</b> för att producera dataset, records och lineage.</p></div>
+      {projection?.diagnostics[0] ? <small>{projection.diagnostics[0].code} · {projection.diagnostics[0].message}</small> : null}
+    </div>
+  );
+
+  return (
+    <>
+      <LabTabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: "table", label: "Tabell", count: data?.rows.length, icon: Table2 },
+          { id: "schema", label: "Schema", count: datasetEvents.length, icon: Database },
+          { id: "lineage", label: "Lineage", count: data?.recordLineage.length, icon: GitBranch },
+          { id: "adapter", label: "Adapter", icon: Braces },
+        ]}
+      />
+      {tab === "table" ? (
+        <div className="lab-scroll data-lab">
+          {!data ? empty : (
+            <>
+              <div className="projection-notice"><CircleDot /> Adapterprojektion · inte canonical Result · <code>application/json</code></div>
+              <div className="data-summary">
+                <div><span>Dataset</span><strong>{data.dataset.datasetId}</strong><small>{data.dataset.schemaRef}</small></div>
+                <div><span>Records</span><strong>{data.rows.length}</strong><small>stabila recordId</small></div>
+                <div><span>Kolumner</span><strong>{data.columns.length}</strong><small>typade JSON-värden</small></div>
+                <div><span>Aggregation</span><strong>{data.aggregates[0]?.value ?? "–"}</strong><small>{data.aggregates[0]?.mapping ?? "saknas"}</small></div>
+              </div>
+              <div className="data-table-wrap">
+                <table className="data-table">
+                  <thead><tr><th>recordId</th>{data.columns.map((field) => <th key={field.name}>{field.name}<small>{field.type}</small></th>)}</tr></thead>
+                  <tbody>{data.rows.map((row) => (
+                    <tr key={row.recordId} className={selectedRow?.recordId === row.recordId ? "is-selected" : ""}>
+                      <th><button type="button" onClick={() => { setSelectedRecordId(row.recordId); setTab("lineage"); }}>{row.recordId}</button></th>
+                      {data.columns.map((field) => <td key={field.name}>{row.values[field.name] === null ? <em>null</em> : String(row.values[field.name])}</td>)}
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+              <div className="data-table-foot"><span>{projection?.projectionId}</span><Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Visa raw events</Button></div>
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "schema" ? (
+        <div className="lab-scroll data-lab">
+          <div className="canonical-notice"><CheckCircle2 /> Canonical runtime-events · <code>data.datasets</code></div>
+          {!datasetEvents.length ? empty : <div className="dataset-grid">{datasetEvents.map((event) => {
+            const dataset = event.payload as DataProjection["dataset"];
+            return <article key={event.eventId} className={dataset.role === "output" ? "is-output" : ""}>
+              <div><span>{dataset.role}</span><strong>{dataset.datasetId}</strong><small>{dataset.recordCount} records</small></div>
+              <p>key · {dataset.key.join(" + ")}</p>
+              <ul>{dataset.fields.map((field) => <li key={field.name}><code>{field.name}</code><span>{field.type}{field.nullable ? "?" : ""}</span></li>)}</ul>
+              <small>{event.target.anchorRef}</small>
+            </article>;
+          })}</div>}
+        </div>
+      ) : null}
+      {tab === "lineage" ? (
+        <div className="lab-scroll data-lab lineage-lab">
+          <div className="canonical-notice"><CheckCircle2 /> Canonical events + SourceMap · derived från två inputankare</div>
+          {!data || !selectedRow || !selectedLineage ? empty : (
+            <>
+              <div className="record-picker" aria-label="Välj output record">{data.rows.map((row) => <button type="button" key={row.recordId} className={selectedRow.recordId === row.recordId ? "is-active" : ""} onClick={() => setSelectedRecordId(row.recordId)}>{String(row.values[data.dataset.key[0]])}</button>)}</div>
+              <div className="lineage-chain">
+                <section>
+                  <span>Output record</span><strong>{selectedRow.recordId}</strong><code>{selectedSourceMap?.outputSelector?.datasetId} · {selectedSourceMap?.mapping}</code>
+                </section>
+                <ArrowRight />
+                <section className="lineage-inputs">
+                  <span>Input records</span>
+                  {(selectedLineage.inputRecordIds ?? []).map((recordId) => {
+                    const event = inputEvents.find((item) => (item.payload as { recordId?: string })?.recordId === recordId);
+                    const anchor = event ? result.anchors.find((item) => item.anchorId === event.target.anchorRef) : null;
+                    const quote = anchor?.selectors.find((selector) => selector.type === "TextQuoteSelector");
+                    return <article key={recordId}><strong>{recordId}</strong><code>{event?.target.datasetId} · line {event?.line}</code><p>{String(quote?.exact ?? "")}</p></article>;
+                  })}
+                </section>
+              </div>
+              <div className="lineage-detail-grid">
+                <section><h3>Record SourceMap</h3><pre>{json(selectedSourceMap)}</pre></section>
+                <section><h3>Provenance activity</h3><pre>{json(activity)}</pre></section>
+              </div>
+              <section className="cell-lineage-section"><h3>Cell-lineage</h3><p>Varje outputkolumn pekar på en eller två semantiska inputceller via DataSelector.</p><div>{selectedCells.map((lineage) => <article key={lineage.lineageId}><strong>{lineage.output.column}</strong><ArrowRight /><span>{lineage.inputs.map((input) => input.datasetId + "." + input.column).join(" + ")}</span><small>{lineage.mapping}</small></article>)}</div></section>
+              <small className="lineage-event-count">{lineageEvents.length} lineage-events i committed Result</small>
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "adapter" ? (
+        <div className="lab-json-scroll split-json data-adapter-json">
+          <section><h3>AdapterManifest</h3><pre>{json(manifest)}</pre></section>
+          <section><h3>ProjectionEnvelope</h3><pre>{json(projection)}</pre></section>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "onOpenLab">) {
   const [tab, setTab] = useState("timeline");
   const events = useMemo(
@@ -552,6 +713,7 @@ export function PlaygroundOutput(props: PlaygroundOutputProps) {
       {props.lab === "language" ? <LanguageLab result={props.result} /> : null}
       {props.lab === "editor" ? <EditorLab result={props.result} previousResult={props.previousResult} onOpenLab={props.onOpenLab} /> : null}
       {props.lab === "channels" ? <ChannelLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
+      {props.lab === "data" ? <DataLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
     </ResultShell>
   );
 }

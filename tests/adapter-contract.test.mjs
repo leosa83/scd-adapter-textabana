@@ -93,7 +93,12 @@ test("adapter registry publishes a machine-readable post-commit contract", async
   assert.ok(executable.manifestDigest.startsWith("fnv1a:"));
   assert.ok(executable.capabilities.required.includes("atomic-success-result"));
 
-  for (const adapterId of ["org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review"]) {
+  const data = result.adapterRun.manifests.find((manifest) => manifest.adapterId === "org.textabana.data-table");
+  assert.equal(data.support, "playground-subset");
+  assert.equal(data.produces[0].mediaType, "application/json");
+  assert.equal(data.produces[0].schemaRef, "textabana.data-table-projection/lab-v1");
+
+  for (const adapterId of ["org.textabana.notebook", "org.textabana.annotation-review"]) {
     assert.equal(result.adapterRun.manifests.find((manifest) => manifest.adapterId === adapterId).support, "contract-only");
   }
 });
@@ -141,7 +146,7 @@ test("contract-only adapters never fabricate domain output or invalidate core su
   const result = await run({
     documentSource: fixture,
     modules: fixtureModules,
-    options: { strictChannels: true, adapters: ["org.textabana.data-table"] },
+    options: { strictChannels: true, adapters: ["org.textabana.notebook"] },
   });
   const projection = result.adapterRun.projections[0];
 
@@ -151,7 +156,7 @@ test("contract-only adapters never fabricate domain output or invalidate core su
   assert.equal(projection.output, undefined);
   assert.equal(projection.diagnostics[0].code, "TBA-ADAPTER-CONTRACT-ONLY-LAB");
   assert.equal(result.adapterRun.verification.immutable, true);
-  assert.equal(result.capabilities.profiles["data/1"], "contract-only");
+  assert.equal(result.capabilities.profiles["data/1"], "playground-subset");
 });
 
 test("failed core runs skip all post-commit adapters", async () => {

@@ -242,7 +242,7 @@ export function Specification() {
         <div className="spec-version">
           <span>Textabana</span>
           <strong>Language & Interop draft 0.5</strong>
-          <small>Language 0.4 · Adapter contract lab-v1</small>
+          <small>Language 0.4 · Adapter + Data lab-v1</small>
         </div>
         <SpecNav />
         <div className="spec-legend" aria-label="Statusförklaring">
@@ -263,7 +263,7 @@ export function Specification() {
           <div className="hero-status">
             <StatusBadge tone="normative">Interop draft 0.5</StatusBadge>
             <StatusBadge tone="implemented">Språkkärna 0.4-subset</StatusBadge>
-            <StatusBadge tone="partial">Tre labs · adaptergrund live</StatusBadge>
+            <StatusBadge tone="partial">Fyra labs · adaptergrund + data live</StatusBadge>
           </div>
           <h1 id="definition-title">Läsbar text som körbar, positionsmedveten och flerkanalig semantisk källa.</h1>
           <p className="hero-definition">Textabana gör läsbar text till en körbar, positionsmedveten och flerkanalig semantisk källa — oberoende av hur resultatet senare presenteras. Det är ett <em>source-first</em>, host-neutralt lager som kompilerar texten till en explicit plan och producerar en primär render samt valfritt många typade outputs.</p>
@@ -296,7 +296,7 @@ export function Specification() {
           </div>
           <Requirement id="STATUS-001">En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.</Requirement>
           <Requirement id="STATUS-002">Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.</Requirement>
-          <Requirement id="STATUS-003">Nuvarande Playground implementerar uttryckligen avgränsade 0.4-subsets för Language & Scope, Editor Metadata samt Channel & Result, och en körbar lab-version av det gemensamma adapterkontraktet. Data-, notebook- och annotationsadaptrarna är endast registrerade som contract-only tills deras respektive projektioner finns. En interaktiv subset är inte full profilkonformitet; inte heller är en kontraktsregistrering det.</Requirement>
+          <Requirement id="STATUS-003">Nuvarande Playground implementerar uttryckligen avgränsade subsets för Language & Scope, Editor Metadata, Channel & Result och Data & Lineage samt en körbar lab-version av det gemensamma adapterkontraktet. Data-labbet implementerar JSON-baserade dataset/schema-events, stabila <code>recordId</code>, deterministisk inner join, cellselektorer, derived aggregation och multi-input-lineage. Notebook- och annotationsadaptrarna är fortfarande contract-only. Ingen interaktiv subset eller kontraktsregistrering är full profilkonformitet.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="html">
@@ -1172,8 +1172,8 @@ export function Specification() {
           <Requirement id="ADAPTER-004">Event identity, Anchor, SourceMap, artifact och provenance MÅSTE bevaras genom referens eller redovisas individuellt som förlust. Ett tomt loss-fält är ett verifierbart påstående.</Requirement>
           <Requirement id="ADAPTER-005">Ett adapterfel FÅR inte ändra core run status eller mutera ett committat Result. Felet returneras som adapterdiagnostik i adapterkörningen.</Requirement>
           <Requirement id="ADAPTER-006">En contract-only-deskriptor får förhandlas och inspekteras men får inte producera simulerad output eller användas som stöd för profilkonformitet.</Requirement>
-          <Callout title="Sprint 1 i playgrounden" icon={<Network />} tone="success">
-            <code>org.textabana.result-summary</code> körs nu som en ren referensadapter efter commit. Adapterfliken visar manifest, source-result-bindning, stabil projektionidentitet, fidelity och resolverbara referenser. Data, Notebook och Annotation är registrerade som contract-only och producerar ännu ingen domänoutput.
+          <Callout title="Adaptergrunden i playgrounden" icon={<Network />} tone="success">
+            <code>org.textabana.result-summary</code> körs som en ren referensadapter efter commit. Adapterfliken visar manifest, source-result-bindning, stabil projektionidentitet, fidelity och resolverbara referenser. Dataadaptern är körbar som avgränsad JSON-subset. Notebook och Annotation är contract-only och producerar ännu ingen domänoutput.
           </Callout>
         </section>
 
@@ -1224,9 +1224,40 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="data-ai">
-          <SectionHeading number="22" layer="Adapter profile" title="Data, analytics, AI och ML delar samma kontrakt" normative={false} implementation="planned" />
+          <SectionHeading number="22" layer="Adapter profile" title="Data, analytics, AI och ML delar samma kontrakt" normative={false} implementation="partial" />
           <p className="lead">Bindings ska vara externa och typed. DataFrames, modeller och dataset serialiseras inte in i källtexten; de binds som inputs eller ArtifactRefs och spåras i run-proveniens.</p>
-          <Callout title="Sprintstatus" icon={<CircleDashed />} tone="info"><code>data/1</code> är registrerad som contract-only. Tabell-, Arrow-, Parquet- och lineageprojektioner är ännu inte körbara.</Callout>
+          <Callout title="Körbar Data & Lineage-subset" icon={<Database />} tone="success"><code>data/1</code> körs som en avgränsad playground-subset: typade JSON-records, dataset/schema-events, stabila <code>recordId</code>, deterministisk inner join, kolumnbundna <code>DataSelector</code>, derived aggregation och SourceMaps som förenar båda inputankarna. Arrow IPC, Parquet, DuckDB, beständiga ArtifactRefs, OpenLineage-export och full <code>data/1</code>-konformitet är fortfarande unsupported.</Callout>
+          <SpecTable
+            caption="Exakt exekverad datamodell i playgrounden"
+            headers={["Lager", "Körbar representation", "Identitet och mapping"]}
+            rows={[
+              ["Författad input", "Två vanliga GFM Markdown-tabeller i ett relational_join-block.", "Deklarerade datasetnamn och join key; ingen dold tabellsyntax."],
+              ["Canonical Result", "data.datasets, data.input.records, data.output.records, data.lineage och data.aggregates.", "Dataset-ID, naturlig key och innehållsbaserat recordId; aldrig fysisk radposition."],
+              ["Join", "Deterministisk inner equijoin med vänster inputordning och explicit fel för tomma eller duplicerade keys.", "Varje outputrecord har en derived SourceMap med vänster och höger inputanchor."],
+              ["Cell-lineage", "Ett lineage-event per outputcell med DataSelector för output- och inputkolumn.", "Join key pekar på båda key-cellerna; övriga celler pekar på sin vänster- eller högerkälla."],
+              ["Aggregation", "Count över join-output i data.aggregates.", "Alltid derived och kopplad till de records som räknades."],
+              ["Adapterprojektion", "application/json med schema, rows, record-/cell-lineage och explicit fidelity report.", "Source-bound post-commit-projektion; artifactRefs är tom tills verkliga bytes finns."],
+            ]}
+          />
+          <CodeExample
+            title="Derived SourceMap för en join-record"
+            language="json"
+            status="Körbar lab-envelope"
+            code={code(
+              "{",
+              '  "outputRef": "event:...",',
+              '  "outputSelector": { "type": "DataSelector", "datasetId": "voyage_cargo", "recordId": "record:..." },',
+              '  "inputAnchorRefs": ["anchor:row:ships:...", "anchor:row:manifests:..."],',
+              '  "inputSelectors": [',
+              '    { "type": "DataSelector", "datasetId": "ships", "recordId": "record:ships:..." },',
+              '    { "type": "DataSelector", "datasetId": "manifests", "recordId": "record:manifests:..." }',
+              "  ],",
+              '  "mapping": "derived",',
+              '  "generatingActivity": "activity:invocation:..."',
+              "}"
+            )}
+          />
+          <Callout title="Cell betyder semantisk kolumn i denna subset" icon={<MapPinned />} tone="info">Cell-lineage använder en kolumnbunden <code>DataSelector</code> ovanpå ett stabilt row-anchor. Playgrounden räknar inte ut exakta teckenpositioner för varje Markdown-cell; sådan textpositionsprecision kräver separata cellankare och är ännu unsupported.</Callout>
           <SpecTable
             caption="Data- och analyticsprofil"
             headers={["Behov", "Primär standard", "Textabanaregel"]}
@@ -1346,13 +1377,13 @@ export function Specification() {
               [<code key="editor">editor/1</code>, "Anchor, SourceMap, system.out och LSP-projektion.", <StatusBadge key="c3" tone="partial">Playground subset</StatusBadge>],
               [<code key="adapter">adapter-contract/1</code>, "Manifest, negotiation, immutable fan-out, fidelity, referenser och failure isolation.", <StatusBadge key="c7" tone="partial">Playground subset</StatusBadge>],
               [<code key="notebook">notebook/1</code>, "Cell ids, MIME bundle, state profiles och whole-snapshot-regler.", <StatusBadge key="c4" tone="planned">Planerad</StatusBadge>],
-              [<code key="data">data/1</code>, "Arrow, Parquet, record identity och provenance fields.", <StatusBadge key="c5" tone="planned">Planerad</StatusBadge>],
+              [<code key="data">data/1</code>, "Dataset/schema-events, record identity, JSON table projection och multi-input lineage; full profil omfattar även dataplan och artifacts.", <StatusBadge key="c5" tone="partial">Playground subset</StatusBadge>],
               [<code key="ml">ml-lineage/1</code>, "AI invocation, PROV, OpenLineage, MLflow och OTel correlation.", <StatusBadge key="c6" tone="planned">Planerad</StatusBadge>],
             ]}
           />
           <div className="conformance-grid">
-            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, stage trace, deklarerade JSON-kanaler, atomisk success/failure-envelope, system.out med Anchor-projektion samt adaptermanifest, registry, immutable fan-out och failure isolation.</p></article>
-            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, artifacts, polyglotta runtimes, resterande cross-policies och de tre domänprojektionerna.</p></article>
+            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, stage trace, deklarerade JSON-kanaler, atomisk success/failure-envelope, system.out med Anchor-projektion, adaptermanifest och failure isolation samt typade dataset-events, stabila records, inner join, cell-lineage och derived aggregation.</p></article>
+            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies samt Notebook- och Annotation-projektionerna.</p></article>
           </div>
           <Requirement id="CONF-001">En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.</Requirement>
           <Requirement id="CONF-002">Varje profil MÅSTE ha golden fixtures för source → IR → plan → result och negativa fixtures för fel, cancellation och mapping claims.</Requirement>
@@ -1397,13 +1428,13 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section playground-contract-section" id="playgrounds">
-          <SectionHeading number="27" layer="Interactive implementation" title="Tre playgrounds visar samma run från olika håll" normative={false} implementation="partial" />
-          <p className="lead">Language & Scope, Editor Metadata och Channel & Result är tre liveprojektioner av samma källa, fixture, run-id och result envelope. Den gemensamma adaptergrunden kan nu registrera, förhandla och köra lab-adaptrar efter commit utan att mutera resultatet. Ett labbyte startar ingen ny exekvering. Data-, notebook-, annotation- och conformance-labben är fortfarande nästa implementeringslager.</p>
+          <SectionHeading number="27" layer="Interactive implementation" title="Fyra playgrounds visar samma run från olika håll" normative={false} implementation="partial" />
+          <p className="lead">Language & Scope, Editor Metadata, Channel & Result och Data & Lineage är fyra liveprojektioner av samma källa, fixture, run-id och result envelope. Adaptergrunden registrerar, förhandlar och kör oberoende projektioner efter commit utan att mutera resultatet. Ett labbyte startar ingen ny exekvering. Notebook-, Annotation- och Conformance-labben är nästa implementeringslager.</p>
           <div className="playground-grid">
             <article><span>01</span><Code2 aria-hidden="true" /><strong>Language & Scope Lab</strong><p>Scope-segment, blockträd, inheritance, faktisk stageordning, IR-projektion och render.</p><small>Live · scope-torture + base64-inverse</small></article>
             <article><span>02</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>system.out, metadatagutter, row/line, Anchor, SourceMap och jämförelse med föregående run.</p><small>Live · editor-revision</small></article>
             <article><span>03</span><RadioTower aria-hidden="true" /><strong>Channel & Result Lab</strong><p>ChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.</p><small>Live · channel-fanout + failed-run</small></article>
-            <article><span>04</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>Arrow-tabell, ArtifactRef, joins, aggregation och cell-/record-lineage.</p><small>Planned lab · descriptor contract-only</small></article>
+            <article><span>04</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>JSON-tabell, schema-events, stabila recordId, deterministisk inner join, derived aggregation och cell-/record-lineage.</p><small>Live · data-join · data/1 playground-subset</small></article>
             <article><span>05</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Cell magic, whole-document mode, MIME bundle, Python API och stale output.</p><small>Planned lab · descriptor contract-only</small></article>
             <article><span>06</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>AI-kandidater, confidence, provenance, human review och standardexport.</p><small>Planned lab · descriptor contract-only</small></article>
             <article><span>07</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability negotiation, golden result, fel, cancel och strukturell diff.</p><small>Planned UI · headless regressioner finns</small></article>

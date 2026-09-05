@@ -13,6 +13,7 @@ import {
   CircleDot,
   Code2,
   Copy,
+  Database,
   Download,
   FileText,
   GitBranch,
@@ -173,6 +174,24 @@ Den här posten emitteras till en kanal utan deklarerad descriptor.
 
 I strict channel mode ska körningen misslyckas utan committed render eller domänkanaler.`;
 
+const dataJoinFixtureDocument = `>>>>! include "./modules/data.js"
+
+# Data & Lineage
+
+>>>> relational_join left="ships" right="manifests" on="ship_id" as="voyage_cargo"
+### ships
+| ship_id | ship | last_port |
+| --- | --- | --- |
+| ship:aurora | Aurora | Göteborg |
+| ship:isabela | Isabela | Guayaquil |
+
+### manifests
+| ship_id | cargo | estimated_value_usd |
+| --- | --- | ---: |
+| ship:aurora | silver | 120000 |
+| ship:isabela | instruments | 45000 |
+<<<< relational_join`;
+
 const playgroundFixtures: PlaygroundFixture[] = [
   {
     id: "scope-torture",
@@ -203,6 +222,12 @@ const playgroundFixtures: PlaygroundFixture[] = [
     title: "Failed run",
     summary: "En odeklarerad kanal visar strict validation och atomisk rollback.",
     document: failedRunFixtureDocument,
+  },
+  {
+    id: "data-join",
+    title: "Data join",
+    summary: "Två Markdown-tabeller blir typade records, en deterministisk inner join och spårbar JSON-tabell.",
+    document: dataJoinFixtureDocument,
   },
 ];
 
@@ -432,15 +457,216 @@ define({
   }
 });`;
 
+const dataModule = `function stableKey(prefix, value) {
+  let hash = 2166136261;
+  const source = prefix + ":" + String(value);
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return prefix + ":" + (hash >>> 0).toString(36);
+}
+
+function cells(line) {
+  return String(line).trim().replace(/^\\|/, "").replace(/\\|$/, "").split("|").map(value => value.trim());
+}
+
+function parseTable(input, name) {
+  const lines = String(input).split("\\n");
+  const headingOffset = lines.findIndex(line => line.trim() === "### " + name);
+  if (headingOffset < 0) throw new Error("Datasetet “" + name + "” saknar rubriken ### " + name + ".");
+  if (headingOffset + 2 >= lines.length) throw new Error("Datasetet “" + name + "” saknar en Markdown-tabell.");
+  const fields = cells(lines[headingOffset + 1]);
+  const separator = cells(lines[headingOffset + 2]);
+  if (!fields.length || separator.length !== fields.length || !separator.every(value => /^:?-{3,}:?$/.test(value))) {
+    throw new Error("Datasetet “" + name + "” har en ogiltig Markdown-tabellheader.");
+  }
+  const rawRows = [];
+  for (let offset = headingOffset + 3; offset < lines.length; offset += 1) {
+    const line = lines[offset];
+    if (/^###\\s+/.test(line.trim())) break;
+    if (!line.trim()) continue;
+    if (!line.includes("|")) break;
+    const values = cells(line);
+    if (values.length !== fields.length) throw new Error("Datasetet “" + name + "” har fel antal celler på sin rad " + (offset + 1) + ".");
+    rawRows.push({ lineOffset: offset, raw: Object.fromEntries(fields.map((field, index) => [field, values[index] || null])) });
+  }
+  if (!rawRows.length) throw new Error("Datasetet “" + name + "” saknar datarader.");
+  const schemaFields = fields.map(field => {
+    const populated = rawRows.map(row => row.raw[field]).filter(value => value !== null);
+    const integer = populated.length > 0 && populated.every(value => /^-?\\d+$/.test(value));
+    return { name: field, type: integer ? "integer" : "utf8", nullable: rawRows.some(row => row.raw[field] === null) };
+  });
+  const typedRows = rawRows.map(row => ({
+    lineOffset: row.lineOffset,
+    values: Object.fromEntries(schemaFields.map(field => [field.name, row.raw[field.name] === null ? null : field.type === "integer" ? Number(row.raw[field.name]) : row.raw[field.name]])),
+  }));
+  return { name, headingOffset, fields: schemaFields, rows: typedRows };
+}
+
+function markdownTable(fields, rows) {
+  const display = value => value === null || value === undefined ? "" : String(value).replace(/\\|/g, "\\\\|");
+  const header = "| " + fields.map(field => field.name).join(" | ") + " |";
+  const separator = "| " + fields.map(field => field.type === "integer" ? "---:" : "---").join(" | ") + " |";
+  return [header, separator, ...rows.map(row => "| " + fields.map(field => display(row.values[field.name])).join(" | ") + " |")].join("\\n");
+}
+
+define({
+  relational_join: {
+    description: "Läser två GFM-tabeller, gör en deterministisk inner join och emitterar typade data- och lineage-events.",
+    behavior: "reducing",
+    outputs: ["render", "data.datasets", "data.input.records", "data.output.records", "data.lineage", "data.aggregates", "data.metrics"],
+    channels: {
+      "data.datasets": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/dataset/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.datasetId"],
+        schema: { type: "object", required: ["datasetId", "schemaRef", "role", "key", "fields", "recordCount"], properties: { datasetId: { type: "string" }, schemaRef: { type: "string" }, role: { type: "string" }, key: { type: "array" }, fields: { type: "array" }, recordCount: { type: "integer" } } }
+      },
+      "data.input.records": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/data-record/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.recordId"],
+        schema: { type: "object", required: ["datasetId", "recordId", "schemaRef", "key", "values"], properties: { datasetId: { type: "string" }, recordId: { type: "string" }, schemaRef: { type: "string" }, key: { type: "object" }, values: { type: "object" } } }
+      },
+      "data.output.records": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/data-record/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.recordId"],
+        schema: { type: "object", required: ["datasetId", "recordId", "schemaRef", "key", "values"], properties: { datasetId: { type: "string" }, recordId: { type: "string" }, schemaRef: { type: "string" }, key: { type: "object" }, values: { type: "object" } } }
+      },
+      "data.lineage": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/data-lineage/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.lineageId"],
+        schema: { type: "object", required: ["lineageId", "operation", "granularity", "mapping", "output", "inputs", "inputAnchorRefs"], properties: { lineageId: { type: "string" }, operation: { type: "string" }, granularity: { type: "string" }, mapping: { type: "string" }, output: { type: "object" }, inputs: { type: "array" }, inputAnchorRefs: { type: "array" } } }
+      },
+      "data.aggregates": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/data-aggregate/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.aggregationId"],
+        schema: { type: "object", required: ["aggregationId", "operation", "mapping", "inputDatasetId", "inputRecordIds", "value"], properties: { aggregationId: { type: "string" }, operation: { type: "string" }, mapping: { type: "string" }, inputDatasetId: { type: "string" }, inputRecordIds: { type: "array" }, value: { type: "integer" } } }
+      },
+      "data.metrics": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/data-metric/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.operation"],
+        schema: { type: "object", required: ["operation", "leftRows", "rightRows", "outputRows", "matchedRows"], properties: { operation: { type: "string" }, leftRows: { type: "integer" }, rightRows: { type: "integer" }, outputRows: { type: "integer" }, matchedRows: { type: "integer" } } }
+      }
+    },
+    args: {
+      left: { type: "string", description: "Vänster dataset och ###-rubrik" },
+      right: { type: "string", description: "Höger dataset och ###-rubrik" },
+      on: { type: "string", description: "Gemensam join key" },
+      as: { type: "string", description: "Output-datasetets id" }
+    },
+    transform(input, args, context) {
+      const leftName = String(args.left || "");
+      const rightName = String(args.right || "");
+      const joinKey = String(args.on || "");
+      const outputName = String(args.as || (leftName + "_" + rightName));
+      if (!leftName || !rightName || !joinKey) throw new Error("relational_join kräver left, right och on.");
+      const left = parseTable(input, leftName);
+      const right = parseTable(input, rightName);
+      if (!left.fields.some(field => field.name === joinKey) || !right.fields.some(field => field.name === joinKey)) throw new Error("Join key “" + joinKey + "” måste finnas i båda dataseten.");
+
+      const prepare = table => {
+        const seen = new Set();
+        return table.rows.map(row => {
+          const keyValue = row.values[joinKey];
+          if (keyValue === null || keyValue === undefined || keyValue === "") throw new Error("Datasetet “" + table.name + "” har en tom join key.");
+          const typedKey = typeof keyValue + ":" + String(keyValue);
+          if (seen.has(typedKey)) throw new Error("Datasetet “" + table.name + "” har duplicerad join key “" + keyValue + "”.");
+          seen.add(typedKey);
+          return { ...row, keyValue, typedKey, recordId: stableKey("record:" + table.name, typedKey) };
+        });
+      };
+      const leftRecords = prepare(left);
+      const rightRecords = prepare(right);
+      const rightByKey = new Map(rightRecords.map(record => [record.typedKey, record]));
+      const leftFieldNames = new Set(left.fields.map(field => field.name));
+      const outputFields = left.fields.map(field => ({ ...field, source: { datasetId: leftName, column: field.name } }));
+      for (const field of right.fields) {
+        if (field.name === joinKey) continue;
+        const outputColumn = leftFieldNames.has(field.name) ? rightName + "_" + field.name : field.name;
+        outputFields.push({ name: outputColumn, type: field.type, nullable: field.nullable, source: { datasetId: rightName, column: field.name } });
+      }
+      const joined = leftRecords.flatMap(leftRecord => {
+        const rightRecord = rightByKey.get(leftRecord.typedKey);
+        if (!rightRecord) return [];
+        const values = { ...leftRecord.values };
+        for (const field of outputFields.filter(field => field.source.datasetId === rightName)) values[field.name] = rightRecord.values[field.source.column];
+        return [{
+          left: leftRecord,
+          right: rightRecord,
+          values,
+          recordId: stableKey("record:" + outputName, leftRecord.typedKey),
+        }];
+      });
+      const schemaRef = name => "schema:textabana/dataset/" + name + "/lab-v1";
+      const datasetPayload = (table, role, count, fields) => ({ datasetId: table, schemaRef: schemaRef(table), role, key: [joinKey], fields: fields.map(({ source, ...field }) => field), recordCount: count });
+      const leftDatasetEvent = context.emit("data.datasets", datasetPayload(leftName, "input", leftRecords.length, left.fields), { mode: "row", rowId: "dataset:" + leftName, rowSet: "datasets", lineOffset: left.headingOffset, kind: "dataset", datasetId: leftName });
+      const rightDatasetEvent = context.emit("data.datasets", datasetPayload(rightName, "input", rightRecords.length, right.fields), { mode: "row", rowId: "dataset:" + rightName, rowSet: "datasets", lineOffset: right.headingOffset, kind: "dataset", datasetId: rightName });
+      context.emit("data.datasets", datasetPayload(outputName, "output", joined.length, outputFields), { mode: "row", rowId: "dataset:" + outputName, rowSet: "datasets", lineOffset: left.headingOffset, kind: "dataset", datasetId: outputName, mapping: "derived", inputAnchorRefs: [leftDatasetEvent.target.anchorRef, rightDatasetEvent.target.anchorRef], outputSelector: { type: "DataSelector", datasetId: outputName } });
+
+      const inputEvents = new Map();
+      for (const table of [{ name: leftName, records: leftRecords }, { name: rightName, records: rightRecords }]) {
+        for (let index = 0; index < table.records.length; index += 1) {
+          const record = table.records[index];
+          const payload = { datasetId: table.name, recordId: record.recordId, schemaRef: schemaRef(table.name), key: { [joinKey]: record.keyValue }, values: record.values };
+          const event = context.emit("data.input.records", payload, { mode: "row", row: index + 1, rowId: record.recordId, rowSet: table.name, lineOffset: record.lineOffset, kind: "data-record", datasetId: table.name, recordId: record.recordId, outputSelector: { type: "DataSelector", datasetId: table.name, recordId: record.recordId } });
+          inputEvents.set(record.recordId, event);
+        }
+      }
+
+      const outputEvents = [];
+      for (let index = 0; index < joined.length; index += 1) {
+        const record = joined[index];
+        const leftEvent = inputEvents.get(record.left.recordId);
+        const rightEvent = inputEvents.get(record.right.recordId);
+        const inputAnchorRefs = [leftEvent.target.anchorRef, rightEvent.target.anchorRef];
+        const inputSelectors = [
+          { type: "DataSelector", datasetId: leftName, recordId: record.left.recordId },
+          { type: "DataSelector", datasetId: rightName, recordId: record.right.recordId },
+        ];
+        const outputSelector = { type: "DataSelector", datasetId: outputName, recordId: record.recordId };
+        const payload = { datasetId: outputName, recordId: record.recordId, schemaRef: schemaRef(outputName), key: { [joinKey]: record.left.keyValue }, values: record.values };
+        const outputEvent = context.emit("data.output.records", payload, { mode: "row", row: index + 1, rowId: record.recordId, rowSet: outputName, lineOffset: record.left.lineOffset, kind: "data-record", datasetId: outputName, recordId: record.recordId, mapping: "derived", inputAnchorRefs, inputSelectors, outputSelector });
+        outputEvents.push(outputEvent);
+        const recordLineage = {
+          lineageId: stableKey("lineage:record:" + outputName, record.recordId), operation: "inner-join", granularity: "record", mapping: "derived",
+          output: { datasetId: outputName, recordId: record.recordId }, inputs: inputSelectors, inputRecordIds: [record.left.recordId, record.right.recordId], inputAnchorRefs,
+        };
+        context.emit("data.lineage", recordLineage, { mode: "row", row: index + 1, rowId: recordLineage.lineageId, rowSet: outputName + ":lineage", lineOffset: record.left.lineOffset, kind: "record-lineage", datasetId: outputName, recordId: record.recordId, mapping: "derived", inputAnchorRefs, inputSelectors, outputSelector });
+
+        for (const field of outputFields) {
+          const fromLeft = field.source.datasetId === leftName;
+          const isJoinKey = field.name === joinKey;
+          const inputs = isJoinKey ? [
+            { type: "DataSelector", datasetId: leftName, recordId: record.left.recordId, column: joinKey },
+            { type: "DataSelector", datasetId: rightName, recordId: record.right.recordId, column: joinKey },
+          ] : [{ type: "DataSelector", datasetId: field.source.datasetId, recordId: fromLeft ? record.left.recordId : record.right.recordId, column: field.source.column }];
+          const cellAnchors = isJoinKey ? inputAnchorRefs : [fromLeft ? leftEvent.target.anchorRef : rightEvent.target.anchorRef];
+          const cellOutput = { type: "DataSelector", datasetId: outputName, recordId: record.recordId, column: field.name };
+          const cellLineage = { lineageId: stableKey("lineage:cell:" + outputName + ":" + field.name, record.recordId), operation: "inner-join", granularity: "cell", mapping: "derived", output: { datasetId: outputName, recordId: record.recordId, column: field.name }, inputs, inputAnchorRefs: cellAnchors };
+          context.emit("data.lineage", cellLineage, { mode: "row", row: index + 1, rowId: cellLineage.lineageId, rowSet: outputName + ":cells", lineOffset: fromLeft ? record.left.lineOffset : record.right.lineOffset, kind: "cell-lineage", datasetId: outputName, recordId: record.recordId, columnName: field.name, mapping: "derived", inputAnchorRefs: cellAnchors, inputSelectors: inputs, outputSelector: cellOutput });
+        }
+      }
+
+      const outputAnchorRefs = outputEvents.length ? outputEvents.map(event => event.target.anchorRef) : [leftDatasetEvent.target.anchorRef, rightDatasetEvent.target.anchorRef];
+      const outputSelectors = joined.map(record => ({ type: "DataSelector", datasetId: outputName, recordId: record.recordId }));
+      const aggregationId = "aggregate:" + outputName + ":count";
+      context.emit("data.aggregates", { aggregationId, operation: "count", mapping: "derived", inputDatasetId: outputName, inputRecordIds: joined.map(record => record.recordId), value: joined.length }, { mode: "row", rowId: aggregationId, rowSet: outputName + ":aggregates", lineOffset: left.headingOffset, kind: "aggregate", datasetId: outputName + ":aggregates", recordId: aggregationId, mapping: "derived", inputAnchorRefs: outputAnchorRefs, inputSelectors: outputSelectors, outputSelector: { type: "DataSelector", datasetId: outputName + ":aggregates", recordId: aggregationId, column: "count" } });
+      context.emit("data.metrics", { operation: "inner-join", leftRows: leftRecords.length, rightRows: rightRecords.length, outputRows: joined.length, matchedRows: joined.length }, { mode: "row", rowId: "metric:" + outputName, rowSet: "metrics", lineOffset: left.headingOffset, kind: "metric", mapping: "derived", inputAnchorRefs: [leftDatasetEvent.target.anchorRef, rightDatasetEvent.target.anchorRef] });
+      return markdownTable(outputFields, joined);
+    }
+  }
+});`;
+
 const initialFiles: ProjectFile[] = [
   { path: "document.md", kind: "document", content: sampleDocument },
   { path: "modules/core.js", kind: "module", content: coreModule },
   { path: "modules/editorial.js", kind: "module", content: editorialModule },
   { path: "modules/base64.js", kind: "module", content: base64Module },
   { path: "modules/metadata.js", kind: "module", content: metadataModule },
+  { path: "modules/data.js", kind: "module", content: dataModule },
 ];
 
-const storageKey = "textabana-project-v6-labs";
+const storageKey = "textabana-project-v7-data-lineage";
 
 function filesForFixture(fixtureId: string): ProjectFile[] {
   const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
@@ -599,7 +825,7 @@ export default function Home() {
       documentPath: documentFile.path,
       documentSource: documentFile.content,
       modules: files.filter((file) => file.kind === "module"),
-      options: { strictChannels, adapters: ["org.textabana.result-summary"] },
+      options: { strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table"] },
     });
   }, [files, strictChannels]);
 
@@ -704,6 +930,9 @@ export default function Home() {
                 <button type="button" role="tab" aria-selected={lab === "channels"} className={lab === "channels" ? "is-active" : ""} onClick={() => setLab("channels")}>
                   <RadioTower /><span><strong>Channel & Result</strong><small>Descriptors, atomiskt resultat och adapters</small></span>
                 </button>
+                <button type="button" role="tab" aria-selected={lab === "data"} className={lab === "data" ? "is-active" : ""} onClick={() => setLab("data")}>
+                  <Database /><span><strong>Data & Lineage</strong><small>Typade records, join och källspårning</small></span>
+                </button>
               </div>
               <div className="lab-controls">
                 <span className="shared-run-id"><CircleDot /> {running ? "running" : `run ${result.runId ?? "–"}`}</span>
@@ -774,7 +1003,7 @@ export default function Home() {
         ) : <Specification />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Adapter contract lab-v1</span>
+          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Adapter + Data lab-v1</span>
           <span className="syntax-hint"><code>source</code> IR <ChevronRight /><code>run</code> result <ChevronRight /><code>adapters</code></span>
           <span>Source-first · Typed · Positionsmedveten</span>
         </footer>

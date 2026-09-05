@@ -4,7 +4,7 @@ export type ProjectFile = {
   content: string;
 };
 
-export type LabId = "language" | "editor" | "channels";
+export type LabId = "language" | "editor" | "channels" | "data";
 
 export type FunctionMeta = {
   name: string;
@@ -81,6 +81,9 @@ export type ChannelEvent = {
     rowId: string;
     row: number;
     line: number;
+    datasetId?: string;
+    recordId?: string;
+    columnName?: string;
     column?: number;
     endLine?: number;
   };
@@ -283,6 +286,21 @@ export type AdapterRun = {
   };
 };
 
+export type RuntimeSourceMap = {
+  mappingId: string;
+  outputRef: string;
+  inputAnchorRefs: string[];
+  mapping: "exact" | "derived" | "synthetic";
+  generatingActivity: string;
+  outputSelector?: {
+    type: string;
+    datasetId?: string;
+    recordId?: string;
+    column?: string;
+  };
+  inputSelectors?: Array<Record<string, unknown>>;
+};
+
 export type RuntimeResult = {
   runId?: number;
   ok: boolean;
@@ -292,7 +310,7 @@ export type RuntimeResult = {
   channels: Record<string, ChannelEvent[]>;
   channelDescriptors: Record<string, ChannelDescriptor>;
   anchors: RuntimeAnchor[];
-  sourceMaps: Array<Record<string, unknown>>;
+  sourceMaps: RuntimeSourceMap[];
   inspection: RuntimeInspection | null;
   plan: RuntimePlan | null;
   executionTrace: ExecutionStep[];

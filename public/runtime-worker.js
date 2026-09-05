@@ -250,26 +250,41 @@ const adapterManifests = [
   }),
   adapterManifest({
     adapterId: "org.textabana.data-table",
-    version: "1.0.0-contract.1",
+    version: "1.0.0-lab.1",
     profile: "data/1",
-    support: "contract-only",
+    support: "playground-subset",
     accepts: {
-      resultSchemas: ["textabana.result/v1", "textabana.result/lab-v1"],
+      resultSchemas: ["textabana.result/lab-v1"],
       profiles: ["runtime-json/1", "data/1"],
-      channels: [{ name: "data.records", schemaRef: "schema:textabana/data-record/v1", required: true }],
-      artifactKinds: ["application/vnd.apache.arrow.file", "application/vnd.apache.parquet"],
+      channels: [
+        { name: "data.datasets", schemaRef: "schema:textabana/dataset/lab-v1", required: true },
+        { name: "data.input.records", schemaRef: "schema:textabana/data-record/lab-v1", required: true },
+        { name: "data.output.records", schemaRef: "schema:textabana/data-record/lab-v1", required: true },
+        { name: "data.lineage", schemaRef: "schema:textabana/data-lineage/lab-v1", required: true },
+        { name: "data.aggregates", schemaRef: "schema:textabana/data-aggregate/lab-v1", required: false },
+      ],
+      artifactKinds: [],
     },
     produces: [{
       projectionKind: "table",
       valueKind: "table",
-      mediaType: "application/vnd.apache.arrow.file",
-      schemaRef: "textabana.data-table/v1",
+      mediaType: "application/json",
+      schemaRef: "textabana.data-table-projection/lab-v1",
     }],
     capabilities: {
-      required: ["stable-record-id", "source-map", "artifacts"],
-      optional: ["openlineage-export"],
+      required: ["stable-record-id", "source-map", "derived-multi-input-source-map", "json-record-projection"],
+      optional: ["artifacts", "arrow-ipc", "parquet", "openlineage-export"],
     },
-    fidelity: { mode: "selective", requiresSourceResult: true, omittedPaths: [] },
+    fidelity: {
+      mode: "selective",
+      requiresSourceResult: true,
+      omittedPaths: [
+        "render",
+        "channelSnapshots.<non-data>",
+        "anchors[*].selectors.TextQuoteSelector.context",
+        "provenance.entities",
+      ],
+    },
   }),
   adapterManifest({
     adapterId: "org.textabana.notebook",
@@ -335,6 +350,13 @@ const playgroundImplementedCapabilities = [
   "adapter-contract",
   "post-commit-adapter-fanout",
   "explicit-fidelity-report",
+  "dataset-schema-events",
+  "stable-record-id",
+  "json-record-projection",
+  "inner-join",
+  "cell-lineage",
+  "derived-aggregation",
+  "derived-multi-input-source-map",
 ];
 
 function adapterDiagnostic(code, message, adapterId, severity = "error") {
@@ -433,8 +455,167 @@ function buildResultSummaryProjection(result, manifest) {
   };
 }
 
+function uniqueStrings(values) {
+  return [...new Set(values.filter(Boolean).map(String))];
+}
+
+function buildDataTableProjection(result, manifest) {
+  const snapshots = result.channelSnapshots || {};
+  const datasetEvents = snapshots["data.datasets"]?.events || [];
+  const inputEvents = snapshots["data.input.records"]?.events || [];
+  const outputEvents = snapshots["data.output.records"]?.events || [];
+  const lineageEvents = snapshots["data.lineage"]?.events || [];
+  const aggregateEvents = snapshots["data.aggregates"]?.events || [];
+  const outputDatasetEvents = datasetEvents.filter((event) => event.payload?.role === "output");
+  if (outputDatasetEvents.length !== 1) throw new Error("data.datasets måste innehålla exakt ett output-dataset i denna playground-subset");
+  const outputDatasetEvent = outputDatasetEvents[0];
+
+  const datasetId = String(outputDatasetEvent.payload.datasetId);
+  const rowsForDataset = outputEvents.filter((event) => event.payload?.datasetId === datasetId);
+  const lineageForDataset = lineageEvents.filter((event) => event.payload?.output?.datasetId === datasetId);
+  const recordLineage = lineageForDataset.filter((event) => event.payload?.granularity === "record");
+  const cellLineage = lineageForDataset.filter((event) => event.payload?.granularity === "cell");
+  if (outputDatasetEvent.payload.recordCount !== rowsForDataset.length) throw new Error("output-datasetets recordCount matchar inte data.output.records");
+  const recordIds = rowsForDataset.map((event) => String(event.payload?.recordId || ""));
+  if (recordIds.some((recordId) => !recordId) || new Set(recordIds).size !== recordIds.length) throw new Error("data.output.records måste ha unika recordId");
+  const fields = outputDatasetEvent.payload.fields || [];
+  const fieldNames = fields.map((field) => field.name);
+  const inputRecordIds = new Set(inputEvents.map((event) => event.payload?.recordId));
+  const knownAnchors = new Set((result.anchors || []).map((anchor) => anchor.anchorId));
+  const sourceMapByOutput = new Map((result.sourceMaps || []).map((mapping) => [mapping.outputRef, mapping]));
+  for (const event of rowsForDataset) {
+    for (const field of fields) {
+      if (!Object.hasOwn(event.payload?.values || {}, field.name)) throw new Error(`record ${event.payload.recordId} saknar kolumnen ${field.name}`);
+      const value = event.payload.values[field.name];
+      if (value === null && field.nullable) continue;
+      if (field.type === "integer" && !Number.isInteger(value)) throw new Error(`kolumnen ${field.name} måste innehålla heltal`);
+      if (field.type === "utf8" && typeof value !== "string") throw new Error(`kolumnen ${field.name} måste innehålla text`);
+    }
+    const lineageEvent = recordLineage.find((candidate) => candidate.payload?.output?.recordId === event.payload.recordId);
+    if (!lineageEvent) throw new Error(`record ${event.payload.recordId} saknar record-lineage`);
+    if (lineageEvent.payload.inputRecordIds?.length !== 2 || !lineageEvent.payload.inputRecordIds.every((recordId) => inputRecordIds.has(recordId))) {
+      throw new Error(`record ${event.payload.recordId} måste referera två kända input-records`);
+    }
+    const mapping = sourceMapByOutput.get(event.eventId);
+    if (mapping?.mapping !== "derived" || mapping.inputAnchorRefs?.length !== 2 || !mapping.inputAnchorRefs.every((anchorRef) => knownAnchors.has(anchorRef))) {
+      throw new Error(`record ${event.payload.recordId} saknar en derived SourceMap med två inputankare`);
+    }
+    if (mapping.outputSelector?.datasetId !== datasetId || mapping.outputSelector?.recordId !== event.payload.recordId) {
+      throw new Error(`record ${event.payload.recordId} saknar matchande DataSelector`);
+    }
+  }
+  for (const event of cellLineage) {
+    if (!recordIds.includes(event.payload?.output?.recordId) || !fieldNames.includes(event.payload?.output?.column)) {
+      throw new Error("cell-lineage pekar på en okänd outputcell");
+    }
+    if (!Array.isArray(event.payload?.inputs) || !event.payload.inputs.length || event.payload.inputs.some((selector) => !selector.column)) {
+      throw new Error("cell-lineage måste ange minst en inputkolumn");
+    }
+    const mapping = sourceMapByOutput.get(event.eventId);
+    if (mapping?.outputSelector?.column !== event.payload.output.column || mapping.mapping !== "derived") {
+      throw new Error("cell-lineage saknar en derived SourceMap med kolumnselector");
+    }
+  }
+  for (const event of aggregateEvents) {
+    const mapping = sourceMapByOutput.get(event.eventId);
+    if (event.payload?.mapping !== "derived" || mapping?.mapping !== "derived") throw new Error("aggregation måste ha derived lineage");
+  }
+  const consumedEvents = [
+    ...datasetEvents,
+    ...inputEvents,
+    ...rowsForDataset,
+    ...lineageForDataset,
+    ...aggregateEvents,
+  ];
+  const eventRefs = uniqueStrings(consumedEvents.map((event) => event.eventId));
+  const consumedSet = new Set(eventRefs);
+  const sourceMaps = (result.sourceMaps || []).filter((mapping) => consumedSet.has(mapping.outputRef));
+  const mappingByOutput = new Map(sourceMaps.map((mapping) => [mapping.outputRef, mapping]));
+  const lineageByRecord = new Map(recordLineage.map((event) => [event.payload.output.recordId, event]));
+
+  const rows = rowsForDataset.map((event) => {
+    const lineageEvent = lineageByRecord.get(event.payload.recordId);
+    const mapping = mappingByOutput.get(event.eventId);
+    return {
+      recordId: event.payload.recordId,
+      values: event.payload.values,
+      _textabana: {
+        eventRef: event.eventId,
+        anchorRef: event.target.anchorRef,
+        sourceMapRef: mapping?.mappingId || null,
+        provenanceRef: event.provenanceRef,
+        lineageEventRef: lineageEvent?.eventId || null,
+        inputRecordIds: lineageEvent?.payload?.inputRecordIds || [],
+        inputAnchorRefs: lineageEvent?.payload?.inputAnchorRefs || mapping?.inputAnchorRefs || [],
+      },
+    };
+  });
+  const data = {
+    schema: "textabana.data-table-projection/lab-v1",
+    dataset: outputDatasetEvent.payload,
+    columns: outputDatasetEvent.payload.fields || [],
+    rows,
+    recordLineage: recordLineage.map((event) => event.payload),
+    cellLineage: cellLineage.map((event) => event.payload),
+    aggregates: aggregateEvents.map((event) => event.payload),
+  };
+  const projectionSeed = {
+    adapterId: manifest.adapterId,
+    adapterVersion: manifest.version,
+    manifestDigest: manifest.manifestDigest,
+    sourceResultId: result.resultId,
+    output: data,
+  };
+  const anchorRefs = uniqueStrings([
+    ...consumedEvents.map((event) => event.target?.anchorRef),
+    ...sourceMaps.flatMap((mapping) => mapping.inputAnchorRefs || []),
+  ]);
+  const provenanceRefs = uniqueStrings([
+    ...consumedEvents.map((event) => event.provenanceRef),
+    ...sourceMaps.map((mapping) => mapping.generatingActivity),
+  ]);
+
+  return {
+    schema: "textabana.adapter-projection/lab-v1",
+    projectionId: `projection:${sourceHash(canonicalJson(projectionSeed))}`,
+    adapterRef: {
+      adapterId: manifest.adapterId,
+      version: manifest.version,
+      manifestDigest: manifest.manifestDigest,
+    },
+    sourceResultRef: {
+      resultId: result.resultId,
+      resultSchema: result.schema,
+      sourceVersion: result.source?.version || "unknown",
+    },
+    status: "succeeded",
+    output: {
+      ...manifest.produces[0],
+      data,
+      artifactRefs: [],
+    },
+    mapping: "derived",
+    fidelity: manifest.fidelity,
+    references: {
+      eventRefs,
+      anchorRefs,
+      sourceMapRefs: uniqueStrings(sourceMaps.map((mapping) => mapping.mappingId)),
+      provenanceRefs,
+    },
+    diagnostics: [],
+    extensions: {
+      "textabana.playground": {
+        canonical: false,
+        subset: "JSON table projection",
+        unsupported: ["Arrow IPC", "Parquet", "DuckDB", "ArtifactRef persistence", "OpenLineage export"],
+      },
+    },
+  };
+}
+
 const adapterImplementations = new Map([
   ["org.textabana.result-summary", buildResultSummaryProjection],
+  ["org.textabana.data-table", buildDataTableProjection],
 ]);
 
 function validateAdapterProjection(projection, result, manifest) {
@@ -561,7 +742,7 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
       continue;
     }
     try {
-      const projection = implementation(result, manifest);
+      const projection = implementation(JSON.parse(JSON.stringify(result)), manifest);
       const projectionProblems = validateAdapterProjection(projection, result, manifest);
       if (projectionProblems.length) throw new Error(projectionProblems.join("; "));
       projections.push(projection);
@@ -604,7 +785,7 @@ function buildCapabilities(inspection) {
       "runtime-json/1": "playground-subset",
       "editor/1": "playground-subset",
       "adapter-contract/1": "playground-subset",
-      "data/1": "contract-only",
+      "data/1": "playground-subset",
       "notebook/1": "contract-only",
       "ml-lineage/1": "contract-only",
     },
@@ -625,6 +806,11 @@ function buildCapabilities(inspection) {
       "adapter-dependency-graph",
       "stateful-adapters",
       "sink-bindings",
+      "arrow-ipc",
+      "parquet",
+      "duckdb",
+      "artifact-store",
+      "openlineage-export",
     ])],
   };
 }
@@ -838,6 +1024,32 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
       ? `${documentVersion}:${execution.functionName}:${line}:${row}`
       : String(location.rowId);
     const anchor = createAnchor({ line, row, rowId, mode, column, endLine, source, execution });
+    const explicitInputAnchorRefs = location.inputAnchorRefs === undefined
+      ? null
+      : Array.isArray(location.inputAnchorRefs)
+        ? uniqueStrings(location.inputAnchorRefs)
+        : [];
+    if (explicitInputAnchorRefs && !explicitInputAnchorRefs.length) {
+      throw new Error(`Kanalen “${channel}”: inputAnchorRefs måste vara en icke-tom lista.`);
+    }
+    if (explicitInputAnchorRefs) {
+      for (const anchorRef of explicitInputAnchorRefs) {
+        if (!anchors.has(anchorRef)) throw new Error(`Kanalen “${channel}”: okänd input anchor “${anchorRef}”.`);
+      }
+    }
+    const inputSelectors = location.inputSelectors === undefined
+      ? undefined
+      : serializableValue(location.inputSelectors);
+    const outputSelector = location.outputSelector === undefined
+      ? location.datasetId && location.recordId
+        ? {
+            type: "DataSelector",
+            datasetId: String(location.datasetId),
+            recordId: String(location.recordId),
+            ...(location.columnName ? { column: String(location.columnName) } : {}),
+          }
+        : undefined
+      : serializableValue(location.outputSelector);
 
     sequence += 1;
     const eventId = `event:${documentVersion}:${String(sequence).padStart(4, "0")}`;
@@ -859,6 +1071,9 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
         rowId,
         row,
         line,
+        ...(location.datasetId ? { datasetId: String(location.datasetId) } : {}),
+        ...(location.recordId ? { recordId: String(location.recordId) } : {}),
+        ...(location.columnName ? { columnName: String(location.columnName) } : {}),
         ...(Number.isInteger(column) && column > 0 ? { column } : {}),
         ...(Number.isInteger(endLine) && endLine >= line ? { endLine } : {}),
       },
@@ -894,9 +1109,11 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
     sourceMaps.push({
       mappingId: `mapping:${eventId}`,
       outputRef: eventId,
-      inputAnchorRefs: [anchor.anchorId],
+      inputAnchorRefs: explicitInputAnchorRefs || [anchor.anchorId],
       mapping: event.source.mapping,
       generatingActivity: event.provenanceRef,
+      ...(outputSelector ? { outputSelector } : {}),
+      ...(inputSelectors ? { inputSelectors } : {}),
     });
     return event;
   };

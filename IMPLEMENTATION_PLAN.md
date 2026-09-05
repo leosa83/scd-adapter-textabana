@@ -3,7 +3,7 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-ADAPTER-PLAN` |
-| Planversion | `1.0.1` |
+| Planversion | `1.0.2` |
 | Status | Aktiv |
 | Fastställd | 2026-09-05 |
 | Baseline | Textabana Language & Interop draft 0.4, playground `lab-v1` |
@@ -83,13 +83,26 @@ Source → Compile → Run → immutable TextabanaResult
 
 ### Sprint 2 — Data & Lineage Lab
 
-**Status:** planerad
+**Status:** genomförd 2026-09-05
 
 **Mål:** Projicera typade records och verklig multi-input-lineage från text till tabell utan att förlora kopplingen till källan.
 
 **Leveranser:** stabila `recordId`, dataset/schema-events, JSON-tabell, deterministisk inner join, record-/cell-lineage, many-to-many SourceMaps och ArtifactRef-gräns. Arrow IPC och Parquet aktiveras först när riktiga bytes och digest produceras.
 
 **Acceptans:** record identity överlever infogning, sortering och filtrering; join förenar båda inputankarna; aggregation är `derived`; adapterfel påverkar inte canonical result.
+
+**Acceptansevidens:**
+
+- Fixturen `data-join` läser två vanliga GFM-tabeller och emitterar tre dataset/schema-events, fyra inputrecords och två outputrecords.
+- Record-ID:n härleds från dataset och typed natural key. Testerna verifierar att identiteten och dess row-anchor överlever infogade rader, omsortering och filtrering.
+- Inner join bevarar vänstertabellens ordning, stoppar tomma eller duplicerade keys före commit och typinfererar heltal utan att göra fysisk row index till identitet.
+- Varje joinrecord har en `derived` SourceMap med båda inputankarna och en record-level `DataSelector`.
+- Varje outputcell har ett separat lineage-event och en kolumnbunden `DataSelector`; källans positionella anchor är fortsatt row-bred i denna subset.
+- Count-aggregation över join-output är en egen `data.aggregates`-event med `derived` mapping till de records som räknades.
+- `org.textabana.data-table` producerar en deterministisk, source-bound JSON-projektion med schema, records, record-/cell-lineage och tom `artifactRefs`-lista.
+- Arrow IPC, Parquet, DuckDB, artifact store och OpenLineage-export är explicit unsupported; inga profiler hävdas utifrån generisk JSON.
+- Adapterinput klonas före exekvering och before/after-digest verifierar att fel eller mutation inte kan ändra canonical Result.
+- 45 automatiska kontrakts-, runtime-, data-, dokumentations-, renderings- och UI-test utgör sprintens regressionsgrind.
 
 ### Sprint 3 — Notebook Interop Lab
 
@@ -132,6 +145,12 @@ Source → Compile → Run → immutable TextabanaResult
 | 5 · Conformance | Sprint 1–4 | Verifierbara profilanspråk |
 
 ## Ändringslogg
+
+### 1.0.2 — 2026-09-05
+
+- Sprint 2 markerad som genomförd med körbart Data & Lineage Lab och acceptansevidens.
+- `data/1` flyttad från contract-only till en explicit JSON-baserad playground-subset.
+- Nästa aktiva leverans är Sprint 3 — Notebook Interop Lab.
 
 ### 1.0.1 — 2026-09-05
 

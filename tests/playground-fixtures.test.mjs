@@ -17,6 +17,7 @@ const modules = [
   { path: "modules/editorial.js", content: template("editorialModule") },
   { path: "modules/metadata.js", content: template("metadataModule") },
   { path: "modules/base64.js", content: template("base64Module") },
+  { path: "modules/data.js", content: template("dataModule") },
 ];
 
 async function run(documentSource, runId = 1) {
@@ -45,7 +46,7 @@ async function run(documentSource, runId = 1) {
   return message;
 }
 
-test("scope-torture drives all three live playground projections", async () => {
+test("scope-torture drives the shared language, editor and channel projections", async () => {
   const result = await run(template("sampleDocument"));
 
   assert.equal(result.ok, true, result.error);
@@ -105,4 +106,19 @@ test("failed-run fixture exposes diagnostics but no committed domain output", as
   assert.equal(result.resultEnvelope.render.data, "");
   assert.equal(JSON.stringify(result.resultEnvelope.channelSnapshots), "{}");
   assert.equal(result.diagnostics[0].code, "TBA-TYPE-CHANNEL-LAB");
+});
+
+test("data-join fixture produces typed records and clean Markdown", async () => {
+  const result = await run(template("dataJoinFixtureDocument"));
+
+  assert.equal(result.ok, true, result.error);
+  assert.equal(result.channels["data.datasets"].length, 3);
+  assert.equal(result.channels["data.input.records"].length, 4);
+  assert.equal(result.channels["data.output.records"].length, 2);
+  assert.equal(result.channels["data.lineage"].filter((event) => event.payload.granularity === "record").length, 2);
+  assert.equal(result.channels["data.lineage"].filter((event) => event.payload.granularity === "cell").length, 10);
+  assert.equal(result.channels["data.aggregates"][0].payload.mapping, "derived");
+  assert.equal(result.channels["data.output.records"][0].payload.values.estimated_value_usd, 120000);
+  assert.match(result.output, /\| ship:aurora \| Aurora \| Göteborg \| silver \| 120000 \|/);
+  assert.doesNotMatch(result.output, />>>>|<<<<|### ships|### manifests/);
 });
