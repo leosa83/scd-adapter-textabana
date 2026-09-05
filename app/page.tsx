@@ -4,10 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { javascript } from "@codemirror/lang-javascript";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
-  AlertTriangle,
   BookOpen,
   Box,
   Braces,
@@ -18,13 +15,13 @@ import {
   Copy,
   Download,
   FileText,
+  GitBranch,
   Layers3,
+  PanelRight,
   Play,
   Plus,
   RadioTower,
   RotateCcw,
-  Rows3,
-  Sparkles,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -38,58 +35,22 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Specification } from "./specification";
-
-type ProjectFile = {
-  path: string;
-  kind: "document" | "module";
-  content: string;
-};
-
-type FunctionMeta = {
-  name: string;
-  modulePath: string;
-  description: string;
-  args: Record<string, { type?: string; default?: unknown; description?: string }>;
-  accepts: string;
-  returns: string;
-  outputs: string[];
-};
-
-type ChannelEvent = {
-  schema: string;
-  id: string;
-  runId: number;
-  documentVersion: string;
-  sequence: number;
-  channel: string;
-  type: string;
-  row: number;
-  rowId: string;
-  line: number;
-  column?: number;
-  endLine?: number;
-  payload: unknown;
-  source: { path: string; startLine: number; endLine: number; mapping: "exact" | "derived" | "synthetic" };
-  origin: { function: string; module: string; modality: string; stageLine: number; scopeId?: string };
-};
-
-type RuntimeResult = {
-  ok: boolean;
-  output: string;
-  error?: string;
-  diagnostics: Array<{ level: string; line: number; message: string }>;
-  channels: Record<string, ChannelEvent[]>;
-  emissions: number;
-  functions: FunctionMeta[];
-  modulesLoaded: number;
-  duration: number;
-};
+import { PlaygroundOutput } from "./playground-labs";
+import type { LabId, PlaygroundFixture, ProjectFile, RuntimeResult } from "./playground-model";
 
 const sampleDocument = `>>>>! include "./modules/core.js"
 >>>>! include "./modules/editorial.js"
@@ -163,6 +124,87 @@ Editorn får både ett logiskt row-id och den fysiska källraden.
 
 <<<<+ @id=nested-encoder
 <<<<+ @id=nested-decoder`;
+
+const editorFixtureDocument = `>>>>! include "./modules/metadata.js"
+
+# Editorrevision
+
+Flytta en rad, infoga text eller ändra ordningen. Logiska row-id:n följer oförändrad text medan line förblir en fysisk projektion.
+
+>>>>+ collect_rows channel="records" kind="claim" @id=claims @order=10
+
+Fartyget Aurora avgick från Göteborg den 4 maj.
+Lasten uppgavs innehålla silver och navigationsinstrument.
+Den sista dokumenterade positionen behöver verifieras.
+
+<<<<+ @id=claims`;
+
+const channelFixtureDocument = `>>>>! include "./modules/metadata.js"
+
+# En källa, flera outputs
+
+>>>> collect_rows channel="records" kind="observation"
+Aurora lämnade Göteborg den 4 maj.
+Manifestet nämner silverlast.
+Positionen är en granskningskandidat.
+<<<< collect_rows
+
+Render fortsätter som vanlig Markdown. Metadata publiceras separat till records, metrics och system.out.`;
+
+const base64FixtureDocument = `>>>>! include "./modules/base64.js"
+
+# Base64 som nästlad intervallfunktion ger invers
+
+>>>>+ base64encode @id=encoder
+>>>>+ base64decode @id=decoder
+
+<base64decode><base64encode> Textabana kan transformera den här texten </base64encode></base64decode>
+
+<<<<+ @id=encoder
+<<<<+ @id=decoder`;
+
+const failedRunFixtureDocument = `>>>>! include "./modules/metadata.js"
+
+# Atomiskt schemafel
+
+>>>> collect_rows channel="undeclared.audit" kind="claim"
+Den här posten emitteras till en kanal utan deklarerad descriptor.
+<<<< collect_rows
+
+I strict channel mode ska körningen misslyckas utan committed render eller domänkanaler.`;
+
+const playgroundFixtures: PlaygroundFixture[] = [
+  {
+    id: "scope-torture",
+    title: "Scope torture",
+    summary: "Block, öppna intervall, order, inheritance, kanaler och Base64 i samma run.",
+    document: sampleDocument,
+  },
+  {
+    id: "editor-revision",
+    title: "Editor revision",
+    summary: "Flytta text och se skillnaden mellan stabil row-identitet och fysisk line.",
+    document: editorFixtureDocument,
+  },
+  {
+    id: "channel-fanout",
+    title: "Channel fan-out",
+    summary: "Ett funktionsanrop producerar render, system.out, records och metrics.",
+    document: channelFixtureDocument,
+  },
+  {
+    id: "base64-inverse",
+    title: "Base64 inverse",
+    summary: "Två öppna intervall komponerar encode och decode till en invers.",
+    document: base64FixtureDocument,
+  },
+  {
+    id: "failed-run",
+    title: "Failed run",
+    summary: "En odeklarerad kanal visar strict validation och atomisk rollback.",
+    document: failedRunFixtureDocument,
+  },
+];
 
 const coreModule = `define({
   normalize: {
@@ -288,25 +330,57 @@ define({
   collect_rows: {
     description: "Behåller texten och publicerar varje icke-tom rad som strukturerad metadata.",
     behavior: "segment-preserving",
-    outputs: ["render", "system.out", "records"],
+    outputs: ["render", "system.out", "records", "metrics"],
+    channels: {
+      records: {
+        payloadKind: "object",
+        mediaType: "application/json",
+        schemaRef: "schema:textabana/record/v1",
+        delivery: "snapshot",
+        persistence: "durable",
+        ordering: "global-sequence",
+        key: ["payload.rowId"],
+        schema: {
+          type: "object",
+          required: ["kind", "text"],
+          properties: { kind: { type: "string" }, text: { type: "string" } }
+        }
+      },
+      metrics: {
+        payloadKind: "object",
+        mediaType: "application/json",
+        schemaRef: "schema:textabana/metric/v1",
+        delivery: "snapshot",
+        persistence: "durable",
+        ordering: "global-sequence",
+        schema: {
+          type: "object",
+          required: ["kind", "total", "channel"],
+          properties: { kind: { type: "string" }, total: { type: "integer" }, channel: { type: "string" } }
+        }
+      }
+    },
     args: {
       channel: { type: "string", default: "records", description: "Valfri namngiven kanal" },
       kind: { type: "string", default: "row", description: "Metadatapostens typ" }
     },
     transform(input, args, context) {
       let row = 0;
+      const channel = String(args.channel ?? "records");
+      const kind = String(args.kind ?? "row");
       String(input).split("\\n").forEach((sourceLine, lineOffset) => {
         const text = sourceLine.trim();
         if (!text) return;
         row += 1;
-        const kind = String(args.kind ?? "row");
         const rowId = rowKey(kind, text);
-        const payload = { kind, text };
-        const location = { row, rowId, lineOffset, type: "row" };
+        const payload = { kind, text, rowId };
+        const location = { row, rowId, rowSet: kind + "s", lineOffset, kind: "annotation" };
 
         context.system.out.row(rowId, payload, location);
-        context.emit(String(args.channel ?? "records"), payload, location);
+        context.system.out.line({ kind: "line-projection", rowId, text }, { ...location, kind: "annotation" });
+        context.emit(channel, payload, location);
       });
+      context.emit("metrics", { kind: "row-count", total: row, channel }, { row: 1, lineOffset: 0, kind: "metric", mapping: "derived" });
       return input;
     }
   }
@@ -366,7 +440,12 @@ const initialFiles: ProjectFile[] = [
   { path: "modules/metadata.js", kind: "module", content: metadataModule },
 ];
 
-const storageKey = "textabana-project-v5";
+const storageKey = "textabana-project-v6-labs";
+
+function filesForFixture(fixtureId: string): ProjectFile[] {
+  const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
+  return initialFiles.map((file) => file.kind === "document" ? { ...file, content: fixture.document } : { ...file });
+}
 
 function CodeEditor({ file, onChange }: { file: ProjectFile; onChange: (value: string) => void }) {
   const extensions = useMemo(
@@ -393,135 +472,64 @@ function CodeEditor({ file, onChange }: { file: ProjectFile; onChange: (value: s
   );
 }
 
-function ChannelInspector({ name, events }: { name: string; events: ChannelEvent[] }) {
-  return (
-    <div className="channel-scroll">
-      <div className="channel-intro">
-        <div>
-          <span className="channel-name">{name}</span>
-          <strong>{events.length} {events.length === 1 ? "händelse" : "händelser"}</strong>
-        </div>
-        <p>{name === "system.out"
-          ? "Kärnans positionsmedvetna metadataflöde för editorer."
-          : "Append-only-output från funktionerna i aktuell körning."}</p>
-      </div>
-      <div className="channel-events">
-        {events.map((event) => (
-          <article className="channel-event" key={event.id}>
-            <div className="channel-event-head">
-              <span className="event-sequence">#{event.sequence}</span>
-              <span className="event-position"><Rows3 /> row {event.row}</span>
-              <span className="event-position">line {event.line}</span>
-              <span className={`mapping-badge is-${event.source.mapping}`}>{event.source.mapping}</span>
-              <code>{event.origin.function}</code>
-            </div>
-            <pre>{typeof event.payload === "string" ? event.payload : JSON.stringify(event.payload, null, 2)}</pre>
-            <div className="channel-event-foot">
-              <span><strong>row-id</strong> {event.rowId}</span>
-              <span><strong>source</strong> {event.source.path ?? "document.md"}:{event.source.startLine}{event.source.endLine !== event.source.startLine ? `–${event.source.endLine}` : ""}</span>
-              <span><strong>origin</strong> {event.origin.modality}{event.origin.scopeId ? ` · ${event.origin.scopeId}` : ""}</span>
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Preview({ result, running }: { result: RuntimeResult; running: boolean }) {
-  const [activeOutput, setActiveOutput] = useState("render");
-  const channelNames = Object.keys(result.channels);
-  const selectedOutput = activeOutput === "render" || Object.hasOwn(result.channels, activeOutput)
-    ? activeOutput
-    : "render";
-
-  return (
-    <section className="preview-shell" aria-label="Renderat resultat">
-      <div className="panel-bar">
-        <div className="panel-title">
-          <RadioTower aria-hidden="true" />
-          Outputs
-        </div>
-        <span className={`runtime-state ${result.ok ? "is-ok" : "is-error"}`}>
-          <span />
-          {running ? "Bearbetar" : result.ok ? "Synkroniserad" : "Fel"}
-        </span>
-      </div>
-
-      {result.ok ? (
-        <>
-          <div className="output-tabs" role="tablist" aria-label="Outputkanaler">
-            <button type="button" role="tab" aria-selected={selectedOutput === "render"} className={selectedOutput === "render" ? "is-active" : ""} onClick={() => setActiveOutput("render")}>
-              <Sparkles /> Render
-            </button>
-            {channelNames.map((name) => (
-              <button type="button" role="tab" aria-selected={selectedOutput === name} className={selectedOutput === name ? "is-active" : ""} onClick={() => setActiveOutput(name)} key={name}>
-                {name === "system.out" ? <Rows3 /> : <RadioTower />}
-                {name}
-                <small>{result.channels[name].length}</small>
-              </button>
-            ))}
-          </div>
-          {selectedOutput === "render" ? (
-            <div className="preview-scroll">
-              <article className="rendered-markdown">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.output}</ReactMarkdown>
-              </article>
-            </div>
-          ) : (
-            <ChannelInspector name={selectedOutput} events={result.channels[selectedOutput] ?? []} />
-          )}
-        </>
-      ) : (
-        <div className="error-state">
-          <div className="error-icon"><AlertTriangle aria-hidden="true" /></div>
-          <div>
-            <p className="error-kicker">Körningen avbröts</p>
-            <h3>{result.error}</h3>
-            <p>Kontrollera markören, funktionsnamnet eller den inkluderade modulen.</p>
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
+const emptyRuntimeResult: RuntimeResult = {
+  runId: 0,
+  ok: true,
+  output: "",
+  diagnostics: [],
+  channels: {},
+  channelDescriptors: {},
+  anchors: [],
+  sourceMaps: [],
+  inspection: null,
+  plan: null,
+  executionTrace: [],
+  resultEnvelope: null,
+  capabilities: null,
+  emissions: 0,
+  functions: [],
+  modulesLoaded: 0,
+  duration: 0,
+};
 
 export default function Home() {
   const [files, setFiles] = useState<ProjectFile[]>(initialFiles);
   const [activePath, setActivePath] = useState("document.md");
-  const [view, setView] = useState("docs");
+  const [view, setView] = useState("workspace");
+  const [lab, setLab] = useState<LabId>("language");
+  const [fixtureId, setFixtureId] = useState(playgroundFixtures[0].id);
+  const [strictChannels, setStrictChannels] = useState(true);
   const [mobilePane, setMobilePane] = useState<"editor" | "preview">("editor");
   const [workerReady, setWorkerReady] = useState(false);
   const [running, setRunning] = useState(true);
   const [hydrated, setHydrated] = useState(false);
-  const [result, setResult] = useState<RuntimeResult>({
-    ok: true,
-    output: "",
-    diagnostics: [],
-    channels: {},
-    emissions: 0,
-    functions: [],
-    modulesLoaded: 0,
-    duration: 0,
-  });
+  const [result, setResult] = useState<RuntimeResult>(emptyRuntimeResult);
+  const [previousResult, setPreviousResult] = useState<RuntimeResult | null>(null);
 
   const workerRef = useRef<Worker | null>(null);
   const runIdRef = useRef(0);
+  const lastResultRef = useRef<RuntimeResult | null>(null);
   const activeFile = files.find((file) => file.path === activePath) ?? files[0];
 
   useEffect(() => {
-    let storedFiles: ProjectFile[] | null = null;
+    let storedState: { files: ProjectFile[]; fixtureId?: string; strictChannels?: boolean } | null = null;
     try {
       const stored = window.localStorage.getItem(storageKey);
       if (stored) {
-        const parsed = JSON.parse(stored) as ProjectFile[];
-        if (Array.isArray(parsed) && parsed.some((file) => file.kind === "document")) storedFiles = parsed;
+        const parsed = JSON.parse(stored) as { files?: ProjectFile[]; fixtureId?: string; strictChannels?: boolean };
+        if (Array.isArray(parsed.files) && parsed.files.some((file) => file.kind === "document")) {
+          storedState = { files: parsed.files, fixtureId: parsed.fixtureId, strictChannels: parsed.strictChannels };
+        }
       }
     } catch {
       window.localStorage.removeItem(storageKey);
     }
     const hydrationTimer = window.setTimeout(() => {
-      if (storedFiles) setFiles(storedFiles);
+      if (storedState) {
+        setFiles(storedState.files);
+        if (storedState.fixtureId && playgroundFixtures.some((fixture) => fixture.id === storedState?.fixtureId)) setFixtureId(storedState.fixtureId);
+        if (typeof storedState.strictChannels === "boolean") setStrictChannels(storedState.strictChannels);
+      }
       setHydrated(true);
     }, 0);
     return () => window.clearTimeout(hydrationTimer);
@@ -529,29 +537,44 @@ export default function Home() {
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(storageKey, JSON.stringify(files));
-  }, [files, hydrated]);
+    window.localStorage.setItem(storageKey, JSON.stringify({ files, fixtureId, strictChannels }));
+  }, [files, fixtureId, hydrated, strictChannels]);
 
   useEffect(() => {
     const worker = new Worker("/runtime-worker.js");
     workerRef.current = worker;
     worker.onmessage = (event) => {
       if (event.data.runId !== runIdRef.current) return;
-      setResult((previous) => ({
+      const nextResult: RuntimeResult = {
+        runId: event.data.runId,
         ok: event.data.ok,
-        output: event.data.ok ? event.data.output : previous.output,
+        output: event.data.output ?? "",
         error: event.data.error,
         diagnostics: event.data.diagnostics ?? [],
         channels: event.data.channels ?? {},
+        channelDescriptors: event.data.channelDescriptors ?? {},
+        anchors: event.data.anchors ?? [],
+        sourceMaps: event.data.sourceMaps ?? [],
+        inspection: event.data.inspection ?? null,
+        plan: event.data.plan ?? null,
+        executionTrace: event.data.executionTrace ?? [],
+        resultEnvelope: event.data.resultEnvelope ?? null,
+        capabilities: event.data.capabilities ?? null,
         emissions: event.data.emissions ?? 0,
-        functions: event.data.functions ?? previous.functions,
-        modulesLoaded: event.data.modulesLoaded ?? previous.modulesLoaded,
+        functions: event.data.functions ?? [],
+        modulesLoaded: event.data.modulesLoaded ?? 0,
         duration: event.data.duration ?? 0,
-      }));
+      };
+      setPreviousResult(lastResultRef.current);
+      lastResultRef.current = nextResult;
+      setResult(nextResult);
       setRunning(false);
     };
     worker.onerror = () => {
-      setResult((previous) => ({ ...previous, ok: false, error: "Körmotorn kunde inte starta." }));
+      const failed = { ...emptyRuntimeResult, runId: runIdRef.current, ok: false, error: "Körmotorn kunde inte starta." };
+      setPreviousResult(lastResultRef.current);
+      lastResultRef.current = failed;
+      setResult(failed);
       setRunning(false);
     };
     const readyTimer = window.setTimeout(() => setWorkerReady(true), 0);
@@ -574,8 +597,9 @@ export default function Home() {
       documentPath: documentFile.path,
       documentSource: documentFile.content,
       modules: files.filter((file) => file.kind === "module"),
+      options: { strictChannels },
     });
-  }, [files]);
+  }, [files, strictChannels]);
 
   useEffect(() => {
     if (!workerReady) return;
@@ -594,7 +618,7 @@ export default function Home() {
     const newModule: ProjectFile = {
       path,
       kind: "module",
-      content: `define({\n  my_function: {\n    description: "Beskriv vad funktionen gör.",\n    outputs: ["render", "my.channel"],\n    args: {},\n    transform(input, args, context) {\n      context.emit("my.channel", { message: "Metadata från funktionen" });\n      return String(input);\n    }\n  }\n});`,
+      content: `define({\n  my_function: {\n    description: "Beskriv vad funktionen gör.",\n    outputs: ["render", "my.channel"],\n    channels: {\n      "my.channel": {\n        payloadKind: "object",\n        mediaType: "application/json",\n        schemaRef: "schema:my-channel/v1",\n        delivery: "snapshot",\n        persistence: "durable",\n        ordering: "global-sequence",\n        schema: { type: "object", required: ["message"] }\n      }\n    },\n    args: {},\n    transform(input, args, context) {\n      context.emit("my.channel", { message: "Metadata från funktionen" });\n      return String(input);\n    }\n  }\n});`,
     };
     setFiles((current) => current.map((file) => file.kind === "document"
       ? { ...file, content: `>>>> include "./${path}"\n${file.content}` }
@@ -603,11 +627,22 @@ export default function Home() {
     toast.success("Ny modul skapad och inkluderad");
   };
 
-  const resetProject = () => {
-    if (!window.confirm("Återställ exempeldokumentet och alla moduler?")) return;
-    setFiles(initialFiles);
+  const selectFixture = (nextFixtureId: string) => {
+    setFixtureId(nextFixtureId);
+    setFiles(filesForFixture(nextFixtureId));
     setActivePath("document.md");
-    toast.success("Projektet återställdes");
+    setPreviousResult(null);
+    lastResultRef.current = null;
+    toast.success(`Fixture laddad: ${playgroundFixtures.find((fixture) => fixture.id === nextFixtureId)?.title ?? nextFixtureId}`);
+  };
+
+  const resetProject = () => {
+    if (!window.confirm("Återställ aktuell fixture och alla moduler?")) return;
+    setFiles(filesForFixture(fixtureId));
+    setActivePath("document.md");
+    setPreviousResult(null);
+    lastResultRef.current = null;
+    toast.success("Aktuell fixture återställdes");
   };
 
   const copyOutput = async () => {
@@ -638,7 +673,7 @@ export default function Home() {
           <Tabs value={view} onValueChange={setView} className="top-tabs">
             <TabsList>
               <TabsTrigger value="docs"><BookOpen /> Specifikation 0.4</TabsTrigger>
-              <TabsTrigger value="workspace"><Code2 /> Playground</TabsTrigger>
+              <TabsTrigger value="workspace"><Code2 /> Playground Labs</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -656,8 +691,41 @@ export default function Home() {
 
         {view === "workspace" ? (
           <main className="workspace">
+            <div className="lab-toolbar">
+              <div className="lab-switcher" role="tablist" aria-label="Välj playground">
+                <button type="button" role="tab" aria-selected={lab === "language"} className={lab === "language" ? "is-active" : ""} onClick={() => setLab("language")}>
+                  <GitBranch /><span><strong>Language & Scope</strong><small>Vad körs, i vilken ordning och varför?</small></span>
+                </button>
+                <button type="button" role="tab" aria-selected={lab === "editor"} className={lab === "editor" ? "is-active" : ""} onClick={() => setLab("editor")}>
+                  <PanelRight /><span><strong>Editor Metadata</strong><small>Anchors, row, line och SourceMap</small></span>
+                </button>
+                <button type="button" role="tab" aria-selected={lab === "channels"} className={lab === "channels" ? "is-active" : ""} onClick={() => setLab("channels")}>
+                  <RadioTower /><span><strong>Channel & Result</strong><small>Descriptors, timeline och atomiskt resultat</small></span>
+                </button>
+              </div>
+              <div className="lab-controls">
+                <span className="shared-run-id"><CircleDot /> {running ? "running" : `run ${result.runId ?? "–"}`}</span>
+                <label className="fixture-control">
+                  <span>Fixture</span>
+                  <Select value={fixtureId} onValueChange={selectFixture}>
+                    <SelectTrigger size="sm" aria-label="Välj fixture"><SelectValue /></SelectTrigger>
+                    <SelectContent align="end">
+                      {playgroundFixtures.map((fixture) => <SelectItem value={fixture.id} key={fixture.id}>{fixture.title}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </label>
+                <label className="strict-control">
+                  <Switch size="sm" checked={strictChannels} onCheckedChange={setStrictChannels} aria-label="Strict channel mode" />
+                  <span>Strict channels</span>
+                </label>
+              </div>
+            </div>
             <aside className="file-rail">
-              <div className="rail-heading"><span>Projekt</span><Button variant="ghost" size="icon-xs" onClick={addModule} aria-label="Skapa modul"><Plus /></Button></div>
+              <div className="fixture-summary">
+                <span>{playgroundFixtures.find((fixture) => fixture.id === fixtureId)?.title}</span>
+                <p>{playgroundFixtures.find((fixture) => fixture.id === fixtureId)?.summary}</p>
+              </div>
+              <div className="rail-heading"><span>Delad källa</span><Button variant="ghost" size="icon-xs" onClick={addModule} aria-label="Skapa modul"><Plus /></Button></div>
               <div className="file-list">
                 {files.map((file) => (
                   <button key={file.path} className={`file-item ${activePath === file.path ? "is-active" : ""}`} onClick={() => setActivePath(file.path)}>
@@ -677,7 +745,7 @@ export default function Home() {
 
             <div className="desktop-workspace">
               <ResizablePanelGroup orientation="horizontal">
-                <ResizablePanel defaultSize="52%" minSize="32%">
+                <ResizablePanel defaultSize="50%" minSize="32%">
                   <section className="editor-shell">
                     <div className="panel-bar">
                       <div className="panel-title">{activeFile.kind === "document" ? <FileText /> : <Box />}{activeFile.path}</div>
@@ -687,7 +755,7 @@ export default function Home() {
                   </section>
                 </ResizablePanel>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize="48%" minSize="30%"><Preview result={result} running={running} /></ResizablePanel>
+                <ResizablePanel defaultSize="50%" minSize="30%"><PlaygroundOutput lab={lab} result={result} previousResult={previousResult} running={running} onOpenLab={setLab} /></ResizablePanel>
               </ResizablePanelGroup>
             </div>
 
@@ -698,13 +766,13 @@ export default function Home() {
               </div>
               {mobilePane === "editor" ? (
                 <section className="editor-shell"><div className="panel-bar"><div className="panel-title">{activeFile.path}</div></div><div className="editor-area"><CodeEditor file={activeFile} onChange={updateActiveFile} /></div></section>
-              ) : <Preview result={result} running={running} />}
+              ) : <PlaygroundOutput lab={lab} result={result} previousResult={previousResult} running={running} onOpenLab={setLab} />}
             </div>
           </main>
         ) : <Specification />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Interop draft 0.4 · Runtime 0.3</span>
+          <span><CheckCircle2 /> Interop draft 0.4 · Playground subset 0.4</span>
           <span className="syntax-hint"><code>source</code> IR <ChevronRight /><code>run</code> result <ChevronRight /><code>adapters</code></span>
           <span>Source-first · Typed · Positionsmedveten</span>
         </footer>

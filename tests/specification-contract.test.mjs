@@ -40,5 +40,9 @@ test("the Interop 0.4 specification preserves its foundational contracts", () =>
   assert.match(source, /render.*resultatfält, inte en emitterbar kanal/s);
   assert.match(source, /row och line är projektioner/);
   assert.match(source, /HTML beskriver ett dokumentträd.*Textabana beskriver vilka semantiska processer/s);
-  assert.match(source, /Nuvarande Playground är en 0\.3-baseline/);
+  assert.match(source, /Nuvarande Playground implementerar uttryckligen avgränsade 0\.4-subsets/);
+  assert.match(source, /Language & Scope Lab/);
+  assert.match(source, /Editor Metadata Lab/);
+  assert.match(source, /Channel & Result Lab/);
+  assert.match(source, /En interaktiv subset är inte full profilkonformitet/);
 });

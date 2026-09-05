@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
-async function runRuntime(documentSource, modules) {
+async function runRuntime(documentSource, modules, options = {}) {
   const source = await readFile(new URL("../public/runtime-worker.js", import.meta.url), "utf8");
   let resolveMessage;
   const message = new Promise((resolve) => { resolveMessage = resolve; });
@@ -18,7 +18,7 @@ async function runRuntime(documentSource, modules) {
     self: { postMessage: resolveMessage },
   });
   vm.runInContext(source, context);
-  await context.self.onmessage({ data: { runId: 1, documentSource, modules } });
+  await context.self.onmessage({ data: { runId: 1, documentSource, modules, options } });
   return message;
 }
 
@@ -144,7 +144,10 @@ test("system.out guarantees row, line, schema and execution provenance", async (
 
   assert.equal(result.ok, true);
   const [first, second] = result.channels["system.out"];
-  assert.equal(first.schema, "textabana.system.out/v1");
+  assert.equal(first.schema, "textabana.event/v1");
+  assert.equal(first.kind, "annotation");
+  assert.equal(first.target.mode, "row");
+  assert.match(first.target.anchorRef, /^anchor:row:/);
   assert.equal(first.type, "row");
   assert.equal(first.row, 1);
   assert.equal(first.rowId, "item-1");
@@ -158,6 +161,8 @@ test("system.out guarantees row, line, schema and execution provenance", async (
   assert.equal(second.row, 2);
   assert.equal(second.line, 4);
   assert.equal(result.emissions, 2);
+  assert.equal(result.anchors.length, 2);
+  assert.equal(result.sourceMaps.length, 2);
 });
 
 test("system.out.line and warnings retain physical source lines", async () => {
@@ -174,6 +179,8 @@ test("system.out.line and warnings retain physical source lines", async () => {
   assert.equal(result.channels.diagnostics[0].line, 3);
   assert.equal(result.channels.diagnostics[0].payload.level, "warning");
   assert.equal(result.channels["system.out"][0].type, "line");
+  assert.equal(result.channels["system.out"][0].target.mode, "line");
+  assert.equal(result.channels["system.out"][0].kind, "annotation");
   assert.equal(result.channels["system.out"][0].line, 4);
   assert.equal(result.channels["system.out"][0].rowId, "line-two");
 });
@@ -227,4 +234,69 @@ test("a failed run publishes no partial channel snapshot", async () => {
   assert.equal(Object.keys(result.channels).length, 0);
   assert.equal(result.emissions, 0);
   assert.match(result.error, /reserverat/);
+  assert.equal(result.resultEnvelope.run.status, "failed");
+  assert.equal(result.resultEnvelope.render.data, "");
+  assert.equal(JSON.stringify(result.resultEnvelope.channelSnapshots), "{}");
+});
+
+test("the shared runner exposes scope projection, actual execution trace and one atomic result", async () => {
+  const result = await runRuntime(
+    `>>>>! include "./modules/core.js"\n>>>>+ wrap @id=ambient @order=20\n>>>> upper @inherit=default\nalpha\n<<<< upper\n<<<<+ @id=ambient`,
+    [{
+      path: "modules/core.js",
+      content: `define({ upper: input => String(input).toUpperCase(), wrap: input => "[" + String(input).trim() + "]" });`,
+    }],
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.inspection.schema, "textabana.ir/lab-v1");
+  assert.equal(result.inspection.scopes[0].id, "ambient");
+  assert.equal(JSON.stringify(result.inspection.scopes[0].segments), JSON.stringify([{ startLine: 4, endLine: 4 }]));
+  assert.equal(JSON.stringify(result.plan.steps.map((step) => step.function)), JSON.stringify(["upper", "wrap"]));
+  assert.equal(JSON.stringify(result.plan.steps.map((step) => step.modality)), JSON.stringify(["block", "interval"]));
+  assert.equal(result.resultEnvelope.run.runId, "run:1");
+  assert.equal(result.resultEnvelope.render.data.trim(), "[ALPHA]");
+  assert.equal(result.capabilities.profiles["language-core/0.4"], "playground-subset");
+});
+
+test("strict channel mode requires a declared descriptor and validates required fields", async () => {
+  const moduleSource = `define({ publish: { channels: { audit: { payloadKind: "object", schemaRef: "schema:audit/v1", schema: { type: "object", required: ["step"] } } }, transform(input, args, context) { context.emit("audit", args.invalid ? { wrong: true } : { step: "publish" }); return input; } } });`;
+  const valid = await runRuntime(
+    `>>>>! include "./modules/audit.js"\n>>>> publish\nok\n<<<< publish`,
+    [{ path: "modules/audit.js", content: moduleSource }],
+    { strictChannels: true },
+  );
+  const invalid = await runRuntime(
+    `>>>>! include "./modules/audit.js"\n>>>> publish invalid=true\nnot committed\n<<<< publish`,
+    [{ path: "modules/audit.js", content: moduleSource }],
+    { strictChannels: true },
+  );
+
+  assert.equal(valid.ok, true);
+  assert.equal(valid.channelDescriptors.audit.declared, true);
+  assert.equal(valid.channels.audit[0].payload.step, "publish");
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.error, /obligatoriska fältet/);
+  assert.equal(JSON.stringify(invalid.channels), "{}");
+  assert.equal(invalid.resultEnvelope.render.data, "");
+});
+
+test("system.out row and line helpers normalize to the same portable envelope", async () => {
+  const result = await runRuntime(
+    `>>>>! include "./modules/editor.js"\n>>>> inspect\nAurora\n<<<< inspect`,
+    [{
+      path: "modules/editor.js",
+      content: `define({ inspect: { transform(input, _args, context) { context.system.out.row("ship:aurora", { label: "ship" }, { row: 1, lineOffset: 0, kind: "annotation" }); context.system.out.line({ label: "line" }, { row: 1, rowId: "line:aurora", lineOffset: 0, kind: "annotation" }); return input; } } });`,
+    }],
+  );
+
+  const [rowEvent, lineEvent] = result.channels["system.out"];
+  assert.equal(rowEvent.schema, lineEvent.schema);
+  assert.equal(rowEvent.kind, "annotation");
+  assert.equal(lineEvent.kind, "annotation");
+  assert.equal(rowEvent.target.mode, "row");
+  assert.equal(lineEvent.target.mode, "line");
+  assert.ok(rowEvent.target.anchorRef);
+  assert.ok(lineEvent.target.anchorRef);
+  assert.equal(result.sourceMaps.length, 2);
 });

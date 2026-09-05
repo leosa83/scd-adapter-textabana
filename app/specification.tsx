@@ -88,7 +88,7 @@ const navGroups: NavGroup[] = [
       { id: "use-cases", label: "Verkliga problem" },
       { id: "conformance", label: "Profiler & versioner" },
       { id: "errors", label: "Felmodell" },
-      { id: "playgrounds", label: "Nästa playgrounds" },
+      { id: "playgrounds", label: "Playground Labs" },
       { id: "glossary", label: "Begrepp" },
     ],
   },
@@ -129,9 +129,9 @@ function SectionHeading({
   implementation?: "implemented" | "defined" | "partial" | "planned";
 }) {
   const implementationLabel = {
-    implemented: "Runtime 0.3",
+    implemented: "Körbar 0.4-subset",
     defined: "Definierat 0.4",
-    partial: "Delvis 0.3",
+    partial: "Interaktiv subset",
     planned: "Adapterprofil",
   }[implementation];
 
@@ -241,13 +241,13 @@ export function Specification() {
         <div className="spec-version">
           <span>Textabana</span>
           <strong>Language & Interop draft 0.4</strong>
-          <small>Web runtime: 0.3 baseline</small>
+          <small>Web runtime: interaktiv 0.4-subset</small>
         </div>
         <SpecNav />
         <div className="spec-legend" aria-label="Statusförklaring">
-          <span><i className="implemented" /> Implementerat i 0.3</span>
+          <span><i className="implemented" /> Körbart i playgroundens 0.4-subset</span>
           <span><i className="defined" /> Normativt definierat för 0.4</span>
-          <span><i className="planned" /> Informativ adapterprofil</span>
+          <span><i className="planned" /> Definierat men ännu inte körbart här</span>
         </div>
       </aside>
 
@@ -261,8 +261,8 @@ export function Specification() {
           <div className="spec-kicker"><ShieldCheck aria-hidden="true" /> Language & Interop Specification</div>
           <div className="hero-status">
             <StatusBadge tone="normative">Interop draft 0.4</StatusBadge>
-            <StatusBadge tone="implemented">Språkkärna 0.3</StatusBadge>
-            <StatusBadge tone="partial">Web runtime 0.3 baseline</StatusBadge>
+            <StatusBadge tone="implemented">Språkkärna 0.4-subset</StatusBadge>
+            <StatusBadge tone="partial">Tre interaktiva labs</StatusBadge>
           </div>
           <h1 id="definition-title">Läsbar text som körbar, positionsmedveten och flerkanalig semantisk källa.</h1>
           <p className="hero-definition">Textabana gör läsbar text till en körbar, positionsmedveten och flerkanalig semantisk källa — oberoende av hur resultatet senare presenteras. Det är ett <em>source-first</em>, host-neutralt lager som kompilerar texten till en explicit plan och producerar en primär render samt valfritt många typade outputs.</p>
@@ -285,7 +285,7 @@ export function Specification() {
             headers={["Dimension", "Värden", "Betydelse"]}
             rows={[
               [<code key="n">Kravstatus</code>, "Normativt · Informativt", "Anger om texten definierar konformt beteende eller beskriver en adapter/rekommendation."],
-              [<code key="i">Implementation</code>, "Runtime 0.3 · Delvis 0.3 · Definierat 0.4 · Adapterprofil", "Anger om beteendet finns i dagens webb-runtime, bara delvis finns eller är kontrakt för kommande implementation."],
+              [<code key="i">Implementation</code>, "Körbar 0.4-subset · Interaktiv subset · Definierat 0.4 · Adapterprofil", "Anger vad webbplaygrounden faktiskt kör, vad den endast visualiserar delvis och vad som fortfarande är ett kontrakt för kommande implementation."],
             ]}
           />
           <div className="norm-terms">
@@ -295,7 +295,7 @@ export function Specification() {
           </div>
           <Requirement id="STATUS-001">En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.</Requirement>
           <Requirement id="STATUS-002">Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.</Requirement>
-          <Requirement id="STATUS-003">Nuvarande Playground är en 0.3-baseline. Alla 0.4-kontrakt som inte uttryckligen markeras som implementerade ska betraktas som ännu ej implementerade.</Requirement>
+          <Requirement id="STATUS-003">Nuvarande Playground implementerar uttryckligen avgränsade 0.4-subsets för Language & Scope, Editor Metadata samt Channel & Result. En interaktiv subset är inte full profilkonformitet; allt som visas som unsupported, planned eller en lab-projektion ska betraktas som ännu ej konformt implementerat.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="html">
@@ -674,7 +674,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="ir-plan">
-          <SectionHeading number="10" layer="Canonical contracts" title="TextabanaIR och ExecutionPlan är separata" implementation="defined" />
+          <SectionHeading number="10" layer="Canonical contracts" title="TextabanaIR och ExecutionPlan är separata" implementation="partial" />
           <p className="lead">IR beskriver dokumentets semantik. ExecutionPlan beskriver hur just denna host ska köra den. Separationen gör samma dokument portabelt mellan webb, kernel, server och pipeline.</p>
           <div className="contract-grid">
             <article><Braces aria-hidden="true" /><strong>TextabanaIR</strong><p>Immutable, JSON-serialiserbar, versionssatt och host-neutral. Representerar både blockträdet och intervallens segmentmedlemskap.</p></article>
@@ -707,10 +707,13 @@ export function Specification() {
           <Requirement id="IR-001">Intervall MÅSTE representeras som scopes och segmentmedlemskap; de får inte pressas in i ett AST-träd som förlorar korsningar.</Requirement>
           <Requirement id="IR-002">Authored ids FÅR vara stabila mellan revisioner. Genererade node ids MÅSTE dokumenteras som revision-local.</Requirement>
           <Requirement id="PLAN-001">ExecutionPlan MÅSTE bära varje stages exakta funktionsversion, typkontrakt, granted capabilities och deterministiska order key.</Requirement>
+          <Callout title="Playgroundens projektion" icon={<Workflow />} tone="info">
+            Language & Scope Lab visar verkliga syntaxnoder, scope-segment och instrumenterade stage-invocations från samma worker som producerar resultatet. Scheman med suffixet <code>/lab-v1</code> är avsiktligt icke-kanoniska tills typed edges, capability grants, SHA-256-identitet och full Plan-validering är implementerade.
+          </Callout>
         </section>
 
         <section className="docs-section spec-section" id="anchors">
-          <SectionHeading number="11" layer="Canonical contracts" title="Anchor är identitet; row och line är projektioner" implementation="defined" />
+          <SectionHeading number="11" layer="Canonical contracts" title="Anchor är identitet; row och line är projektioner" implementation="partial" />
           <p className="lead">Rader flyttar sig när text redigeras. En hållbar metadataapplikation behöver därför versionerad target, flera selectors och en ärlig re-anchor-algoritm.</p>
           <CodeExample
             title="Kanoniskt Anchor"
@@ -768,10 +771,13 @@ export function Specification() {
           <Requirement id="ANCHOR-002">En runtime får aldrig tyst välja en av flera re-anchor-kandidater. Ambiguity eller misslyckande MÅSTE ge orphan state och diagnostik.</Requirement>
           <Requirement id="ANCHOR-003">Human-facing line och column är ettbaserade. LSP-adaptern MÅSTE konvertera till nollbaserade UTF-16-positioner.</Requirement>
           <Requirement id="SOURCEMAP-001">Varje mapping record MÅSTE ange <code>exact</code>, <code>derived</code> eller <code>synthetic</code> samt generating activity. Aggregat är aldrig <code>exact</code> utan verifierat mapping proof.</Requirement>
+          <Callout title="Editor Metadata Lab" icon={<PanelRight />} tone="info">
+            Labbet producerar Anchor med position- och quote-selector, visar SourceMap-records och jämför stabila row-id:n mellan två lokala runs. Jämförelsen är en pedagogisk re-anchor-projektion; canonical persistence, ambiguous/orphan-algoritm och LSP-coordinate conversion återstår.
+          </Callout>
         </section>
 
         <section className="docs-section spec-section" id="result">
-          <SectionHeading number="12" layer="Canonical contracts" title="TextabanaResult är den atomiska leveransen" implementation="defined" />
+          <SectionHeading number="12" layer="Canonical contracts" title="TextabanaResult är den atomiska leveransen" implementation="partial" />
           <CodeExample
             title="Resultatkuvert"
             language="json"
@@ -808,6 +814,9 @@ export function Specification() {
           <Requirement id="RESULT-001">Ett lyckat resultat MÅSTE vara immutable. <code>resultId</code> BÖR vara content-addressed.</Requirement>
           <Requirement id="RESULT-002">Ett failed eller cancelled resultat MÅSTE ha tom committed render och tomma committed domain channels, men FÅR bära control-plane diagnostics.</Requirement>
           <Requirement id="RESULT-003">Timestamps är transportmetadata och får inte styra semantisk hash eller eventordning.</Requirement>
+          <Callout title="Resultatet som playgrounden visar" icon={<FileJson />} tone="info">
+            <code>textabana.result/lab-v1</code> samlar render, channel snapshots, anchors, SourceMaps, provenanceprojektion och diagnostics i en och samma run. Success committas atomiskt; ett failed run visar tom committed render och tomma domänkanaler. SHA-256-identitet, cancellation och artifacts återstår före full <code>runtime-json/1</code>-konformitet.
+          </Callout>
         </section>
 
         <section className="docs-section spec-section" id="channels">
@@ -874,6 +883,9 @@ export function Specification() {
           <Requirement id="CHANNEL-003">Events är append-only inom en run. Ett schemafel, en cyklisk payload eller ett oserialiserbart värde MÅSTE avvisas — inte förlustkonverteras till text.</Requirement>
           <Requirement id="CHANNEL-004">Varje accepted emit får en order key <code>(planStep, invocationOrder, localEmitIndex)</code>. <code>sequence</code> tilldelas vid deterministic merge/commit.</Requirement>
           <Requirement id="CHANNEL-005">En funktionsmodul körs inte en gång per kanal. Ett enda funktionsanrop FÅR emittera till valfritt många kanaler.</Requirement>
+          <Callout title="Strict channels i playgrounden" icon={<RadioTower />} tone="info">
+            Strict mode kräver en deklarerad descriptor, avvisar odeklarerade kanaler, reserverade namn, cykliska eller icke-serialiserbara payloads och validerar den JSON Schema-subset som fixturemodulerna använder. Full JSON Schema 2020-12 och stream/backpressure är ännu unsupported.
+          </Callout>
         </section>
 
         <section className="docs-section spec-section" id="system-out">
@@ -921,7 +933,7 @@ export function Specification() {
           <Requirement id="SYSTEM-OUT-002"><code>context.system.out.row(...)</code> och <code>.line(...)</code> FÅR finnas som SDK-helpers men MÅSTE normalisera till samma portabla event envelope och Anchor.</Requirement>
           <Requirement id="SYSTEM-OUT-003">Compile- och run-fel lagras i top-level diagnostics. En lyckad positionsbunden varning FÅR dessutom projiceras i <code>system.out</code> med samma diagnostic-id.</Requirement>
           <Callout title="Kompatibilitet" icon={<GitBranch />} tone="info">
-            Dagens <code>textabana.system.out/v1</code> med <code>type=row|line</code> är ett 0.3-kompatibilitetsformat. En 0.4-adapter ska uppgradera det till <code>kind + target.mode + anchorRef</code>.
+            Playgrounden normaliserar nu <code>context.system.out.row(...)</code> och <code>.line(...)</code> till separata <code>kind</code>, <code>target.mode</code> och <code>anchorRef</code>, och visar Anchor samt SourceMap i Editor Metadata Lab. Legacyfälten <code>type</code>, <code>row</code> och <code>line</code> finns kvar som kompatibilitetsprojektioner. Durable re-anchor och LSP-adaptern är fortfarande unsupported.
           </Callout>
         </section>
 
@@ -1251,17 +1263,17 @@ export function Specification() {
             caption="Konformitetsprofiler"
             headers={["Profil", "Måste täcka", "Web runtime idag"]}
             rows={[
-              [<code key="lang">language-core/0.4</code>, "Source, syntax, block, intervall, property, pipeline, inheritance och cross=error.", <StatusBadge key="c1" tone="partial">0.3 subset</StatusBadge>],
-              [<code key="runtime">runtime-json/1</code>, "IR, Plan, Run, Result, JSON channels och atomisk commit.", <StatusBadge key="c2" tone="partial">Delvis</StatusBadge>],
-              [<code key="editor">editor/1</code>, "Anchor, SourceMap, system.out och LSP-projektion.", <StatusBadge key="c3" tone="planned">Planerad</StatusBadge>],
+              [<code key="lang">language-core/0.4</code>, "Source, syntax, block, intervall, property, pipeline, inheritance och cross=error.", <StatusBadge key="c1" tone="partial">Playground subset</StatusBadge>],
+              [<code key="runtime">runtime-json/1</code>, "IR, Plan, Run, Result, JSON channels och atomisk commit.", <StatusBadge key="c2" tone="partial">Playground subset</StatusBadge>],
+              [<code key="editor">editor/1</code>, "Anchor, SourceMap, system.out och LSP-projektion.", <StatusBadge key="c3" tone="partial">Playground subset</StatusBadge>],
               [<code key="notebook">notebook/1</code>, "Cell ids, MIME bundle, state profiles och whole-snapshot-regler.", <StatusBadge key="c4" tone="planned">Planerad</StatusBadge>],
               [<code key="data">data/1</code>, "Arrow, Parquet, record identity och provenance fields.", <StatusBadge key="c5" tone="planned">Planerad</StatusBadge>],
               [<code key="ml">ml-lineage/1</code>, "AI invocation, PROV, OpenLineage, MLflow och OTel correlation.", <StatusBadge key="c6" tone="planned">Planerad</StatusBadge>],
             ]}
           />
           <div className="conformance-grid">
-            <article><CheckCircle2 aria-hidden="true" /><strong>0.3 baseline</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, sortering, inheritance, cross=error, flerkanalig output och system.out/v1.</p></article>
-            <article><CircleDashed aria-hidden="true" /><strong>0.4 mål</strong><p>Portabel IR/Plan/Result, typed descriptors, durable anchors, polyglott protokoll, transaktioner, artifacts och namngivna adapterprofiler.</p></article>
+            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, stage trace, deklarerade JSON-kanaler, atomisk success/failure-envelope och system.out med Anchor-projektion.</p></article>
+            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, artifacts, polyglotta runtimes och resterande cross-policies.</p></article>
           </div>
           <Requirement id="CONF-001">En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.</Requirement>
           <Requirement id="CONF-002">Varje profil MÅSTE ha golden fixtures för source → IR → plan → result och negativa fixtures för fel, cancellation och mapping claims.</Requirement>
@@ -1306,14 +1318,16 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section playground-contract-section" id="playgrounds">
-          <SectionHeading number="26" layer="Nästa iteration" title="Playgrounds ska demonstrera samma system från olika håll" normative={false} implementation="planned" />
-          <p className="lead">Denna iteration ändrar inte Playground. Dokumentationen definierar i stället exakt vilka verifierbara ytor kommande playgrounds ska bygga mot.</p>
+          <SectionHeading number="26" layer="Interactive implementation" title="Tre playgrounds visar samma run från olika håll" normative={false} implementation="partial" />
+          <p className="lead">Language & Scope, Editor Metadata och Channel & Result är nu tre liveprojektioner av samma källa, fixture, run-id och result envelope. Ett labbyte startar ingen ny exekvering. Data-, notebook-, annotation- och conformance-labben ligger kvar som nästa implementeringslager.</p>
           <div className="playground-grid">
-            <article><span>01</span><Code2 aria-hidden="true" /><strong>Language Lab</strong><p>Källa, tokens, blockträd, aktiva scopes, IR, ExecutionPlan och render.</p><small>Fixture: nested block + korsande intervall + explicit @intervals</small></article>
-            <article><span>02</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>Anchors, SourceMap, system.out, gutter, row/line projections och re-anchor.</p><small>Fixture: candidate claim → edit → stable review</small></article>
-            <article><span>03</span><Database aria-hidden="true" /><strong>Data Lab</strong><p>Typed channels, Arrow-tabell, ArtifactRef, joins, aggregation och lineage.</p><small>Fixture: claims → filter → join → derived summary</small></article>
-            <article><span>04</span><Blocks aria-hidden="true" /><strong>Notebook Lab</strong><p>Cell magic, whole-document mode, MIME bundle, Python API och stale output.</p><small>Fixture: samma source i fresh, session och attached</small></article>
-            <article><span>05</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability negotiation, golden result, fel, cancel och diff.</p><small>Fixture: pass/fail per requirement-id</small></article>
+            <article><span>01</span><Code2 aria-hidden="true" /><strong>Language & Scope Lab</strong><p>Scope-segment, blockträd, inheritance, faktisk stageordning, IR-projektion och render.</p><small>Live · scope-torture + base64-inverse</small></article>
+            <article><span>02</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>system.out, metadatagutter, row/line, Anchor, SourceMap och jämförelse med föregående run.</p><small>Live · editor-revision</small></article>
+            <article><span>03</span><RadioTower aria-hidden="true" /><strong>Channel & Result Lab</strong><p>ChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.</p><small>Live · channel-fanout + failed-run</small></article>
+            <article><span>04</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>Arrow-tabell, ArtifactRef, joins, aggregation och cell-/record-lineage.</p><small>Planned · data-join</small></article>
+            <article><span>05</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Cell magic, whole-document mode, MIME bundle, Python API och stale output.</p><small>Planned · notebook-state</small></article>
+            <article><span>06</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>AI-kandidater, confidence, provenance, human review och standardexport.</p><small>Planned · annotation-review</small></article>
+            <article><span>07</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability negotiation, golden result, fel, cancel och strukturell diff.</p><small>Planned UI · headless regressioner finns</small></article>
           </div>
           <h3>Gemensamt playgroundkontrakt</h3>
           <Requirement id="PLAYGROUND-001">Alla labs BÖR använda samma lilla dokument, modulmanifest, inputdata och förväntade resultatsnapshot så att relationen mellan vyerna är verifierbar.</Requirement>
