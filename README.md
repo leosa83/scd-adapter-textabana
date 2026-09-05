@@ -8,7 +8,7 @@ Den publicerade specifikationen och playgrounden finns på [textpipe-editor.leo-
 
 Åtta interaktiva labs visar samma källa och valda run från olika semantiska perspektiv:
 
-- **Language & Scope** — lossless CST, AST, typed IR, recovery, Unicode-spans, block, öppna intervall och faktisk exekveringsordning.
+- **Language & Scope** — lossless CST, AST, typed IR, recovery, Unicode-spans, block, öppna intervall, pre-execution-graf, invalidation preview och separat observerat körspår.
 - **Editor Kernel** — documentsession, revisionguardade ChangeSets, channel subscriptions, metadata-delta och anchor continuity.
 - **Editor Metadata** — `system.out`, row/line, Anchor, SourceMap och jämförelse mellan revisioner.
 - **Channel & Result** — deklarerade kanaldeskriptorer, strict validation, global eventtimeline och atomiskt result envelope.
@@ -27,13 +27,15 @@ Textabana kan bäddas in som en dokumentkärna bakom editorer. Workern implement
 
 Delta matchas med stabil channel-/domänidentitet, aldrig med run-lokala event-id:n. Failed och cancelled run lämnar föregående committade deltabaslinje orörd. Stabilt anchor-id har företräde; annars får en unik TextQuote + origin relinkas. Flera kandidater blir `ambiguous` och ingen kandidat blir `orphaned` — kärnan gissar inte.
 
-Subseten ger inkrementell dokumenttransport och inkrementell metadataleverans. Den använder nu en formell Lezer-parser och `textabana.ir/lab-v2`, men varje `analyze`/`run` gör fortfarande en full dokumentparse och en lyckad run exekveras fresh. Inkrementell parseråteranvändning och selektiv exekvering ligger i Våg 3 i [Editor Kernel-planen](./EDITOR_KERNEL_PLAN.md).
+Subseten ger inkrementell dokumenttransport och inkrementell metadataleverans. Den använder en formell Lezer-parser och `textabana.ir/lab-v2`. Våg 3 har nu börjat med en planning-only `textabana.execution-plan/lab-v2`: efter modulinitiering men före första transform byggs en typed DAG som själv styr den sekventiella körningen. En advisory invalidation preview kan jämföra mot senaste lyckade editorbaslinje. Varje `analyze`/`run` gör fortfarande en full dokumentparse, alla stages körs fresh och cache reads, writes, hits samt reuse är noll. Inkrementell parseråteranvändning, stageoutput-cache och selektiv eller parallell exekvering återstår i [Editor Kernel-planen](./EDITOR_KERNEL_PLAN.md).
 
 ## Parser och typed IR
 
 Dokumentet går genom exakt en auktoritativ kedja: `source → Lezer CST → Textabana AST → typed IR → compile gate`. Include-resolution, config, Language Lab och runtime läser samma resultat. Error-level recovery ger partial editorstruktur men blockerar modulinitiering, plan och domänexekvering. Fenced code och `\>>>>`/`\<<<<` är literal syntax; funktionsoutput reparsas aldrig. Alla publika spans använder halvöppna Unicode-code-point-offsets. Det körbara grammatikkontraktet, samtliga implementerade recoveryfamiljer, typed node-unionen och Lezer-beslutet finns i [parserkontraktet](./TEXTABANA_PARSER.md).
 
-Våg 2 kör ett giltigt snapshot fresh och projicerar därefter `textabana.execution-plan/lab-v1` från den observerade execution trace. Pre-execution typed edges, cache boundaries, inkrementell parseråteranvändning och selektiv exekvering hör till Våg 3.
+Ett giltigt snapshot får `textabana.execution-plan/lab-v2` och `textabana.execution-graph/lab-v1` efter att include-moduler har initierats men innan någon transform anropas. Source-, stage-, merge- och rendernoder binds med typed edges och deterministisk topologisk ordning. Observerad `executionTrace` är en separat artefakt vars poster refererar grafens stage-noder via `planNodeRef`; även ett senare misslyckat stage lämnar därför resten av den förkompilerade grafen inspekterbar.
+
+Varje stage publicerar ett planning-only cache-recept med stage-lokala source- och IR-digests samt resolved module identity, module-, input-, args-, config-, profile- och environment-komponenter. Exakt typed input-digest materialiseras först vid anropet och skiljer bland annat whitespace och värdetyper. `behavior` beskriver mapping och används aldrig som puritysignal: legacyfunktioner utan explicit `state`, `determinism` och `effects` är `unknown` och icke-cachebara. En deklarerad cachekandidat är fortfarande varken verifierat pure, en cache hit eller reuse, och playgrounden återanvänder ännu ingenting.
 
 ## Conformance-grind
 
@@ -57,7 +59,7 @@ Annotation-subseten gör inga falska modell- eller verktygsanspråk. Den kör in
 
 ## Status
 
-Dokumentationen är **Textabana Language & Interop draft 0.7**. Webbmotorn implementerar `textabana.parser/lab-v1`, `textabana.cst/lab-v1`, `textabana.ast/lab-v1`, `textabana.ir/lab-v2` och uttryckligen avgränsade playground-subsets av `language-core/0.4`, `runtime-json/1`, `editor/1`, `editor-kernel/1`, `adapter-contract/1`, `data/1`, `notebook/1` och `annotation/1`; den gör ännu inte anspråk på full profilkonformitet.
+Dokumentationen är **Textabana Language & Interop draft 0.7 med Våg 3 lab-addendum**. Webbmotorn implementerar `textabana.parser/lab-v1`, `textabana.cst/lab-v1`, `textabana.ast/lab-v1`, `textabana.ir/lab-v2`, `textabana.execution-plan/lab-v2`, `textabana.execution-graph/lab-v1` och `textabana.invalidation-preview/lab-v1` samt uttryckligen avgränsade playground-subsets av `language-core/0.4`, `runtime-json/1`, `editor/1`, `editor-kernel/1`, `adapter-contract/1`, `data/1`, `notebook/1` och `annotation/1`; den gör ännu inte anspråk på full profilkonformitet eller inkrementell exekvering.
 
 ## Utveckling
 

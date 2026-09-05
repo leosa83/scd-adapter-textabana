@@ -1,7 +1,13 @@
 import { parseDocument } from "./parser.js";
+import {
+  buildInvalidationPreview,
+  compileExecutionGraph,
+  describeFunctionExecution,
+  materializeCacheKey,
+  semanticValueDigest,
+} from "./execution-graph.js";
 
 const moduleCache = new Map();
-let scopeSequence = 0;
 const activeRuns = new Set();
 const cancelledRuns = new Set();
 const queuedRuns = new Set();
@@ -13,6 +19,14 @@ function cancellationError() {
   const error = new Error("Körningen avbröts vid en kooperativ stage-gräns.");
   error.name = "AbortError";
   error.code = cancellationDiagnosticCode;
+  return error;
+}
+
+function planningError(message) {
+  const error = new Error(message);
+  error.name = "ExecutionPlanError";
+  error.code = "TBA-PLAN-DRIFT-LAB";
+  error.phase = "planning";
   return error;
 }
 
@@ -84,13 +98,18 @@ function editorProtocolCapabilities() {
     irSchema: "textabana.ir/lab-v2",
     errorRecovery: "local-non-executable",
     commands: ["open", "change", "analyze", "subscribe", "run", "cancel"],
-    planConstruction: "post-execution-trace",
+    planConstruction: "post-module-init-pre-transform",
+    executionGraph: "textabana.execution-graph/lab-v1",
+    invalidationPreview: "advisory-baseline-diff",
+    cacheMode: "disabled-planning-only",
+    scheduler: "sequential",
     executionMode: "full-fresh-run",
     deltaMode: "post-commit-diff",
     reanchorMode: "stable-anchor-id-then-unique-quote-origin",
     subscriptionMode: "exact-channel-or-all",
     persistentHistory: false,
     collaborativeMerge: false,
+    parallelExecution: false,
     canonical: false,
   };
 }
@@ -144,6 +163,7 @@ function openEditorDocument(payload) {
     sourceVersion,
     publishedRevision: null,
     lastChange: null,
+    planBaseline: null,
   };
   editorDocuments.set(documentId, document);
   return { status: existing ? "replaced" : "opened", document: editorDocumentSnapshot(document) };
@@ -298,6 +318,7 @@ function captureEditorRun(payload) {
     documentVersion: document.sourceVersion,
     previousPublishedRevision: document.publishedRevision,
     lastChange: serializableValue(document.lastChange),
+    previousPlanBaseline: serializableValue(document.planBaseline),
     subscriptionIds: [...editorSubscriptions.values()]
       .filter((subscription) => subscription.documentId === document.documentId && subscription.sessionId === document.sessionId)
       .map((subscription) => subscription.subscriptionId),
@@ -682,6 +703,11 @@ function completeEditorRun(snapshot, result) {
   }
   if (committed && document && document.sessionId === snapshot.sessionId && document.revision === snapshot.documentRevision) {
     document.publishedRevision = snapshot.documentRevision;
+    document.planBaseline = result.plan ? {
+      documentRevision: snapshot.documentRevision,
+      documentVersion: snapshot.documentVersion,
+      plan: serializableValue(result.plan),
+    } : null;
   }
   const primary = deliveries[0] || null;
   const trace = [
@@ -722,7 +748,7 @@ function completeEditorRun(snapshot, result) {
     trace,
     capabilities: editorProtocolCapabilities(),
     limitations: [
-      "Full document parse and fresh execution for every accepted run.",
+      "Full document parse and fresh sequential execution for every accepted run; graph planning does not reuse stage output.",
       "In-memory single-worker document history only.",
       "No OT, CRDT, persistent recovery, LSP conversion or external side-effect rollback.",
       "Unique quote + origin re-link is a conservative lab heuristic, not canonical structural re-anchoring.",
@@ -736,15 +762,18 @@ function withoutSystemArgs(args) {
   return Object.fromEntries(Object.entries(args).filter(([key]) => !key.startsWith("@")));
 }
 
-function serializableMeta(name, descriptor, modulePath) {
+function serializableMeta(name, descriptor, modulePath, moduleDigest) {
+  const execution = describeFunctionExecution({ descriptor, modulePath, moduleDigest });
   return {
     name,
     modulePath,
+    moduleDigest,
     description: descriptor.description || "Ingen beskrivning angiven.",
     args: descriptor.args || {},
     accepts: descriptor.accepts || "text",
     returns: descriptor.returns || "text",
     behavior: descriptor.behavior || "unspecified",
+    execution,
     outputs: Array.isArray(descriptor.outputs) && descriptor.outputs.length
       ? descriptor.outputs.map(String)
       : ["render"],
@@ -788,6 +817,7 @@ function valueSummary(value) {
     kind: valueKind(value),
     length: normalized.length,
     hash: `fnv1a:${sourceHash(normalized)}`,
+    digest: semanticValueDigest(value),
     preview: normalized.length > 132 ? `${normalized.slice(0, 129)}…` : normalized,
   };
 }
@@ -1014,6 +1044,11 @@ const playgroundImplementedCapabilities = [
   "post-commit-metadata-delta",
   "anchor-continuity",
   "editor-analysis",
+  "pre-execution-plan",
+  "typed-execution-graph",
+  "typed-execution-edges",
+  "cache-key-recipes",
+  "invalidation-preview",
 ];
 
 function adapterDiagnostic(code, message, adapterId, severity = "error") {
@@ -1924,7 +1959,7 @@ const conformanceCases = new Map([
 ]);
 
 const conformanceGoldenBaselines = {
-  "conformance-golden": "fnv1a-lab:v0p8zi",
+  "conformance-golden": "fnv1a-lab:u6b48h",
 };
 
 const conformanceProfileOrder = [
@@ -1987,7 +2022,7 @@ function committedBindingsResolve(result) {
   });
 }
 
-function buildStructuralSnapshot({ result, inspection, plan, adapterRun, capabilities, modules }) {
+function buildStructuralSnapshot({ result, inspection, plan, executionTrace = [], adapterRun, capabilities, modules }) {
   const channels = Object.fromEntries(Object.entries(result.channelSnapshots || {}).map(([name, snapshot]) => [
     name,
     {
@@ -2014,7 +2049,7 @@ function buildStructuralSnapshot({ result, inspection, plan, adapterRun, capabil
         "/events/*/runRef",
         "/events/*/eventId",
         "/events/*/id",
-        "/plan/steps/*/duration",
+        "/executionTrace/*/duration",
         "/adapterRun/adapterRunId",
         "/diagnostics/*/diagnosticId",
         "/cancellation/cancelToken",
@@ -2054,10 +2089,13 @@ function buildStructuralSnapshot({ result, inspection, plan, adapterRun, capabil
       schema: plan.schema,
       languageVersion: plan.languageVersion,
       sourceRef: plan.sourceRef,
+      constructionPhase: plan.constructionPhase,
       deterministic: plan.deterministic,
-      steps: plan.steps.map((step) => withoutKeys(step, ["duration", "invocationId", "activityId"])),
+      graph: plan.graph,
+      runtimePolicy: plan.runtimePolicy,
       unsupported: plan.unsupported,
     } : null,
+    executionTrace: executionTrace.map((step) => withoutKeys(step, ["duration", "invocationId", "activityId"])),
     result: {
       schema: result.schema,
       resultId: result.resultId,
@@ -2090,7 +2128,7 @@ function buildStructuralSnapshot({ result, inspection, plan, adapterRun, capabil
   });
 }
 
-function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan, adapterRun, capabilities, modules }) {
+function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan, executionTrace = [], adapterRun, capabilities, modules }) {
   const knownCase = conformanceCases.get(fixtureId);
   const expected = knownCase || { caseId: fixtureId === "ad-hoc" ? "ad-hoc-success" : `unregistered:${fixtureId}`, expectedOutcome: "succeeded" };
   const actualOutcome = ["succeeded", "failed", "cancelled"].includes(result.run.status) ? result.run.status : "failed";
@@ -2116,7 +2154,7 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
   const languageApplicable = isSuccessful;
   const languageRequirements = languageApplicable ? [
     checkedRequirement("LANG-SOURCE-IR", Boolean(inspection && inspection.sourceRef?.version === result.source?.version), "IR är bunden till exakt source snapshot.", "IR saknas eller pekar på en annan source snapshot.", [irRef, result.source?.version]),
-    checkedRequirement("LANG-DETERMINISTIC-PLAN", Boolean(plan?.deterministic && plan.steps.every((step) => step.status === "succeeded")), "Den explicita planen är deterministisk och alla stages lyckades.", "Planen saknas, är icke-deterministisk eller innehåller ett misslyckat stage.", [planRef]),
+    checkedRequirement("LANG-DETERMINISTIC-PLAN", Boolean(plan?.deterministic && executionTrace.every((step) => step.status === "succeeded") && executionTrace.length === plan.graph.nodes.filter((node) => node.kind === "stage").length), "Pre-execution-grafen har deterministisk ordning och varje stage bands till en lyckad trace-post.", "Planen saknas, grafordningen är icke-deterministisk eller trace är ofullständig.", [planRef]),
     checkedRequirement("LANG-SYNTAX-ERASED", Boolean(inspection?.validity?.executable && inspection?.syntax?.cst?.lossless), "Authored kontrollsyntax sänktes från en lossless CST och bara literal/genererad markörtext kan finnas i renderingen.", "Parserprojektionen är ogiltig eller kunde inte verifiera lossless source coverage.", [resultRef]),
   ] : [notRunRequirement("LANG-ACTIVE-SUCCESS", "Language-profilen verifieras endast på en lyckad core run; detta case verifierar terminalfel.")];
 
@@ -2176,7 +2214,7 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
   const stages = [
     { stage: "source", status: result.source ? "passed" : "failed", message: result.source ? "Versionerad source snapshot finns." : "Source snapshot saknas.", evidenceRefs: result.source ? [result.source.version] : [] },
     { stage: "ir", status: inspection ? "passed" : "failed", message: inspection ? "IR-projektion producerades." : "IR-projektion saknas.", evidenceRefs: inspection ? [inspection.schema, inspection.sourceRef.version] : [] },
-    { stage: "plan", status: isSuccessful ? (plan?.deterministic && plan.steps.every((step) => step.status === "succeeded") ? "passed" : "failed") : "not-run", message: isSuccessful ? "Körplanen verifierades mot lyckad run." : "Planclaim görs inte för terminalt felcase.", evidenceRefs: plan ? [plan.schema] : [] },
+    { stage: "plan", status: isSuccessful ? (plan?.deterministic && executionTrace.every((step) => step.status === "succeeded") && executionTrace.length === plan.graph.nodes.filter((node) => node.kind === "stage").length ? "passed" : "failed") : "not-run", message: isSuccessful ? "Pre-execution-grafen verifierades mot en komplett lyckad trace." : "Planclaim görs inte för terminalt felcase.", evidenceRefs: plan ? [plan.schema, plan.graph.graphId] : [] },
     { stage: "result", status: isSuccessful || isTerminalWithoutCommit ? "passed" : "failed", message: isSuccessful ? "Resultatet är atomiskt committed." : isTerminalWithoutCommit ? "Terminalfelet rullade tillbaka all durable output." : "Resultatgränsen är inkonsistent.", evidenceRefs: [resultRef] },
     { stage: "projection", status: isSuccessful ? (adapterRun?.verification?.immutable ? "passed" : "failed") : "not-run", message: isSuccessful ? "Post-commit-projektioner kördes isolerat." : "Adapters skippades före commit.", evidenceRefs: adapterRun ? [adapterRef] : [] },
   ];
@@ -2186,7 +2224,7 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
     ...(expected.expectedDiagnosticCode ? [checkedRequirement("CASE-DIAGNOSTIC", diagnosticCodes.includes(expected.expectedDiagnosticCode), `Förväntad diagnostikkod ${expected.expectedDiagnosticCode} observerades.`, `Förväntad diagnostikkod ${expected.expectedDiagnosticCode} saknas.`, diagnosticCodes)] : []),
   ];
 
-  const structuralSnapshot = buildStructuralSnapshot({ result, inspection, plan, adapterRun, capabilities, modules });
+  const structuralSnapshot = buildStructuralSnapshot({ result, inspection, plan, executionTrace, adapterRun, capabilities, modules });
   const structuralDigest = `fnv1a-lab:${sourceHash(canonicalJson(structuralSnapshot))}`;
   const expectedStructuralDigest = conformanceGoldenBaselines[fixtureId] || null;
   const goldenStatus = expectedStructuralDigest
@@ -2634,12 +2672,16 @@ function createChannelBus({ runId, documentVersion, documentPath, documentId = n
     },
     recordStage(stage) {
       stageSequence += 1;
+      const input = valueSummary(stage.input);
+      const output = valueSummary(stage.output);
+      const cachePlan = stage.execution.cachePlan;
       executionTrace.push({
         schema: "textabana.execution-step/lab-v1",
         step: stageSequence,
         stageId: stage.execution.stageId,
         invocationId: stage.execution.invocationId,
         activityId: stage.execution.activityId,
+        planNodeRef: stage.execution.planNodeRef || null,
         function: stage.execution.functionName,
         module: stage.execution.modulePath,
         modality: stage.execution.modality,
@@ -2649,10 +2691,20 @@ function createChannelBus({ runId, documentVersion, documentPath, documentId = n
         syntaxSpan: stage.execution.syntaxSpan || null,
         source: stage.execution.source,
         args: serializableValue(stage.args),
-        orderKey: [stageSequence, 1, 0],
+        orderKey: stage.execution.planOrderKey || [stageSequence, 1, 0],
         status: stage.status,
-        input: valueSummary(stage.input),
-        output: valueSummary(stage.output),
+        input,
+        output,
+        cache: cachePlan ? {
+          mode: "disabled-planning-only",
+          eligibility: cachePlan.eligibility,
+          staticKey: cachePlan.staticKey,
+          semanticKey: materializeCacheKey({ cache: cachePlan }, input.digest),
+          read: false,
+          write: false,
+          hit: false,
+          reused: false,
+        } : null,
         duration: stage.duration,
         ...(stage.error ? { error: stage.error } : {}),
       });
@@ -2695,12 +2747,13 @@ async function compileModule(path, source) {
   } catch (error) {
     throw new Error(`${path}: ${error instanceof Error ? error.message : String(error)}`);
   }
+  const moduleDigest = `fnv1a-lab:${sourceHash(source)}`;
   const compiled = Object.entries(definitions).map(([name, raw]) => {
     const descriptor = typeof raw === "function" ? { transform: raw } : raw;
     if (!descriptor || typeof descriptor.transform !== "function") {
       throw new Error(`${path}: funktionen “${name}” saknar transform(input, args, context).`);
     }
-    return { name, descriptor, modulePath: path };
+    return { name, descriptor, modulePath: path, moduleDigest };
   });
   moduleCache.set(cacheKey, compiled);
   return compiled;
@@ -2751,6 +2804,9 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
     stageLine: stage.line,
     syntaxStageId: stage.stageId || null,
     syntaxSpan: stage.sourceSpan || null,
+    planNodeRef: contextExtra.planNode?.nodeId || null,
+    planOrderKey: contextExtra.planNode?.orderKey || null,
+    cachePlan: contextExtra.planNode?.cache || null,
     source,
   });
   const emit = (channel, value, location) => channelBus.emit(channel, value, location, execution);
@@ -2833,172 +2889,58 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
   return output;
 }
 
-function sortScopes(scopes, direction = "asc") {
-  return [...scopes].sort((left, right) => {
-    const a = Number.isFinite(left.order) ? left.order : left.sequence;
-    const b = Number.isFinite(right.order) ? right.order : right.sequence;
-    return direction === "desc" ? b - a : a - b;
-  });
-}
+async function executeExecutionGraph(compiled, registry, diagnostics, channelBus) {
+  const values = new Map();
+  const publicNodes = new Map(compiled.plan.graph.nodes.map((node) => [node.nodeId, node]));
 
-function selectScopes(scopes, controls = {}) {
-  const mode = controls.mode || "default";
-  const selection = Array.isArray(controls.selection) ? controls.selection.map(String) : [];
-  let selected = scopes;
-  const matches = (scope) => selection.includes(scope.id) || selection.includes(`@${scope.id}`) || selection.includes(scope.name);
-  if (mode === "none" || mode === "explicit") selected = [];
-  if (mode === "only") selected = scopes.filter(matches);
-  if (mode === "except") selected = scopes.filter((scope) => !matches(scope));
-  return sortScopes(selected, controls.order || "asc");
-}
-
-async function applyScopes(value, scopes, registry, diagnostics, channelBus, source, controls = {}) {
-  let output = value;
-  for (const scope of selectScopes(scopes, controls)) {
+  for (const operation of compiled.operations) {
     channelBus.throwIfCancelled();
-    output = await callFunction(
-      {
-        name: scope.name,
-        args: scope.args,
-        line: scope.openLine,
-        stageId: scope.stageId,
-        sourceSpan: scope.sourceSpan,
-      },
-      output,
-      registry,
-      diagnostics,
-      channelBus,
-      { modality: "interval", scopeId: scope.id, source },
-    );
-  }
-  return output;
-}
-
-async function renderParsedDocument(program, documentSource, registry, diagnostics, channelBus, config) {
-  const sourceLines = documentSource.split("\n");
-
-  async function renderSequence(nodes) {
-    let output = "";
-    let buffer = [];
-    let scopes = [];
-
-    const flush = async () => {
-      channelBus.throwIfCancelled();
-      if (!buffer.length) return;
-      const text = buffer.map((node) => `${node.renderText ?? ""}${node.lineBreak ?? ""}`).join("");
-      const first = buffer[0];
-      const last = buffer.at(-1);
-      const source = {
-        path: config.documentPath,
-        startLine: first.sourceSpan.startLine,
-        endLine: last.sourceSpan.endLine,
-      };
-      output += stringifyResult(await applyScopes(
-        text,
-        scopes,
+    if (operation.kind === "source") {
+      values.set(operation.nodeId, operation.text);
+      continue;
+    }
+    if (operation.kind === "stage") {
+      if (!values.has(operation.inputNodeId)) {
+        throw planningError(`Stage-noden ${operation.nodeId} saknar sitt planerade inputvärde.`);
+      }
+      const planNode = publicNodes.get(operation.nodeId);
+      if (!planNode || planNode.kind !== "stage") {
+        throw planningError(`Stage-operationen ${operation.nodeId} saknar motsvarande grafnod.`);
+      }
+      const output = await callFunction(
+        operation.stage,
+        values.get(operation.inputNodeId),
         registry,
         diagnostics,
         channelBus,
-        source,
-        { order: config.scopeOrder },
-      ));
-      buffer = [];
-    };
-
-    for (const node of nodes) {
-      channelBus.throwIfCancelled();
-      if (["Text", "Blank", "Literal", "Property"].includes(node.kind)) {
-        buffer.push(node);
-        continue;
-      }
-      if (node.kind === "IncludeDirective" || node.kind === "ConfigDirective") {
-        await flush();
-        continue;
-      }
-      if (node.kind === "Recovery") {
-        throw new Error(`Recovery-noden ${node.recoveryKind} får inte nå exekveringsfasen.`);
-      }
-      if (node.kind === "IntervalOpen") {
-        await flush();
-        const stage = node.stage;
-        scopeSequence += 1;
-        scopes.push({
-          name: stage.name,
-          args: withoutSystemArgs(stage.args),
-          id: String(stage.args["@id"] || `${stage.name}-${scopeSequence}`),
-          order: stage.args["@order"] === undefined ? null : Number(stage.args["@order"]),
-          sequence: scopeSequence,
-          openLine: stage.line,
-          scopeId: node.scopeId,
-          stageId: stage.stageId,
-          sourceSpan: stage.sourceSpan,
-        });
-        continue;
-      }
-      if (node.kind === "IntervalClose") {
-        await flush();
-        const found = scopes.findLastIndex((scope) => scope.scopeId === node.scopeId);
-        if (found < 0) throw new Error(`Rad ${node.sourceSpan.startLine}: parserprogrammet refererar ett inaktivt intervall.`);
-        scopes.splice(found, 1);
-        continue;
-      }
-      if (node.kind !== "Block") continue;
-
-      await flush();
-      const ambient = [...scopes];
-      const innerOutput = await renderSequence(node.children);
-      let value = innerOutput;
-      const startLine = Math.min(sourceLines.length, node.headerEndLine + 1);
-      const endLine = Math.max(startLine, (node.closeLine || sourceLines.length + 1) - 1);
-      const blockSource = { path: config.documentPath, startLine, endLine };
-      const authoredInput = sourceLines.slice(startLine - 1, endLine).join("\n");
-      const explicitIntervalStage = node.pipeline.some((stage) => stage.name === "@intervals");
-      for (const stage of node.pipeline) {
-        if (stage.name === "@intervals") {
-          value = await applyScopes(value, ambient, registry, diagnostics, channelBus, blockSource, {
-            mode: stage.args.only ? "only" : stage.args.except ? "except" : "default",
-            selection: stage.args.only || stage.args.except || [],
-            order: stage.args.order || config.scopeOrder,
-          });
-        } else {
-          value = await callFunction(stage, value, registry, diagnostics, channelBus, {
-            modality: "block",
-            source: blockSource,
-            authoredInput,
-          });
-        }
-      }
-      const first = node.pipeline[0];
-      const inheritMode = String(first?.args?.["@inherit"] || "default");
-      if (!explicitIntervalStage && inheritMode !== "none" && inheritMode !== "explicit") {
-        value = await applyScopes(value, ambient, registry, diagnostics, channelBus, blockSource, {
-          mode: inheritMode,
-          selection: first?.args?.["@intervals"] || [],
-          order: config.scopeOrder,
-        });
-      }
-      output += stringifyResult(value);
+        { ...operation.context, planNode },
+      );
+      values.set(operation.nodeId, output);
+      continue;
     }
-
-    await flush();
-    return output;
+    if (operation.kind === "merge") {
+      const missing = operation.inputNodeIds.find((nodeId) => !values.has(nodeId));
+      if (missing) throw planningError(`Merge-noden ${operation.nodeId} saknar input från ${missing}.`);
+      values.set(operation.nodeId, operation.inputNodeIds.map((nodeId) => stringifyResult(values.get(nodeId))).join(""));
+      continue;
+    }
+    if (operation.kind === "render") {
+      if (!values.has(operation.inputNodeId)) throw planningError(`Rendernoden ${operation.nodeId} saknar sitt planerade inputvärde.`);
+      values.set(operation.nodeId, String(values.get(operation.inputNodeId)));
+      continue;
+    }
+    throw planningError(`Okänd operationstyp “${operation.kind}”.`);
   }
 
-  return renderSequence(program.children);
+  const plannedStages = compiled.plan.graph.nodes.filter((node) => node.kind === "stage").map((node) => node.nodeId);
+  const observedStages = channelBus.traceSnapshot().map((step) => step.planNodeRef);
+  if (plannedStages.length !== observedStages.length || plannedStages.some((nodeId, index) => nodeId !== observedStages[index])) {
+    throw planningError("Execution trace avvek från den förkompilerade stageordningen; ingen commit tillåts.");
+  }
+  return values.get(compiled.plan.graph.terminalNodeId) || "";
 }
 
-function buildPlan(ir, trace) {
-  return {
-    schema: "textabana.execution-plan/lab-v1",
-    languageVersion: ir.languageVersion,
-    sourceRef: ir.sourceRef,
-    deterministic: true,
-    steps: trace,
-    unsupported: ["typed-edges", "capability-grants", "cache-boundaries", "parallel-merge"],
-  };
-}
-
-function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitStatus, output, error, diagnostics, channels, descriptors, anchors, sourceMaps, plan, ir, duration }) {
+function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitStatus, output, error, diagnostics, channels, descriptors, anchors, sourceMaps, executionTrace = [], ir, duration }) {
   const status = explicitStatus || (ok ? "succeeded" : "failed");
   const committed = ok && status === "succeeded";
   const committedChannels = committed ? channels : {};
@@ -3040,7 +2982,7 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitSta
     artifacts: [],
     provenance: {
       entities: [],
-      activities: committed ? (plan?.steps || []).map((step) => ({
+      activities: committed ? executionTrace.map((step) => ({
         activityId: step.activityId,
         stageId: step.stageId,
         invocationId: step.invocationId,
@@ -3071,7 +3013,6 @@ async function executeRun(payload) {
   const diagnostics = [];
   queuedRuns.delete(runId);
   activeRuns.add(runId);
-  scopeSequence = 0;
   const runProfile = "fresh";
   moduleCache.clear();
   const channelBus = createChannelBus({
@@ -3086,6 +3027,8 @@ async function executeRun(payload) {
   const registry = new Map();
   const loaded = new Set();
   let inspection = null;
+  let plan = null;
+  let invalidationPreview = null;
   try {
     channelBus.throwIfCancelled();
     const parsed = parseDocument(documentSource, { documentPath, documentId });
@@ -3112,12 +3055,22 @@ async function executeRun(payload) {
       if (directive.kind === "IncludeDirective") await loadModule(directive.path, files, registry, loaded, loading);
     }
     channelBus.throwIfCancelled();
-    const output = await renderParsedDocument(parsed.program, documentSource, registry, diagnostics, channelBus, config);
+    const compiled = compileExecutionGraph({
+      program: parsed.program,
+      documentSource,
+      documentPath,
+      ir: inspection,
+      registry,
+      config,
+      runProfile,
+    });
+    plan = compiled.plan;
+    invalidationPreview = buildInvalidationPreview(plan, editorSnapshot?.previousPlanBaseline || null);
+    const output = await executeExecutionGraph(compiled, registry, diagnostics, channelBus);
     channelBus.throwIfCancelled();
     const channels = channelBus.snapshot();
     const channelDescriptors = channelBus.descriptorSnapshot();
     const executionTrace = channelBus.traceSnapshot();
-    const plan = buildPlan(inspection, executionTrace);
     const duration = performance.now() - started;
     const resultEnvelope = buildResultEnvelope({
       runId,
@@ -3129,7 +3082,7 @@ async function executeRun(payload) {
       descriptors: channelDescriptors,
       anchors: channelBus.anchorSnapshot(),
       sourceMaps: channelBus.sourceMapSnapshot(),
-      plan,
+      executionTrace,
       ir: inspection,
       duration,
     });
@@ -3140,6 +3093,7 @@ async function executeRun(payload) {
       result: resultEnvelope,
       inspection,
       plan,
+      executionTrace,
       adapterRun,
       capabilities,
       modules,
@@ -3157,14 +3111,16 @@ async function executeRun(payload) {
       diagnostics,
       inspection,
       plan,
+      invalidationPreview,
       anchors: channelBus.anchorSnapshot(),
       sourceMaps: channelBus.sourceMapSnapshot(),
       executionTrace,
+      executionStats: invalidationPreview.cacheStats,
       resultEnvelope,
       adapterRun,
       conformanceReport,
       capabilities,
-      functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath)),
+      functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath, entry.moduleDigest)),
       modulesLoaded: loaded.size,
       duration,
     };
@@ -3184,7 +3140,7 @@ async function executeRun(payload) {
     };
     if (!diagnostics.includes(diagnostic)) diagnostics.push(diagnostic);
     const duration = performance.now() - started;
-    const plan = inspection && !error?.parseFailure ? buildPlan(inspection, channelBus.traceSnapshot()) : null;
+    const executionTrace = channelBus.traceSnapshot();
     const resultEnvelope = buildResultEnvelope({
       runId,
       profile: runProfile,
@@ -3197,7 +3153,7 @@ async function executeRun(payload) {
       descriptors: {},
       anchors: [],
       sourceMaps: [],
-      plan,
+      executionTrace,
       ir: inspection,
       duration,
     });
@@ -3208,6 +3164,7 @@ async function executeRun(payload) {
       result: resultEnvelope,
       inspection,
       plan,
+      executionTrace,
       adapterRun,
       capabilities,
       modules,
@@ -3227,14 +3184,16 @@ async function executeRun(payload) {
       emissions: 0,
       inspection,
       plan,
+      invalidationPreview,
       anchors: [],
       sourceMaps: [],
-      executionTrace: channelBus.traceSnapshot(),
+      executionTrace,
+      executionStats: invalidationPreview?.cacheStats || { reads: 0, writes: 0, hits: 0, reused: 0 },
       resultEnvelope,
       adapterRun,
       conformanceReport,
       capabilities,
-      functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath)),
+      functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath, entry.moduleDigest)),
       modulesLoaded: loaded.size,
       duration,
     };
@@ -3297,7 +3256,9 @@ function postRejectedEditorRun(payload, error) {
     sourceMaps: [],
     inspection: null,
     plan: null,
+    invalidationPreview: null,
     executionTrace: [],
+    executionStats: { reads: 0, writes: 0, hits: 0, reused: 0 },
     resultEnvelope: null,
     adapterRun: null,
     conformanceReport: null,

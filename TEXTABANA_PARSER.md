@@ -10,14 +10,15 @@ Source snapshot
   → Textabana AST
   → typed IR + diagnostics
   → compile gate
-  → module resolution + fresh execution
-  → post-execution plan projection
+  → module resolution + initialization
+  → pre-transform ExecutionPlan + typed graph
+  → fresh sequential execution + observed trace
   → atomic Result
 ```
 
 `parseDocument(source, identity)` kör alltid före modulinitiering. Include-resolution, config, Language Lab och runtime använder samma parseprodukt. Ett dokument med en blockerande parsediagnostik lämnar fortfarande CST, AST och partial IR till editorn, men ger ingen modulinitiering, ingen plan, ingen stage-exekvering och ingen durable commit.
 
-Playgroundens `textabana.execution-plan/lab-v1` projiceras i Våg 2 från den observerade execution trace efter en lyckad fresh run. En full pre-execution-plan med typed edges, cache boundaries och selektiv invalidering hör till Våg 3.
+Våg 3-addendumet bygger `textabana.execution-plan/lab-v2` och `textabana.execution-graph/lab-v1` efter att include-moduler har initierats men före första transform. Samma operation tape producerar både den inspekterbara grafen och den faktiska fresh, sekventiella körningen. `executionTrace` förblir separat och binds tillbaka med `planNodeRef`. Cache-key-recept och `textabana.invalidation-preview/lab-v1` är planning-only; parserträdsreuse, cacheläsning/-skrivning och selektiv exekvering är fortfarande senare Våg 3-arbete.
 
 ## Två lager, ett parserkontrakt
 
@@ -139,4 +140,4 @@ Därmed kan en editor visa struktur och fel medan användaren skriver, även inn
 
 Lezer valdes framför Tree-sitter. Lezer kör som JavaScript, passar den befintliga CodeMirror-stacken och är gjort för parserträd som förblir tillgängliga under syntaxfel. Tree-sitters webbväg hade krävt separat runtime-Wasm, grammar-Wasm, asynkron initiering och asset-location i hosten. Den genererade Lezer-parsern och runtimekoden buntas i stället till samma klassiska `/runtime-worker.js`, så UI-, hosting- och VM-testkontrakten förblir oförändrade.
 
-Våg 2 gör fortfarande en full dokumentparse för varje `analyze` eller `run`. Lezers inkrementella trädåteranvändning, en pre-execution typed plan, selektiv planinvalidering och partiell exekvering hör till Våg 3.
+Varje `analyze` eller `run` gör fortfarande en full dokumentparse. Den nya pre-transform-grafen använder typed IR men återanvänder ännu inte Lezerträd eller stageoutput; faktisk selektiv invalidering och partiell exekvering hör till senare sprintar i Våg 3.

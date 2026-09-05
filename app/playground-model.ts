@@ -9,11 +9,23 @@ export type LabId = "language" | "kernel" | "editor" | "channels" | "data" | "no
 export type FunctionMeta = {
   name: string;
   modulePath: string;
+  moduleDigest: string;
   description: string;
   args: Record<string, { type?: string; default?: unknown; description?: string }>;
   accepts: string;
   returns: string;
   behavior?: string;
+  execution: {
+    schema: string;
+    version: string | null;
+    behavior: string;
+    state: "pure" | "run" | "session" | "external" | "unknown";
+    determinism: "deterministic" | "seeded" | "nondeterministic" | "external" | "unknown";
+    effectsDeclared: boolean;
+    observableEffects: string[];
+    cacheEligibility: "candidate" | "ineligible";
+    cacheBlockers: string[];
+  };
   outputs: string[];
   channels?: Record<string, ChannelDescriptor>;
 };
@@ -121,6 +133,7 @@ export type ExecutionStep = {
   stageId: string;
   invocationId: string;
   activityId: string;
+  planNodeRef: string | null;
   function: string;
   module: string;
   modality: "block" | "interval" | string;
@@ -132,8 +145,18 @@ export type ExecutionStep = {
   args: Record<string, unknown>;
   orderKey: [number, number, number];
   status: "succeeded" | "failed" | "cancelled";
-  input: { kind: string; length: number; hash: string; preview: string };
-  output: { kind: string; length: number; hash: string; preview: string };
+  input: { kind: string; length: number; hash: string; digest: string; preview: string };
+  output: { kind: string; length: number; hash: string; digest: string; preview: string };
+  cache: {
+    mode: "disabled-planning-only";
+    eligibility: "candidate" | "ineligible";
+    staticKey: string;
+    semanticKey: string;
+    read: false;
+    write: false;
+    hit: false;
+    reused: false;
+  } | null;
   duration: number;
   error?: string;
 };
@@ -324,12 +347,76 @@ export type RuntimeInspection = {
 };
 
 export type RuntimePlan = {
-  schema: string;
+  schema: "textabana.execution-plan/lab-v2" | string;
   languageVersion: string;
   sourceRef: { documentId: string; version: string };
+  constructionPhase: "post-module-init-pre-transform" | string;
   deterministic: boolean;
-  steps: ExecutionStep[];
+  graph: {
+    schema: "textabana.execution-graph/lab-v1" | string;
+    graphId: string;
+    nodes: Array<{
+      nodeId: string;
+      kind: "source" | "stage" | "merge" | "render" | string;
+      orderKey: [number, number, number];
+      sourceSpan?: SourceSpan;
+      source?: { path: string; startLine: number; endLine: number };
+      contentDigest?: string;
+      syntaxStageRef?: string | null;
+      syntaxSpan?: SourceSpan | null;
+      function?: string;
+      module?: string | null;
+      moduleDigest?: string | null;
+      modality?: string;
+      scopeId?: string | null;
+      args?: Record<string, unknown>;
+      contract?: FunctionMeta["execution"];
+      cache?: {
+        mode: string;
+        eligibility: "candidate" | "ineligible";
+        blockers: string[];
+        staticKey: string;
+        ownKey: string;
+        keyComponents: Record<string, string | null>;
+      };
+      [key: string]: unknown;
+    }>;
+    edges: Array<{
+      edgeId: string;
+      kind: "pipeline" | "interval" | "interval-injection" | "inheritance" | "merge" | "render" | string;
+      from: { nodeId: string; port: string };
+      to: { nodeId: string; port: string };
+      orderKey: [number, number, number];
+    }>;
+    entryNodeIds: string[];
+    terminalNodeId: string;
+  };
+  runtimePolicy: {
+    profile: string;
+    scheduler: "sequential" | string;
+    execution: "full-fresh-run" | string;
+    cache: "disabled-planning-only" | string;
+    parallel: boolean;
+  };
   unsupported: string[];
+};
+
+export type InvalidationPreview = {
+  schema: "textabana.invalidation-preview/lab-v1" | string;
+  mode: "cold-no-baseline" | "baseline-diff" | string;
+  advisory: boolean;
+  basis: { documentRevision: number; documentVersion: string; graphId: string } | null;
+  target: { documentVersion: string; graphId: string };
+  directlyAffectedNodeIds: string[];
+  transitivelyAffectedNodeIds: string[];
+  unchangedNodeIds: string[];
+  addedNodeIds: string[];
+  removedNodeIds: string[];
+  forcedEffectNodeIds: string[];
+  retainedCandidateNodeIds: string[];
+  executionDisposition: { mode: "planned-fresh"; plannedNodeIds: string[]; reusedNodeIds: string[] };
+  cacheStats: { reads: number; writes: number; hits: number; reused: number };
+  reasons: Array<{ code: string; nodeIds: string[] }>;
 };
 
 export type RuntimeDiagnostic = {
@@ -636,12 +723,17 @@ export type EditorKernelRun = {
     errorRecovery: string;
     commands: string[];
     planConstruction: string;
+    executionGraph: string;
+    invalidationPreview: string;
+    cacheMode: string;
+    scheduler: string;
     executionMode: string;
     deltaMode: string;
     reanchorMode: string;
     subscriptionMode: string;
     persistentHistory: boolean;
     collaborativeMerge: boolean;
+    parallelExecution: boolean;
     canonical: boolean;
   };
   limitations?: string[];
@@ -661,7 +753,9 @@ export type RuntimeResult = {
   sourceMaps: RuntimeSourceMap[];
   inspection: RuntimeInspection | null;
   plan: RuntimePlan | null;
+  invalidationPreview: InvalidationPreview | null;
   executionTrace: ExecutionStep[];
+  executionStats: { reads: number; writes: number; hits: number; reused: number };
   resultEnvelope: Record<string, unknown> | null;
   adapterRun: AdapterRun | null;
   conformanceReport: ConformanceReport | null;

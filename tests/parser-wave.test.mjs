@@ -449,8 +449,8 @@ hello
 
   assert.equal(result.ok, true, result.error);
   assert.equal(JSON.stringify(stages.map((stage) => [stage.name, stage.line])), JSON.stringify([["upper", 2], ["wrap", 3]]));
-  assert.equal(JSON.stringify(result.plan.steps.map((step) => [step.function, step.line])), JSON.stringify([["upper", 2], ["wrap", 3]]));
-  for (const step of result.plan.steps) {
+  assert.equal(JSON.stringify(result.executionTrace.map((step) => [step.function, step.line])), JSON.stringify([["upper", 2], ["wrap", 3]]));
+  for (const step of result.executionTrace) {
     const syntaxStage = stages.find((stage) => stage.stageId === step.syntaxStageRef);
     assert.ok(syntaxStage);
     assert.equal(syntaxStage.name, step.function);
@@ -465,7 +465,7 @@ text
 <<<<+ @id=ambient`;
   const { result } = await run(source, [coreModule]);
   const intervalOpen = result.inspection.nodes.find((node) => node.kind === "IntervalOpen");
-  const step = result.plan.steps.find((candidate) => candidate.modality === "interval");
+  const step = result.executionTrace.find((candidate) => candidate.modality === "interval");
 
   assert.equal(result.ok, true, result.error);
   assert.ok(intervalOpen);
@@ -503,7 +503,7 @@ gamma
 <<<<+ @id=ambient`;
   const { result } = await run(source, [coreModule]);
   const intervalOpen = result.inspection.nodes.find((node) => node.kind === "IntervalOpen");
-  const intervalSteps = result.plan.steps.filter((step) => step.modality === "interval");
+  const intervalSteps = result.executionTrace.filter((step) => step.modality === "interval");
 
   assert.equal(result.ok, true, result.error);
   assert.equal(intervalSteps.length, 3);

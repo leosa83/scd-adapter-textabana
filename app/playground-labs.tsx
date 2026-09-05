@@ -167,7 +167,16 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
   const ir = result.inspection;
   const scopes = ir?.scopes ?? [];
   const blocks = ir?.blocks ?? [];
-  const steps = result.plan?.steps ?? [];
+  const steps = result.executionTrace ?? [];
+  const graphNodes = result.plan?.graph.nodes ?? [];
+  const graphStages = graphNodes.filter((node) => node.kind === "stage");
+  const graphEdges = result.plan?.graph.edges ?? [];
+  const invalidation = result.invalidationPreview;
+  const affectedNodeCount = new Set([
+    ...(invalidation?.directlyAffectedNodeIds ?? []),
+    ...(invalidation?.transitivelyAffectedNodeIds ?? []),
+    ...(invalidation?.forcedEffectNodeIds ?? []),
+  ]).size;
   const recoveries = ir?.nodes.filter((node) => node.kind === "Recovery") ?? [];
   const parserDiagnostics = ir?.diagnostics ?? result.diagnostics.filter((diagnostic) => diagnostic.phase === "parsing");
 
@@ -179,7 +188,8 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
         items={[
           { id: "semantics", label: "Semantik", count: scopes.length + blocks.length, icon: Layers3 },
           { id: "parser", label: "Parser", count: recoveries.length, icon: Rows3 },
-          { id: "plan", label: "Körplan", count: steps.length, icon: Workflow },
+          { id: "graph", label: "Graf", count: graphStages.length, icon: GitBranch },
+          { id: "trace", label: "Körspår", count: steps.length, icon: Workflow },
           { id: "ir", label: "IR-projektion", icon: FileJson },
           { id: "render", label: "Render", icon: Sparkles },
         ]}
@@ -221,11 +231,35 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
           </div>
         </div>
       ) : null}
-      {tab === "plan" ? (
+      {tab === "graph" ? (
         <div className="lab-scroll">
           <div className="lab-intro">
-            <div><span>Faktisk exekveringsordning</span><strong>{steps.length} stage-invocations</strong></div>
-            <p>Ordningen instrumenteras i samma worker som producerar render och channels.</p>
+            <div><span>Post-module-init · pre-transform</span><strong>{result.plan?.graph.schema ?? "Ingen graf"}</strong></div>
+            <p>Grafen är exekveringsauktoritet, men denna första våg 3-slice kör fortfarande alla stages fresh och sekventiellt.</p>
+          </div>
+          {result.plan ? (
+            <>
+              <div className="lab-metrics">
+                <article><span>Noder</span><strong>{graphNodes.length}</strong><small>source · stage · merge · render</small></article>
+                <article><span>Typed edges</span><strong>{graphEdges.length}</strong><small>acyklisk topologisk ordning</small></article>
+                <article><span>Planerat dirty</span><strong>{affectedNodeCount}</strong><small>{invalidation?.mode ?? "ingen baslinje"} · forced {invalidation?.forcedEffectNodeIds.length ?? 0}</small></article>
+                <article><span>Återanvända</span><strong>{invalidation?.cacheStats.reused ?? 0}</strong><small>cache reads {invalidation?.cacheStats.reads ?? 0}</small></article>
+              </div>
+              <div className="subset-notice"><CircleDot /> Preview only · full fresh run · sequential · cache reuse 0</div>
+              <div className="lab-json-scroll parser-json">
+                <pre>{json({ plan: result.plan, invalidationPreview: invalidation })}</pre>
+              </div>
+            </>
+          ) : (
+            <div className="lab-empty"><AlertTriangle /> Ingen graf — compile gate eller modulbindning blockerade planeringen.</div>
+          )}
+        </div>
+      ) : null}
+      {tab === "trace" ? (
+        <div className="lab-scroll">
+          <div className="lab-intro">
+            <div><span>Observerad exekveringsordning</span><strong>{steps.length} stage-invocations</strong></div>
+            <p>Varje trace-post binds direkt till sin pre-execution-nod med <code>planNodeRef</code>.</p>
           </div>
           <StageFlow steps={steps} />
           {(result.plan?.unsupported.length ?? 0) > 0 ? (
@@ -276,7 +310,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
           </section>
 
           <section className="semantic-section">
-            <div className="semantic-section-title"><Workflow /><div><strong>Vad kördes?</strong><span>Samma trace visas i detalj under Körplan</span></div></div>
+            <div className="semantic-section-title"><Workflow /><div><strong>Vad kördes?</strong><span>Samma observerade trace visas i detalj under Körspår</span></div></div>
             <StageFlow steps={steps} compact />
           </section>
         </div>

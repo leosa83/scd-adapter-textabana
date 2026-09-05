@@ -199,9 +199,9 @@ test("repeated stages on one pipeline line receive unique invocation and activit
   });
 
   assert.equal(result.ok, true);
-  assert.equal(new Set(result.plan.steps.map((step) => step.stageId)).size, 2);
-  assert.equal(new Set(result.plan.steps.map((step) => step.invocationId)).size, 2);
-  assert.equal(new Set(result.plan.steps.map((step) => step.activityId)).size, 2);
+  assert.equal(new Set(result.executionTrace.map((step) => step.stageId)).size, 2);
+  assert.equal(new Set(result.executionTrace.map((step) => step.invocationId)).size, 2);
+  assert.equal(new Set(result.executionTrace.map((step) => step.activityId)).size, 2);
   assert.equal(new Set(result.channels["system.out"].map((event) => event.provenanceRef)).size, 2);
 });
 

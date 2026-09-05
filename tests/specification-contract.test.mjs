@@ -26,13 +26,19 @@ test("the Interop 0.7 specification preserves its foundational contracts", () =>
     "PARSE-001",
     "PARSE-002",
     "PARSE-003",
+    "PROCESS-004",
     "IR-003",
     "IR-004",
+    "PLAN-002",
+    "PLAN-003",
+    "PLAN-004",
     "SOURCEMAP-001",
     "RESULT-002",
     "CHANNEL-002",
     "SYSTEM-OUT-001",
     "MANIFEST-001",
+    "MANIFEST-004",
+    "MANIFEST-005",
     "EDITOR-KERNEL-001",
     "EDITOR-KERNEL-002",
     "EDITOR-KERNEL-003",
@@ -47,6 +53,7 @@ test("the Interop 0.7 specification preserves its foundational contracts", () =>
     "DELTA-003",
     "DELTA-004",
     "REANCHOR-001",
+    "RUN-005",
     "JUPYTER-001",
     "DATA-001",
     "ANNOTATION-002",
@@ -73,7 +80,7 @@ test("the Interop 0.7 specification preserves its foundational contracts", () =>
   assert.match(source, /HTML beskriver ett dokumentträd.*Textabana beskriver vilka semantiska processer/s);
   assert.match(source, /Nuvarande Playground implementerar åtta avgränsade vyer/);
   assert.match(source, /Language & Scope Lab/);
-  assert.match(source, /Parser\/Recovery-flik/);
+  assert.match(source, /Language & Scope.*Parser.*Graf.*Körspår/s);
   assert.match(source, /Editor Kernel Lab/);
   assert.match(source, /Editor Metadata Lab/);
   assert.match(source, /Channel & Result Lab/);
@@ -108,11 +115,15 @@ test("the Interop 0.7 specification preserves its foundational contracts", () =>
   assert.match(source, /textabana\.parser\/lab-v1/);
   assert.match(source, /textabana\.cst\/lab-v1/);
   assert.match(source, /textabana\.ir\/lab-v2/);
+  assert.match(source, /textabana\.execution-plan\/lab-v2/);
+  assert.match(source, /textabana\.execution-graph\/lab-v1/);
+  assert.match(source, /post-module-init-pre-transform/);
+  assert.match(source, /cache reads, writes, hits och reuse är noll/);
   assert.match(source, /analyze.*partial.*IR.*inga moduler eller stages/s);
   assert.match(source, /korrelerade.*open.*change.*Optimistiskt antagen revision\/version/s);
   assert.match(source, /inkrementell input.*Implementerat.*inkrementell beräkning.*Ej implementerat.*inkrementell leverans.*Implementerat/is);
   assert.match(source, /run-lokala.*eventId.*sequence/s);
   assert.match(source, /Flera giltiga kandidater.*ambiguous.*ingen giltig kandidat.*orphaned/s);
-  assert.match(source, /full dokumentparse.*inkrementell trädåteranvändning.*Våg 3/s);
+  assert.match(source, /full dokumentparse.*Parserträdsreuse.*selektiv exekvering återstår i Våg 3/s);
   assert.match(source, /Recovery.*executable=false/s);
 });

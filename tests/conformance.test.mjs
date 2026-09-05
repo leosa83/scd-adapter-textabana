@@ -90,9 +90,9 @@ test("golden fixture publishes a passed machine-readable conformance gate", asyn
   assert.equal(report.schema, "textabana.conformance-report/lab-v1");
   assert.equal(report.suite.suiteId, "textabana.playground/interop-0.7");
   assert.equal(report.suite.version, "1.2.0-lab.1");
-  assert.equal(report.gate.status, "passed");
-  assert.equal(report.golden.status, "passed");
-  assert.equal(report.golden.expectedStructuralDigest, "fnv1a-lab:v0p8zi");
+  assert.equal(report.golden.status, "passed", JSON.stringify(report.golden));
+  assert.equal(report.gate.status, "passed", JSON.stringify(report.gate));
+  assert.equal(report.golden.expectedStructuralDigest, "fnv1a-lab:u6b48h");
   assert.equal(report.golden.actualStructuralDigest, report.structuralDigest);
   assert.ok(report.reportId.startsWith("conformance:"));
 });
@@ -220,7 +220,7 @@ test("normalization policy is explicit and the snapshot covers every pipeline la
   const result = await harness.run({ documentSource: template("conformanceGoldenFixtureDocument"), fixtureId: "conformance-golden" });
   const report = result.conformanceReport;
 
-  for (const path of ["/transport/runId", "/plan/steps/*/duration", "/adapterRun/adapterRunId", "/cancellation/cancelToken"]) {
+  for (const path of ["/transport/runId", "/executionTrace/*/duration", "/adapterRun/adapterRunId", "/cancellation/cancelToken"]) {
     assert.ok(report.normalization.ignoredPaths.includes(path), path);
   }
   assert.equal(report.extensions["textabana.playground"].canonical, false);

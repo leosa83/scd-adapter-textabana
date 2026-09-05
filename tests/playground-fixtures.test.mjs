@@ -57,7 +57,7 @@ test("scope-torture drives the shared language, editor and channel projections",
   assert.equal(result.ok, true, result.error);
   assert.ok(result.inspection.scopes.length >= 6);
   assert.ok(result.inspection.blocks.length >= 3);
-  assert.ok(result.plan.steps.length >= 6);
+  assert.ok(result.executionTrace.length >= 6);
   assert.ok(result.channels["system.out"].length >= 2);
   assert.ok(result.channels.records.length >= 1);
   assert.ok(result.channels.metrics.length >= 1);
@@ -126,7 +126,7 @@ test("base64 inverse remains a golden playground fixture", async () => {
 
   assert.equal(result.ok, true, result.error);
   assert.equal(result.output.trim(), "# Base64 som nästlad intervallfunktion ger invers\n\n\nTextabana kan transformera den här texten");
-  assert.equal(JSON.stringify(result.plan.steps.map((step) => step.function)), JSON.stringify(["base64encode", "base64decode"]));
+  assert.equal(JSON.stringify(result.executionTrace.map((step) => step.function)), JSON.stringify(["base64encode", "base64decode"]));
 });
 
 test("failed-run fixture exposes diagnostics but no committed domain output", async () => {

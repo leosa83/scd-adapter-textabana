@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.1.0` |
-| Status | Pågår · Våg 1–2 genomförda · Våg 3 aktiv |
+| Planversion | `1.1.1` |
+| Status | Pågår · Våg 1–2 och sprint 3.1 genomförda · Våg 3 aktiv |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -115,7 +115,7 @@ Textabana Editor Kernel
 
 ### Våg 3 — Inkrementell planering och exekveringsgraf
 
-**Status:** aktiv · sprint 3.1 pågår
+**Status:** aktiv · sprint 3.1 genomförd
 
 **Mål:** Göra ändringsmängder beräkningsmässigt värdefulla genom att ogiltigförklara och köra om endast beroende delgraf.
 
@@ -125,13 +125,24 @@ Textabana Editor Kernel
 
 #### Sprint 3.1 — Pre-execution graph och konservativ invalidation
 
-**Status:** aktiv
+**Status:** genomförd 2026-09-05
 
-**Leverans:** ersätt den post-execution-projicerade planen med `textabana.execution-plan/lab-v2`, bygg en deterministisk DAG efter modulinitiering men före första stage-anropet och ge varje source-, stage-, merge- och rendernod stabil typ, order key och explicit beroende. Funktionskontraktet skiljer `behavior` från `state`, `determinism` och deklarerade observable effects. Varje stage får ett cache-key-recept med stage-lokala source- och IR-beroendedigests samt module-, input-, args-, config-, profile- och environment-digest, men cacheläsning, cacheskrivning och reuse förblir avstängda tills receptet kan verifieras över två revisioner.
+**Leverans:** ersätt den post-execution-projicerade planen med `textabana.execution-plan/lab-v2`, bygg en deterministisk DAG efter modulinitiering men före första stage-anropet och ge varje source-, stage-, merge- och rendernod stabil typ, order key och explicit beroende. Funktionskontraktet skiljer `behavior` från `state`, `determinism` och deklarerade observable effects. Varje stage får ett cache-key-recept med stage-lokala source- och IR-beroendedigests samt resolved module identity, module-, input-, args-, config-, profile- och environment-digest, men cacheläsning, cacheskrivning och reuse förblir avstängda tills receptet kan verifieras över två revisioner.
 
 **Acceptans:** planen existerar före första transform, typed edges formar en acyklisk graf, faktisk trace binds tillbaka till planerade stage-noder och avvikelse stoppar körningen. Legacyfunktioner utan fullständigt kontrakt klassas konservativt som `unknown` och aldrig cachebara. En första run rapporterar `cold/no-baseline`; med en lyckad editorbaslinje skiljer previewn `directlyAffected`, `transitivelyAffected`, `unchanged`, `added` och `removed`. Alla stages körs ändå fresh, och `cacheReads`, `cacheWrites` samt `reused` är noll. Render, kanaler, atomisk commit och stageordning är oförändrade.
 
 **Avgränsning:** sprinten återanvänder ännu varken parserträd eller stageoutput, kör inget parallellt och inför inte streaming, backpressure, timeout eller resursbudget. Dessa förmågor förblir explicit unsupported tills senare sprintar i Våg 3.
+
+**Acceptansevidens:**
+
+- Workern bygger `textabana.execution-plan/lab-v2` och `textabana.execution-graph/lab-v1` efter modulinitiering men före första transform. Samma operationstape är auktoritet för både grafen och den fresh, sekventiella exekveringen.
+- Grafen validerar unika nod- och edge-id:n, kända edge-typer, existerande och namngivna portar, inputkardinalitet, stigande topologisk ordning, korrekta entrynoder, full väg till exakt en renderterminal samt plan/trace-bindning med `planNodeRef`.
+- Ett stagefel behåller hela den förkompilerade grafen och endast den observerade trace-prefixen. Durable render och channels förblir atomiskt tomma.
+- Funktionskontrakt skiljer behavior, state, determinism och observerbara effekter. Saknade deklarationer blir `unknown`; även en explicit pure/deterministic/effects-free kandidat är endast en betrodd manifestuppgift och ger ingen reuse i denna sprint.
+- Cache-receptet täcker stage-lokala source-/IR-beroenden, resolved module identity och content digest, exakt typad input, args, config, profile och environment. Whitespace, värdetyp, funktionsnamn, include-path och ändrad edge-topologi täcks av regressionstest.
+- `textabana.invalidation-preview/lab-v1` skiljer cold/no-baseline från editorbaserad diff och redovisar direct, transitive, unchanged, added, removed samt forced-effect. Previewn ligger utanför semantisk Result-identitet; planerad fresh-körning skiljs från observerad trace.
+- Language & Scope Lab har separata Graf- och Körspår-flikar. Specifikationen, README och parserkontraktet anger att cache reads, writes, hits och reuse är noll och att full parse, fresh scheduler samt sekventiell körning består.
+- Releasegrind: 126 automatiska test, ESLint och Sites produktionsbygge passerar. En befintlig chunkstorleksvarning är fortsatt icke-blockerande.
 
 ### Våg 4 — Host-SDK:er och säkra modulpaket
 
@@ -164,6 +175,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.1.1 — 2026-09-05
+
+- Sprint 3.1 markerad som genomförd med pre-transform plan/DAG, separat observerad trace och rådgivande invalidation preview.
+- Cacheidentiteten härdad för exakt typade värden, funktionsnamn, resolved module identity och ändrad edge-topologi; cache/reuse förblir avstängt.
+- Releaseevidens uppdaterad till 126 passerade test, ESLint och produktionsbygge.
 
 ### 1.1.0 — 2026-09-05
 

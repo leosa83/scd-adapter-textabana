@@ -252,8 +252,8 @@ test("the shared runner exposes scope projection, actual execution trace and one
   assert.equal(result.inspection.schema, "textabana.ir/lab-v2");
   assert.equal(result.inspection.scopes[0].id, "ambient");
   assert.equal(JSON.stringify(result.inspection.scopes[0].segments.map(({ startLine, endLine }) => ({ startLine, endLine }))), JSON.stringify([{ startLine: 4, endLine: 4 }]));
-  assert.equal(JSON.stringify(result.plan.steps.map((step) => step.function)), JSON.stringify(["upper", "wrap"]));
-  assert.equal(JSON.stringify(result.plan.steps.map((step) => step.modality)), JSON.stringify(["block", "interval"]));
+  assert.equal(JSON.stringify(result.executionTrace.map((step) => step.function)), JSON.stringify(["upper", "wrap"]));
+  assert.equal(JSON.stringify(result.executionTrace.map((step) => step.modality)), JSON.stringify(["block", "interval"]));
   assert.equal(result.resultEnvelope.run.runId, "run:1");
   assert.equal(result.resultEnvelope.render.data.trim(), "[ALPHA]");
   assert.equal(result.capabilities.profiles["language-core/0.4"], "playground-subset");

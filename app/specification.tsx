@@ -57,7 +57,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Kanoniska kontrakt",
     items: [
-      { id: "ir-plan", label: "CST, AST, IR & Plan" },
+      { id: "ir-plan", label: "IR, graf, plan & körspår" },
       { id: "anchors", label: "Anchor & SourceMap" },
       { id: "result", label: "TextabanaResult" },
       { id: "channels", label: "Typade kanaler" },
@@ -243,7 +243,7 @@ export function Specification() {
         <div className="spec-version">
           <span>Textabana</span>
           <strong>Language & Interop draft 0.7</strong>
-          <small>Language 0.4 · Parser/CST/AST lab-v1 · typed IR lab-v2 · Editor Kernel + adapters lab-v1</small>
+          <small>Language 0.4 · typed IR lab-v2 · execution plan lab-v2 · execution graph lab-v1 · Editor Kernel + adapters lab-v1</small>
         </div>
         <SpecNav />
         <div className="spec-legend" aria-label="Statusförklaring">
@@ -265,6 +265,7 @@ export function Specification() {
             <StatusBadge tone="normative">Interop draft 0.7</StatusBadge>
             <StatusBadge tone="implemented">Språkkärna 0.4-subset</StatusBadge>
             <StatusBadge tone="implemented">Parser + typed IR live</StatusBadge>
+            <StatusBadge tone="implemented">Våg 3 · planning-only graf live</StatusBadge>
             <StatusBadge tone="partial">Åtta labs · Editor Kernel live</StatusBadge>
           </div>
           <h1 id="definition-title">Läsbar text som körbar, positionsmedveten och flerkanalig semantisk källa.</h1>
@@ -298,7 +299,7 @@ export function Specification() {
           </div>
           <Requirement id="STATUS-001">En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.</Requirement>
           <Requirement id="STATUS-002">Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.</Requirement>
-          <Requirement id="STATUS-003">Nuvarande Playground implementerar åtta avgränsade vyer: Language & Scope med Parser/Recovery-flik, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Resultatvyerna läser samma valda run; Editor Kernel visar dessutom revisionskedjan runt den. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. <code>editor-kernel/1</code> och <code>annotation/1</code> är playground-subsets; verklig modellkörning och <code>ml-lineage/1</code> är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet.</Requirement>
+          <Requirement id="STATUS-003">Nuvarande Playground implementerar åtta avgränsade vyer: Language & Scope med separata Parser-, Graf- och Körspår-flikar, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Grafvyn visar en pre-transform <code>textabana.execution-plan/lab-v2</code> och en typad <code>textabana.execution-graph/lab-v1</code>; den visar endast planering och rådgivande invalidation, aldrig faktisk cache reuse. Resultatvyerna läser samma valda run; Editor Kernel visar dessutom revisionskedjan runt den. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. <code>editor-kernel/1</code> och <code>annotation/1</code> är playground-subsets; verklig modellkörning och <code>ml-lineage/1</code> är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="html">
@@ -374,7 +375,7 @@ export function Specification() {
           <div className="architecture-flow" aria-label="Textabanas arkitektur">
             <div><FileJson aria-hidden="true" /><strong>Source</strong><span>.tba · .md · notebook · API</span></div>
             <ArrowDown aria-hidden="true" />
-            <div><Braces aria-hidden="true" /><strong>Parser + compiler</strong><span>CST · AST · IR · Plan</span></div>
+            <div><Braces aria-hidden="true" /><strong>Parser + compiler</strong><span>CST · AST · IR · Plan/DAG</span></div>
             <ArrowDown aria-hidden="true" />
             <div><Code2 aria-hidden="true" /><strong>Runtime</strong><span>block · intervall · pipeline</span></div>
             <ArrowDown aria-hidden="true" />
@@ -391,10 +392,10 @@ export function Specification() {
               "  -> { CST, AST, TypedIR, Diagnostics }",
               "",
               "Compile(TypedIR, ModuleLock, HostCapabilities)",
-              "  -> { SourceMap, ExecutionPlan, Diagnostics }",
+              "  -> { SourceMap, ExecutionPlan, ExecutionGraph, Diagnostics }",
               "",
               "Execute(ExecutionPlan, Inputs, RunProfile)",
-              "  -> TextabanaResult",
+              "  -> { ExecutionTrace, TextabanaResult }",
               "",
               "TextabanaResult",
               "  = Render + ChannelSnapshots + Artifacts + Provenance + Diagnostics"
@@ -702,22 +703,24 @@ export function Specification() {
             <li><span>4</span><div><strong>Beräkna intervallgraf</strong><p>Behåll open/close-events separat från blockträdet och härled maximala scope-segment.</p></div></li>
             <li><span>5</span><div><strong>Publicera typed IR</strong><p>Ge varje node/stage ett verifierbart Unicode code-point-span och varje fel en stabil kod.</p></div></li>
             <li><span>6</span><div><strong>Stäng compile gate</strong><p>Recovery förblir synlig för editorn, men error-level diagnostics stoppar all modulinitiering och exekvering.</p></div></li>
-            <li><span>7</span><div><strong>Lös och bind moduler</strong><p>Includes och config läses ur samma IR; låst modulgraf byggs först efter godkänd parse.</p></div></li>
-            <li><span>8</span><div><strong>Exekvera fresh</strong><p>Bind typed stages och inheritance från IR, kör dem och samla returvärden samt tentative emissions med deterministisk ordning.</p></div></li>
-            <li><span>9</span><div><strong>Projicera observerad plan</strong><p>Bygg labbets ExecutionPlan från lyckade invocations; varje steg binds tillbaka med <code>syntaxStageRef</code> och <code>syntaxSpan</code>.</p></div></li>
+            <li><span>7</span><div><strong>Lös, initiera och bind moduler</strong><p>Includes och config läses ur samma IR. Nuvarande lab-loader initierar därefter modulerna för att läsa deras funktionsdeskriptorer; manifest-före-entrypoint är fortfarande målkontraktet.</p></div></li>
+            <li><span>8</span><div><strong>Kompilera plan och graf</strong><p>Bygg en komplett, typad DAG efter modulinitiering men före första <code>transform</code>. Source-, stage-, merge- och rendernoder får deterministisk ordning och explicita beroenden.</p></div></li>
+            <li><span>9</span><div><strong>Exekvera samma operationstape fresh</strong><p>Kör grafen sekventiellt och samla returvärden, tentative emissions och ett separat observerat körspår. Varje stagepost binds till sin planerade nod med <code>planNodeRef</code>.</p></div></li>
             <li><span>10</span><div><strong>Commit atomiskt</strong><p>Publicera immutable render, kanalsnapshots, proveniens och diagnostik som ett resultat.</p></div></li>
           </ol>
           <Requirement id="PROCESS-001">Parallell exekvering FÅR endast användas när deterministic merge och eventordning är fullt definierade.</Requirement>
           <Requirement id="PROCESS-002">Ett kompileringsfel MÅSTE stoppa all domänexekvering. Ett run-fel MÅSTE hindra durable commit.</Requirement>
           <Requirement id="PROCESS-003">Modulinitiering är en effekt och FÅR INTE ske innan hela dokumentet har passerat parserns compile gate.</Requirement>
+          <Requirement id="PROCESS-004">ExecutionPlan och ExecutionGraph MÅSTE vara kompletta före första stage-anrop. ExecutionTrace MÅSTE vara en separat observation där varje stagepost refererar en planerad nod. Vid fel behålls hela grafen och endast den faktiskt körda prefixen finns i spåret.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="ir-plan">
-          <SectionHeading number="10" layer="Canonical contracts" title="TextabanaIR och ExecutionPlan är separata" implementation="partial" />
-          <p className="lead">CST bevarar källformen, AST normaliserar syntaxen och typed IR beskriver dokumentets host-neutrala semantik. ExecutionPlan beskriver först därefter hur just denna host ska köra ett giltigt snapshot.</p>
+          <SectionHeading number="10" layer="Canonical contracts" title="IR, plan, graf och körspår är separata kontrakt" implementation="partial" />
+          <p className="lead">CST bevarar källformen, AST normaliserar syntaxen och typed IR beskriver dokumentets host-neutrala semantik. ExecutionPlan och dess graf bestämmer därefter vad hosten avser att köra. ExecutionTrace beskriver endast vad som faktiskt hann köras; invalidation preview jämför två planer utan att påstå cacheträff eller reuse.</p>
           <div className="contract-grid">
             <article><Braces aria-hidden="true" /><strong>CST → AST → TextabanaIR</strong><p>Lossless source, normaliserat blockträd och därefter en JSON-serialiserbar discriminated node-union med separat intervallgraf.</p></article>
-            <article><Workflow aria-hidden="true" /><strong>ExecutionPlan</strong><p>Stage instances, syntaxStageRef, typade edges, order keys, capabilitykrav, cache boundaries och runtime bindings.</p></article>
+            <article><Workflow aria-hidden="true" /><strong>ExecutionPlan + Graph</strong><p>Stage-instanser, <code>syntaxStageRef</code>, typade edges, order keys, runtimepolicy och statiska cache-recept före transform.</p></article>
+            <article><GitBranch aria-hidden="true" /><strong>ExecutionTrace + preview</strong><p>Observerade invocationer binds med <code>planNodeRef</code>. Historikberoende invalidation är separat, rådgivande metadata.</p></article>
             <article><Link2 aria-hidden="true" /><strong>SourceMap</strong><p>Många-till-många-relationer mellan genererade selectors och versionerade inputanchors.</p></article>
           </div>
           <CodeExample
@@ -745,13 +748,34 @@ export function Specification() {
               "}"
             )}
           />
+          <CodeExample
+            title="Pre-transform plan och typad graf · förkortat"
+            language="json"
+            status="Körbar planning-only lab-subset"
+            code={code(
+              "{",
+              '  "schema": "textabana.execution-plan/lab-v2",',
+              '  "constructionPhase": "post-module-init-pre-transform",',
+              '  "graph": {',
+              '    "schema": "textabana.execution-graph/lab-v1",',
+              '    "nodes": [{ "nodeId": "plan:stage:…", "kind": "stage", "orderKey": [2, 0, 0], "cache": { "mode": "planning-only", "eligibility": "ineligible" } }],',
+              '    "edges": [{ "kind": "pipeline", "from": { "nodeId": "plan:source:…", "port": "value" }, "to": { "nodeId": "plan:stage:…", "port": "input" } }],',
+              '    "terminalNodeId": "plan:render:…"',
+              "  },",
+              '  "runtimePolicy": { "scheduler": "sequential", "execution": "full-fresh-run", "cache": "disabled-planning-only", "parallel": false }',
+              "}"
+            )}
+          />
           <Requirement id="IR-001">Intervall MÅSTE representeras som scopes och segmentmedlemskap; de får inte pressas in i ett AST-träd som förlorar korsningar.</Requirement>
           <Requirement id="IR-002">Authored ids FÅR vara stabila mellan revisioner. Genererade node ids MÅSTE dokumenteras som revision-local.</Requirement>
           <Requirement id="IR-003">Varje IR-node, stage och recovery MÅSTE ha ett halvöppet Unicode-code-point-span inom exakt source snapshot. Syntetiska missing tokens MÅSTE vara markerade och ha zero-width-span. En source-backed Blank-node FÅR vara zero-width utan att vara syntetisk; radslutet ägs då av CST:ns separata Newline-terminal.</Requirement>
           <Requirement id="IR-004">En <code>Recovery</code>-node MÅSTE ha <code>executable=false</code> och får aldrig refereras som en körbar stage i ExecutionPlan.</Requirement>
           <Requirement id="PLAN-001">ExecutionPlan MÅSTE bära varje stages exakta funktionsversion, typkontrakt, granted capabilities och deterministiska order key.</Requirement>
-          <Callout title="Playgroundens projektion" icon={<Workflow />} tone="info">
-            Language & Scope Lab visar verklig <code>textabana.cst/lab-v1</code>, <code>textabana.ast/lab-v1</code>, <code>textabana.ir/lab-v2</code>, recovery, scope-segment och instrumenterade stage-invocations från samma worker. Den nuvarande planen är en post-execution-projektion av en fresh run. FNV-identitet, en pre-execution typed-edge-plan och inkrementell parseråteranvändning är fortfarande icke-kanoniska begränsningar.
+          <Requirement id="PLAN-002">ExecutionGraph MÅSTE ha unika node- och edge-id:n, typade endpoints, acyklisk topologisk ordning och exakt en renderterminal. Edge-typerna <code>pipeline</code>, <code>interval</code>, <code>interval-injection</code>, <code>inheritance</code>, <code>merge</code> och <code>render</code> MÅSTE vara explicita. Samma operationstape MÅSTE vara auktoritet för både planering och exekvering.</Requirement>
+          <Requirement id="PLAN-003">Statisk cache eligibility, cache candidate, cache lookup, cache hit och faktisk reuse är skilda tillstånd. Ett ofullständigt state-, determinism- eller effektkontrakt MÅSTE göra funktionen icke-cachebar. En deklarerad kandidat är en betrodd manifestuppgift, inte i sig ett verifierat puritybevis.</Requirement>
+          <Requirement id="PLAN-004">Invalidation preview MÅSTE vara rådgivande och separat från grafens och Resultatets semantiska identitet. Den MÅSTE ange basis, target och maskinläsbara orsaker samt får aldrig redovisas som cache hit eller reuse.</Requirement>
+          <Callout title="Playgroundens Våg 3-addendum" icon={<Workflow />} tone="info">
+            Language & Scope Lab visar verklig <code>textabana.cst/lab-v1</code>, <code>textabana.ast/lab-v1</code>, <code>textabana.ir/lab-v2</code>, en komplett pre-transform-graf och ett separat körspår från samma worker. Planen byggs i den nuvarande JavaScript-loadern efter modulinitiering eftersom deskriptorerna ännu kommer från <code>define(...)</code>, men före första transform. Varje run är fortsatt full, fresh och sekventiell; cache reads, writes, hits och reuse är noll. FNV-identitet, manifest-före-entrypoint, inkrementell parseråteranvändning och selektiv exekvering är fortfarande icke-kanoniska begränsningar.
           </Callout>
         </section>
 
@@ -1040,7 +1064,8 @@ export function Specification() {
               '      "behavior": "segment-preserving",',
               '      "mapping": ["exact"],',
               '      "determinism": "seeded",',
-              '      "state": "run"',
+              '      "state": "run",',
+              '      "effects": ["channel:claims"]',
               "    }",
               "  },",
               '  "permissions": ["model:claims-v2"]',
@@ -1054,15 +1079,21 @@ export function Specification() {
               [<code key="args">args</code>, "JSON Schema", "Validering före invocation."],
               [<code key="accepts-returns">accepts / returns</code>, "TextabanaValue constraints", "Typed Plan edges."],
               [<code key="channels">channels</code>, "Descriptors eller namnpattern", "Validerade emissions."],
-              [<code key="behavior">behavior</code>, "segment-preserving · reordering · expanding · reducing · aggregating · generative", "Mapping- och cachebedömning."],
+              [<code key="behavior">behavior</code>, "segment-preserving · reordering · expanding · reducing · aggregating · generative", "Mapping och värdeflöde; aldrig purity-signal."],
               [<code key="determinism">determinism</code>, "deterministic · seeded · nondeterministic · external", "Replay och cachepolicy."],
               [<code key="state">state</code>, "pure · run · session · external", "Livslängd och reproducerbarhet."],
+              [<code key="effects">effects</code>, "channel:* · artifact:* · network · filesystem · model · external", "Observerbara effekter och cachegräns."],
               [<code key="permissions">permissions</code>, "network · filesystem · process · model · secrets", "Host grant före init."],
             ]}
           />
           <Requirement id="MANIFEST-001">Compiler MÅSTE kunna läsa och validera manifestet utan att exekvera modulens entrypoint.</Requirement>
           <Requirement id="MANIFEST-002">Dubbla exports utan namespace eller alias MÅSTE vara compile error.</Requirement>
           <Requirement id="MANIFEST-003">State och determinism är separata dimensioner. En stateful funktion kan vara deterministisk, och en stateless funktion kan vara nondeterministisk.</Requirement>
+          <Requirement id="MANIFEST-004"><code>behavior</code> beskriver transformationens form och FÅR INTE tolkas som purity. State, determinism och observerbara effekter MÅSTE deklareras separat; saknad deklaration betyder <code>unknown</code> och icke-cachebar.</Requirement>
+          <Requirement id="MANIFEST-005">En deklaration som <code>state=pure</code>, <code>determinism=deterministic</code> och <code>effects=[]</code> gör endast funktionen till cachekandidat. En host som faktiskt återanvänder output MÅSTE dessutom upprätthålla effektgränsen eller behandla kontraktet som betrott och redovisa den trust boundaryn.</Requirement>
+          <Callout title="Nuvarande loadergräns" icon={<AlertTriangle />} tone="warning">
+            Det normativa målet är manifestvalidering före entrypoint. JavaScript-labbet hämtar ännu funktionsdeskriptorer genom att initiera modulens <code>define(...)</code> efter compile gate och bygger därför grafen post-module-init men pre-transform. Det är en uttrycklig labbegränsning, inte den framtida paketeringsmodellen.
+          </Callout>
         </section>
 
         <section className="docs-section spec-section" id="runtime-protocol">
@@ -1174,12 +1205,13 @@ export function Specification() {
             headers={["Förmåga", "Betydelse", "Playground"]}
             rows={[
               ["Inkrementell input", "Hosten skickar ChangeSets i stället för att ersätta hela dokumentet.", <StatusBadge key="input" tone="implemented">Implementerat</StatusBadge>],
+              ["Invalidation preview", "Två pre-transform-grafer jämförs till direct, transitive, unchanged, added och removed utan att återanvända output.", <StatusBadge key="preview" tone="implemented">Rådgivande lab-subset</StatusBadge>],
               ["Inkrementell beräkning", "Parser, compiler och runtime återanvänder verifierat opåverkade delar.", <StatusBadge key="compute" tone="planned">Ej implementerat</StatusBadge>],
               ["Inkrementell leverans", "Hosten får semantiska deltan i stället för kompletta metadataprojektioner.", <StatusBadge key="delivery" tone="implemented">Implementerat</StatusBadge>],
             ]}
           />
           <Callout title="Exakt gräns för den körbara subseten" icon={<AlertTriangle />} tone="warning">
-            Workern håller en in-memory documentsession, applicerar versionguardade Unicode-patchar och erbjuder read-only <code>analyze</code> med formell parser och lokal recovery. Varje analyze/run gör fortfarande en full dokumentparse; inkrementell trädåteranvändning, selektiv planering och selektiv exekvering hör till Våg 3. Persistent historik, OT/CRDT, generell strukturell re-anchor, färdig CodeMirror/Monaco/LSP-SDK och synkron preemption är inte implementerade.
+            Workern håller en in-memory documentsession, applicerar versionguardade Unicode-patchar och erbjuder read-only <code>analyze</code> med formell parser och lokal recovery. Den bygger nu en komplett pre-transform-graf och kan jämföra den med senast committad editorbaslinje, men varje analyze/run gör fortfarande en full dokumentparse och varje run kör alla stages fresh och sekventiellt. Parserträdsreuse, cache lookup, stage-output-reuse och selektiv exekvering återstår i Våg 3. Persistent historik, OT/CRDT, generell strukturell re-anchor, färdig CodeMirror/Monaco/LSP-SDK och synkron preemption är inte implementerade.
           </Callout>
         </section>
 
@@ -1203,9 +1235,10 @@ export function Specification() {
             <article><CheckCircle2 aria-hidden="true" /><strong>committed</strong><p>Endast en lyckad commit gör render och durable channel snapshots till aktuell revision.</p></article>
           </div>
           <Requirement id="RUN-001">Failed eller cancelled MÅSTE revokera tentative domänoutput. En extern side effect som inte kan rullas tillbaka måste deklareras och redovisas ärligt i proveniens.</Requirement>
-          <Requirement id="RUN-002">Semantic cache key MÅSTE inkludera source-, IR-, module-, input-, config-, profile- och environment-digests.</Requirement>
+          <Requirement id="RUN-002">Semantic cache key MÅSTE inkludera stage-lokala source- och IR-beroendedigests samt resolved module identity, module-, exakt typad input-, args-, config-, profile- och environment-digests. Edge-topologi och ordnad merge MÅSTE påverka beroendeidentiteten.</Requirement>
           <Requirement id="RUN-003">Nondeterministiska och externa funktioner får inte cacheas utan explicit replay artifact eller dokumenterad policy.</Requirement>
           <Requirement id="RUN-004">Backpressure, timeout och cancellation MÅSTE propageras genom runtime och sinks; tyst eventförlust är inte tillåten.</Requirement>
+          <Requirement id="RUN-005">Cache candidate, cache eligible, lookup, hit och reused MÅSTE rapporteras som skilda tillstånd. En invalidation preview eller matchande statisk nyckel får aldrig ensam redovisas som en träff; aktuell planning-only-subset har noll reads, writes, hits och reuse.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="security">
@@ -1616,7 +1649,7 @@ export function Specification() {
               '    "status": "passed", "derivedSupport": "playground-subset", "claimable": true,',
               '    "requirements": [{ "requirementId": "RUNTIME-ATOMIC-TERMINAL", "status": "passed", "evidenceRefs": ["lab:…"] }]',
               "  }],",
-              '  "normalization": { "policy": "textabana.structural-snapshot/lab-v1", "ignoredPaths": ["/transport/runId", "/plan/steps/*/duration"] },',
+              '  "normalization": { "policy": "textabana.structural-snapshot/lab-v1", "ignoredPaths": ["/transport/runId", "/executionTrace/*/duration"] },',
               '  "golden": { "status": "passed", "expectedStructuralDigest": "fnv1a-lab:…", "actualStructuralDigest": "fnv1a-lab:…" },',
               '  "gate": { "status": "passed", "blockingRequirementIds": [] },',
               '  "extensions": { "textabana.playground": { "canonical": false, "fullConformance": false } }',
@@ -1624,8 +1657,8 @@ export function Specification() {
             )}
           />
           <div className="conformance-grid">
-            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Lezer-baserad full dokumentparse, lossless CST, typed IR lab-v2, Unicode source spans, fenced/escaped literals, lokal icke-körbar recovery, read-only editoranalys, includes, block, pipelines, öppna intervall, inheritance, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, metadata-deltan, adapterisolering, data-lineage, notebook-snapshots, immutable annotationskandidater, golden snapshots, exakta negativa cases och kooperativ cancellation.</p></article>
-            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, inkrementell parseråteranvändning, selektiv planering/exekvering, persistent historik, strukturell/fuzzy re-anchor, färdiga editor-/LSP-adaptrar, preemption av synkrona CPU-loopar, timeout/backpressure och extern side-effect rollback, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets, verklig modellkörning, persistent review store, full annotationsontologi/tool-roundtrip samt W3C PROV, OpenLineage, MLflow och OTel.</p></article>
+            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Lezer-baserad full dokumentparse, lossless CST, typed IR lab-v2, Unicode source spans, fenced/escaped literals, lokal icke-körbar recovery, read-only editoranalys, includes, block, pipelines, öppna intervall, inheritance, komplett post-module-init/pre-transform-plan, typad acyklisk DAG, <code>planNodeRef</code>-bundet körspår, exakta planning-only cache-recept och rådgivande invalidation preview, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, metadata-deltan, adapterisolering, data-lineage, notebook-snapshots, immutable annotationskandidater, golden snapshots, exakta negativa cases och kooperativ cancellation.</p></article>
+            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, manifest-före-entrypoint, inkrementell parseråteranvändning, faktisk cache lookup och stage-output-reuse, selektiv eller parallell exekvering, persistent historik, strukturell/fuzzy re-anchor, färdiga editor-/LSP-adaptrar, preemption av synkrona CPU-loopar, timeout/backpressure och extern side-effect rollback, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets, verklig modellkörning, persistent review store, full annotationsontologi/tool-roundtrip samt W3C PROV, OpenLineage, MLflow och OTel.</p></article>
           </div>
           <Requirement id="CONF-001">En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.</Requirement>
           <Requirement id="CONF-002">Ett profilanspråk MÅSTE bindas till en versionssatt suite och verifiera source → IR → plan → result → projection. Profiler utan relevant input MÅSTE vara <code>not-run</code>, inte passerade.</Requirement>
@@ -1678,9 +1711,9 @@ export function Specification() {
 
         <section className="docs-section spec-section playground-contract-section" id="playgrounds">
           <SectionHeading number="28" layer="Interactive implementation" title="Åtta playgrounds visar run och editorrevision från olika håll" normative={false} implementation="partial" />
-          <p className="lead">Language & Scope, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance använder samma valda källa och run. Language-vyn har en Parser-flik som även kan visa partial CST/AST/IR när runnen blockeras före exekvering.</p>
+          <p className="lead">Language & Scope, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance använder samma valda källa och run. Language-vyn skiljer Parser, pre-transform Graf och observerat Körspår: partial CST/AST/IR kan visas när compile gate blockerar körning, medan en giltig run visar hela grafen även om exekveringen senare avbryts.</p>
           <div className="playground-grid">
-            <article><span>01</span><Code2 aria-hidden="true" /><strong>Language & Scope Lab</strong><p>Lossless CST, AST, typed IR, recovery, source spans, scope-segment, faktisk stageordning och render.</p><small>Live · parser-recovery + scope-torture + base64-inverse</small></article>
+            <article><span>01</span><Code2 aria-hidden="true" /><strong>Language & Scope Lab</strong><p>Lossless CST, AST, typed IR, recovery, source spans, scope-segment, pre-transform DAG, invalidation preview, <code>planNodeRef</code>-bundet körspår och render.</p><small>Live · planning-only · full fresh sequential run</small></article>
             <article><span>02</span><Workflow aria-hidden="true" /><strong>Editor Kernel Lab</strong><p>Open document, revisionguardad ChangeSet, captured run snapshot, subscriptionfiltrerat metadata-delta och anchor continuity.</p><small>Live · editor-kernel-revisions · editor-kernel/1 subset</small></article>
             <article><span>03</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>system.out, metadatagutter, row/line, Anchor och SourceMap i den aktuella revisionen.</p><small>Live · editor-revision</small></article>
             <article><span>04</span><RadioTower aria-hidden="true" /><strong>Channel & Result Lab</strong><p>ChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.</p><small>Live · channel-fanout + failed-run</small></article>
@@ -1712,6 +1745,11 @@ export function Specification() {
               [<code key="property">Property</code>, "Icke-exekverande metadata på en Markdown-AST-enhet."],
               [<code key="ir">TextabanaIR</code>, "Host-neutral semantisk representation av source snapshot."],
               [<code key="plan">ExecutionPlan</code>, "Körbar, typad och capability-validerad stagegraf för en host."],
+              [<code key="execution-graph">ExecutionGraph</code>, "Pre-transform DAG med source-, stage-, merge- och rendernoder samt explicita, typade beroenden."],
+              [<code key="typed-edge">Typed edge</code>, "Riktat värde- eller kontrollberoende med namngivna portar, edge-kind och deterministisk order key."],
+              [<code key="execution-trace">ExecutionTrace</code>, "Observerad följd av faktiskt startade stage-invocationer; varje post binds till grafen med planNodeRef."],
+              [<code key="invalidation-preview">Invalidation preview</code>, "Rådgivande, historikberoende jämförelse mellan en baslinjegraf och en målgraf; inte en cacheträff eller körning."],
+              [<code key="cache-state">Cache eligibility / hit / reuse</code>, "Skilda tillstånd för statisk säkerhetsbedömning, faktisk lookup-träff och verkligt återanvänd stageoutput."],
               [<code key="value">TextabanaValue</code>, "Portabelt typed value envelope i pipelines och runtimeprotokoll."],
               [<code key="snapshot">DocumentSnapshot</code>, "Immutable textinnehåll för ett documentId vid en monoton documentRevision och content-bunden documentVersion."],
               [<code key="change-set">ChangeSet</code>, "Atomisk, versionsguardad mängd sorterade och icke-överlappande textpatchar."],
