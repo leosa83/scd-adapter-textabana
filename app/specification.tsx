@@ -1086,6 +1086,7 @@ export function Specification() {
               [<code key="cancel">cancel</code>, "runId", "Kooperativ cancellation vid deklarerade gränser."],
             ]}
           />
+          <p>En vanlig idempotent <code>open</code> får returnera sessions aktuella revision när dokument-id, path och source redan matchar. En avsiktlig reset använder playground-flaggans <code>replaceSession: true</code>, skapar en ny session på revision 1 och gör sena svar från den äldre sessionen inaktuella.</p>
           <CodeExample
             title="ChangeSet — playground-envelope"
             language="json"

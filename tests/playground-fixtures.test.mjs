@@ -103,6 +103,11 @@ test("the playground advances Editor Kernel state only from correlated acknowled
   assert.match(pageSource, /const changed = await sendKernelCommand/);
   assert.match(pageSource, /revision: changed\.document\.documentRevision/);
   assert.match(pageSource, /baseDocumentVersion: kernelDocument\.documentVersion/);
+  assert.match(pageSource, /kernelIntentRef\.current \+= 1/);
+  assert.match(pageSource, /if \(abandonObsoleteIntent\(\)\) return/);
+  assert.match(pageSource, /replaceSession,/);
+  assert.match(pageSource, /latchedCancellationRef\.current/);
+  assert.match(pageSource, /lastResultRef\.current = failed/);
   assert.doesNotMatch(pageSource, /revision: kernelDocument\.revision \+ 1/);
 });
 

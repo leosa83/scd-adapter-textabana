@@ -1366,6 +1366,10 @@ export default function Home() {
   const kernelDocumentRef = useRef<KernelDocumentHead | null>(null);
   const kernelRequestsRef = useRef(new Map<string, PendingKernelRequest>());
   const kernelCommandQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const kernelIntentRef = useRef(0);
+  const kernelReplaceSessionRef = useRef(false);
+  const postedRunIdsRef = useRef(new Set<number>());
+  const latchedCancellationRef = useRef(new Set<number>());
   const lastResultRef = useRef<RuntimeResult | null>(null);
   const activeFile = files.find((file) => file.path === activePath) ?? files[0];
 
@@ -1415,6 +1419,10 @@ export default function Home() {
           pending.reject(error);
         }
         return;
+      }
+      if (Number.isInteger(event.data.runId)) {
+        postedRunIdsRef.current.delete(event.data.runId);
+        latchedCancellationRef.current.delete(event.data.runId);
       }
       if (event.data.runId !== runIdRef.current) return;
       const nextResult: RuntimeResult = {
@@ -1488,8 +1496,17 @@ export default function Home() {
   const execute = useCallback(() => {
     const runId = runIdRef.current + 1;
     runIdRef.current = runId;
+    kernelIntentRef.current += 1;
+    const intent = kernelIntentRef.current;
     setRunning(true);
     const task = async () => {
+      const obsolete = () => intent !== kernelIntentRef.current;
+      const abandonObsoleteIntent = () => {
+        if (!obsolete()) return false;
+        kernelDocumentRef.current = null;
+        latchedCancellationRef.current.delete(runId);
+        return true;
+      };
       const worker = workerRef.current;
       if (!worker) throw new Error("Editor Kernel är inte startad.");
       const documentFile = files.find((file) => file.kind === "document");
@@ -1497,11 +1514,14 @@ export default function Home() {
       const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
       const documentId = `doc:playground:${documentFile.path}`;
       let kernelDocument = kernelDocumentRef.current;
-      if (!kernelDocument || kernelDocument.documentId !== documentId) {
+      const replaceSession = kernelReplaceSessionRef.current;
+      if (replaceSession || !kernelDocument || kernelDocument.documentId !== documentId) {
         const opened = await sendKernelCommand({
           type: "open",
+          replaceSession,
           document: { documentId, path: documentFile.path, source: documentFile.content, documentRevision: 1 },
         });
+        if (abandonObsoleteIntent()) return;
         if (!opened.document) throw new Error("Editor Kernel returnerade inget dokument efter open.");
         kernelDocument = {
           documentId: opened.document.documentId,
@@ -1517,6 +1537,8 @@ export default function Home() {
           subscriptionId: `subscription:${documentId}:system.out`,
           channels: ["system.out"],
         });
+        if (abandonObsoleteIntent()) return;
+        if (replaceSession) kernelReplaceSessionRef.current = false;
       } else if (kernelDocument.source !== documentFile.content) {
         const change = singleTextChange(kernelDocument.source, documentFile.content);
         const changed = await sendKernelCommand({
@@ -1528,6 +1550,7 @@ export default function Home() {
           coordinateUnit: "unicode-code-point",
           changes: [change],
         });
+        if (abandonObsoleteIntent()) return;
         if (!changed.document) throw new Error("Editor Kernel returnerade inget dokument efter change.");
         kernelDocument = {
           ...kernelDocument,
@@ -1537,6 +1560,7 @@ export default function Home() {
         };
         kernelDocumentRef.current = kernelDocument;
       }
+      if (abandonObsoleteIntent()) return;
       requestIdRef.current += 1;
       worker.postMessage({
         type: "run",
@@ -1547,20 +1571,34 @@ export default function Home() {
         modules: files.filter((file) => file.kind === "module"),
         options: { fixtureId, strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review", "org.textabana.ml-lineage"] },
       });
+      postedRunIdsRef.current.add(runId);
+      if (latchedCancellationRef.current.delete(runId)) {
+        worker.postMessage({ type: "cancel", runId, reason: "user-latched" });
+      }
       if (fixture.conformance?.autoCancelAfterMs) {
         window.setTimeout(() => worker.postMessage({ type: "cancel", runId, reason: "fixture" }), fixture.conformance.autoCancelAfterMs);
       }
     };
     kernelCommandQueueRef.current = kernelCommandQueueRef.current.then(task, task).catch((error) => {
+      if (intent !== kernelIntentRef.current) return;
       kernelDocumentRef.current = null;
+      latchedCancellationRef.current.delete(runId);
+      postedRunIdsRef.current.delete(runId);
+      const message = error instanceof Error ? error.message : String(error);
+      const failed = { ...emptyRuntimeResult, runId, ok: false, error: message };
+      setPreviousResult(lastResultRef.current);
+      lastResultRef.current = failed;
+      setResult(failed);
       setRunning(false);
-      toast.error(error instanceof Error ? error.message : String(error));
+      toast.error(message);
     });
   }, [files, fixtureId, sendKernelCommand, strictChannels]);
 
   const cancelRun = useCallback(() => {
     if (!running || !workerRef.current) return;
-    workerRef.current.postMessage({ type: "cancel", runId: runIdRef.current, reason: "user" });
+    const runId = runIdRef.current;
+    if (!postedRunIdsRef.current.has(runId)) latchedCancellationRef.current.add(runId);
+    workerRef.current.postMessage({ type: "cancel", runId, reason: "user" });
     toast.info("Avbrytning begärd vid nästa kooperativa stage-gräns");
   }, [running]);
 
@@ -1591,6 +1629,8 @@ export default function Home() {
   };
 
   const selectFixture = (nextFixtureId: string) => {
+    kernelIntentRef.current += 1;
+    kernelReplaceSessionRef.current = true;
     setFixtureId(nextFixtureId);
     setFiles(filesForFixture(nextFixtureId));
     setActivePath("document.md");
@@ -1602,6 +1642,8 @@ export default function Home() {
 
   const resetProject = () => {
     if (!window.confirm("Återställ aktuell fixture och alla moduler?")) return;
+    kernelIntentRef.current += 1;
+    kernelReplaceSessionRef.current = true;
     setFiles(filesForFixture(fixtureId));
     setActivePath("document.md");
     setPreviousResult(null);

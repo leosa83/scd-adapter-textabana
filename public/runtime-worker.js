@@ -125,7 +125,8 @@ function openEditorDocument(payload) {
   if (revision !== 1) throw editorProtocolError("TBA-EDITOR-REVISION-LAB", "En ny documentsession måste öppnas på revision 1.");
   const sourceVersion = `fnv1a:${sourceHash(source)}`;
   const existing = editorDocuments.get(documentId);
-  if (existing && existing.path === path && existing.source === source) {
+  const replaceSession = Boolean(payload.replaceSession ?? input.replaceSession ?? false);
+  if (!replaceSession && existing && existing.path === path && existing.source === source) {
     return { status: "unchanged", document: editorDocumentSnapshot(existing) };
   }
   for (const [subscriptionId, subscription] of editorSubscriptions) {
@@ -143,7 +144,7 @@ function openEditorDocument(payload) {
     lastChange: null,
   };
   editorDocuments.set(documentId, document);
-  return { status: "opened", document: editorDocumentSnapshot(document) };
+  return { status: existing ? "replaced" : "opened", document: editorDocumentSnapshot(document) };
 }
 
 function normalizeEditorChanges(document, rawChanges) {

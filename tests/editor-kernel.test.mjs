@@ -313,6 +313,16 @@ test("an idempotent reopen reports the real head revision for the next host run"
   assert.equal(result.ok, true, result.error);
   assert.equal(result.output, "A");
   assert.equal(result.editorKernel.evaluatedSnapshot.documentRevision, 3);
+
+  const replaced = await harness.send({
+    type: "open",
+    requestId: "open:replace",
+    replaceSession: true,
+    document: { documentId: "doc:test", path: "document.md", source: "A", documentRevision: 1 },
+  });
+  assert.equal(replaced.status, "replaced");
+  assert.equal(replaced.document.documentRevision, 1);
+  assert.notEqual(replaced.document.sessionId, reopened.document.sessionId);
 });
 
 test("typed document identity reaches IR, Result and every emitted Anchor", async () => {
