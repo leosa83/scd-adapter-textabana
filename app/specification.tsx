@@ -242,7 +242,7 @@ export function Specification() {
         <div className="spec-version">
           <span>Textabana</span>
           <strong>Language & Interop draft 0.5</strong>
-          <small>Language 0.4 · Adapter + Data + Notebook lab-v1</small>
+          <small>Language 0.4 · Adapter + Data + Notebook + Annotation lab-v1</small>
         </div>
         <SpecNav />
         <div className="spec-legend" aria-label="Statusförklaring">
@@ -263,7 +263,7 @@ export function Specification() {
           <div className="hero-status">
             <StatusBadge tone="normative">Interop draft 0.5</StatusBadge>
             <StatusBadge tone="implemented">Språkkärna 0.4-subset</StatusBadge>
-            <StatusBadge tone="partial">Fem labs · data + notebook live</StatusBadge>
+            <StatusBadge tone="partial">Sex labs · data + notebook + annotation live</StatusBadge>
           </div>
           <h1 id="definition-title">Läsbar text som körbar, positionsmedveten och flerkanalig semantisk källa.</h1>
           <p className="hero-definition">Textabana gör läsbar text till en körbar, positionsmedveten och flerkanalig semantisk källa — oberoende av hur resultatet senare presenteras. Det är ett <em>source-first</em>, host-neutralt lager som kompilerar texten till en explicit plan och producerar en primär render samt valfritt många typade outputs.</p>
@@ -296,7 +296,7 @@ export function Specification() {
           </div>
           <Requirement id="STATUS-001">En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.</Requirement>
           <Requirement id="STATUS-002">Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.</Requirement>
-          <Requirement id="STATUS-003">Nuvarande Playground implementerar fem avgränsade vyer: Language & Scope, Editor Metadata, Channel & Result, Data & Lineage och Notebook Interop samt en körbar lab-version av det gemensamma adapterkontraktet. Data-subseten omfattar typade JSON-records och multi-input-lineage. Notebook-subseten omfattar whole snapshots, stabila cell-id:n, MIME bundles, source digests, stale detection och explicita stateprofiler. Annotation är fortfarande contract-only. Ingen interaktiv subset eller kontraktsregistrering är full profilkonformitet.</Requirement>
+          <Requirement id="STATUS-003">Nuvarande Playground implementerar sex avgränsade vyer: Language & Scope, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop och Annotation & Review samt en körbar lab-version av det gemensamma adapterkontraktet. Annotation-subseten producerar de fyra kanoniska kanalerna <code>annotation.set</code>, <code>annotation.candidates</code>, <code>annotation.reviews</code> och <code>annotation.revisions</code>. <code>annotation/1</code> är en playground-subset; verklig modellkörning och <code>ml-lineage/1</code> är fortsatt contract-only. Ingen interaktiv subset eller kontraktsregistrering är full profilkonformitet.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="html">
@@ -1173,7 +1173,7 @@ export function Specification() {
           <Requirement id="ADAPTER-005">Ett adapterfel FÅR inte ändra core run status eller mutera ett committat Result. Felet returneras som adapterdiagnostik i adapterkörningen.</Requirement>
           <Requirement id="ADAPTER-006">En contract-only-deskriptor får förhandlas och inspekteras men får inte producera simulerad output eller användas som stöd för profilkonformitet.</Requirement>
           <Callout title="Adaptergrunden i playgrounden" icon={<Network />} tone="success">
-            <code>org.textabana.result-summary</code> körs som en ren referensadapter efter commit. Adapterfliken visar manifest, source-result-bindning, stabil projektionidentitet, fidelity och resolverbara referenser. Data- och notebookadaptrarna är körbara, avgränsade JSON-subsets. Annotation är contract-only och producerar ännu ingen domänoutput.
+            <code>org.textabana.result-summary</code>, data-, notebook- och annotationadaptrarna körs efter commit som oberoende, rena projektioner. Adapterfliken visar manifest, source-result-bindning, stabil projektionidentitet, fidelity och resolverbara referenser. <code>org.textabana.ml-lineage</code> är fortsatt contract-only och producerar ingen simulerad modell- eller observabilityoutput.
           </Callout>
         </section>
 
@@ -1319,41 +1319,107 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="annotation-observability">
-          <SectionHeading number="23" layer="Adapter profile" title="En intern modell, tydliga standardprojektioner" normative={false} implementation="planned" />
-          <p className="lead">Textabana lagrar en kompakt intern sanning och mappar den till etablerade ekosystem. Varje standard får göra det den är byggd för.</p>
-          <Callout title="Sprintstatus" icon={<CircleDashed />} tone="info"><code>ml-lineage/1</code> och annotationsexport är registrerade som contract-only. Kandidatgranskning och standardexport är ännu inte körbara.</Callout>
+          <SectionHeading number="23" layer="Annotation profile" title="Immutable kandidater, append-only review och resolverbara exporter" implementation="partial" />
+          <p className="lead">Textabana skiljer modellens förslag från människans beslut. Kärnan lagrar kandidat, review och revision som separata events med samma stabila annotation-identitet. En post-commit-adapter projicerar kedjan till externa standarder utan att göra deras format till ny kärnsemantik.</p>
+          <Callout title="Körbar Annotation & AI Review-subset" icon={<CheckCircle2 />} tone="success"><code>annotation/1</code> kör whole snapshots, stabila annotation-id:n, modell-/prompt-/inputdigests, explicit confidence method, accept/reject/supersede och resolverbara W3C- samt Label Studio-projektioner. Digests är märkta <code>fnv1a-lab</code>; verklig modellkörning, persistent review store och <code>ml-lineage/1</code> är inte simulerade.</Callout>
+          <SpecTable
+            caption="Exakt exekverad annotationsmodell i playgrounden"
+            headers={["Kanal", "Payload", "Semantik"]}
+            rows={[
+              [<code key="set">annotation.set</code>, "setId, wholeSnapshot, authoredOrder, candidateIds, currentIds, counts, setDigest", "Exakt en komplett snapshot som låser eventmängd, ordning och current view."],
+              [<code key="candidates">annotation.candidates</code>, "annotationId, revision 0, body, model, prompt, inputDigest, confidence", "Immutable modellfakta. Payloaden innehåller aldrig decision, reviewer eller supersededBy."],
+              [<code key="reviews">annotation.reviews</code>, "reviewId, candidateEventRef, revision 1, decision, reviewer, reviewDigest", "Append-only mänsklig handling. accept, reject och supersede är de enda besluten i lab-subseten."],
+              [<code key="revisions">annotation.revisions</code>, "revisionId, state, basedOnEventRef, reviewEventRef, supersedes/supersededBy", "Materialiserat reviewutfall plus eventuell explicit mänsklig ersättare."],
+            ]}
+          />
+          <CodeExample
+            title="Lättviktig reviewkälla"
+            language="textabana"
+            status="Körbar fixture · annotation-review"
+            code={code(
+              '>>>>! include "./modules/annotation.js"',
+              '',
+              '>>>> annotation_review set_id="voyage-review" reviewer="leo"',
+              '## Annotation: Route {#ann-route origin="ai" model="extractor" model_version="1.0" prompt_id="route-v1" confidence=0.82 confidence_method="model-reported" decision="accept"}',
+              'Aurora lämnade Göteborg den 4 maj.',
+              '',
+              '## Annotation: Status candidate {#ann-status origin="ai" model="extractor" model_version="1.0" prompt_id="status-v1" confidence=0.73 confidence_method="model-reported" decision="supersede" superseded_by="ann-status-reviewed"}',
+              'Positionen är en granskningskandidat.',
+              '',
+              '## Annotation: Status reviewed {#ann-status-reviewed origin="human" supersedes="ann-status"}',
+              'Positionen kräver extern verifiering.',
+              '<<<< annotation_review'
+            )}
+          />
+          <Callout title="Review är källstyrd i denna fresh-runtime" icon={<Bot />} tone="info">Playgrounden visar inga knappar som låtsas spara beslut. Ändra <code>decision</code> i källan och kör igen: kandidatens fakta förblir separata, medan ett nytt review-event och revision 1 materialiserar beslutet i den nya snapshoten.</Callout>
           <SpecTable
             caption="Interopmappning"
             headers={["Teknik", "Roll", "Textabana mapping"]}
             rows={[
-              ["W3C Web Annotation", "Portabel annotationsexport", "Annotation body + versionerad Anchor med position/quote selectors."],
+              ["W3C Web Annotation", "Portabel annotationsexport", "Körbar AnnotationPage; target kopierar versionerad Anchor med position/quote selectors och anchorRef."],
               ["W3C PROV", "Semantisk proveniens", "Source/result/event/artifact = Entity; stage/run = Activity; människa/runtime/modul/model = Agent."],
               ["LSP", "Transient editorprojection", "Diagnostics, semantic tokens, inlay hints och code actions; aldrig canonical storage."],
               ["OpenLineage", "Data pipeline lineage", "Job, Run och Dataset från Plan, Run och Artifact/Data outputs."],
               ["OpenTelemetry", "Operativ observability", "Trace, logs och metrics med traceId/spanId; inte semantisk sanning."],
               ["CloudEvents", "Distribuerad eventtransport", "Export av event envelope med idempotent event identity."],
               ["MLflow", "Experiment och modellartifacts", "Parametrar, metrics, models och artifacts från run/proveniens."],
-              ["Label Studio / doccano / Prodigy / brat", "Annoteringsverktyg", "Import/export via Anchor + Annotation + review relations."],
+              ["Label Studio", "Annoteringsverktyg", "Körbar task/import-subset med choices-resultat och Textabana-referenser i meta; ingen API-/projektroundtrip."],
+              ["doccano / Prodigy / brat", "Ytterligare annoteringsverktyg", "Planerade adapterprofiler via Anchor + Annotation + review relations."],
             ]}
           />
           <CodeExample
-            title="Intern annotation"
+            title="Immutable modellkandidat"
             language="json"
-            status="Normativ kärnmodell"
+            status="Kanoniskt eventpayload · annotation.candidates"
             code={code(
               "{",
-              '  "annotationId": "annotation:claim-42:v1",',
-              '  "motivation": "classifying",',
-              '  "body": { "schemaRef": "schema:claim/v2", "value": { "type": "fact" } },',
-              '  "target": { "anchorRef": "anchor:claim-42" },',
-              '  "creator": { "agentRef": "model:claims-v2" },',
+              '  "annotationId": "ann-route",',
+              '  "revision": 0,',
               '  "status": "candidate",',
-              '  "provenanceRef": "activity:extract-claims"',
+              '  "body": "Aurora lämnade Göteborg den 4 maj.",',
+              '  "model": { "id": "extractor", "version": "1.0", "digest": "fnv1a:..." },',
+              '  "prompt": { "id": "route-v1", "digest": "fnv1a:..." },',
+              '  "inputDigest": "fnv1a:...",',
+              '  "confidence": { "score": 0.82, "method": "model-reported" }',
               "}"
             )}
           />
+          <div className="two-column-copy">
+            <CodeExample
+              title="W3C target återanvänder Anchor"
+              language="json"
+              status="Körbar adapterprojektion"
+              code={code(
+                '"target": {',
+                '  "source": "doc:document.md",',
+                '  "selector": [',
+                '    { "type": "TextPositionSelector", "start": 184, "end": 223 },',
+                '    { "type": "TextQuoteSelector", "exact": "Aurora lämnade Göteborg den 4 maj." }',
+                '  ],',
+                '  "textabana:anchorRef": "anchor:annotation:..."',
+                '}'
+              )}
+            />
+            <CodeExample
+              title="Label Studio task/import-subset"
+              language="json"
+              status="Körbar adapterprojektion"
+              code={code(
+                '{ "id": "ann-route",',
+                '  "data": { "text": "Aurora lämnade Göteborg den 4 maj." },',
+                '  "annotations": [{ "id": "review:ann-route:1", "result": [{',
+                '    "type": "choices", "value": { "choices": ["accept"] }',
+                '  }] }],',
+                '  "meta": { "textabana": { "anchorRef": "anchor:annotation:..." } } }'
+              )}
+            />
+          </div>
           <Requirement id="ANNOTATION-001">Intern annotation MÅSTE stödja span, document classification, relation och review state. W3C Web Annotation är en import/exportprofil, inte hela kärnmodellen.</Requirement>
-          <Requirement id="ANNOTATION-002">Human-in-the-loop MÅSTE skapa en ny reviewed revision och en <code>supersedes</code>-relation; modelleventets ursprungliga fakta får inte muteras bort.</Requirement>
+          <Requirement id="ANNOTATION-002">Human-in-the-loop MÅSTE skapa ett separat review-event och en ny reviewed revision. Modellkandidatens ursprungliga fakta får inte muteras. Endast <code>supersede</code> kräver en explicit ersättare med ömsesidiga <code>supersededBy</code>/<code>supersedes</code>-relationer.</Requirement>
+          <Requirement id="ANNOTATION-003">En AI-kandidat MÅSTE ange stabilt annotationId, modell-id/version/digest, prompt-id/digest, inputdigest samt confidence score och metod. Confidence är evidensmetadata, inte sanningssannolikhet.</Requirement>
+          <Requirement id="ANNOTATION-004">Varje durable candidate, review och revision MÅSTE lösas genom Event, AnnotationSelector, Anchor, SourceMap och generating Activity. En exporterad target får inte uppfinna fristående offsets.</Requirement>
+          <Requirement id="ANNOTATION-005">W3C Web Annotation och annoteringsverktygsformat är adapterprojektioner. De får inte skriva tillbaka extern formatsemantik till kandidat- eller revieweventen utan en explicit importerad ny revision.</Requirement>
+          <Requirement id="ANNOTATION-006">En whole annotation snapshot MÅSTE validera unika id:n, counts, länkar, beslut, current view och acyklisk supersede-kedja före commit. Den aktuella lab-subseten begränsar varje target till en icke-tom textrad.</Requirement>
           <Requirement id="PROV-001">Varje durable output MÅSTE länka till generating Activity och använda inputanchors/entities. Operativa traces FÅR länkas men ersätter inte semantic provenance.</Requirement>
           <Requirement id="EXT-001">Okända namespaced extensionfält MÅSTE round-trippas av adaptrar som inte förstår dem.</Requirement>
 
@@ -1377,7 +1443,7 @@ export function Specification() {
             <article><Link2 aria-hidden="true" /><div><strong>Text och metadata driver inte isär</strong><p>Annotationer, claims och diagnostik skapas från samma versionerade källa och pekar tillbaka via Anchor.</p></div></article>
             <article><Search aria-hidden="true" /><div><strong>Diagnostik där felet finns</strong><p>Squiggles, badges, hoverinfo och fixes visas på rätt span utan att hamna i renderingen.</p></div></article>
             <article><Database aria-hidden="true" /><div><strong>Ett dokument ger flera produkter</strong><p>Samma run kan ge Markdown, sökindex, Arrow-tabell, graf, GIS, validering och audit.</p></div></article>
-            <article><Bot aria-hidden="true" /><div><strong>Granskbar AI-extraktion</strong><p>Modellresultat behåller inputankare, modellversion, promptdigest, confidence method och review state.</p></div></article>
+            <article><Bot aria-hidden="true" /><div><strong>Granskbar AI-extraktion</strong><p>Modellkandidaten bevaras immutable med inputankare, modellversion, promptdigest och confidence method; människans beslut blir en separat revisionskedja.</p></div></article>
             <article><Workflow aria-hidden="true" /><div><strong>Notebook utan notebook-lock-in</strong><p>Analytikern använder Python, R eller Julia medan .tba-källan och resultatkontraktet förblir portabla.</p></div></article>
             <article><Layers3 aria-hidden="true" /><div><strong>Reproducerbara datapipelines</strong><p>Dataset, schema, run, artifacts och lineage binds samman utan att gömma semantiken i cellordning.</p></div></article>
             <article><Network aria-hidden="true" /><div><strong>Billiga domänspecifika verktyg</strong><p>Juridik, forskning, krav, publicering och arkiv delar kärna men får egna moduler, channels och vyer.</p></div></article>
@@ -1397,12 +1463,13 @@ export function Specification() {
               [<code key="adapter">adapter-contract/1</code>, "Manifest, negotiation, immutable fan-out, fidelity, referenser och failure isolation.", <StatusBadge key="c7" tone="partial">Playground subset</StatusBadge>],
               [<code key="notebook">notebook/1</code>, "Whole snapshot, stabila cell-id:n, MIME bundle, stateprofiler, stale detection och host-neutral JSON-projektion; full profil omfattar även verifierad Jupytertransport.", <StatusBadge key="c4" tone="partial">Playground subset</StatusBadge>],
               [<code key="data">data/1</code>, "Dataset/schema-events, record identity, JSON table projection och multi-input lineage; full profil omfattar även dataplan och artifacts.", <StatusBadge key="c5" tone="partial">Playground subset</StatusBadge>],
+              [<code key="annotation">annotation/1</code>, "Immutable kandidater, review-revisioner, supersede-kedjor, resolverbara targets samt W3C- och Label Studio-projektion.", <StatusBadge key="c8" tone="partial">Playground subset</StatusBadge>],
               [<code key="ml">ml-lineage/1</code>, "AI invocation, PROV, OpenLineage, MLflow och OTel correlation.", <StatusBadge key="c6" tone="planned">Planerad</StatusBadge>],
             ]}
           />
           <div className="conformance-grid">
-            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, adapterisolering, typade data med lineage samt notebook-snapshots med cellidentitet, MIME, state och stale detection.</p></article>
-            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets och Annotation-projektionen.</p></article>
+            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, adapterisolering, typade data med lineage, notebook-snapshots samt immutable annotationskandidater, review-revisioner och resolverbara standardprojektioner.</p></article>
+            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, cancellation, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets, verklig modellkörning, persistent review store, full annotationsontologi/tool-roundtrip samt W3C PROV, OpenLineage, MLflow och OTel.</p></article>
           </div>
           <Requirement id="CONF-001">En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.</Requirement>
           <Requirement id="CONF-002">Varje profil MÅSTE ha golden fixtures för source → IR → plan → result och negativa fixtures för fel, cancellation och mapping claims.</Requirement>
@@ -1447,15 +1514,15 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section playground-contract-section" id="playgrounds">
-          <SectionHeading number="27" layer="Interactive implementation" title="Fem playgrounds visar samma valda run från olika håll" normative={false} implementation="partial" />
-          <p className="lead">Language & Scope, Editor Metadata, Channel & Result, Data & Lineage och Notebook Interop använder samma valda källa, fixture, run-id och result envelope. Adaptergrunden registrerar, förhandlar och kör oberoende projektioner efter commit utan att mutera resultatet. Ett labbyte startar ingen ny exekvering eller byter fixture. Annotation och Conformance är nästa implementeringslager.</p>
+          <SectionHeading number="27" layer="Interactive implementation" title="Sex playgrounds visar samma valda run från olika håll" normative={false} implementation="partial" />
+          <p className="lead">Language & Scope, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop och Annotation & Review använder samma valda källa, fixture, run-id och result envelope. Adaptergrunden registrerar, förhandlar och kör oberoende projektioner efter commit utan att mutera resultatet. Ett labbyte startar ingen ny exekvering eller byter fixture. Conformance är nästa implementeringslager.</p>
           <div className="playground-grid">
             <article><span>01</span><Code2 aria-hidden="true" /><strong>Language & Scope Lab</strong><p>Scope-segment, blockträd, inheritance, faktisk stageordning, IR-projektion och render.</p><small>Live · scope-torture + base64-inverse</small></article>
             <article><span>02</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>system.out, metadatagutter, row/line, Anchor, SourceMap och jämförelse med föregående run.</p><small>Live · editor-revision</small></article>
             <article><span>03</span><RadioTower aria-hidden="true" /><strong>Channel & Result Lab</strong><p>ChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.</p><small>Live · channel-fanout + failed-run</small></article>
             <article><span>04</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>JSON-tabell, schema-events, stabila recordId, deterministisk inner join, derived aggregation och cell-/record-lineage.</p><small>Live · data-join · data/1 playground-subset</small></article>
             <article><span>05</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Whole-snapshot, stabila cell-id:n, tre MIME-representationer, explicit state och digest-baserad stale detection.</p><small>Live · notebook-snapshot · notebook/1 playground-subset</small></article>
-            <article><span>06</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>AI-kandidater, confidence, provenance, human review och standardexport.</p><small>Planned lab · descriptor contract-only</small></article>
+            <article><span>06</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>Immutable AI-kandidater, confidence method, append-only human review, revisionskedja, Anchor-targets samt W3C- och Label Studio-export.</p><small>Live · annotation-review · annotation/1 playground-subset</small></article>
             <article><span>07</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability negotiation, golden result, fel, cancel och strukturell diff.</p><small>Planned UI · headless regressioner finns</small></article>
           </div>
           <h3>Gemensamt playgroundkontrakt</h3>
@@ -1486,6 +1553,9 @@ export function Specification() {
               [<code key="artifact-ref">ArtifactRef</code>, "Content-addressed referens till stor eller binär payload."],
               [<code key="run">Run</code>, "En versionerad compilation/execution med explicit profil och livscykel."],
               [<code key="adapter">Adapter</code>, "Versionssatt post-commit-projektion mellan ett immutable TextabanaResult och en extern host, standard eller tjänst."],
+              [<code key="candidate">Candidate</code>, "Immutable modell- eller verktygsförslag på revision 0, utan mänskligt decision state."],
+              [<code key="review">Review revision</code>, "Append-only mänsklig handling och ny revision som accepterar, avvisar eller ersätter en kandidat."],
+              [<code key="current">Current view</code>, "Härledd lista över nu accepterade annotationer; den raderar aldrig historiska kandidater eller revisioner."],
             ]}
           />
           <Callout title="Specifikationens riktning" icon={<Box />} tone="success">

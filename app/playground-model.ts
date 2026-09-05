@@ -4,7 +4,7 @@ export type ProjectFile = {
   content: string;
 };
 
-export type LabId = "language" | "editor" | "channels" | "data" | "notebook";
+export type LabId = "language" | "editor" | "channels" | "data" | "notebook" | "annotation";
 
 export type FunctionMeta = {
   name: string;
@@ -41,6 +41,8 @@ export type RuntimeAnchor = {
     view: string;
     notebookId?: string | null;
     cellId?: string | null;
+    setId?: string;
+    annotationId?: string;
   };
   selectors: Array<Record<string, unknown>>;
   projections: {
@@ -86,6 +88,9 @@ export type ChannelEvent = {
     recordId?: string;
     notebookId?: string;
     cellId?: string;
+    setId?: string;
+    annotationId?: string;
+    revision?: number;
     columnName?: string;
     column?: number;
     endLine?: number;
@@ -301,6 +306,9 @@ export type RuntimeSourceMap = {
     recordId?: string;
     notebookId?: string;
     cellId?: string;
+    setId?: string;
+    annotationId?: string;
+    revision?: number;
     column?: string;
   };
   inputSelectors?: Array<Record<string, unknown>>;

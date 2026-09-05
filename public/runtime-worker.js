@@ -320,26 +320,58 @@ const adapterManifests = [
   }),
   adapterManifest({
     adapterId: "org.textabana.annotation-review",
+    version: "1.0.0-lab.1",
+    profile: "annotation/1",
+    support: "playground-subset",
+    accepts: {
+      resultSchemas: ["textabana.result/lab-v1"],
+      profiles: ["runtime-json/1", "editor/1", "annotation/1"],
+      channels: [
+        { name: "annotation.set", schemaRef: "schema:textabana/annotation-set/lab-v1", required: true },
+        { name: "annotation.candidates", schemaRef: "schema:textabana/annotation-candidate/lab-v1", required: true },
+        { name: "annotation.reviews", schemaRef: "schema:textabana/annotation-review/lab-v1", required: true },
+        { name: "annotation.revisions", schemaRef: "schema:textabana/annotation-revision/lab-v1", required: true },
+      ],
+      artifactKinds: [],
+    },
+    produces: [{
+      projectionKind: "annotation-review-bundle",
+      valueKind: "object",
+      mediaType: "application/json",
+      schemaRef: "textabana.annotation-review-projection/lab-v1",
+    }],
+    capabilities: {
+      required: ["stable-annotation-id", "immutable-candidate", "review-revision", "anchor-target", "w3c-web-annotation", "label-studio-task-subset"],
+      optional: ["w3c-prov", "model-invocation", "openlineage-export", "mlflow-export", "otel-correlation"],
+    },
+    fidelity: {
+      mode: "selective",
+      requiresSourceResult: true,
+      omittedPaths: ["render", "channelSnapshots.<non-annotation>", "artifacts", "provenance.entities"],
+    },
+  }),
+  adapterManifest({
+    adapterId: "org.textabana.ml-lineage",
     version: "1.0.0-contract.1",
     profile: "ml-lineage/1",
     support: "contract-only",
     accepts: {
       resultSchemas: ["textabana.result/v1", "textabana.result/lab-v1"],
-      profiles: ["runtime-json/1", "editor/1", "ml-lineage/1"],
-      channels: [{ name: "system.out", schemaRef: "textabana.system.out/v2", required: true }],
+      profiles: ["runtime-json/1", "ml-lineage/1"],
+      channels: [],
       artifactKinds: [],
     },
     produces: [{
-      projectionKind: "annotation-set",
+      projectionKind: "ml-lineage-bundle",
       valueKind: "object",
-      mediaType: "application/ld+json",
-      schemaRef: "https://www.w3.org/ns/anno.jsonld",
+      mediaType: "application/json",
+      schemaRef: "textabana.ml-lineage/contract-v1",
     }],
     capabilities: {
-      required: ["anchors", "review-revisions"],
-      optional: ["w3c-annotation", "label-studio-export"],
+      required: ["model-invocation-provenance"],
+      optional: ["w3c-prov", "openlineage-export", "mlflow-export", "otel-correlation"],
     },
-    fidelity: { mode: "selective", requiresSourceResult: true, omittedPaths: [] },
+    fidelity: { mode: "selective", requiresSourceResult: true, omittedPaths: ["unimplemented"] },
   }),
 ];
 
@@ -370,6 +402,12 @@ const playgroundImplementedCapabilities = [
   "whole-snapshot",
   "mime-bundle",
   "stale-output-detection",
+  "stable-annotation-id",
+  "immutable-candidate",
+  "review-revision",
+  "anchor-target",
+  "w3c-web-annotation",
+  "label-studio-task-subset",
 ];
 
 function adapterDiagnostic(code, message, adapterId, severity = "error") {
@@ -752,10 +790,274 @@ function buildNotebookProjection(result, manifest) {
   };
 }
 
+function buildAnnotationReviewProjection(result, manifest) {
+  const snapshots = result.channelSnapshots || {};
+  const setEvents = snapshots["annotation.set"]?.events || [];
+  const candidateEvents = snapshots["annotation.candidates"]?.events || [];
+  const reviewEvents = snapshots["annotation.reviews"]?.events || [];
+  const revisionEvents = snapshots["annotation.revisions"]?.events || [];
+  if (setEvents.length !== 1) throw new Error("annotation.set måste innehålla exakt en whole snapshot");
+  if (!candidateEvents.length) throw new Error("annotation.candidates måste innehålla minst en modellkandidat");
+
+  const set = setEvents[0].payload || {};
+  const setId = String(set.setId || "");
+  if (!setId || set.wholeSnapshot !== true) throw new Error("annotation.set måste ha stabilt setId och wholeSnapshot=true");
+
+  const knownAnchors = new Map((result.anchors || []).map((anchor) => [anchor.anchorId, anchor]));
+  const knownActivities = new Set((result.provenance?.activities || []).map((activity) => activity.activityId));
+  const sourceMapByOutput = new Map((result.sourceMaps || []).map((mapping) => [mapping.outputRef, mapping]));
+  const candidateById = new Map();
+
+  const validateBinding = (event, annotationId, revision, expectedMapping) => {
+    const anchor = knownAnchors.get(event.target?.anchorRef);
+    const mapping = sourceMapByOutput.get(event.eventId);
+    if (!anchor || !mapping || !knownActivities.has(mapping.generatingActivity)) throw new Error(`${annotationId} har en oresolverbar Anchor, SourceMap eller provenanceaktivitet`);
+    if (anchor.target?.setId !== setId || anchor.target?.annotationId !== annotationId) throw new Error(`${annotationId} pekar inte på rätt annotation-anchor`);
+    if (mapping.outputSelector?.type !== "AnnotationSelector" || mapping.outputSelector.setId !== setId || mapping.outputSelector.annotationId !== annotationId || mapping.outputSelector.revision !== revision) {
+      throw new Error(`${annotationId} saknar matchande AnnotationSelector för revision ${revision}`);
+    }
+    if (expectedMapping && mapping.mapping !== expectedMapping) throw new Error(`${annotationId} måste ha ${expectedMapping} SourceMap`);
+    return { anchor, mapping };
+  };
+
+  for (const event of candidateEvents) {
+    const candidate = event.payload || {};
+    const annotationId = String(candidate.annotationId || "");
+    if (!annotationId || candidateById.has(annotationId)) throw new Error("annotation.candidates måste ha unika stabila annotationId");
+    if (candidate.setId !== setId || candidate.origin !== "ai" || candidate.status !== "candidate" || candidate.revision !== 0) throw new Error(`${annotationId} är inte en immutable modellkandidat på revision 0`);
+    if (Object.hasOwn(candidate, "decision") || Object.hasOwn(candidate, "reviewer") || Object.hasOwn(candidate, "supersededBy")) throw new Error(`${annotationId} blandar in mänskligt review state i modellkandidaten`);
+    if (!candidate.model?.id || !candidate.model?.version || !String(candidate.model?.digest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} saknar modellidentitet eller modelldigest`);
+    if (!candidate.prompt?.id || !String(candidate.prompt?.digest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} saknar promptidentitet eller promptdigest`);
+    if (!String(candidate.inputDigest || "").startsWith("fnv1a:") || candidate.inputDigest !== candidate.bodyDigest || !String(candidate.candidateDigest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} saknar matchande kandidat-, input- eller bodydigest`);
+    if (!Number.isFinite(candidate.confidence?.score) || candidate.confidence.score < 0 || candidate.confidence.score > 1 || !candidate.confidence?.method) throw new Error(`${annotationId} har ogiltig confidence eller confidence method`);
+    validateBinding(event, annotationId, 0, "exact");
+    candidateById.set(annotationId, event);
+  }
+
+  const reviewById = new Map();
+  const knownReviewIds = new Set();
+  for (const event of reviewEvents) {
+    const review = event.payload || {};
+    const annotationId = String(review.annotationId || "");
+    const candidateEvent = candidateById.get(annotationId);
+    if (!candidateEvent || reviewById.has(annotationId) || !review.reviewId || knownReviewIds.has(review.reviewId)) throw new Error(`review för ${annotationId || "okänd annotation"} saknar unik review- och kandidatidentitet`);
+    if (review.setId !== setId || review.revision !== 1 || !["accept", "reject", "supersede"].includes(review.decision) || !review.reviewer) throw new Error(`${annotationId} har ett ogiltigt review-event`);
+    if (review.candidateEventRef !== candidateEvent.eventId || !String(review.reviewDigest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} review är inte digest- och eventbundet till kandidaten`);
+    const { mapping } = validateBinding(event, annotationId, 1, "derived");
+    if (!mapping.inputAnchorRefs?.includes(candidateEvent.target.anchorRef)) throw new Error(`${annotationId} review saknar kandidatens input-anchor`);
+    knownReviewIds.add(review.reviewId);
+    reviewById.set(annotationId, event);
+  }
+  if (reviewById.size !== candidateById.size) throw new Error("varje modellkandidat måste ha exakt ett review-event");
+
+  const replacementById = new Map();
+  const decisionRevisionById = new Map();
+  const knownRevisionIds = new Set();
+  for (const event of revisionEvents) {
+    const revision = event.payload || {};
+    const annotationId = String(revision.annotationId || "");
+    if (!annotationId || revision.setId !== setId || !revision.revisionId || knownRevisionIds.has(revision.revisionId) || !String(revision.revisionDigest || "").startsWith("fnv1a:")) throw new Error("annotation.revisions innehåller en revision utan unik identitet eller digest");
+    knownRevisionIds.add(revision.revisionId);
+    if (revision.origin === "human" && revision.revision === 0) {
+      if (replacementById.has(annotationId) || !revision.supersedes || revision.state !== "accepted") throw new Error(`${annotationId} är inte en giltig mänsklig ersättningsrevision`);
+      validateBinding(event, annotationId, 0, "exact");
+      replacementById.set(annotationId, event);
+      continue;
+    }
+    const reviewEvent = reviewById.get(annotationId);
+    const candidateEvent = candidateById.get(annotationId);
+    if (!reviewEvent || !candidateEvent || decisionRevisionById.has(annotationId)) throw new Error(`${annotationId} saknar en unik review-revision`);
+    if (revision.origin !== "human-review" || revision.revision !== 1 || revision.reviewEventRef !== reviewEvent.eventId || revision.basedOnEventRef !== candidateEvent.eventId) throw new Error(`${annotationId} review-revision saknar append-only kedja`);
+    const expectedState = { accept: "accepted", reject: "rejected", supersede: "superseded" }[reviewEvent.payload.decision];
+    if (revision.state !== expectedState) throw new Error(`${annotationId} review-state matchar inte beslutet`);
+    validateBinding(event, annotationId, 1, "derived");
+    decisionRevisionById.set(annotationId, event);
+  }
+  if (decisionRevisionById.size !== candidateById.size) throw new Error("varje review måste materialiseras som en ny revision");
+
+  for (const [annotationId, reviewEvent] of reviewById) {
+    const review = reviewEvent.payload;
+    if (review.decision === "supersede") {
+      const replacement = replacementById.get(review.supersededBy);
+      if (!replacement || replacement.payload.supersedes !== annotationId) throw new Error(`${annotationId} supersede pekar inte på en matchande ersättningsrevision`);
+      const reviewMap = sourceMapByOutput.get(reviewEvent.eventId);
+      if (!reviewMap.inputAnchorRefs?.includes(replacement.target.anchorRef)) throw new Error(`${annotationId} supersede saknar ersättarens input-anchor`);
+    } else if (review.supersededBy) {
+      throw new Error(`${annotationId} får endast ange supersededBy vid supersede`);
+    }
+  }
+  for (const [replacementId, event] of replacementById) {
+    const visited = new Set([replacementId]);
+    let cursor = event.payload.supersedes;
+    while (cursor) {
+      if (visited.has(cursor)) throw new Error(`supersede-kedjan för ${replacementId} är cyklisk`);
+      visited.add(cursor);
+      cursor = replacementById.get(cursor)?.payload?.supersedes || null;
+    }
+  }
+
+  const candidateOrder = candidateEvents.map((event) => event.payload.annotationId);
+  const authoredOrder = Array.isArray(set.authoredOrder) ? set.authoredOrder.map(String) : [];
+  const replacementOrder = authoredOrder.filter((annotationId) => replacementById.has(annotationId));
+  const allAnnotationIds = [...candidateOrder, ...replacementOrder];
+  const currentIds = authoredOrder.filter((annotationId) => replacementById.has(annotationId) || reviewById.get(annotationId)?.payload?.decision === "accept");
+  if (canonicalJson(set.candidateIds || []) !== canonicalJson(candidateOrder) || canonicalJson(set.annotationIds || []) !== canonicalJson(allAnnotationIds)) throw new Error("annotation.set identitetslistor matchar inte committed events");
+  if (canonicalJson(set.currentIds || []) !== canonicalJson(currentIds)) throw new Error("annotation.set currentIds matchar inte reviewkedjan");
+  if (set.candidateCount !== candidateEvents.length || set.reviewCount !== reviewEvents.length || set.revisionCount !== revisionEvents.length) throw new Error("annotation.set counts matchar inte committed channels");
+
+  const anchorFor = (event) => knownAnchors.get(event.target.anchorRef);
+  const exportTarget = (event) => {
+    const anchor = anchorFor(event);
+    return {
+      source: anchor.target.resourceId,
+      selector: anchor.selectors,
+      "textabana:anchorRef": anchor.anchorId,
+      "textabana:sourceVersion": anchor.target.version,
+    };
+  };
+  const reviewChain = candidateOrder.map((annotationId) => {
+    const candidateEvent = candidateById.get(annotationId);
+    const reviewEvent = reviewById.get(annotationId);
+    const revisionEvent = decisionRevisionById.get(annotationId);
+    const replacementEvent = reviewEvent.payload.supersededBy ? replacementById.get(reviewEvent.payload.supersededBy) : null;
+    return {
+      annotationId,
+      candidate: { ...candidateEvent.payload, eventRef: candidateEvent.eventId, anchorRef: candidateEvent.target.anchorRef },
+      review: { ...reviewEvent.payload, eventRef: reviewEvent.eventId },
+      revision: { ...revisionEvent.payload, eventRef: revisionEvent.eventId },
+      replacement: replacementEvent ? { ...replacementEvent.payload, eventRef: replacementEvent.eventId, anchorRef: replacementEvent.target.anchorRef } : null,
+    };
+  });
+
+  const w3cItems = [];
+  for (const chain of reviewChain) {
+    const candidateEvent = candidateById.get(chain.annotationId);
+    const candidate = candidateEvent.payload;
+    w3cItems.push({
+      id: `urn:textabana:${setId}:${chain.annotationId}:r1`,
+      type: "Annotation",
+      motivation: "assessing",
+      body: [
+        { type: "TextualBody", value: candidate.body, purpose: "describing" },
+        { type: "TextualBody", value: chain.revision.state, purpose: "classifying" },
+      ],
+      target: exportTarget(candidateEvent),
+      creator: { type: "Software", name: candidate.model.id, "textabana:modelVersion": candidate.model.version },
+      "textabana:annotationId": chain.annotationId,
+      "textabana:reviewEventRef": chain.review.eventRef,
+      ...(chain.review.supersededBy ? { "textabana:supersededBy": chain.review.supersededBy } : {}),
+    });
+  }
+  for (const annotationId of replacementOrder) {
+    const event = replacementById.get(annotationId);
+    w3cItems.push({
+      id: `urn:textabana:${setId}:${annotationId}:r0`,
+      type: "Annotation",
+      motivation: "assessing",
+      body: [{ type: "TextualBody", value: event.payload.body, purpose: "describing" }, { type: "TextualBody", value: "accepted", purpose: "classifying" }],
+      target: exportTarget(event),
+      creator: { type: "Person", name: event.payload.reviewer },
+      "textabana:annotationId": annotationId,
+      "textabana:supersedes": event.payload.supersedes,
+    });
+  }
+
+  const labelStudioTasks = reviewChain.map((chain) => {
+    const candidateEvent = candidateById.get(chain.annotationId);
+    const anchor = anchorFor(candidateEvent);
+    return {
+      id: chain.annotationId,
+      data: { text: chain.candidate.body },
+      annotations: [{
+        id: chain.review.reviewId,
+        completed_by: chain.review.reviewer,
+        result: [{
+          id: chain.revision.revisionId,
+          from_name: "review_state",
+          to_name: "text",
+          type: "choices",
+          value: { choices: [chain.review.decision] },
+        }],
+      }],
+      meta: {
+        textabana: {
+          setId,
+          annotationId: chain.annotationId,
+          candidateEventRef: chain.candidate.eventRef,
+          reviewEventRef: chain.review.eventRef,
+          revisionEventRef: chain.revision.eventRef,
+          anchorRef: candidateEvent.target.anchorRef,
+          selectors: anchor.selectors,
+          ...(chain.review.supersededBy ? { supersededBy: chain.review.supersededBy } : {}),
+        },
+      },
+    };
+  });
+
+  const consumedEvents = [...setEvents, ...candidateEvents, ...reviewEvents, ...revisionEvents];
+  const eventRefs = uniqueStrings(consumedEvents.map((event) => event.eventId));
+  const consumedSet = new Set(eventRefs);
+  const sourceMaps = (result.sourceMaps || []).filter((mapping) => consumedSet.has(mapping.outputRef));
+  const data = {
+    schema: "textabana.annotation-review-projection/lab-v1",
+    set: {
+      setId,
+      wholeSnapshot: true,
+      authoredOrder,
+      candidateIds: candidateOrder,
+      currentIds,
+      digestAlgorithm: set.digestAlgorithm,
+      setDigest: set.setDigest,
+    },
+    reviewChain,
+    currentAnnotations: currentIds.map((annotationId) => {
+      const chain = reviewChain.find((item) => item.annotationId === annotationId);
+      if (chain) return { annotationId, state: "accepted", body: chain.candidate.body, anchorRef: chain.candidate.anchorRef, revision: 1 };
+      const replacement = replacementById.get(annotationId);
+      return { annotationId, state: "accepted", body: replacement.payload.body, anchorRef: replacement.target.anchorRef, revision: 0, supersedes: replacement.payload.supersedes };
+    }),
+    exports: {
+      w3cWebAnnotation: {
+        "@context": ["http://www.w3.org/ns/anno.jsonld", { textabana: "https://textabana.dev/ns#" }],
+        id: `urn:textabana:${setId}:page`,
+        type: "AnnotationPage",
+        items: w3cItems,
+      },
+      labelStudioTasks,
+    },
+  };
+  const projectionSeed = { adapterId: manifest.adapterId, adapterVersion: manifest.version, manifestDigest: manifest.manifestDigest, sourceResultId: result.resultId, output: data };
+  return {
+    schema: "textabana.adapter-projection/lab-v1",
+    projectionId: `projection:${sourceHash(canonicalJson(projectionSeed))}`,
+    adapterRef: { adapterId: manifest.adapterId, version: manifest.version, manifestDigest: manifest.manifestDigest },
+    sourceResultRef: { resultId: result.resultId, resultSchema: result.schema, sourceVersion: result.source?.version || "unknown" },
+    status: "succeeded",
+    output: { ...manifest.produces[0], data, artifactRefs: [] },
+    mapping: "derived",
+    fidelity: manifest.fidelity,
+    references: {
+      eventRefs,
+      anchorRefs: uniqueStrings([...consumedEvents.map((event) => event.target?.anchorRef), ...sourceMaps.flatMap((mapping) => mapping.inputAnchorRefs || [])]),
+      sourceMapRefs: uniqueStrings(sourceMaps.map((mapping) => mapping.mappingId)),
+      provenanceRefs: uniqueStrings([...consumedEvents.map((event) => event.provenanceRef), ...sourceMaps.map((mapping) => mapping.generatingActivity)]),
+    },
+    diagnostics: [],
+    extensions: {
+      "textabana.playground": {
+        canonical: false,
+        subset: "W3C Web Annotation projection + Label Studio task/import subset",
+        unsupported: ["model invocation", "W3C PROV graph", "Label Studio project/API roundtrip", "doccano/Prodigy/brat", "OpenLineage", "MLflow", "OpenTelemetry"],
+      },
+    },
+  };
+}
+
 const adapterImplementations = new Map([
   ["org.textabana.result-summary", buildResultSummaryProjection],
   ["org.textabana.data-table", buildDataTableProjection],
   ["org.textabana.notebook", buildNotebookProjection],
+  ["org.textabana.annotation-review", buildAnnotationReviewProjection],
 ]);
 
 function validateAdapterProjection(projection, result, manifest) {
@@ -927,6 +1229,7 @@ function buildCapabilities(inspection) {
       "adapter-contract/1": "playground-subset",
       "data/1": "playground-subset",
       "notebook/1": "playground-subset",
+      "annotation/1": "playground-subset",
       "ml-lineage/1": "contract-only",
     },
     adapters: adapterManifests.map((manifest) => ({
@@ -956,6 +1259,13 @@ function buildCapabilities(inspection) {
       "session-kernel-execution",
       "attached-kernel-execution",
       "jupyter-comms-widgets",
+      "model-invocation",
+      "persistent-review-store",
+      "w3c-prov",
+      "label-studio-api-roundtrip",
+      "doccano-prodigy-brat",
+      "mlflow-export",
+      "otel-correlation",
     ])],
   };
 }
@@ -1072,9 +1382,11 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
     return { start, end: start + Array.from(exact).length, exact };
   };
 
-  const createAnchor = ({ line, row, rowId, mode, column, endLine, execution, notebookId, cellId }) => {
+  const createAnchor = ({ line, row, rowId, mode, column, endLine, execution, notebookId, cellId, setId, annotationId }) => {
     const position = positionForLine(line);
-    const stablePart = cellId
+    const stablePart = annotationId
+      ? `annotation:${sourceHash(documentPath)}:${sourceHash(String(setId || "annotations"))}:${sourceHash(String(annotationId))}`
+      : cellId
       ? `cell:${sourceHash(documentPath)}:${sourceHash(String(notebookId || "notebook"))}:${sourceHash(String(cellId))}`
       : mode === "row" && rowId
         ? `row:${sourceHash(documentPath)}:${sourceHash(String(rowId))}`
@@ -1090,6 +1402,8 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
         view: "source",
         ...(notebookId ? { notebookId: String(notebookId) } : {}),
         cellId: cellId ? String(cellId) : null,
+        ...(setId ? { setId: String(setId) } : {}),
+        ...(annotationId ? { annotationId: String(annotationId) } : {}),
       },
       selectors: [
         {
@@ -1181,6 +1495,8 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
       execution,
       notebookId: location.notebookId,
       cellId: location.cellId,
+      setId: location.setId,
+      annotationId: location.annotationId,
     });
     const explicitInputAnchorRefs = location.inputAnchorRefs === undefined
       ? null
@@ -1199,7 +1515,14 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
       ? undefined
       : serializableValue(location.inputSelectors);
     const outputSelector = location.outputSelector === undefined
-      ? location.datasetId && location.recordId
+      ? location.setId && location.annotationId
+        ? {
+            type: "AnnotationSelector",
+            setId: String(location.setId),
+            annotationId: String(location.annotationId),
+            ...(Number.isInteger(Number(location.revision)) ? { revision: Number(location.revision) } : {}),
+          }
+      : location.datasetId && location.recordId
         ? {
             type: "DataSelector",
             datasetId: String(location.datasetId),
@@ -1239,6 +1562,9 @@ function createChannelBus({ runId, documentVersion, documentPath, documentSource
         ...(location.recordId ? { recordId: String(location.recordId) } : {}),
         ...(location.notebookId ? { notebookId: String(location.notebookId) } : {}),
         ...(location.cellId ? { cellId: String(location.cellId) } : {}),
+        ...(location.setId ? { setId: String(location.setId) } : {}),
+        ...(location.annotationId ? { annotationId: String(location.annotationId) } : {}),
+        ...(Number.isInteger(Number(location.revision)) ? { revision: Number(location.revision) } : {}),
         ...(location.columnName ? { columnName: String(location.columnName) } : {}),
         ...(Number.isInteger(column) && column > 0 ? { column } : {}),
         ...(Number.isInteger(endLine) && endLine >= line ? { endLine } : {}),

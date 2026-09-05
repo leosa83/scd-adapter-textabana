@@ -30,6 +30,9 @@ test("the Interop 0.5 specification preserves its foundational contracts", () =>
     "MANIFEST-001",
     "JUPYTER-001",
     "DATA-001",
+    "ANNOTATION-002",
+    "ANNOTATION-004",
+    "ANNOTATION-006",
     "ADAPTER-001",
     "ADAPTER-006",
     "PLAYGROUND-003",
@@ -42,20 +45,27 @@ test("the Interop 0.5 specification preserves its foundational contracts", () =>
   assert.match(source, /render.*resultatfält, inte en emitterbar kanal/s);
   assert.match(source, /row och line är projektioner/);
   assert.match(source, /HTML beskriver ett dokumentträd.*Textabana beskriver vilka semantiska processer/s);
-  assert.match(source, /Nuvarande Playground implementerar fem avgränsade vyer/);
+  assert.match(source, /Nuvarande Playground implementerar sex avgränsade vyer/);
   assert.match(source, /Language & Scope Lab/);
   assert.match(source, /Editor Metadata Lab/);
   assert.match(source, /Channel & Result Lab/);
   assert.match(source, /Data & Lineage Lab/);
   assert.match(source, /Notebook Interop Lab/);
+  assert.match(source, /Annotation & AI Review Lab/);
   assert.match(source, /textabana\.adapter-manifest\/lab-v1/);
   assert.match(source, /textabana\.adapter-projection\/lab-v1/);
   assert.match(source, /adapter-contract\/1/);
-  assert.match(source, /Data- och notebookadaptrarna är körbara.*Annotation är contract-only/s);
+  assert.match(source, /data-, notebook- och annotationadaptrarna körs efter commit.*ml-lineage.*contract-only/s);
   assert.match(source, /notebook\.snapshot.*notebook\.cells.*notebook\.outputs.*notebook\.state/s);
   assert.match(source, /fresh.*session.*attached/s);
   assert.match(source, /whole-snapshot.*stabila cell-id:n.*MIME.*stale detection/s);
   assert.match(source, /Jupyter Messaging, nbformat-roundtrip, session\/attached kernelkörning.*Comms\/widgets.*unsupported/s);
+  assert.match(source, /annotation\.set.*annotation\.candidates.*annotation\.reviews.*annotation\.revisions/s);
+  assert.match(source, /Modellkandidatens ursprungliga fakta får inte muteras.*supersededBy.*supersedes/s);
+  assert.match(source, /modell-id\/version\/digest.*prompt-id\/digest.*inputdigest.*confidence score och metod/s);
+  assert.match(source, /W3C Web Annotation.*Label Studio.*adapterprojektion/s);
+  assert.match(source, /Label Studio.*task\/import-subset.*ingen API-\/projektroundtrip/s);
+  assert.match(source, /ml-lineage\/1.*contract-only/s);
   assert.match(source, /stabila.*recordId.*deterministisk inner join.*multi-input-lineage/s);
   assert.match(source, /Arrow IPC, Parquet, DuckDB, beständiga ArtifactRefs, OpenLineage-export.*unsupported/s);
   assert.match(source, /Ingen interaktiv subset eller kontraktsregistrering är full profilkonformitet/);

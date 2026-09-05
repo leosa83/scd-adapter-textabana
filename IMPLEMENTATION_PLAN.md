@@ -3,7 +3,7 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-ADAPTER-PLAN` |
-| Planversion | `1.0.3` |
+| Planversion | `1.0.4` |
 | Status | Aktiv |
 | Fastställd | 2026-09-05 |
 | Baseline | Textabana Language & Interop draft 0.4, playground `lab-v1` |
@@ -129,13 +129,26 @@ Source → Compile → Run → immutable TextabanaResult
 
 ### Sprint 4 — Annotation & AI Review Lab
 
-**Status:** planerad
+**Status:** genomförd 2026-09-05
 
 **Mål:** Stödja granskbar AI- och mänsklig annotering som revisionskedja.
 
 **Leveranser:** kandidatannotationer med modell-/prompt-/inputdigests, confidence method, accept/reject/supersede samt projektioner mot W3C Web Annotation och ett annoteringsverktygsformat.
 
 **Acceptans:** review skapar en ny revision; modellens ursprungliga event muteras aldrig; exporterade targets kan lösas tillbaka till Textabana Anchor.
+
+**Acceptansevidens:**
+
+- Fixturen `annotation-review` producerar ett whole annotation set, tre AI-kandidater, tre separata review-event och fyra materialiserade revisioner.
+- Kandidatpayloaden stannar på revision 0 och innehåller aldrig `decision`, `reviewer` eller `supersededBy`; ett ändrat reviewbeslut förändrar därför inte modellfaktan.
+- Varje accept/reject/supersede skapar ett append-only review-event och revision 1. Supersede kräver dessutom en existerande mänsklig ersättare med ömsesidiga länkar och acyklisk kedja.
+- Modell-id/version/digest, prompt-id/digest, inputdigest, confidence score och confidence method är obligatoriska och adaptervaliderade. Alla digests är ärligt märkta `fnv1a-lab`.
+- Stabil `annotationId` och annotation-anchor överlever infogade rader och omordning, medan den fysiska line-projektionen följer aktuell källa.
+- Candidate, review och revision binds till `AnnotationSelector`, Anchor, SourceMap och provenanceaktivitet. Derived review-mapping refererar kandidatankaret och, vid supersede, ersättarens ankare.
+- `org.textabana.annotation-review` producerar en deterministisk bundle med W3C Web Annotation `AnnotationPage` och en testad Label Studio task/import-subset. Exporttargets återanvänder exakt källankarets TextPosition-/TextQuote-selectors och `anchorRef`.
+- Verklig modellkörning, persistent review store, W3C PROV, full Label Studio API-/projektroundtrip, OpenLineage, MLflow och OpenTelemetry är fortsatt contract-only eller unsupported.
+- Adapterfel påverkar inte canonical Result och before/after-digest verifierar immutability.
+- 63 automatiska kontrakts-, runtime-, data-, notebook-, annotation-, dokumentations-, renderings- och UI-test utgör sprintens regressionsgrind.
 
 ### Sprint 5 — Conformance Lab
 
@@ -158,6 +171,13 @@ Source → Compile → Run → immutable TextabanaResult
 | 5 · Conformance | Sprint 1–4 | Verifierbara profilanspråk |
 
 ## Ändringslogg
+
+### 1.0.4 — 2026-09-05
+
+- Sprint 4 markerad som genomförd med körbart Annotation & AI Review Lab och acceptansevidens.
+- `annotation/1` flyttad från contract-only till en explicit append-only playground-subset med resolverbara W3C- och Label Studio-projektioner.
+- `ml-lineage/1` separerades som fortsatt contract-only för att undvika påståenden om modellkörning eller observability som inte finns.
+- Nästa aktiva leverans är Sprint 5 — Conformance Lab.
 
 ### 1.0.3 — 2026-09-05
 

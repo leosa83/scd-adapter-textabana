@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import {
   AlertTriangle,
   ArrowRight,
+  Bot,
   Braces,
   CheckCircle2,
   CircleDot,
@@ -47,6 +48,7 @@ const labCopy: Record<LabId, { title: string; icon: typeof Braces }> = {
   channels: { title: "Channel & Result", icon: RadioTower },
   data: { title: "Data & Lineage", icon: Database },
   notebook: { title: "Notebook Interop", icon: NotebookTabs },
+  annotation: { title: "Annotation & Review", icon: Bot },
 };
 
 function json(value: unknown) {
@@ -393,7 +395,7 @@ function AdapterRunView({ result }: { result: RuntimeResult }) {
       </div>
       <div className="lab-metrics">
         <article><span>Adapter run</span><strong>{adapterRun.status}</strong><small>{adapterRun.verification.immutable ? "immutable verified" : "mutation detected"}</small></article>
-        <article><span>Körbara</span><strong>{executable.length}</strong><small>ren referensadapter</small></article>
+        <article><span>Körbara</span><strong>{executable.length}</strong><small>körbara projektioner</small></article>
         <article><span>Contract-only</span><strong>{contractOnly.length}</strong><small>ingen simulerad output</small></article>
         <article><span>Projektioner</span><strong>{adapterRun.projections.length}</strong><small>separata från Result</small></article>
       </div>
@@ -536,6 +538,78 @@ type NotebookProjection = {
     kernelState: string;
     limitations: string[];
   };
+};
+
+type AnnotationCandidateProjection = {
+  setId: string;
+  annotationId: string;
+  title: string;
+  body: string;
+  bodyDigest: string;
+  inputDigest: string;
+  origin: "ai";
+  status: "candidate";
+  revision: 0;
+  model: { id: string; version: string; digest: string };
+  prompt: { id: string; digest: string };
+  confidence: { score: number; method: string };
+  candidateDigest: string;
+  eventRef: string;
+  anchorRef: string;
+};
+
+type AnnotationReviewProjection = {
+  reviewId: string;
+  setId: string;
+  annotationId: string;
+  candidateEventRef: string;
+  revision: 1;
+  decision: "accept" | "reject" | "supersede";
+  reviewer: string;
+  logicalTime: string;
+  reviewDigest: string;
+  supersededBy?: string;
+  eventRef: string;
+};
+
+type AnnotationRevisionProjection = {
+  revisionId: string;
+  annotationId: string;
+  revision: number;
+  origin: "human" | "human-review";
+  state: "accepted" | "rejected" | "superseded";
+  body: string;
+  bodyDigest: string;
+  basedOnEventRef?: string;
+  reviewEventRef?: string;
+  supersedes?: string;
+  supersededBy?: string;
+  eventRef: string;
+  anchorRef?: string;
+};
+
+type AnnotationChainProjection = {
+  annotationId: string;
+  candidate: AnnotationCandidateProjection;
+  review: AnnotationReviewProjection;
+  revision: AnnotationRevisionProjection;
+  replacement: AnnotationRevisionProjection | null;
+};
+
+type AnnotationProjection = {
+  schema: string;
+  set: {
+    setId: string;
+    wholeSnapshot: boolean;
+    authoredOrder: string[];
+    candidateIds: string[];
+    currentIds: string[];
+    digestAlgorithm: string;
+    setDigest: string;
+  };
+  reviewChain: AnnotationChainProjection[];
+  currentAnnotations: Array<{ annotationId: string; state: string; body: string; anchorRef: string; revision: number; supersedes?: string }>;
+  exports: { w3cWebAnnotation: Record<string, unknown>; labelStudioTasks: Array<Record<string, unknown>> };
 };
 
 function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "onOpenLab">) {
@@ -787,6 +861,129 @@ function NotebookLab({ result, previousResult, onOpenLab }: Pick<PlaygroundOutpu
   );
 }
 
+function annotationProjection(result: RuntimeResult | null) {
+  const projection = result?.adapterRun?.projections.find((item) => item.adapterRef.adapterId === "org.textabana.annotation-review") ?? null;
+  return projection?.status === "succeeded" ? projection.output?.data as AnnotationProjection | undefined : undefined;
+}
+
+function AnnotationLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "onOpenLab">) {
+  const [tab, setTab] = useState("queue");
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
+  const manifest = result.adapterRun?.manifests.find((item) => item.adapterId === "org.textabana.annotation-review") ?? null;
+  const projection = result.adapterRun?.projections.find((item) => item.adapterRef.adapterId === "org.textabana.annotation-review") ?? null;
+  const data = annotationProjection(result);
+  const selected = data?.reviewChain.find((item) => item.annotationId === selectedAnnotationId) ?? data?.reviewChain[0] ?? null;
+  const candidateEvent = selected ? (result.channels["annotation.candidates"] ?? []).find((event) => (event.payload as { annotationId?: string }).annotationId === selected.annotationId) ?? null : null;
+  const anchor = candidateEvent ? result.anchors.find((item) => item.anchorId === candidateEvent.target.anchorRef) ?? null : null;
+  const sourceMap = candidateEvent ? result.sourceMaps.find((item) => item.outputRef === candidateEvent.eventId) ?? null : null;
+  const reviewEvent = selected ? (result.channels["annotation.reviews"] ?? []).find((event) => (event.payload as { annotationId?: string }).annotationId === selected.annotationId) ?? null : null;
+  const reviewMap = reviewEvent ? result.sourceMaps.find((item) => item.outputRef === reviewEvent.eventId) ?? null : null;
+
+  const empty = (
+    <div className="data-empty annotation-empty">
+      <Bot />
+      <div><strong>Ingen kompatibel annotationprojektion i denna run</strong><p>Välj fixturen <b>Annotation & AI review</b> för att producera kandidater, review-revisioner och standardexport.</p></div>
+      {projection?.diagnostics[0] ? <small>{projection.diagnostics[0].code} · {projection.diagnostics[0].message}</small> : null}
+    </div>
+  );
+
+  return (
+    <>
+      <LabTabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: "queue", label: "Review queue", count: data?.reviewChain.length, icon: Bot },
+          { id: "chain", label: "Revision chain", icon: Workflow },
+          { id: "targets", label: "Targets", icon: MapPin },
+          { id: "w3c", label: "W3C", icon: FileJson },
+          { id: "label-studio", label: "Label Studio", icon: Layers3 },
+          { id: "adapter", label: "Adapter", icon: Braces },
+        ]}
+      />
+      {tab === "queue" ? (
+        <div className="lab-scroll annotation-lab">
+          {!data ? empty : (
+            <>
+              <div className="canonical-notice"><CheckCircle2 /> Canonical append-only events · <code>annotation.candidates</code> + <code>annotation.reviews</code> + <code>annotation.revisions</code></div>
+              <div className="annotation-summary">
+                <div><span>Set</span><strong>{data.set.setId}</strong><small>{data.set.wholeSnapshot ? "whole snapshot" : "partial"}</small></div>
+                <div><span>Kandidater</span><strong>{data.reviewChain.length}</strong><small>immutable revision 0</small></div>
+                <div><span>Current</span><strong>{data.set.currentIds.length}</strong><small>{data.set.currentIds.join(" · ")}</small></div>
+                <div><span>Digest</span><strong>{data.set.digestAlgorithm}</strong><small>{data.set.setDigest}</small></div>
+              </div>
+              <div className="annotation-queue">{data.reviewChain.map((chain) => (
+                <button type="button" key={chain.annotationId} className={selected?.annotationId === chain.annotationId ? "is-selected" : ""} onClick={() => { setSelectedAnnotationId(chain.annotationId); setTab("chain"); }}>
+                  <div className="annotation-card-head"><span className={`review-decision is-${chain.review.decision}`}>{chain.review.decision}</span><code>{chain.annotationId}</code></div>
+                  <strong>{chain.candidate.title}</strong>
+                  <p>{chain.candidate.body}</p>
+                  <dl>
+                    <div><dt>confidence</dt><dd>{Math.round(chain.candidate.confidence.score * 100)}% · {chain.candidate.confidence.method}</dd></div>
+                    <div><dt>model</dt><dd>{chain.candidate.model.id}@{chain.candidate.model.version}</dd></div>
+                    <div><dt>prompt</dt><dd>{chain.candidate.prompt.id}</dd></div>
+                  </dl>
+                  <small>{chain.candidate.candidateDigest}</small>
+                </button>
+              ))}</div>
+              <div className="data-table-foot"><span>Beslutet finns i källan; ändra <code>decision</code> och kör för att skapa en ny snapshotkedja.</span><Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Visa raw events</Button></div>
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "chain" ? (
+        <div className="lab-scroll annotation-lab annotation-chain-view">
+          {!data || !selected ? empty : (
+            <>
+              <div className="canonical-notice"><CheckCircle2 /> Review skapar revision 1 · kandidatens revision 0 skrivs aldrig om</div>
+              <div className="record-picker" aria-label="Välj annotation">{data.reviewChain.map((chain) => <button type="button" key={chain.annotationId} className={selected.annotationId === chain.annotationId ? "is-active" : ""} onClick={() => setSelectedAnnotationId(chain.annotationId)}>{chain.annotationId}</button>)}</div>
+              <div className="annotation-chain">
+                <section><span>Model candidate · r0</span><strong>{selected.candidate.status}</strong><code>{selected.candidate.eventRef}</code><p>{selected.candidate.body}</p></section>
+                <ArrowRight />
+                <section><span>Human review · r1</span><strong>{selected.review.decision}</strong><code>{selected.review.eventRef}</code><p>{selected.review.reviewer} · {selected.review.reviewDigest}</p></section>
+                <ArrowRight />
+                <section><span>Materialized revision</span><strong>{selected.revision.state}</strong><code>{selected.revision.eventRef}</code><p>{selected.revision.revisionId}</p></section>
+                {selected.replacement ? <><ArrowRight /><section className="is-replacement"><span>Human replacement · r0</span><strong>{selected.replacement.annotationId}</strong><code>{selected.replacement.eventRef}</code><p>{selected.replacement.body}</p></section></> : null}
+              </div>
+              <div className="lineage-detail-grid"><section><h3>Candidate facts</h3><pre>{json(selected.candidate)}</pre></section><section><h3>Review + revision</h3><pre>{json({ review: selected.review, revision: selected.revision, replacement: selected.replacement })}</pre></section></div>
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "targets" ? (
+        <div className="lab-scroll annotation-lab annotation-targets">
+          {!data || !selected ? empty : (
+            <>
+              <div className="canonical-notice"><CheckCircle2 /> Samma stabila Anchor bär source target genom candidate, review och export</div>
+              <div className="record-picker" aria-label="Välj annotation">{data.reviewChain.map((chain) => <button type="button" key={chain.annotationId} className={selected.annotationId === chain.annotationId ? "is-active" : ""} onClick={() => setSelectedAnnotationId(chain.annotationId)}>{chain.annotationId}</button>)}</div>
+              <div className="lineage-detail-grid"><section><h3>Anchor + selectors</h3><pre>{json(anchor)}</pre></section><section><h3>Candidate SourceMap</h3><pre>{json(sourceMap)}</pre></section></div>
+              <section className="annotation-review-map"><h3>Review SourceMap</h3><p>Derived mapping använder kandidatankaret{selected.replacement ? " och ersättarens ankare" : ""} som explicita inputs.</p><pre>{json(reviewMap)}</pre></section>
+              <Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Öppna Channel & Result</Button>
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "w3c" ? (
+        <div className="lab-json-scroll annotation-export">
+          <div className="projection-notice"><CircleDot /> Adapterprojektion · W3C Web Annotation <code>AnnotationPage</code> · targets kopieras från Textabana Anchor</div>
+          {!data ? empty : <pre>{json(data.exports.w3cWebAnnotation)}</pre>}
+        </div>
+      ) : null}
+      {tab === "label-studio" ? (
+        <div className="lab-json-scroll annotation-export">
+          <div className="projection-notice"><CircleDot /> Adapterprojektion · testad Label Studio task/import-subset · ingen API- eller projektroundtrip</div>
+          {!data ? empty : <pre>{json(data.exports.labelStudioTasks)}</pre>}
+        </div>
+      ) : null}
+      {tab === "adapter" ? (
+        <div className="lab-json-scroll split-json data-adapter-json">
+          <section><h3>AdapterManifest</h3><pre>{json(manifest)}</pre></section>
+          <section><h3>ProjectionEnvelope</h3><pre>{json(projection)}</pre></section>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "onOpenLab">) {
   const [tab, setTab] = useState("timeline");
   const events = useMemo(
@@ -878,6 +1075,7 @@ export function PlaygroundOutput(props: PlaygroundOutputProps) {
       {props.lab === "channels" ? <ChannelLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
       {props.lab === "data" ? <DataLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
       {props.lab === "notebook" ? <NotebookLab result={props.result} previousResult={props.previousResult} onOpenLab={props.onOpenLab} /> : null}
+      {props.lab === "annotation" ? <AnnotationLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
     </ResultShell>
   );
 }

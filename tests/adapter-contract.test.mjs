@@ -105,7 +105,14 @@ test("adapter registry publishes a machine-readable post-commit contract", async
   assert.equal(notebook.produces[0].schemaRef, "textabana.notebook-projection/lab-v1");
   assert.equal(JSON.stringify(notebook.accepts.channels.map((channel) => channel.name)), JSON.stringify(["notebook.snapshot", "notebook.cells", "notebook.outputs", "notebook.state"]));
   for (const capability of ["stable-cell-id", "whole-snapshot", "mime-bundle", "stale-output-detection"]) assert.ok(notebook.capabilities.required.includes(capability));
-  assert.equal(result.adapterRun.manifests.find((manifest) => manifest.adapterId === "org.textabana.annotation-review").support, "contract-only");
+  const annotation = result.adapterRun.manifests.find((manifest) => manifest.adapterId === "org.textabana.annotation-review");
+  assert.equal(annotation.version, "1.0.0-lab.1");
+  assert.equal(annotation.profile, "annotation/1");
+  assert.equal(annotation.support, "playground-subset");
+  assert.equal(annotation.produces[0].schemaRef, "textabana.annotation-review-projection/lab-v1");
+  assert.equal(JSON.stringify(annotation.accepts.channels.map((channel) => channel.name)), JSON.stringify(["annotation.set", "annotation.candidates", "annotation.reviews", "annotation.revisions"]));
+  for (const capability of ["stable-annotation-id", "immutable-candidate", "review-revision", "anchor-target", "w3c-web-annotation", "label-studio-task-subset"]) assert.ok(annotation.capabilities.required.includes(capability));
+  assert.equal(result.adapterRun.manifests.find((manifest) => manifest.adapterId === "org.textabana.ml-lineage").support, "contract-only");
 });
 
 test("reference projection is source-bound, selective and fully resolvable", async () => {
@@ -146,12 +153,12 @@ test("semantic result and projection ids are stable across transport run ids", a
   assert.deepEqual(first.adapterRun.projections[0].output.data, second.adapterRun.projections[0].output.data);
 });
 
-test("contract-only annotation adapters never fabricate domain output or invalidate core success", async () => {
+test("contract-only ML lineage adapters never fabricate domain output or invalidate core success", async () => {
   const run = createHarness();
   const result = await run({
     documentSource: fixture,
     modules: fixtureModules,
-    options: { strictChannels: true, adapters: ["org.textabana.annotation-review"] },
+    options: { strictChannels: true, adapters: ["org.textabana.ml-lineage"] },
   });
   const projection = result.adapterRun.projections[0];
 
@@ -163,6 +170,8 @@ test("contract-only annotation adapters never fabricate domain output or invalid
   assert.equal(result.adapterRun.verification.immutable, true);
   assert.equal(result.capabilities.profiles["data/1"], "playground-subset");
   assert.equal(result.capabilities.profiles["notebook/1"], "playground-subset");
+  assert.equal(result.capabilities.profiles["annotation/1"], "playground-subset");
+  assert.equal(result.capabilities.profiles["ml-lineage/1"], "contract-only");
 });
 
 test("failed core runs skip all post-commit adapters", async () => {

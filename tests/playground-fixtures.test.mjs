@@ -19,6 +19,7 @@ const modules = [
   { path: "modules/base64.js", content: template("base64Module") },
   { path: "modules/data.js", content: template("dataModule") },
   { path: "modules/notebook.js", content: template("notebookModule") },
+  { path: "modules/annotation.js", content: template("annotationModule") },
 ];
 
 async function run(documentSource, runId = 1) {
@@ -133,4 +134,19 @@ test("notebook-snapshot fixture exposes stable cells and a clean Markdown render
   assert.equal(result.channels["notebook.outputs"].length, 3);
   assert.match(result.output, /## Cell: Source overview/);
   assert.doesNotMatch(result.output, />>>>|<<<<|\{#cell-/);
+});
+
+test("annotation-review fixture exposes immutable review channels and clean Markdown", async () => {
+  const result = await run(template("annotationReviewFixtureDocument"));
+
+  assert.equal(result.ok, true, result.error);
+  assert.equal(result.channels["annotation.set"].length, 1);
+  assert.equal(result.channels["annotation.candidates"].length, 3);
+  assert.equal(result.channels["annotation.reviews"].length, 3);
+  assert.equal(result.channels["annotation.revisions"].length, 4);
+  assert.equal(result.channels["annotation.candidates"][0].payload.status, "candidate");
+  assert.equal(Object.hasOwn(result.channels["annotation.candidates"][0].payload, "decision"), false);
+  assert.match(result.output, /## Annotation: Route/);
+  assert.match(result.output, /Positionen kräver extern verifiering/);
+  assert.doesNotMatch(result.output, />>>>|<<<<|\{#ann-/);
 });

@@ -6,6 +6,7 @@ import { markdown } from "@codemirror/lang-markdown";
 import { javascript } from "@codemirror/lang-javascript";
 import {
   BookOpen,
+  Bot,
   Box,
   Braces,
   CheckCircle2,
@@ -208,6 +209,24 @@ Aurora lämnade Göteborg den 4 maj.
 {"confidence": 0.82, "status": "candidate"}
 <<<< notebook_snapshot`;
 
+const annotationReviewFixtureDocument = `>>>>! include "./modules/annotation.js"
+
+# Annotation & AI Review
+
+>>>> annotation_review set_id="voyage-review" reviewer="leo"
+## Annotation: Route {#ann-route origin="ai" model="textabana-lab-extractor" model_version="1.0" prompt_id="route-v1" confidence=0.82 confidence_method="model-reported" decision="accept"}
+Aurora lämnade Göteborg den 4 maj.
+
+## Annotation: Cargo {#ann-cargo origin="ai" model="textabana-lab-extractor" model_version="1.0" prompt_id="cargo-v1" confidence=0.64 confidence_method="calibrated-score" decision="reject"}
+Manifestet uppgav silverlast.
+
+## Annotation: Status candidate {#ann-status origin="ai" model="textabana-lab-extractor" model_version="1.0" prompt_id="status-v1" confidence=0.73 confidence_method="model-reported" decision="supersede" superseded_by="ann-status-reviewed"}
+Positionen är en granskningskandidat.
+
+## Annotation: Status reviewed {#ann-status-reviewed origin="human" supersedes="ann-status"}
+Positionen kräver extern verifiering.
+<<<< annotation_review`;
+
 const playgroundFixtures: PlaygroundFixture[] = [
   {
     id: "scope-torture",
@@ -250,6 +269,12 @@ const playgroundFixtures: PlaygroundFixture[] = [
     title: "Notebook snapshot",
     summary: "Stabila cell-id:n, whole-snapshot, MIME bundles, explicit state och stale output.",
     document: notebookFixtureDocument,
+  },
+  {
+    id: "annotation-review",
+    title: "Annotation & AI review",
+    summary: "Immutable modellkandidater, mänskliga review-revisioner och resolverbara standardprojektioner.",
+    document: annotationReviewFixtureDocument,
   },
 ];
 
@@ -801,6 +826,230 @@ define({
   }
 });`;
 
+const annotationModule = `function annotationHash(value) {
+  let hash = 2166136261;
+  const source = String(value);
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function annotationCanonical(value) {
+  if (Array.isArray(value)) return "[" + value.map(annotationCanonical).join(",") + "]";
+  if (value && typeof value === "object") {
+    return "{" + Object.keys(value).sort().map(key => JSON.stringify(key) + ":" + annotationCanonical(value[key])).join(",") + "}";
+  }
+  return JSON.stringify(value);
+}
+
+function annotationDigest(value) {
+  return "fnv1a:" + annotationHash(typeof value === "string" ? value : annotationCanonical(value));
+}
+
+function annotationProperties(source) {
+  const properties = {};
+  const pattern = /([A-Za-z_][\\w.-]*)=("([^"]*)"|'([^']*)'|([^\\s]+))/g;
+  let match;
+  while ((match = pattern.exec(source)) !== null) properties[match[1]] = match[3] ?? match[4] ?? match[5];
+  return properties;
+}
+
+function annotationEntries(source) {
+  const lines = String(source).replace(/\\r\\n?/g, "\\n").split("\\n");
+  const starts = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!/^##\\s+Annotation:/.test(lines[index])) continue;
+    const match = lines[index].match(/^##\\s+Annotation:\\s*(.+?)\\s+\\{#([A-Za-z][A-Za-z0-9_.:-]*)([^}]*)\\}\\s*$/);
+    if (!match) throw new Error("Annotationen på blockrad " + (index + 1) + " måste ha syntaxen ## Annotation: Titel {#stabilt-id ...}.");
+    starts.push({ headingIndex: index, title: match[1].trim(), annotationId: match[2], authored: annotationProperties(match[3]) });
+  }
+  if (!starts.length) throw new Error("annotation_review kräver minst en ## Annotation med explicit id.");
+  if (new Set(starts.map(item => item.annotationId)).size !== starts.length) throw new Error("annotation_review har duplicerade annotation-id:n.");
+  return starts.map((entry, index) => {
+    const end = starts[index + 1]?.headingIndex ?? lines.length;
+    const bodyRows = [];
+    for (let cursor = entry.headingIndex + 1; cursor < end; cursor += 1) {
+      const text = lines[cursor].trim();
+      if (text) bodyRows.push({ index: cursor, text });
+    }
+    if (bodyRows.length !== 1) throw new Error("Annotationen “" + entry.annotationId + "” måste ha exakt en icke-tom textrad i denna lab-subset.");
+    return { ...entry, body: bodyRows[0].text, lineOffset: bodyRows[0].index, bodyDigest: annotationDigest(bodyRows[0].text) };
+  });
+}
+
+define({
+  annotation_review: {
+    description: "Bygger immutable AI-kandidater, mänskliga review-event och append-only revisioner från lättviktig Markdown.",
+    behavior: "segment-preserving",
+    outputs: ["render", "annotation.set", "annotation.candidates", "annotation.reviews", "annotation.revisions"],
+    channels: {
+      "annotation.set": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/annotation-set/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.setId"],
+        schema: { type: "object", required: ["setId", "wholeSnapshot", "authoredOrder", "annotationIds", "candidateIds", "currentIds", "candidateCount", "reviewCount", "revisionCount", "setDigest", "digestAlgorithm"] }
+      },
+      "annotation.candidates": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/annotation-candidate/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.annotationId"],
+        schema: { type: "object", required: ["setId", "annotationId", "title", "body", "bodyDigest", "inputDigest", "origin", "status", "revision", "model", "prompt", "confidence", "candidateDigest"] }
+      },
+      "annotation.reviews": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/annotation-review/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.reviewId"],
+        schema: { type: "object", required: ["reviewId", "setId", "annotationId", "candidateEventRef", "revision", "decision", "reviewer", "logicalTime", "reviewDigest"] }
+      },
+      "annotation.revisions": {
+        payloadKind: "object", mediaType: "application/json", schemaRef: "schema:textabana/annotation-revision/lab-v1",
+        delivery: "snapshot", persistence: "durable", ordering: "global-sequence", key: ["payload.revisionId"],
+        schema: { type: "object", required: ["revisionId", "setId", "annotationId", "revision", "origin", "state", "body", "bodyDigest", "revisionDigest"] }
+      }
+    },
+    args: {
+      set_id: { type: "string", description: "Stabil identitet för annotation snapshot" },
+      reviewer: { type: "string", description: "Explicit mänsklig reviewer" }
+    },
+    transform(input, args, context) {
+      const setId = String(args.set_id || "").trim();
+      const defaultReviewer = String(args.reviewer || "").trim();
+      if (!setId) throw new Error("annotation_review kräver set_id.");
+      if (!defaultReviewer) throw new Error("annotation_review kräver reviewer.");
+      const entries = annotationEntries(context.authoredInput ?? input);
+      const byId = new Map(entries.map(entry => [entry.annotationId, entry]));
+      const candidates = entries.filter(entry => String(entry.authored.origin || "ai") === "ai");
+      const replacements = entries.filter(entry => String(entry.authored.origin || "ai") === "human");
+      if (!candidates.length) throw new Error("annotation_review kräver minst en AI-kandidat.");
+
+      for (const entry of entries) {
+        const origin = String(entry.authored.origin || "ai");
+        if (!['ai', 'human'].includes(origin)) throw new Error("Annotationen “" + entry.annotationId + "” har ogiltigt origin.");
+        if (origin === "ai") {
+          const score = Number(entry.authored.confidence);
+          if (!entry.authored.model || !entry.authored.model_version || !entry.authored.prompt_id || !entry.authored.confidence_method || !Number.isFinite(score) || score < 0 || score > 1) {
+            throw new Error("AI-kandidaten “" + entry.annotationId + "” kräver model, model_version, prompt_id, confidence 0..1 och confidence_method.");
+          }
+          if (!["accept", "reject", "supersede"].includes(entry.authored.decision)) throw new Error("AI-kandidaten “" + entry.annotationId + "” kräver decision=accept, reject eller supersede.");
+          if (entry.authored.decision === "supersede" && !entry.authored.superseded_by) throw new Error("AI-kandidaten “" + entry.annotationId + "” måste ange superseded_by vid supersede.");
+          if (entry.authored.decision !== "supersede" && entry.authored.superseded_by) throw new Error("AI-kandidaten “" + entry.annotationId + "” får bara ange superseded_by vid supersede.");
+        } else if (!entry.authored.supersedes) {
+          throw new Error("Den mänskliga annotationen “" + entry.annotationId + "” måste ange supersedes.");
+        }
+      }
+
+      for (const candidate of candidates) {
+        if (candidate.authored.decision !== "supersede") continue;
+        const replacement = byId.get(candidate.authored.superseded_by);
+        if (!replacement || replacement.authored.origin !== "human" || replacement.authored.supersedes !== candidate.annotationId) {
+          throw new Error("AI-kandidaten “" + candidate.annotationId + "” har ingen matchande mänsklig ersättare.");
+        }
+      }
+      for (const replacement of replacements) {
+        const target = byId.get(replacement.authored.supersedes);
+        if (!target || target.authored.origin !== "ai" || target.authored.decision !== "supersede" || target.authored.superseded_by !== replacement.annotationId) {
+          throw new Error("Ersättaren “" + replacement.annotationId + "” har en bruten supersedes-kedja.");
+        }
+      }
+
+      const candidateEvents = new Map();
+      for (const candidate of candidates) {
+        const model = {
+          id: candidate.authored.model,
+          version: candidate.authored.model_version,
+          digest: annotationDigest({ id: candidate.authored.model, version: candidate.authored.model_version })
+        };
+        const prompt = { id: candidate.authored.prompt_id, digest: annotationDigest({ id: candidate.authored.prompt_id }) };
+        const payloadBase = {
+          setId, annotationId: candidate.annotationId, title: candidate.title, body: candidate.body,
+          bodyDigest: candidate.bodyDigest, inputDigest: candidate.bodyDigest, origin: "ai", status: "candidate", revision: 0,
+          motivation: "assessing", model, prompt,
+          confidence: { score: Number(candidate.authored.confidence), method: candidate.authored.confidence_method },
+          digestAlgorithm: "fnv1a-lab"
+        };
+        const payload = { ...payloadBase, candidateDigest: annotationDigest(payloadBase) };
+        const event = context.emit("annotation.candidates", payload, {
+          mode: "row", rowId: setId + ":" + candidate.annotationId, rowSet: setId, lineOffset: candidate.lineOffset,
+          kind: "annotation-candidate", setId, annotationId: candidate.annotationId, revision: 0, mapping: "exact"
+        });
+        candidateEvents.set(candidate.annotationId, event);
+      }
+
+      const replacementEvents = new Map();
+      for (const replacement of replacements) {
+        const reviewer = String(replacement.authored.reviewer || defaultReviewer);
+        const revisionBase = {
+          revisionId: "revision:" + replacement.annotationId + ":0", setId, annotationId: replacement.annotationId,
+          revision: 0, origin: "human", state: "accepted", title: replacement.title, body: replacement.body,
+          bodyDigest: replacement.bodyDigest, supersedes: replacement.authored.supersedes, reviewer, logicalTime: "revision:0",
+          digestAlgorithm: "fnv1a-lab"
+        };
+        const payload = { ...revisionBase, revisionDigest: annotationDigest(revisionBase) };
+        const event = context.emit("annotation.revisions", payload, {
+          mode: "row", rowId: setId + ":" + replacement.annotationId, rowSet: setId, lineOffset: replacement.lineOffset,
+          kind: "annotation-revision", setId, annotationId: replacement.annotationId, revision: 0, mapping: "exact"
+        });
+        replacementEvents.set(replacement.annotationId, event);
+      }
+
+      const reviewEvents = new Map();
+      const decisionRevisionEvents = new Map();
+      const stateFor = { accept: "accepted", reject: "rejected", supersede: "superseded" };
+      for (const candidate of candidates) {
+        const candidateEvent = candidateEvents.get(candidate.annotationId);
+        const replacementEvent = candidate.authored.superseded_by ? replacementEvents.get(candidate.authored.superseded_by) : null;
+        const inputAnchorRefs = [candidateEvent.target.anchorRef];
+        if (replacementEvent) inputAnchorRefs.push(replacementEvent.target.anchorRef);
+        const reviewBase = {
+          reviewId: "review:" + candidate.annotationId + ":1", setId, annotationId: candidate.annotationId,
+          candidateEventRef: candidateEvent.eventId, revision: 1, decision: candidate.authored.decision,
+          reviewer: defaultReviewer, logicalTime: "revision:1", digestAlgorithm: "fnv1a-lab",
+          ...(candidate.authored.superseded_by ? { supersededBy: candidate.authored.superseded_by } : {})
+        };
+        const reviewPayload = { ...reviewBase, reviewDigest: annotationDigest(reviewBase) };
+        const reviewEvent = context.emit("annotation.reviews", reviewPayload, {
+          mode: "row", rowId: setId + ":" + candidate.annotationId, rowSet: setId, lineOffset: candidate.lineOffset,
+          kind: "annotation-review", setId, annotationId: candidate.annotationId, revision: 1, mapping: "derived", inputAnchorRefs
+        });
+        reviewEvents.set(candidate.annotationId, reviewEvent);
+
+        const revisionBase = {
+          revisionId: "revision:" + candidate.annotationId + ":1", setId, annotationId: candidate.annotationId,
+          revision: 1, origin: "human-review", state: stateFor[candidate.authored.decision], title: candidate.title,
+          body: candidate.body, bodyDigest: candidate.bodyDigest, basedOnEventRef: candidateEvent.eventId,
+          reviewEventRef: reviewEvent.eventId, reviewer: defaultReviewer, logicalTime: "revision:1", digestAlgorithm: "fnv1a-lab",
+          ...(candidate.authored.superseded_by ? { supersededBy: candidate.authored.superseded_by } : {})
+        };
+        const revisionPayload = { ...revisionBase, revisionDigest: annotationDigest(revisionBase) };
+        const revisionEvent = context.emit("annotation.revisions", revisionPayload, {
+          mode: "row", rowId: setId + ":" + candidate.annotationId, rowSet: setId, lineOffset: candidate.lineOffset,
+          kind: "annotation-revision", setId, annotationId: candidate.annotationId, revision: 1,
+          mapping: "derived", inputAnchorRefs
+        });
+        decisionRevisionEvents.set(candidate.annotationId, revisionEvent);
+      }
+
+      const authoredOrder = entries.map(entry => entry.annotationId);
+      const candidateIds = candidates.map(entry => entry.annotationId);
+      const replacementIds = replacements.map(entry => entry.annotationId);
+      const annotationIds = [...candidateIds, ...replacementIds];
+      const currentIds = entries.filter(entry => entry.authored.origin === "human" || entry.authored.decision === "accept").map(entry => entry.annotationId);
+      const setBase = {
+        setId, wholeSnapshot: true, authoredOrder, annotationIds, candidateIds, currentIds,
+        candidateCount: candidateEvents.size, reviewCount: reviewEvents.size,
+        revisionCount: replacementEvents.size + decisionRevisionEvents.size, digestAlgorithm: "fnv1a-lab"
+      };
+      const setPayload = { ...setBase, setDigest: annotationDigest(setBase) };
+      const allAnchorRefs = [...candidateEvents.values(), ...replacementEvents.values()].map(event => event.target.anchorRef);
+      context.emit("annotation.set", setPayload, {
+        mode: "row", rowId: "annotation-set:" + setId, rowSet: setId, lineOffset: entries[0].lineOffset,
+        kind: "annotation-set", setId, mapping: "derived", inputAnchorRefs: allAnchorRefs,
+        outputSelector: { type: "AnnotationSetSelector", setId }
+      });
+      return input;
+    }
+  }
+});`;
+
 const initialFiles: ProjectFile[] = [
   { path: "document.md", kind: "document", content: sampleDocument },
   { path: "modules/core.js", kind: "module", content: coreModule },
@@ -809,9 +1058,10 @@ const initialFiles: ProjectFile[] = [
   { path: "modules/metadata.js", kind: "module", content: metadataModule },
   { path: "modules/data.js", kind: "module", content: dataModule },
   { path: "modules/notebook.js", kind: "module", content: notebookModule },
+  { path: "modules/annotation.js", kind: "module", content: annotationModule },
 ];
 
-const storageKey = "textabana-project-v8-notebook-interop";
+const storageKey = "textabana-project-v9-annotation-review";
 
 function filesForFixture(fixtureId: string): ProjectFile[] {
   const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
@@ -970,7 +1220,7 @@ export default function Home() {
       documentPath: documentFile.path,
       documentSource: documentFile.content,
       modules: files.filter((file) => file.kind === "module"),
-      options: { strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook"] },
+      options: { strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review"] },
     });
   }, [files, strictChannels]);
 
@@ -1081,6 +1331,9 @@ export default function Home() {
                 <button type="button" role="tab" aria-selected={lab === "notebook"} className={lab === "notebook" ? "is-active" : ""} onClick={() => setLab("notebook")}>
                   <NotebookTabs /><span><strong>Notebook Interop</strong><small>Celler, MIME, state och stale output</small></span>
                 </button>
+                <button type="button" role="tab" aria-selected={lab === "annotation"} className={lab === "annotation" ? "is-active" : ""} onClick={() => setLab("annotation")}>
+                  <Bot /><span><strong>Annotation & Review</strong><small>AI-kandidater, revisioner och export</small></span>
+                </button>
               </div>
               <div className="lab-controls">
                 <span className="shared-run-id"><CircleDot /> {running ? "running" : `run ${result.runId ?? "–"}`}</span>
@@ -1151,7 +1404,7 @@ export default function Home() {
         ) : <Specification />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Data + Notebook lab-v1</span>
+          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Data + Notebook + Annotation lab-v1</span>
           <span className="syntax-hint"><code>source</code> IR <ChevronRight /><code>run</code> result <ChevronRight /><code>adapters</code></span>
           <span>Source-first · Typed · Positionsmedveten</span>
         </footer>
