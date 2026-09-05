@@ -70,6 +70,7 @@ const navGroups: NavGroup[] = [
     items: [
       { id: "module-manifest", label: "Manifest & funktioner" },
       { id: "runtime-protocol", label: "Runtime-protokoll" },
+      { id: "editor-kernel", label: "Editor Kernel" },
       { id: "runs", label: "Runs & transaktioner" },
       { id: "security", label: "Säkerhet" },
     ],
@@ -131,7 +132,7 @@ function SectionHeading({
 }) {
   const implementationLabel = {
     implemented: "Körbar language 0.4-subset",
-    defined: "Definierat i draft 0.5",
+    defined: "Definierat i draft 0.6",
     partial: "Interaktiv subset",
     planned: "Contract-only / planerad",
   }[implementation];
@@ -241,29 +242,29 @@ export function Specification() {
       <aside className="docs-index spec-index">
         <div className="spec-version">
           <span>Textabana</span>
-          <strong>Language & Interop draft 0.5</strong>
-          <small>Language 0.4 · Adapter + Data + Notebook + Annotation + Conformance lab-v1</small>
+          <strong>Language & Interop draft 0.6</strong>
+          <small>Language 0.4 · Editor Kernel + Adapter + Data + Notebook + Annotation lab-v1</small>
         </div>
         <SpecNav />
         <div className="spec-legend" aria-label="Statusförklaring">
           <span><i className="implemented" /> Körbart i playgroundens deklarerade subset</span>
-          <span><i className="defined" /> Normativt definierat i draft 0.5</span>
+          <span><i className="defined" /> Normativt definierat i draft 0.6</span>
           <span><i className="planned" /> Definierat men ännu inte körbart här</span>
         </div>
       </aside>
 
       <main className="docs-content spec-content" id="spec-main" tabIndex={-1}>
         <details className="mobile-spec-index">
-          <summary>Innehåll · Interop 0.5</summary>
+          <summary>Innehåll · Interop 0.6</summary>
           <SpecNav mobile />
         </details>
 
         <section className="spec-hero" id="definition" aria-labelledby="definition-title">
           <div className="spec-kicker"><ShieldCheck aria-hidden="true" /> Language & Interop Specification</div>
           <div className="hero-status">
-            <StatusBadge tone="normative">Interop draft 0.5</StatusBadge>
+            <StatusBadge tone="normative">Interop draft 0.6</StatusBadge>
             <StatusBadge tone="implemented">Språkkärna 0.4-subset</StatusBadge>
-            <StatusBadge tone="partial">Sju labs · conformance gate live</StatusBadge>
+            <StatusBadge tone="partial">Åtta labs · Editor Kernel live</StatusBadge>
           </div>
           <h1 id="definition-title">Läsbar text som körbar, positionsmedveten och flerkanalig semantisk källa.</h1>
           <p className="hero-definition">Textabana gör läsbar text till en körbar, positionsmedveten och flerkanalig semantisk källa — oberoende av hur resultatet senare presenteras. Det är ett <em>source-first</em>, host-neutralt lager som kompilerar texten till en explicit plan och producerar en primär render samt valfritt många typade outputs.</p>
@@ -286,7 +287,7 @@ export function Specification() {
             headers={["Dimension", "Värden", "Betydelse"]}
             rows={[
               [<code key="n">Kravstatus</code>, "Normativt · Informativt", "Anger om texten definierar konformt beteende eller beskriver en adapter/rekommendation."],
-              [<code key="i">Implementation</code>, "Körbar language 0.4-subset · Interaktiv subset · Definierat i draft 0.5 · Contract-only", "Anger vad webbplaygrounden faktiskt kör, vad den endast visualiserar delvis och vad som fortfarande är ett kontrakt för kommande implementation."],
+              [<code key="i">Implementation</code>, "Körbar language 0.4-subset · Interaktiv subset · Definierat i draft 0.6 · Contract-only", "Anger vad webbplaygrounden faktiskt kör, vad den endast visualiserar delvis och vad som fortfarande är ett kontrakt för kommande implementation."],
             ]}
           />
           <div className="norm-terms">
@@ -296,7 +297,7 @@ export function Specification() {
           </div>
           <Requirement id="STATUS-001">En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.</Requirement>
           <Requirement id="STATUS-002">Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.</Requirement>
-          <Requirement id="STATUS-003">Nuvarande Playground implementerar sju avgränsade vyer: Language & Scope, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Alla läser samma run. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. <code>annotation/1</code> är en playground-subset; verklig modellkörning och <code>ml-lineage/1</code> är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet.</Requirement>
+          <Requirement id="STATUS-003">Nuvarande Playground implementerar åtta avgränsade vyer: Language & Scope, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Resultatvyerna läser samma valda run; Editor Kernel visar dessutom revisionskedjan runt den. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. <code>editor-kernel/1</code> och <code>annotation/1</code> är playground-subsets; verklig modellkörning och <code>ml-lineage/1</code> är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="html">
@@ -769,11 +770,11 @@ export function Specification() {
             <span>4 · Ambiguous/orphan + diagnostic</span>
           </div>
           <Requirement id="ANCHOR-001">En durable annotation MÅSTE binda till en versionerad target och minst en selector. Position och quote BÖR lagras tillsammans.</Requirement>
-          <Requirement id="ANCHOR-002">En runtime får aldrig tyst välja en av flera re-anchor-kandidater. Ambiguity eller misslyckande MÅSTE ge orphan state och diagnostik.</Requirement>
+          <Requirement id="ANCHOR-002">En runtime får aldrig tyst välja en av flera re-anchor-kandidater. Flera giltiga kandidater MÅSTE ge <code>ambiguous</code>; ingen giltig kandidat MÅSTE ge <code>orphaned</code>. Båda utfallen ska förbli olösta och diagnostiserbara.</Requirement>
           <Requirement id="ANCHOR-003">Human-facing line och column är ettbaserade. LSP-adaptern MÅSTE konvertera till nollbaserade UTF-16-positioner.</Requirement>
           <Requirement id="SOURCEMAP-001">Varje mapping record MÅSTE ange <code>exact</code>, <code>derived</code> eller <code>synthetic</code> samt generating activity. Aggregat är aldrig <code>exact</code> utan verifierat mapping proof.</Requirement>
           <Callout title="Editor Metadata Lab" icon={<PanelRight />} tone="info">
-            Labbet producerar Anchor med position- och quote-selector, visar SourceMap-records och jämför stabila row-id:n mellan två lokala runs. Jämförelsen är en pedagogisk re-anchor-projektion; canonical persistence, ambiguous/orphan-algoritm och LSP-coordinate conversion återstår.
+            Editor Metadata Lab producerar Anchor med position- och quote-selector och visar SourceMap-records. Editor Kernel Lab publicerar därutöver verkliga cross-revision transitions: stabilt anchor-id matchas först och unik quote + origin därefter; flera kandidater blir <code>ambiguous</code> och ingen kandidat blir <code>orphaned</code>. Persistens över worker-restart, strukturell/fuzzy matching och LSP-coordinate conversion återstår.
           </Callout>
         </section>
 
@@ -890,7 +891,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="system-out">
-          <SectionHeading number="14" layer="Canonical contracts" title={<><code>system.out</code> är kärnans editorprotokoll</>} implementation="partial" />
+          <SectionHeading number="14" layer="Canonical contracts" title={<><code>system.out</code> är kärnans positionsbundna metadatagränssnitt</>} implementation="partial" />
           <p className="lead"><code>system.out</code> är inte Python-, process- eller Jupyter-stdout. Det är en reserverad, typad kanal för positionsbunden metadata och editorupplevelser.</p>
           <SpecTable
             caption="Kanoniska system.out kinds"
@@ -934,7 +935,7 @@ export function Specification() {
           <Requirement id="SYSTEM-OUT-002"><code>context.system.out.row(...)</code> och <code>.line(...)</code> FÅR finnas som SDK-helpers men MÅSTE normalisera till samma portabla event envelope och Anchor.</Requirement>
           <Requirement id="SYSTEM-OUT-003">Compile- och run-fel lagras i top-level diagnostics. En lyckad positionsbunden varning FÅR dessutom projiceras i <code>system.out</code> med samma diagnostic-id.</Requirement>
           <Callout title="Kompatibilitet" icon={<GitBranch />} tone="info">
-            Playgrounden normaliserar nu <code>context.system.out.row(...)</code> och <code>.line(...)</code> till separata <code>kind</code>, <code>target.mode</code> och <code>anchorRef</code>, och visar Anchor samt SourceMap i Editor Metadata Lab. Legacyfälten <code>type</code>, <code>row</code> och <code>line</code> finns kvar som kompatibilitetsprojektioner. Durable re-anchor och LSP-adaptern är fortfarande unsupported.
+            Playgrounden normaliserar <code>context.system.out.row(...)</code> och <code>.line(...)</code> till separata <code>kind</code>, <code>target.mode</code> och <code>anchorRef</code>, och visar Anchor samt SourceMap i Editor Metadata Lab. Editor Kernel är det separata control-plane-protokollet för dokumentlivscykeln och konsumerar <code>system.out</code> genom channel subscriptions. Legacyfälten <code>type</code>, <code>row</code> och <code>line</code> finns kvar som kompatibilitetsprojektioner. Persistenta ankare och LSP-adaptern är fortfarande unsupported.
           </Callout>
         </section>
 
@@ -1064,8 +1065,81 @@ export function Specification() {
           <Requirement id="RUNTIME-003">JavaScript, TypeScript, Python, R, Julia, SQL, WASM och externa tjänster FÅR implementera samma protokoll utan språksemantisk särbehandling.</Requirement>
         </section>
 
+        <section className="docs-section spec-section" id="editor-kernel">
+          <SectionHeading number="18" layer="Editor control plane" title="Editor Kernel äger revisioner — inte editorns UI" implementation="partial" />
+          <p className="lead">Editor Kernel är ett host-neutralt control plane runt compiler och runtime. Den körbara workern använder <code>textabana.editor-kernel/lab-v1</code>. En editor, notebook eller pipelinevärd öppnar text, skickar atomiska ändringsmängder, väljer exakt revision att köra och prenumererar på committade metadataförändringar. Kärnan är inte en modul och <code>system.out</code> är en kanal som protokollet konsumerar — inte dokumentlivscykeln själv.</p>
+          <div className="architecture-flow" aria-label="Editor Kernel från host till delta">
+            <div><PanelRight aria-hidden="true" /><strong>Host</strong><span>CodeMirror · notebook · pipeline</span></div>
+            <ArrowDown aria-hidden="true" />
+            <div className="architecture-primary"><Workflow aria-hidden="true" /><strong>Editor Kernel</strong><span>open · change · subscribe · run · cancel</span></div>
+            <ArrowDown aria-hidden="true" />
+            <div><Rows3 aria-hidden="true" /><strong>Atomic delivery</strong><span>Result · metadata delta · anchor continuity</span></div>
+          </div>
+          <SpecTable
+            caption="Editor Kernel-kommandon"
+            headers={["Kommando", "Inputgrind", "Observerbart utfall"]}
+            rows={[
+              [<code key="open">open</code>, "documentId, path och source", "Immutable snapshot på documentRevision 1."],
+              [<code key="change">change</code>, "baseRevision och sorterade ChangeSet-ranges", "Ny document head eller atomiskt protokollfel."],
+              [<code key="subscribe">subscribe</code>, "Exakta channel names eller *", "Snapshot-then-delta-cursor för vald leverans."],
+              [<code key="run">run</code>, "Exakt documentRevision", "Immutable run snapshot och atomiskt Result."],
+              [<code key="cancel">cancel</code>, "runId", "Kooperativ cancellation vid deklarerade gränser."],
+            ]}
+          />
+          <CodeExample
+            title="ChangeSet — playground-envelope"
+            language="json"
+            status="Körbar lab-subset"
+            code={code(
+              "{",
+              '  "type": "change",',
+              '  "schema": "textabana.change-set/lab-v1",',
+              '  "requestId": "request:17",',
+              '  "documentId": "doc:claims",',
+              '  "changeSetId": "change:client:42",',
+              '  "baseRevision": 11,',
+              '  "coordinateUnit": "unicode-code-point",',
+              '  "changes": [{ "range": { "from": 128, "to": 131 }, "insert": "ny" }]',
+              "}"
+            )}
+          />
+          <div className="concept-grid">
+            <article><span>01</span><strong>Document version</strong><p>Innehållsidentitet. Undo kan återge samma version på en senare monoton documentRevision.</p></article>
+            <article><span>02</span><strong>Document revision</strong><p>Sessionslokal editgeneration. Den påverkar inte semantisk Result-identitet.</p></article>
+            <article><span>03</span><strong>Published revision</strong><p>Senaste head-revision med en lyckad atomisk run; failed och cancelled flyttar den inte.</p></article>
+            <article><span>04</span><strong>Metadata cursor</strong><p>Monoton leveransposition per subscription, separat från event sequence inom en run.</p></article>
+          </div>
+          <Requirement id="EDITOR-KERNEL-001">Editor Kernel MÅSTE vara ett control plane runt språk och runtime. Det får inte kunna anropas som en dokumentfunktion eller införa dold pipelineordning.</Requirement>
+          <Requirement id="EDITOR-KERNEL-002">Varje accepterad run MÅSTE fånga ett immutable snapshot med exakt <code>documentId</code>, <code>documentRevision</code> och <code>documentVersion</code>. Senare changes får inte ändra detta snapshot.</Requirement>
+          <Requirement id="EDITOR-KERNEL-003"><code>system.out</code> och andra channels är semantisk output som kan prenumereras på. De får inte bära <code>open</code>, <code>change</code> eller annan document lifecycle-semantik.</Requirement>
+          <Requirement id="DOCUMENT-001">Snapshot och monoton revision är separata begrepp. En no-op ChangeSet får returnera <code>unchanged</code> utan att skapa en revision.</Requirement>
+          <Requirement id="DOCUMENT-002">Failed eller cancelled run MÅSTE lämna senast committade metadata-baslinje orörd. Ett historiskt resultat får visas som stale men aldrig som aktuellt för en nyare head.</Requirement>
+          <Requirement id="CHANGE-001">Alla ranges i en ChangeSet MÅSTE avse samma base snapshot, vara nollbaserade, halvöppna, sorterade och icke-överlappande samt tillämpas atomiskt.</Requirement>
+          <Requirement id="CHANGE-002">Canonical change offsets räknas i Unicode code points. UTF-16-, line/column- eller editor-native-koordinater MÅSTE konverteras av en hostadapter före protokollgränsen.</Requirement>
+          <Requirement id="CHANGE-003">Stale revision eller version, ogiltig range och överlappning MÅSTE ge strukturerat protokollfel utan sourcemutation eller semantisk run.</Requirement>
+          <Requirement id="SUBSCRIPTION-001">Ett channelfilter begränsar endast leverans. Det får aldrig ändra core-resultatets channels, exekvering eller adapterfan-out.</Requirement>
+          <Requirement id="SUBSCRIPTION-002">Varje delta MÅSTE ange basis, target och cursor. En konsument med annan basis måste resynkronisera i stället för att applicera deltat.</Requirement>
+          <Requirement id="DELTA-001">Metadata-delta är en deterministisk post-commit-jämförelse mellan immutable snapshots; det muterar aldrig föregående <code>TextabanaResult</code>.</Requirement>
+          <Requirement id="DELTA-002">Cross-run matching MÅSTE använda deklarerad channel key eller explicit domänidentitet, aldrig run-lokala <code>eventId</code> eller <code>sequence</code>. Ounik identitet får inte ge ett falskt <code>moved</code> eller <code>changed</code>.</Requirement>
+          <Requirement id="DELTA-003"><code>changed</code> betyder samma stabila identitet med ändrad semantik eller payload; <code>moved</code> betyder semantiskt ekvivalent payload med ny fysisk target. Payloadändring har företräde.</Requirement>
+          <Requirement id="DELTA-004">Endast succeeded commit får publicera durable <code>added</code>, <code>removed</code>, <code>changed</code> eller <code>moved</code>. Failed och cancelled publicerar ett tomt <code>not-committed</code>-delta och behåller baslinjen.</Requirement>
+          <Requirement id="REANCHOR-001">Anchor-records är immutable och versionsbundna. Cross-revision continuity MÅSTE publiceras som en separat transition med metod och utfall; <code>ambiguous</code> och <code>orphaned</code> förblir olösta.</Requirement>
+          <SpecTable
+            caption="Tre oberoende former av inkrementalitet"
+            headers={["Förmåga", "Betydelse", "Playground"]}
+            rows={[
+              ["Inkrementell input", "Hosten skickar ChangeSets i stället för att ersätta hela dokumentet.", <StatusBadge key="input" tone="implemented">Implementerat</StatusBadge>],
+              ["Inkrementell beräkning", "Parser, compiler och runtime återanvänder verifierat opåverkade delar.", <StatusBadge key="compute" tone="planned">Ej implementerat</StatusBadge>],
+              ["Inkrementell leverans", "Hosten får semantiska deltan i stället för kompletta metadataprojektioner.", <StatusBadge key="delivery" tone="implemented">Implementerat</StatusBadge>],
+            ]}
+          />
+          <Callout title="Exakt gräns för den körbara subseten" icon={<AlertTriangle />} tone="warning">
+            Workern håller en in-memory documentsession, applicerar versionguardade Unicode-patchar, fångar run-snapshot och publicerar subscriptionfiltrerade deltan samt konservativ anchor continuity. Varje run gör fortfarande full dokumentparse, post-execution plan projection och fresh full exekvering. Persistent historik, OT/CRDT, generell strukturell re-anchor, färdig CodeMirror/Monaco/LSP-SDK och synkron preemption är inte implementerade.
+          </Callout>
+        </section>
+
         <section className="docs-section spec-section" id="runs">
-          <SectionHeading number="18" layer="Runtime" title="Run-profiler gör state explicit" implementation="defined" />
+          <SectionHeading number="19" layer="Runtime" title="Run-profiler gör state explicit" implementation="defined" />
           <SpecTable
             caption="Execution profiles"
             headers={["Profil", "State", "Reproducerbarhet"]}
@@ -1090,7 +1164,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="security">
-          <SectionHeading number="19" layer="Runtime" title="Kod är betrodd först efter en capability grant" implementation="defined" />
+          <SectionHeading number="20" layer="Runtime" title="Kod är betrodd först efter en capability grant" implementation="defined" />
           <p className="lead">Att en modul kör i Worker, kernel eller container gör den inte automatiskt säker. Textabana skiljer deklarerat behov från värdens uttryckliga grant.</p>
           <div className="security-grid">
             <article><ShieldCheck aria-hidden="true" /><strong>Före init</strong><p>Verifiera digest/signatur, lock, runtime, capability subset, quotas och URI-policy.</p></article>
@@ -1104,7 +1178,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="adapter-contract">
-          <SectionHeading number="20" layer="Adapter contract" title="Adaptrar projicerar ett resultat — de skriver inte om kärnan" implementation="partial" />
+          <SectionHeading number="21" layer="Adapter contract" title="Adaptrar projicerar ett resultat — de skriver inte om kärnan" implementation="partial" />
           <p className="lead">En adapter är en explicit, versionssatt post-commit-projektion av ett redan producerat <code>TextabanaResult</code>. Den får välja representation för en värd eller standard, men den får inte mutera källan, kärnresultatet eller dess semantiska identiteter.</p>
           <div className="architecture-flow" aria-label="Adapter fan-out efter atomisk commit">
             <div><FileJson aria-hidden="true" /><strong>Immutable Result</strong><span>exakt committad input</span></div>
@@ -1178,7 +1252,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="notebooks">
-          <SectionHeading number="21" layer="Adapter profile" title="Notebook är en positionsmedveten projektion — inte dold exekveringsordning" implementation="partial" />
+          <SectionHeading number="22" layer="Adapter profile" title="Notebook är en positionsmedveten projektion — inte dold exekveringsordning" implementation="partial" />
           <p className="lead">Textabana modellerar notebookinteroperabilitet som en komplett, versionerad snapshot med stabila cellidentiteter. Kärnan producerar kanoniska events; en ren post-commit-adapter skapar en host-neutral JSON-vy. Jupyter, nbformat och kernels är separata transport- och hostlager.</p>
           <Callout title="Körbar Notebook Interop-subset" icon={<CheckCircle2 />} tone="success"><code>notebook/1</code> kör whole-snapshot, explicita cell-id:n, tre verkliga MIME-representationer, source digests, stale-jämförelse samt profilerna <code>fresh</code>, <code>session</code> och <code>attached</code>. Endast <code>fresh</code> har körbar strukturell projektion. Jupyter Messaging, nbformat-roundtrip, session/attached kernelkörning och Comms/widgets är uttryckligen unsupported.</Callout>
           <SpecTable
@@ -1243,7 +1317,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="data-ai">
-          <SectionHeading number="22" layer="Adapter profile" title="Data, analytics, AI och ML delar samma kontrakt" normative={false} implementation="partial" />
+          <SectionHeading number="23" layer="Adapter profile" title="Data, analytics, AI och ML delar samma kontrakt" normative={false} implementation="partial" />
           <p className="lead">Bindings ska vara externa och typed. DataFrames, modeller och dataset serialiseras inte in i källtexten; de binds som inputs eller ArtifactRefs och spåras i run-proveniens.</p>
           <Callout title="Körbar Data & Lineage-subset" icon={<Database />} tone="success"><code>data/1</code> körs som en avgränsad playground-subset: typade JSON-records, dataset/schema-events, stabila <code>recordId</code>, deterministisk inner join, kolumnbundna <code>DataSelector</code>, derived aggregation och multi-input-lineage via SourceMaps som förenar båda inputankarna. Arrow IPC, Parquet, DuckDB, beständiga ArtifactRefs, OpenLineage-export och full <code>data/1</code>-konformitet är fortfarande unsupported.</Callout>
           <SpecTable
@@ -1319,7 +1393,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="annotation-observability">
-          <SectionHeading number="23" layer="Annotation profile" title="Immutable kandidater, append-only review och resolverbara exporter" implementation="partial" />
+          <SectionHeading number="24" layer="Annotation profile" title="Immutable kandidater, append-only review och resolverbara exporter" implementation="partial" />
           <p className="lead">Textabana skiljer modellens förslag från människans beslut. Kärnan lagrar kandidat, review och revision som separata events med samma stabila annotation-identitet. En post-commit-adapter projicerar kedjan till externa standarder utan att göra deras format till ny kärnsemantik.</p>
           <Callout title="Körbar Annotation & AI Review-subset" icon={<CheckCircle2 />} tone="success"><code>annotation/1</code> kör whole snapshots, stabila annotation-id:n, modell-/prompt-/inputdigests, explicit confidence method, accept/reject/supersede och resolverbara W3C- samt Label Studio-projektioner. Digests är märkta <code>fnv1a-lab</code>; verklig modellkörning, persistent review store och <code>ml-lineage/1</code> är inte simulerade.</Callout>
           <SpecTable
@@ -1436,7 +1510,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section use-cases-section" id="use-cases">
-          <SectionHeading number="24" layer="Value" title="Verkliga problem Textabana kan lösa" normative={false} implementation="defined" />
+          <SectionHeading number="25" layer="Value" title="Verkliga problem Textabana kan lösa" normative={false} implementation="defined" />
           <p className="lead">Kärnans första mål är att göra editorprogram för metadata betydligt enklare. Samma mekanik skalar sedan till data- och AI-arbetsflöden.</p>
           <div className="use-case-grid">
             <article><PanelRight aria-hidden="true" /><div><strong>Metadataeditorer utan ny parser</strong><p>Återanvänd syntaxanalys, source mapping, modulkörning, eventmodell och synk mellan text och sidopanel.</p></div></article>
@@ -1452,7 +1526,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="conformance">
-          <SectionHeading number="25" layer="Conformance" title="Implementationsanspråk härleds ur evidens" implementation="partial" />
+          <SectionHeading number="26" layer="Conformance" title="Implementationsanspråk härleds ur evidens" implementation="partial" />
           <p className="lead">Conformance Lab utvärderar ett valt, versionssatt case efter core run och adapter fan-out. Rapporten skiljer deklarerad support från observerat testutfall: endast en tillämplig playground-subset vars samtliga krav passerar blir <code>claimable</code> för den aktuella körningen.</p>
           <SpecTable
             caption="Konformitetsprofiler"
@@ -1461,6 +1535,7 @@ export function Specification() {
               [<code key="lang">language-core/0.4</code>, "Source, syntax, block, intervall, property, pipeline, inheritance och cross=error.", <StatusBadge key="c1" tone="partial">Playground subset</StatusBadge>],
               [<code key="runtime">runtime-json/1</code>, "IR, Plan, Run, Result, JSON channels och atomisk commit.", <StatusBadge key="c2" tone="partial">Playground subset</StatusBadge>],
               [<code key="editor">editor/1</code>, "Anchor, SourceMap, system.out och LSP-projektion.", <StatusBadge key="c3" tone="partial">Playground subset</StatusBadge>],
+              [<code key="editor-kernel">editor-kernel/1</code>, "Document lifecycle, revision fencing, channel subscriptions, metadata-delta och anchor continuity.", <StatusBadge key="c9" tone="partial">Interaktiv subset · separat evidens</StatusBadge>],
               [<code key="adapter">adapter-contract/1</code>, "Manifest, negotiation, immutable fan-out, fidelity, referenser och failure isolation.", <StatusBadge key="c7" tone="partial">Playground subset</StatusBadge>],
               [<code key="notebook">notebook/1</code>, "Whole snapshot, stabila cell-id:n, MIME bundle, stateprofiler, stale detection och host-neutral JSON-projektion; full profil omfattar även verifierad Jupytertransport.", <StatusBadge key="c4" tone="partial">Playground subset</StatusBadge>],
               [<code key="data">data/1</code>, "Dataset/schema-events, record identity, JSON table projection och multi-input lineage; full profil omfattar även dataplan och artifacts.", <StatusBadge key="c5" tone="partial">Playground subset</StatusBadge>],
@@ -1488,7 +1563,7 @@ export function Specification() {
             code={code(
               "{",
               '  "schema": "textabana.conformance-report/lab-v1",',
-              '  "suite": { "suiteId": "textabana.playground/interop-0.5", "version": "1.0.0-lab.1" },',
+              '  "suite": { "suiteId": "textabana.playground/interop-0.6", "version": "1.1.0-lab.1" },',
               '  "case": { "caseId": "golden-core-chain", "expectedOutcome": "succeeded", "actualOutcome": "succeeded" },',
               '  "profiles": [{',
               '    "profile": "runtime-json/1", "declaredSupport": "playground-subset",',
@@ -1503,8 +1578,8 @@ export function Specification() {
             )}
           />
           <div className="conformance-grid">
-            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, adapterisolering, typade data med lineage, notebook-snapshots, immutable annotationskandidater, run-bundna konformitetskrav, normalized golden snapshots, exakta negativa cases samt kooperativ cancellation vid stage-gränser.</p></article>
-            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, durable re-anchor, LSP, preemption av synkrona CPU-loopar, timeout/backpressure och extern side-effect rollback, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets, verklig modellkörning, persistent review store, full annotationsontologi/tool-roundtrip samt W3C PROV, OpenLineage, MLflow och OTel.</p></article>
+            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Includes, JS-moduler, block, pipelines, öppna intervall, order, inheritance, cross=error, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, versionguardade document changes, subscriptionfiltrerade metadata-deltan, konservativ anchor continuity, adapterisolering, typade data med lineage, notebook-snapshots, immutable annotationskandidater, normalized golden snapshots, exakta negativa cases samt kooperativ cancellation vid stage-gränser.</p></article>
+            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, formell och inkrementell parser, selektiv exekvering, persistent historik, strukturell/fuzzy re-anchor, färdiga editor-/LSP-adaptrar, preemption av synkrona CPU-loopar, timeout/backpressure och extern side-effect rollback, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets, verklig modellkörning, persistent review store, full annotationsontologi/tool-roundtrip samt W3C PROV, OpenLineage, MLflow och OTel.</p></article>
           </div>
           <Requirement id="CONF-001">En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.</Requirement>
           <Requirement id="CONF-002">Ett profilanspråk MÅSTE bindas till en versionssatt suite och verifiera source → IR → plan → result → projection. Profiler utan relevant input MÅSTE vara <code>not-run</code>, inte passerade.</Requirement>
@@ -1517,7 +1592,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="errors">
-          <SectionHeading number="26" layer="Conformance" title="Fel är strukturerade, positionsbundna och versionssatta" implementation="defined" />
+          <SectionHeading number="27" layer="Conformance" title="Fel är strukturerade, positionsbundna och versionssatta" implementation="defined" />
           <SpecTable
             caption="Felkodsfamiljer"
             headers={["Prefix", "Fas", "Exempel"]}
@@ -1554,16 +1629,17 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section playground-contract-section" id="playgrounds">
-          <SectionHeading number="27" layer="Interactive implementation" title="Sju playgrounds visar samma valda run från olika håll" normative={false} implementation="partial" />
-          <p className="lead">Language & Scope, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance använder samma valda källa, fixture, run-id och result envelope. Adaptergrunden registrerar, förhandlar och kör oberoende projektioner efter commit utan att mutera resultatet. Conformance läser samma körning efter fan-out och härleder sina claims från kravutfall. Ett labbyte startar ingen ny exekvering eller byter fixture.</p>
+          <SectionHeading number="28" layer="Interactive implementation" title="Åtta playgrounds visar run och editorrevision från olika håll" normative={false} implementation="partial" />
+          <p className="lead">Language & Scope, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance använder samma valda källa och run. Resultatlabben projicerar samma immutable Result; Editor Kernel visar dessutom dokumentrevision, accepterad ChangeSet, subscription och post-commit-delta runt körningen. Ett labbyte startar ingen ny exekvering eller byter fixture.</p>
           <div className="playground-grid">
             <article><span>01</span><Code2 aria-hidden="true" /><strong>Language & Scope Lab</strong><p>Scope-segment, blockträd, inheritance, faktisk stageordning, IR-projektion och render.</p><small>Live · scope-torture + base64-inverse</small></article>
-            <article><span>02</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>system.out, metadatagutter, row/line, Anchor, SourceMap och jämförelse med föregående run.</p><small>Live · editor-revision</small></article>
-            <article><span>03</span><RadioTower aria-hidden="true" /><strong>Channel & Result Lab</strong><p>ChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.</p><small>Live · channel-fanout + failed-run</small></article>
-            <article><span>04</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>JSON-tabell, schema-events, stabila recordId, deterministisk inner join, derived aggregation och cell-/record-lineage.</p><small>Live · data-join · data/1 playground-subset</small></article>
-            <article><span>05</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Whole-snapshot, stabila cell-id:n, tre MIME-representationer, explicit state och digest-baserad stale detection.</p><small>Live · notebook-snapshot · notebook/1 playground-subset</small></article>
-            <article><span>06</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>Immutable AI-kandidater, confidence method, append-only human review, revisionskedja, Anchor-targets samt W3C- och Label Studio-export.</p><small>Live · annotation-review · annotation/1 playground-subset</small></article>
-            <article><span>07</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability response, stage gates, normalized golden snapshot, strukturell diff, exakta negativa cases och kooperativ cancellation.</p><small>Live · conformance-golden · report/lab-v1</small></article>
+            <article><span>02</span><Workflow aria-hidden="true" /><strong>Editor Kernel Lab</strong><p>Open document, revisionguardad ChangeSet, captured run snapshot, subscriptionfiltrerat metadata-delta och anchor continuity.</p><small>Live · editor-kernel-revisions · editor-kernel/1 subset</small></article>
+            <article><span>03</span><PanelRight aria-hidden="true" /><strong>Editor Metadata Lab</strong><p>system.out, metadatagutter, row/line, Anchor och SourceMap i den aktuella revisionen.</p><small>Live · editor-revision</small></article>
+            <article><span>04</span><RadioTower aria-hidden="true" /><strong>Channel & Result Lab</strong><p>ChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.</p><small>Live · channel-fanout + failed-run</small></article>
+            <article><span>05</span><Database aria-hidden="true" /><strong>Data & Lineage Lab</strong><p>JSON-tabell, schema-events, stabila recordId, deterministisk inner join, derived aggregation och cell-/record-lineage.</p><small>Live · data-join · data/1 playground-subset</small></article>
+            <article><span>06</span><Blocks aria-hidden="true" /><strong>Notebook Interop Lab</strong><p>Whole-snapshot, stabila cell-id:n, tre MIME-representationer, explicit state och digest-baserad stale detection.</p><small>Live · notebook-snapshot · notebook/1 playground-subset</small></article>
+            <article><span>07</span><Bot aria-hidden="true" /><strong>Annotation & AI Review Lab</strong><p>Immutable AI-kandidater, confidence method, append-only human review, revisionskedja, Anchor-targets samt W3C- och Label Studio-export.</p><small>Live · annotation-review · annotation/1 playground-subset</small></article>
+            <article><span>08</span><ShieldCheck aria-hidden="true" /><strong>Conformance Lab</strong><p>Profilval, capability response, stage gates, normalized golden snapshot, strukturell diff, exakta negativa cases och kooperativ cancellation.</p><small>Live · conformance-golden · report/lab-v1</small></article>
           </div>
           <h3>Gemensamt playgroundkontrakt</h3>
           <Requirement id="PLAYGROUND-001">Alla labs BÖR använda samma lilla dokument, modulmanifest, inputdata och förväntade resultatsnapshot så att relationen mellan vyerna är verifierbar.</Requirement>
@@ -1573,7 +1649,7 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="glossary">
-          <SectionHeading number="28" layer="Referens" title="Kärnbegrepp" normative={false} implementation="defined" />
+          <SectionHeading number="29" layer="Referens" title="Kärnbegrepp" normative={false} implementation="defined" />
           <SpecTable
             caption="Glossary"
             headers={["Begrepp", "Definition"]}
@@ -1585,7 +1661,10 @@ export function Specification() {
               [<code key="ir">TextabanaIR</code>, "Host-neutral semantisk representation av source snapshot."],
               [<code key="plan">ExecutionPlan</code>, "Körbar, typad och capability-validerad stagegraf för en host."],
               [<code key="value">TextabanaValue</code>, "Portabelt typed value envelope i pipelines och runtimeprotokoll."],
-              [<code key="anchor">Anchor</code>, "Durable länk till en versionerad target via en eller flera selectors."],
+              [<code key="snapshot">DocumentSnapshot</code>, "Immutable textinnehåll för ett documentId vid en monoton documentRevision och content-bunden documentVersion."],
+              [<code key="change-set">ChangeSet</code>, "Atomisk, versionsguardad mängd sorterade och icke-överlappande textpatchar."],
+              [<code key="anchor">Anchor</code>, "Immutable, versionsbunden target record med selectors; cross-revision continuity är en separat, explicit resolution."],
+              [<code key="metadata-delta">MetadataDelta</code>, "Post-commit-jämförelse mellan två immutable metadatasnapshots, filtrerad för en editor subscription."],
               [<code key="source-map">SourceMap</code>, "Många-till-många-relation mellan outputselectors och inputanchors."],
               [<code key="render-result">render</code>, "Primärt resultatvärde från returpipelinen; inte en vanlig channel."],
               [<code key="channel">Channel</code>, "Namngiven, typed append-only eventström inom en run."],

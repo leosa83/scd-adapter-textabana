@@ -63,6 +63,618 @@ function withoutKeys(value, keys) {
   return Object.fromEntries(Object.entries(value || {}).filter(([key]) => !keys.includes(key)));
 }
 
+const editorDocuments = new Map();
+const editorSubscriptions = new Map();
+let editorSessionSequence = 0;
+
+function editorProtocolError(code, message, details = {}) {
+  const error = new Error(message);
+  error.name = "EditorProtocolError";
+  error.code = code;
+  error.details = details;
+  return error;
+}
+
+function editorProtocolCapabilities() {
+  return {
+    schema: "textabana.editor-kernel-capabilities/lab-v1",
+    protocol: "textabana.editor-kernel/lab-v1",
+    documentTransport: "versioned-change-set",
+    coordinateUnit: "unicode-code-point",
+    parseMode: "full-document",
+    planConstruction: "post-execution-trace",
+    executionMode: "full-fresh-run",
+    deltaMode: "post-commit-diff",
+    reanchorMode: "stable-anchor-id-then-unique-quote-origin",
+    subscriptionMode: "exact-channel-or-all",
+    persistentHistory: false,
+    collaborativeMerge: false,
+    canonical: false,
+  };
+}
+
+function editorDocumentSnapshot(document) {
+  return {
+    schema: "textabana.document-snapshot/lab-v1",
+    sessionId: document.sessionId,
+    documentId: document.documentId,
+    path: document.path,
+    documentRevision: document.revision,
+    documentVersion: document.sourceVersion,
+    publishedRevision: document.publishedRevision,
+    characters: Array.from(document.source).length,
+  };
+}
+
+function readEditorDocument(documentId) {
+  const document = editorDocuments.get(String(documentId || ""));
+  if (!document) {
+    throw editorProtocolError("TBA-EDITOR-DOCUMENT-NOT-OPEN-LAB", `Dokumentet “${documentId || ""}” är inte öppnat i Editor Kernel.`);
+  }
+  return document;
+}
+
+function openEditorDocument(payload) {
+  const input = payload.document && typeof payload.document === "object" ? payload.document : payload;
+  const documentId = String(input.documentId || input.id || "").trim();
+  const path = String(input.path || "document.md").trim();
+  if (!documentId) throw editorProtocolError("TBA-EDITOR-DOCUMENT-ID-LAB", "open kräver documentId.");
+  if (!path) throw editorProtocolError("TBA-EDITOR-DOCUMENT-PATH-LAB", "open kräver en documentsökväg.");
+  const source = String(input.source ?? input.text ?? "");
+  const revision = Number(input.documentRevision ?? input.revision ?? 1);
+  if (revision !== 1) throw editorProtocolError("TBA-EDITOR-REVISION-LAB", "En ny documentsession måste öppnas på revision 1.");
+  const sourceVersion = `fnv1a:${sourceHash(source)}`;
+  const existing = editorDocuments.get(documentId);
+  if (existing && existing.path === path && existing.source === source) {
+    return { status: "unchanged", document: editorDocumentSnapshot(existing) };
+  }
+  for (const [subscriptionId, subscription] of editorSubscriptions) {
+    if (subscription.documentId === documentId) editorSubscriptions.delete(subscriptionId);
+  }
+  editorSessionSequence += 1;
+  const document = {
+    sessionId: `editor-session:${sourceHash(documentId)}:${editorSessionSequence}`,
+    documentId,
+    path,
+    source,
+    revision: 1,
+    sourceVersion,
+    publishedRevision: null,
+    lastChange: null,
+  };
+  editorDocuments.set(documentId, document);
+  return { status: "opened", document: editorDocumentSnapshot(document) };
+}
+
+function normalizeEditorChanges(document, rawChanges) {
+  if (!Array.isArray(rawChanges) || rawChanges.length === 0) {
+    throw editorProtocolError("TBA-EDITOR-CHANGESET-EMPTY-LAB", "change kräver minst en textändring.");
+  }
+  const length = Array.from(document.source).length;
+  const changes = rawChanges.map((raw, index) => {
+    const range = raw?.range && typeof raw.range === "object" ? raw.range : raw || {};
+    const from = Number(range.from ?? range.start);
+    const to = Number(range.to ?? range.end);
+    const insert = String(raw?.insert ?? raw?.text ?? "");
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < from || to > length) {
+      throw editorProtocolError(
+        "TBA-EDITOR-RANGE-LAB",
+        `Change ${index + 1} har ett ogiltigt halvöppet Unicode-intervall [${from}, ${to}) för dokumentlängd ${length}.`,
+        { index, from, to, documentLength: length },
+      );
+    }
+    return { from, to, insert, inputIndex: index };
+  });
+  for (let index = 1; index < changes.length; index += 1) {
+    const previous = changes[index - 1];
+    const current = changes[index];
+    if (current.from < previous.from) {
+      throw editorProtocolError("TBA-EDITOR-CHANGESET-ORDER-LAB", "ChangeSet-ranges måste vara sorterade i stigande ordning.");
+    }
+    if (current.from < previous.to || current.from === previous.from) {
+      throw editorProtocolError("TBA-EDITOR-CHANGESET-OVERLAP-LAB", "ChangeSet-ranges får inte överlappa eller börja på samma position.");
+    }
+  }
+  return changes;
+}
+
+function applyEditorChange(payload) {
+  const document = readEditorDocument(payload.documentId);
+  const baseRevision = Number(payload.baseRevision);
+  if (!Number.isInteger(baseRevision) || baseRevision !== document.revision) {
+    throw editorProtocolError(
+      "TBA-EDITOR-STALE-REVISION-LAB",
+      `ChangeSet bygger på revision ${payload.baseRevision ?? "–"}, men documentsessionen står på revision ${document.revision}. Ingen text ändrades.`,
+      { expectedRevision: document.revision, receivedRevision: payload.baseRevision ?? null },
+    );
+  }
+  if (payload.baseDocumentVersion && payload.baseDocumentVersion !== document.sourceVersion) {
+    throw editorProtocolError(
+      "TBA-EDITOR-STALE-VERSION-LAB",
+      "ChangeSetets baseDocumentVersion matchar inte documentsessionens aktuella innehåll. Ingen text ändrades.",
+      { expectedVersion: document.sourceVersion, receivedVersion: payload.baseDocumentVersion },
+    );
+  }
+  const changes = normalizeEditorChanges(document, payload.changes);
+  const codePoints = Array.from(document.source);
+  const applied = changes.map((change) => ({
+    from: change.from,
+    to: change.to,
+    insert: change.insert,
+    removed: codePoints.slice(change.from, change.to).join(""),
+  }));
+  for (let index = changes.length - 1; index >= 0; index -= 1) {
+    const change = changes[index];
+    codePoints.splice(change.from, change.to - change.from, ...Array.from(change.insert));
+  }
+  const nextSource = codePoints.join("");
+  if (nextSource === document.source) {
+    return { status: "unchanged", document: editorDocumentSnapshot(document), change: null };
+  }
+  const previousVersion = document.sourceVersion;
+  document.source = nextSource;
+  document.revision += 1;
+  document.sourceVersion = `fnv1a:${sourceHash(nextSource)}`;
+  document.lastChange = {
+    schema: "textabana.change-set-result/lab-v1",
+    changeSetId: String(payload.changeSetId || `change:${sourceHash(`${document.documentId}:${document.revision}:${document.sourceVersion}`)}`),
+    status: "accepted",
+    documentId: document.documentId,
+    coordinateUnit: "unicode-code-point",
+    baseRevision,
+    documentRevision: document.revision,
+    baseDocumentVersion: previousVersion,
+    documentVersion: document.sourceVersion,
+    changes: applied.map((change) => ({
+      range: { from: change.from, to: change.to },
+      insertedCharacters: Array.from(change.insert).length,
+      removedCharacters: change.to - change.from,
+      insertDigest: `fnv1a:${sourceHash(change.insert)}`,
+      removedDigest: `fnv1a:${sourceHash(change.removed)}`,
+    })),
+  };
+  return {
+    status: "accepted",
+    document: editorDocumentSnapshot(document),
+    change: serializableValue(document.lastChange),
+  };
+}
+
+function subscribeEditorDocument(payload) {
+  const document = readEditorDocument(payload.documentId);
+  const rawChannels = Array.isArray(payload.channels) && payload.channels.length ? payload.channels : ["*"];
+  const channels = [...new Set(rawChannels.map((name) => String(name).trim()))];
+  for (const channel of channels) {
+    if (channel !== "*" && !channelNamePattern.test(channel)) {
+      throw editorProtocolError("TBA-EDITOR-SUBSCRIPTION-LAB", `Ogiltigt kanalfilter “${channel}”.`);
+    }
+  }
+  const subscriptionId = String(payload.subscriptionId || `subscription:${sourceHash(`${document.documentId}:${channels.join("|")}`)}`);
+  const subscription = {
+    schema: "textabana.editor-subscription/lab-v1",
+    subscriptionId,
+    sessionId: document.sessionId,
+    documentId: document.documentId,
+    channels,
+    delivery: "snapshot-then-delta",
+    cursor: 0,
+    baseline: null,
+  };
+  editorSubscriptions.set(subscriptionId, subscription);
+  return {
+    status: "subscribed",
+    subscription: withoutKeys(subscription, ["baseline"]),
+    document: editorDocumentSnapshot(document),
+  };
+}
+
+function captureEditorRun(payload) {
+  const document = readEditorDocument(payload.documentId);
+  const expectedRevision = Number(payload.documentRevision ?? payload.revision);
+  if (!Number.isInteger(expectedRevision) || expectedRevision !== document.revision) {
+    throw editorProtocolError(
+      "TBA-EDITOR-RUN-REVISION-LAB",
+      `run begärde revision ${payload.documentRevision ?? payload.revision ?? "–"}, men documentsessionens head är revision ${document.revision}.`,
+      { expectedRevision: document.revision, receivedRevision: payload.documentRevision ?? payload.revision ?? null },
+    );
+  }
+  return {
+    sessionId: document.sessionId,
+    documentId: document.documentId,
+    path: document.path,
+    source: document.source,
+    documentRevision: document.revision,
+    documentVersion: document.sourceVersion,
+    previousPublishedRevision: document.publishedRevision,
+    lastChange: serializableValue(document.lastChange),
+    subscriptionIds: [...editorSubscriptions.values()]
+      .filter((subscription) => subscription.documentId === document.documentId && subscription.sessionId === document.sessionId)
+      .map((subscription) => subscription.subscriptionId),
+  };
+}
+
+function pathValue(value, path) {
+  return String(path || "").split(".").filter(Boolean).reduce((current, part) => current?.[part], value);
+}
+
+function selectedEditorEvents(result, channels) {
+  const includeAll = channels.includes("*");
+  return Object.entries(result.channels || {})
+    .filter(([name]) => includeAll || channels.includes(name))
+    .flatMap(([, events]) => events || []);
+}
+
+function eventLogicalKey(event, descriptors) {
+  const descriptor = descriptors?.[event.channel];
+  const declared = (descriptor?.key || []).map((path) => pathValue(event, path));
+  const domain = {
+    channel: event.channel,
+    kind: event.kind,
+    mode: event.target?.mode || event.type,
+    rowSet: event.target?.rowSet || "document",
+    rowId: event.target?.rowId || event.rowId,
+    datasetId: event.target?.datasetId || null,
+    recordId: event.target?.recordId || null,
+    notebookId: event.target?.notebookId || null,
+    cellId: event.target?.cellId || null,
+    setId: event.target?.setId || null,
+    annotationId: event.target?.annotationId || null,
+    annotationRevision: event.target?.revision ?? null,
+    columnName: event.target?.columnName || null,
+    declared,
+  };
+  return canonicalJson(domain);
+}
+
+function indexedEditorEvents(events, descriptors) {
+  const groups = new Map();
+  for (const event of events) {
+    const key = eventLogicalKey(event, descriptors);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(event);
+  }
+  const index = new Map();
+  for (const [logicalKey, group] of groups) {
+    if (group.length === 1) {
+      index.set(logicalKey, { identity: `metadata:${sourceHash(logicalKey)}`, logicalKey, event: group[0], stable: true });
+      continue;
+    }
+    for (const event of group) {
+      const fallback = canonicalJson({ logicalKey, payload: event.payload, line: event.line, sequence: event.sequence });
+      index.set(`${logicalKey}#${event.sequence}`, {
+        identity: `metadata:duplicate:${sourceHash(fallback)}`,
+        logicalKey: `${logicalKey}#${event.sequence}`,
+        event,
+        stable: false,
+      });
+    }
+  }
+  return index;
+}
+
+function editorEventSummary(indexed) {
+  const event = indexed.event;
+  return {
+    identity: indexed.identity,
+    stableIdentity: indexed.stable,
+    eventRef: event.eventId,
+    channel: event.channel,
+    kind: event.kind,
+    payload: event.payload,
+    target: {
+      mode: event.target?.mode || event.type,
+      anchorRef: event.target?.anchorRef || null,
+      rowSet: event.target?.rowSet || "document",
+      rowId: event.target?.rowId || event.rowId,
+      row: event.target?.row ?? event.row,
+      line: event.target?.line ?? event.line,
+      ...(event.target?.column ? { column: event.target.column } : {}),
+      ...(event.target?.endLine ? { endLine: event.target.endLine } : {}),
+    },
+    origin: {
+      function: event.origin?.function || null,
+      module: event.origin?.module || null,
+      modality: event.origin?.modality || null,
+      scopeId: event.origin?.scopeId || null,
+    },
+  };
+}
+
+function editorSemanticValue(event) {
+  return canonicalJson({
+    channel: event.channel,
+    kind: event.kind,
+    payload: event.payload,
+    mapping: event.source?.mapping || null,
+    origin: {
+      function: event.origin?.function || null,
+      module: event.origin?.module || null,
+      modality: event.origin?.modality || null,
+      scopeId: event.origin?.scopeId || null,
+    },
+  });
+}
+
+function editorPlacementValue(event) {
+  return canonicalJson({
+    row: event.target?.row ?? event.row,
+    line: event.target?.line ?? event.line,
+    column: event.target?.column ?? event.column ?? null,
+    endLine: event.target?.endLine ?? event.endLine ?? null,
+  });
+}
+
+function anchorQuote(anchor) {
+  return anchor?.selectors?.find((selector) => selector.type === "TextQuoteSelector") || null;
+}
+
+function anchorPosition(anchor) {
+  return anchor?.selectors?.find((selector) => selector.type === "TextPositionSelector") || null;
+}
+
+function editorAnchorSummary(anchor) {
+  return {
+    anchorRef: anchor.anchorId,
+    targetVersion: anchor.target?.version || null,
+    line: anchor.projections?.line ?? null,
+    row: anchor.projections?.row ?? null,
+    rowId: anchor.projections?.rowId ?? null,
+    quote: anchorQuote(anchor)?.exact ?? null,
+    position: anchorPosition(anchor),
+    origin: anchor.origin,
+  };
+}
+
+function editorAnchorContinuity(previous, current, previousEvents, currentEvents) {
+  const refs = (events) => new Set(events.map((event) => event.target?.anchorRef).filter(Boolean));
+  const previousRefs = refs(previousEvents);
+  const currentRefs = refs(currentEvents);
+  const previousAnchors = new Map((previous?.anchors || []).filter((anchor) => previousRefs.has(anchor.anchorId)).map((anchor) => [anchor.anchorId, anchor]));
+  const currentAnchors = new Map((current?.anchors || []).filter((anchor) => currentRefs.has(anchor.anchorId)).map((anchor) => [anchor.anchorId, anchor]));
+  const usedCurrent = new Set();
+  const transitions = [];
+
+  for (const [anchorId, before] of previousAnchors) {
+    const after = currentAnchors.get(anchorId);
+    if (!after) continue;
+    usedCurrent.add(anchorId);
+    const moved = before.projections?.line !== after.projections?.line
+      || before.projections?.row !== after.projections?.row
+      || anchorPosition(before)?.start !== anchorPosition(after)?.start;
+    transitions.push({
+      status: moved ? "moved" : "retained",
+      method: "stable-anchor-id",
+      confidence: 1,
+      from: editorAnchorSummary(before),
+      to: editorAnchorSummary(after),
+      contentChanged: anchorQuote(before)?.exact !== anchorQuote(after)?.exact,
+    });
+  }
+
+  const unmatchedCurrent = [...currentAnchors.values()].filter((anchor) => !usedCurrent.has(anchor.anchorId));
+  for (const [anchorId, before] of previousAnchors) {
+    if (currentAnchors.has(anchorId)) continue;
+    const quote = anchorQuote(before)?.exact;
+    const candidates = quote ? unmatchedCurrent.filter((after) => (
+      !usedCurrent.has(after.anchorId)
+      && anchorQuote(after)?.exact === quote
+      && after.origin?.function === before.origin?.function
+      && after.origin?.module === before.origin?.module
+    )) : [];
+    if (candidates.length === 1) {
+      const after = candidates[0];
+      usedCurrent.add(after.anchorId);
+      transitions.push({
+        status: "relinked",
+        method: "unique-text-quote+origin",
+        confidence: 0.8,
+        from: editorAnchorSummary(before),
+        to: editorAnchorSummary(after),
+      });
+    } else if (candidates.length > 1) {
+      transitions.push({
+        status: "ambiguous",
+        method: "text-quote+origin",
+        confidence: 0,
+        from: editorAnchorSummary(before),
+        to: null,
+        candidates: candidates.map(editorAnchorSummary),
+      });
+    } else {
+      transitions.push({
+        status: "orphaned",
+        method: "no-unique-match",
+        confidence: 0,
+        from: editorAnchorSummary(before),
+        to: null,
+      });
+    }
+  }
+  for (const after of currentAnchors.values()) {
+    if (usedCurrent.has(after.anchorId)) continue;
+    transitions.push({ status: "added", method: "new-anchor", confidence: 1, from: null, to: editorAnchorSummary(after) });
+  }
+  const statuses = ["retained", "moved", "relinked", "ambiguous", "orphaned", "added"];
+  return {
+    schema: "textabana.anchor-continuity/lab-v1",
+    transitions,
+    summary: Object.fromEntries(statuses.map((status) => [status, transitions.filter((item) => item.status === status).length])),
+  };
+}
+
+function buildEditorMetadataDelta({ documentId, fromRevision, toRevision, previous, current, channels, cursor }) {
+  const beforeEvents = previous ? selectedEditorEvents(previous, channels) : [];
+  const afterEvents = selectedEditorEvents(current, channels);
+  const beforeIndex = indexedEditorEvents(beforeEvents, previous?.channelDescriptors || {});
+  const afterIndex = indexedEditorEvents(afterEvents, current.channelDescriptors || {});
+  const collections = { added: [], removed: [], changed: [], moved: [], unchanged: [] };
+
+  for (const [key, after] of afterIndex) {
+    const before = beforeIndex.get(key);
+    if (!before || !after.stable || !before.stable) {
+      collections.added.push(editorEventSummary(after));
+      continue;
+    }
+    const beforeSummary = editorEventSummary(before);
+    const afterSummary = editorEventSummary(after);
+    const semanticChanged = editorSemanticValue(before.event) !== editorSemanticValue(after.event);
+    const positionChanged = editorPlacementValue(before.event) !== editorPlacementValue(after.event);
+    if (semanticChanged) {
+      collections.changed.push({ identity: after.identity, before: beforeSummary, after: afterSummary, positionChanged });
+    } else if (positionChanged) {
+      collections.moved.push({ identity: after.identity, before: beforeSummary, after: afterSummary });
+    } else {
+      collections.unchanged.push(afterSummary);
+    }
+  }
+  for (const [key, before] of beforeIndex) {
+    const after = afterIndex.get(key);
+    if (!after || !before.stable || !after.stable) collections.removed.push(editorEventSummary(before));
+  }
+  const anchorContinuity = editorAnchorContinuity(previous, current, beforeEvents, afterEvents);
+  return {
+    schema: "textabana.metadata-delta/lab-v1",
+    documentId,
+    cursor: `cursor:${cursor}`,
+    basis: previous ? {
+      documentRevision: fromRevision,
+      documentVersion: previous.documentVersion,
+      resultId: previous.resultId,
+    } : null,
+    target: {
+      documentRevision: toRevision,
+      documentVersion: current.documentVersion,
+      resultId: current.resultId,
+    },
+    state: "committed",
+    mode: previous ? "delta" : "initial-snapshot",
+    channelFilter: channels,
+    collections,
+    summary: Object.fromEntries(Object.entries(collections).map(([name, values]) => [name, values.length])),
+    anchorContinuity,
+    render: { mode: "replace", changed: !previous || previous.output !== current.output },
+  };
+}
+
+function emptyEditorDelta(snapshot, subscription, status, result) {
+  const empty = { added: [], removed: [], changed: [], moved: [], unchanged: [] };
+  return {
+    schema: "textabana.metadata-delta/lab-v1",
+    documentId: snapshot.documentId,
+    cursor: `cursor:${subscription.cursor}`,
+    basis: subscription.baseline ? {
+      documentRevision: subscription.baseline.documentRevision,
+      documentVersion: subscription.baseline.documentVersion,
+      resultId: subscription.baseline.resultId,
+    } : null,
+    target: {
+      documentRevision: snapshot.documentRevision,
+      documentVersion: snapshot.documentVersion,
+      resultId: result.resultEnvelope?.resultId || null,
+    },
+    state: status,
+    mode: "not-committed",
+    channelFilter: subscription.channels,
+    collections: empty,
+    summary: { added: 0, removed: 0, changed: 0, moved: 0, unchanged: 0 },
+    anchorContinuity: {
+      schema: "textabana.anchor-continuity/lab-v1",
+      transitions: [],
+      summary: { retained: 0, moved: 0, relinked: 0, ambiguous: 0, orphaned: 0, added: 0 },
+    },
+    render: { mode: "none", changed: false },
+  };
+}
+
+function completeEditorRun(snapshot, result) {
+  const committed = result.ok === true && result.resultEnvelope?.run?.committed === true;
+  const document = editorDocuments.get(snapshot.documentId);
+  const deliveries = [];
+  for (const subscriptionId of snapshot.subscriptionIds) {
+    const subscription = editorSubscriptions.get(subscriptionId);
+    if (!subscription || subscription.sessionId !== snapshot.sessionId) continue;
+    if (!committed) {
+      deliveries.push({
+        subscription: withoutKeys(subscription, ["baseline"]),
+        delta: emptyEditorDelta(snapshot, subscription, result.cancelled ? "cancelled" : "failed", result),
+      });
+      continue;
+    }
+    subscription.cursor += 1;
+    const current = {
+      documentRevision: snapshot.documentRevision,
+      documentVersion: snapshot.documentVersion,
+      resultId: result.resultEnvelope.resultId,
+      output: result.output,
+      channels: serializableValue(result.channels || {}),
+      channelDescriptors: serializableValue(result.channelDescriptors || {}),
+      anchors: serializableValue(result.anchors || []),
+    };
+    const previous = subscription.baseline;
+    const delta = buildEditorMetadataDelta({
+      documentId: snapshot.documentId,
+      fromRevision: previous?.documentRevision ?? null,
+      toRevision: snapshot.documentRevision,
+      previous,
+      current,
+      channels: subscription.channels,
+      cursor: subscription.cursor,
+    });
+    subscription.baseline = current;
+    deliveries.push({ subscription: withoutKeys(subscription, ["baseline"]), delta });
+  }
+  if (committed && document && document.sessionId === snapshot.sessionId && document.revision === snapshot.documentRevision) {
+    document.publishedRevision = snapshot.documentRevision;
+  }
+  const primary = deliveries[0] || null;
+  const trace = [
+    { direction: "client→kernel", command: "open", status: "accepted", documentRevision: 1 },
+    ...snapshot.subscriptionIds.map((subscriptionId) => ({ direction: "client→kernel", command: "subscribe", status: "accepted", subscriptionId })),
+    ...(snapshot.lastChange ? [{ direction: "client→kernel", command: "change", status: "accepted", baseRevision: snapshot.lastChange.baseRevision, documentRevision: snapshot.lastChange.documentRevision }] : []),
+    { direction: "client→kernel", command: "run", status: "accepted", documentRevision: snapshot.documentRevision, runId: result.runId },
+    { direction: "kernel→client", command: committed ? "published" : result.cancelled ? "cancelled" : "failed", status: committed ? "committed" : "not-committed", documentRevision: snapshot.documentRevision, resultId: result.resultEnvelope?.resultId || null },
+    ...(primary ? [{ direction: "kernel→client", command: "metadata-delta", status: primary.delta.state, cursor: primary.delta.cursor }] : []),
+  ];
+  return {
+    schema: "textabana.editor-kernel-run/lab-v1",
+    protocol: "textabana.editor-kernel/lab-v1",
+    session: document ? editorDocumentSnapshot(document) : {
+      sessionId: snapshot.sessionId,
+      documentId: snapshot.documentId,
+      path: snapshot.path,
+      documentRevision: snapshot.documentRevision,
+      documentVersion: snapshot.documentVersion,
+      publishedRevision: snapshot.previousPublishedRevision,
+    },
+    evaluatedSnapshot: {
+      documentId: snapshot.documentId,
+      path: snapshot.path,
+      documentRevision: snapshot.documentRevision,
+      documentVersion: snapshot.documentVersion,
+    },
+    run: {
+      runId: result.runId,
+      status: committed ? "succeeded" : result.cancelled ? "cancelled" : "failed",
+      committed,
+      resultId: result.resultEnvelope?.resultId || null,
+    },
+    change: snapshot.lastChange,
+    subscription: primary?.subscription || null,
+    metadataDelta: primary?.delta || null,
+    deliveries,
+    trace,
+    capabilities: editorProtocolCapabilities(),
+    limitations: [
+      "Full document parse and fresh execution for every accepted run.",
+      "In-memory single-worker document history only.",
+      "No OT, CRDT, persistent recovery, LSP conversion or external side-effect rollback.",
+      "Unique quote + origin re-link is a conservative lab heuristic, not canonical structural re-anchoring.",
+      "FNV-1a lab identities are non-cryptographic and non-canonical.",
+    ],
+    extensions: { "textabana.playground": { canonical: false, fullProfileConformance: false } },
+  };
+}
+
 function splitExpression(input, separator = "|") {
   const parts = [];
   let current = "";
@@ -422,6 +1034,11 @@ const playgroundImplementedCapabilities = [
   "w3c-web-annotation",
   "label-studio-task-subset",
   "cooperative-cancellation",
+  "editor-document-protocol",
+  "version-guarded-change-sets",
+  "channel-subscriptions",
+  "post-commit-metadata-delta",
+  "anchor-continuity",
 ];
 
 function adapterDiagnostic(code, message, adapterId, severity = "error") {
@@ -1265,7 +1882,12 @@ function buildCapabilities(inspection) {
     implemented: playgroundImplementedCapabilities,
     unsupported: [...new Set([
       ...(inspection?.unsupported || []),
-      "reanchor",
+      "incremental-parser",
+      "incremental-execution",
+      "persistent-document-history",
+      "collaborative-merge",
+      "canonical-structural-reanchor",
+      "fuzzy-reanchor",
       "lsp",
       "preemptive-synchronous-cancellation",
       "deadline-timeout",
@@ -1327,7 +1949,7 @@ const conformanceCases = new Map([
 ]);
 
 const conformanceGoldenBaselines = {
-  "conformance-golden": "fnv1a-lab:7p9j31",
+  "conformance-golden": "fnv1a-lab:1i5nwp3",
 };
 
 const conformanceProfileOrder = [
@@ -1601,8 +2223,8 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
   const blockingRequirementIds = uniqueStrings([...caseBlockers, ...profileBlockers, ...stageBlockers]);
   const counts = profiles.reduce((summary, profile) => ({ ...summary, [profile.status]: summary[profile.status] + 1 }), { passed: 0, failed: 0, "not-run": 0 });
   const reportSeed = {
-    suite: "textabana.playground/interop-0.5",
-    suiteVersion: "1.0.0-lab.1",
+    suite: "textabana.playground/interop-0.6",
+    suiteVersion: "1.1.0-lab.1",
     fixtureId,
     caseId: expected.caseId,
     sourceResultRef: resultRef,
@@ -1614,7 +2236,7 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
     schema: "textabana.conformance-report/lab-v1",
     reportId: `conformance:${sourceHash(canonicalJson(reportSeed))}`,
     sourceResultRef: resultRef,
-    suite: { suiteId: "textabana.playground/interop-0.5", version: "1.0.0-lab.1" },
+    suite: { suiteId: "textabana.playground/interop-0.6", version: "1.1.0-lab.1" },
     case: {
       caseId: expected.caseId,
       fixtureId,
@@ -2653,12 +3275,12 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitSta
     diagnostics,
     hashes: {
       ir: ir ? `fnv1a:${sourceHash(JSON.stringify(ir))}` : null,
-      environment: "lab:web-worker:0.5-subset",
+      environment: "lab:web-worker:0.6-subset",
     },
     extensions: {
       "textabana.playground": {
         canonical: false,
-        note: "Interaktiv Interop 0.5-subset med language-core 0.4; använd inte som full profilkonformitet.",
+        note: "Interaktiv Interop 0.6-subset med language-core 0.4; använd inte som full profilkonformitet.",
         duration,
         ...(error ? { error } : {}),
       },
@@ -2667,7 +3289,7 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitSta
 }
 
 async function executeRun(payload) {
-  const { runId, documentSource, modules = [], documentPath = "document.md", options = {} } = payload;
+  const { runId, documentSource, modules = [], documentPath = "document.md", options = {}, editorSnapshot = null } = payload;
   const started = performance.now();
   const diagnostics = [];
   queuedRuns.delete(runId);
@@ -2740,7 +3362,8 @@ async function executeRun(payload) {
     });
     activeRuns.delete(runId);
     cancelledRuns.delete(runId);
-    self.postMessage({
+    const message = {
+      ...(editorSnapshot ? { type: "run-result" } : {}),
       runId,
       ok: true,
       output,
@@ -2760,7 +3383,9 @@ async function executeRun(payload) {
       functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath)),
       modulesLoaded: loaded.size,
       duration,
-    });
+    };
+    if (editorSnapshot) message.editorKernel = completeEditorRun(editorSnapshot, message);
+    self.postMessage(message);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const cancelled = error?.code === cancellationDiagnosticCode;
@@ -2805,7 +3430,8 @@ async function executeRun(payload) {
     });
     activeRuns.delete(runId);
     cancelledRuns.delete(runId);
-    self.postMessage({
+    const resultMessage = {
+      ...(editorSnapshot ? { type: "run-result" } : {}),
       runId,
       ok: false,
       cancelled,
@@ -2827,8 +3453,85 @@ async function executeRun(payload) {
       functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath)),
       modulesLoaded: loaded.size,
       duration,
-    });
+    };
+    if (editorSnapshot) resultMessage.editorKernel = completeEditorRun(editorSnapshot, resultMessage);
+    self.postMessage(resultMessage);
   }
+}
+
+self.postEditorProtocolResponse = (payload, command, response) => {
+  self.postMessage({
+    type: "kernel-response",
+    schema: "textabana.editor-kernel-response/lab-v1",
+    protocol: "textabana.editor-kernel/lab-v1",
+    requestId: payload.requestId || null,
+    command,
+    ok: true,
+    ...response,
+    capabilities: editorProtocolCapabilities(),
+  });
+};
+
+function postEditorProtocolError(payload, command, error) {
+  self.postMessage({
+    type: "kernel-response",
+    schema: "textabana.editor-kernel-response/lab-v1",
+    protocol: "textabana.editor-kernel/lab-v1",
+    requestId: payload.requestId || null,
+    command,
+    ok: false,
+    error: {
+      code: error?.code || "TBA-EDITOR-PROTOCOL-LAB",
+      message: error instanceof Error ? error.message : String(error),
+      details: serializableValue(error?.details || {}),
+    },
+    capabilities: editorProtocolCapabilities(),
+  });
+}
+
+function postRejectedEditorRun(payload, error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const diagnostic = {
+    diagnosticId: `diag:editor-protocol:${payload.runId || "unknown"}`,
+    code: error?.code || "TBA-EDITOR-PROTOCOL-LAB",
+    severity: "error",
+    level: "error",
+    line: 1,
+    message,
+    phase: "editor-protocol",
+  };
+  self.postMessage({
+    type: "run-result",
+    runId: payload.runId,
+    ok: false,
+    output: "",
+    error: message,
+    diagnostics: [diagnostic],
+    channels: {},
+    channelDescriptors: {},
+    anchors: [],
+    sourceMaps: [],
+    inspection: null,
+    plan: null,
+    executionTrace: [],
+    resultEnvelope: null,
+    adapterRun: null,
+    conformanceReport: null,
+    capabilities: null,
+    cancelled: false,
+    emissions: 0,
+    functions: [],
+    modulesLoaded: 0,
+    duration: 0,
+    editorKernel: {
+      schema: "textabana.editor-kernel-run/lab-v1",
+      protocol: "textabana.editor-kernel/lab-v1",
+      run: { runId: payload.runId, status: "rejected", committed: false, resultId: null },
+      error: diagnostic,
+      capabilities: editorProtocolCapabilities(),
+      extensions: { "textabana.playground": { canonical: false, fullProfileConformance: false } },
+    },
+  });
 }
 
 self.onmessage = (event) => {
@@ -2838,8 +3541,38 @@ self.onmessage = (event) => {
     if (activeRuns.has(runId) || queuedRuns.has(runId)) cancelledRuns.add(runId);
     return Promise.resolve();
   }
-  queuedRuns.add(payload.runId);
-  const task = runQueue.then(() => executeRun(payload));
+  if (payload.type === "open") {
+    try { self.postEditorProtocolResponse(payload, "open", openEditorDocument(payload)); }
+    catch (error) { postEditorProtocolError(payload, "open", error); }
+    return Promise.resolve();
+  }
+  if (payload.type === "change") {
+    try { self.postEditorProtocolResponse(payload, "change", applyEditorChange(payload)); }
+    catch (error) { postEditorProtocolError(payload, "change", error); }
+    return Promise.resolve();
+  }
+  if (payload.type === "subscribe") {
+    try { self.postEditorProtocolResponse(payload, "subscribe", subscribeEditorDocument(payload)); }
+    catch (error) { postEditorProtocolError(payload, "subscribe", error); }
+    return Promise.resolve();
+  }
+  let runPayload = payload;
+  if (payload.type === "run") {
+    try {
+      const editorSnapshot = captureEditorRun(payload);
+      runPayload = {
+        ...payload,
+        documentPath: editorSnapshot.path,
+        documentSource: editorSnapshot.source,
+        editorSnapshot,
+      };
+    } catch (error) {
+      postRejectedEditorRun(payload, error);
+      return Promise.resolve();
+    }
+  }
+  queuedRuns.add(runPayload.runId);
+  const task = runQueue.then(() => executeRun(runPayload));
   runQueue = task.catch(() => undefined);
   return task;
 };

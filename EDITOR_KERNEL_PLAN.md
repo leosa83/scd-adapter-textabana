@@ -3,10 +3,10 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.0.0` |
-| Status | Pågår |
+| Planversion | `1.0.1` |
+| Status | Pågår · Våg 1 genomförd |
 | Fastställd | 2026-09-05 |
-| Baseline | Interop draft 0.5, Language 0.4 och genomförd `TA-ADAPTER-PLAN` 1.0.5 |
+| Baseline | Interop draft 0.6 efter Våg 1, Language 0.4 och genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
 
 ## Versionspolicy
@@ -49,7 +49,7 @@ Textabana Editor Kernel
 
 ### Våg 1 — Embedded document protocol & metadata delta
 
-**Status:** pågår
+**Status:** genomförd 2026-09-05
 
 **Mål:** Bevisa editorloopen `open → change → subscribe → run → cancel` och ge värden ett litet, explicit delta efter varje lyckad revision.
 
@@ -75,6 +75,17 @@ Textabana Editor Kernel
 - Äldre run-meddelanden utan `type` fortsätter fungera som tidigare.
 
 **Utanför vågen:** formell parser, inkrementell AST, selektiv omkörning, diskpersistens, flerdokumentstransaktioner, CodeMirror-/Monaco-paket och extern side-effect-rollback.
+
+**Acceptansevidens:**
+
+- Workern implementerar `textabana.editor-kernel/lab-v1` med `open`, `change`, `subscribe`, `run` och `cancel`, inklusive revisions- och versionskontroll.
+- Change sets tillämpas atomiskt med Unicode-code-point-offsets; stale, osorterade, överlappande och ogiltiga patchar täcks av regressionstest.
+- Varje run använder en fångad dokumentrevision. Senare ändringar, failed runs och cancelled runs kan inte flytta den senast publicerade baslinjen.
+- `textabana.metadata-delta/lab-v1` partitionerar leveransen i `added`, `removed`, `changed`, `moved` och `unchanged` efter stabil logisk identitet.
+- Anchor continuity redovisar `retained`, `moved`, `relinked`, `ambiguous`, `orphaned` och `added` samt metod och confidence.
+- Editor Kernel Lab visar det verkliga workerprotokollet, revisionerna, delta, ankarkontinuitet och de uttryckliga begränsningarna.
+- Interop draft 0.6, README, fixturekatalog och conformance-baseline beskriver samma implementerade subset.
+- Releasegrind: 84 automatiska test passerar, ESLint passerar och produktionsbygget passerar. Chunkstorlek rapporteras som en icke-blockerande optimeringsvarning.
 
 ### Våg 2 — Formell parser, typed IR & felåterhämtning
 
@@ -127,6 +138,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.0.1 — 2026-09-05
+
+- Våg 1 markerad som genomförd efter samstämmig leverans i protokoll, runtime, labb, dokumentation och tester.
+- Acceptansevidens och faktisk releasegrind tillagda.
+- Baseline flyttad till Interop draft 0.6; Waves 2–5 förblir planerade.
 
 ### 1.0.0 — 2026-09-05
 

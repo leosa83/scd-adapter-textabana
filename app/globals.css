@@ -1998,7 +1998,7 @@ a {
   .channel-event-head > code { width: 100%; margin-left: 0; }
 }
 
-/* Language & Interop 0.5 documentation */
+/* Language & Interop 0.6 documentation */
 .spec-skip {
   position: fixed;
   z-index: 100;
@@ -5771,4 +5771,245 @@ a {
     justify-self: center;
     transform: rotate(90deg);
   }
+}
+
+.kernel-empty {
+  min-height: 320px;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.kernel-empty > svg {
+  width: 32px;
+  height: 32px;
+  color: #748a37;
+}
+
+.kernel-empty p {
+  max-width: 470px;
+  margin: 0 0 6px;
+}
+
+.kernel-flow {
+  width: min(100%, 980px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 auto 18px;
+}
+
+.kernel-flow article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  border: 1px solid #d7dbd3;
+  border-radius: 9px;
+  padding: 11px 12px;
+  background: rgba(255,255,255,0.82);
+}
+
+.kernel-flow span {
+  grid-column: 1 / -1;
+  color: #899194;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.kernel-flow strong {
+  overflow: hidden;
+  color: #273033;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+
+.kernel-flow code {
+  align-self: center;
+  color: #66732f;
+  font-size: 9px;
+}
+
+.kernel-callout {
+  width: min(100%, 980px);
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 11px;
+  margin: 0 auto 16px;
+  border: 1px solid #ccd7ad;
+  border-radius: 10px;
+  padding: 13px 15px;
+  color: #394226;
+  background: #f0f4e6;
+}
+
+.kernel-callout > svg {
+  width: 20px;
+  color: #718637;
+}
+
+.kernel-callout p {
+  margin: 3px 0 0;
+  color: #68705f;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.kernel-actions {
+  width: min(100%, 980px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 auto;
+}
+
+.delta-summary-grid {
+  width: min(100%, 980px);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 auto 18px;
+}
+
+.delta-summary-grid article {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #d9ddd5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.84);
+}
+
+.delta-summary-grid span {
+  color: #778083;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.delta-summary-grid strong {
+  color: #283033;
+  font-family: var(--font-mono);
+  font-size: 21px;
+}
+
+.delta-summary-grid .is-added,
+.delta-summary-grid .is-retained { border-top: 3px solid #78933b; }
+.delta-summary-grid .is-moved,
+.delta-summary-grid .is-relinked { border-top: 3px solid #577ab2; }
+.delta-summary-grid .is-changed,
+.delta-summary-grid .is-ambiguous { border-top: 3px solid #b17b35; }
+.delta-summary-grid .is-removed,
+.delta-summary-grid .is-orphaned { border-top: 3px solid #a9564e; }
+.delta-summary-grid .is-unchanged { border-top: 3px solid #91999a; }
+
+.kernel-delta-view > .error-state.compact {
+  width: min(100%, 980px);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 auto 14px;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.kernel-delta-view > .error-state.compact svg { width: 17px; }
+.kernel-delta-view > .error-state.compact p { margin: 0; font-size: 12px; }
+
+.delta-list,
+.anchor-transition-list {
+  width: min(100%, 980px);
+  display: grid;
+  gap: 8px;
+  margin: 0 auto;
+}
+
+.delta-list article {
+  display: grid;
+  grid-template-columns: 74px minmax(110px, .55fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #d9ddd5;
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.88);
+}
+
+.delta-list article.is-added { border-left-color: #78933b; }
+.delta-list article.is-moved { border-left-color: #577ab2; }
+.delta-list article.is-changed { border-left-color: #b17b35; }
+.delta-list article.is-removed { border-left-color: #a9564e; }
+
+.delta-list article > span {
+  color: #6e787a;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.delta-list strong { color: #2f383a; font-family: var(--font-mono); font-size: 11px; }
+.delta-list p { margin: 0; color: #4c5658; font-size: 12px; line-height: 1.45; }
+.delta-list small { color: #7c8587; font-family: var(--font-mono); font-size: 9px; }
+.delta-list del { color: #9b625d; }
+
+.anchor-summary-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.anchor-transition-list article {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #d9ddd5;
+  border-radius: 8px;
+  padding: 11px 13px;
+  background: rgba(255,255,255,0.88);
+}
+
+.anchor-transition-list > article > span {
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #596365;
+  background: #edf0eb;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.anchor-transition-list span.is-moved,
+.anchor-transition-list span.is-relinked { color: #405d88; background: #e7edf7; }
+.anchor-transition-list span.is-ambiguous { color: #7a572a; background: #f5ebdb; }
+.anchor-transition-list span.is-orphaned { color: #874841; background: #f8e7e4; }
+.anchor-transition-list span.is-added,
+.anchor-transition-list span.is-retained { color: #526629; background: #edf3df; }
+.anchor-transition-list strong { color: #30383a; font-size: 12px; }
+.anchor-transition-list p { margin: 3px 0 0; color: #727b7d; font-size: 10px; }
+.anchor-transition-list > article > code { color: #788183; font-size: 9px; text-align: right; }
+
+.kernel-json-view {
+  display: grid;
+  align-content: start;
+  gap: 0;
+}
+
+@media (max-width: 900px) {
+  .kernel-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .delta-summary-grid,
+  .anchor-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .delta-list article { grid-template-columns: 64px minmax(90px, .45fr) minmax(0, 1fr); }
+  .delta-list small { grid-column: 2 / -1; }
+}
+
+@media (max-width: 660px) {
+  .kernel-flow,
+  .delta-summary-grid,
+  .anchor-summary-grid { grid-template-columns: 1fr 1fr; }
+  .delta-list article,
+  .anchor-transition-list article { grid-template-columns: 1fr; }
+  .delta-list small { grid-column: auto; }
+  .anchor-transition-list > article > code { text-align: left; }
 }

@@ -21,6 +21,7 @@ import {
   Layers3,
   NotebookTabs,
   PanelRight,
+  PanelsTopLeft,
   Play,
   Plus,
   RadioTower,
@@ -143,6 +144,24 @@ Lasten uppgavs innehålla silver och navigationsinstrument.
 Den sista dokumenterade positionen behöver verifieras.
 
 <<<<+ @id=claims`;
+
+const editorKernelFixtureDocument = `>>>>! include "./modules/metadata.js"
+
+# Editor Kernel revisions
+
+Varje block har en uttrycklig domänidentitet. Flytta ett block, ändra dess text eller lägg till ett nytt och följ det committade metadatadeltat.
+
+>>>> collect_row row_id="claim:aurora" channel="records" kind="claim"
+Fartyget Aurora avgick från Göteborg den 4 maj.
+<<<< collect_row
+
+>>>> collect_row row_id="claim:cargo" channel="records" kind="claim"
+Lasten uppgavs innehålla silver.
+<<<< collect_row
+
+>>>> collect_row row_id="claim:position" channel="records" kind="claim"
+Den sista dokumenterade positionen behöver verifieras.
+<<<< collect_row`;
 
 const channelFixtureDocument = `>>>>! include "./modules/metadata.js"
 
@@ -271,6 +290,12 @@ const playgroundFixtures: PlaygroundFixture[] = [
     title: "Editor revision",
     summary: "Flytta text och se skillnaden mellan stabil row-identitet och fysisk line.",
     document: editorFixtureDocument,
+  },
+  {
+    id: "editor-kernel-revisions",
+    title: "Kernel revisions",
+    summary: "Versionsguardade textpatchar, stabila metadataidentiteter, delta och ankarkontinuitet.",
+    document: editorKernelFixtureDocument,
   },
   {
     id: "channel-fanout",
@@ -460,6 +485,46 @@ const metadataModule = `function rowKey(kind, text) {
 }
 
 define({
+  collect_row: {
+    description: "Publicerar ett block som en stabil, positionsbunden metadatapost.",
+    behavior: "segment-preserving",
+    outputs: ["render", "system.out", "records"],
+    channels: {
+      records: {
+        payloadKind: "object",
+        mediaType: "application/json",
+        schemaRef: "schema:textabana/record/v1",
+        delivery: "snapshot",
+        persistence: "durable",
+        ordering: "global-sequence",
+        key: ["payload.rowId"],
+        schema: {
+          type: "object",
+          required: ["kind", "text", "rowId"],
+          properties: { kind: { type: "string" }, text: { type: "string" }, rowId: { type: "string" } }
+        }
+      }
+    },
+    args: {
+      row_id: { type: "string", description: "Stabil domänidentitet över dokumentrevisioner" },
+      channel: { type: "string", default: "records", description: "Deklarerad outputkanal" },
+      kind: { type: "string", default: "row", description: "Metadatapostens typ" }
+    },
+    transform(input, args, context) {
+      const rowId = String(args.row_id || "").trim();
+      const channel = String(args.channel || "records");
+      const kind = String(args.kind || "row");
+      const text = String(input).trim();
+      if (!rowId) throw new Error("collect_row kräver row_id.");
+      if (!text) throw new Error("collect_row kräver ett icke-tomt block.");
+      const payload = { kind, text, rowId };
+      const location = { row: 1, rowId, rowSet: kind + "s", lineOffset: 0, kind: "annotation" };
+      context.system.out.row(rowId, payload, location);
+      context.emit(channel, payload, location);
+      return input;
+    }
+  },
+
   collect_rows: {
     description: "Behåller texten och publicerar varje icke-tom rad som strukturerad metadata.",
     behavior: "segment-preserving",
@@ -1187,6 +1252,23 @@ function filesForFixture(fixtureId: string): ProjectFile[] {
   return initialFiles.map((file) => file.kind === "document" ? { ...file, content: fixture.document } : { ...file });
 }
 
+function singleTextChange(before: string, after: string) {
+  const previous = Array.from(before);
+  const next = Array.from(after);
+  let prefix = 0;
+  while (prefix < previous.length && prefix < next.length && previous[prefix] === next[prefix]) prefix += 1;
+  let suffix = 0;
+  while (
+    suffix < previous.length - prefix
+    && suffix < next.length - prefix
+    && previous[previous.length - 1 - suffix] === next[next.length - 1 - suffix]
+  ) suffix += 1;
+  return {
+    range: { from: prefix, to: previous.length - suffix },
+    insert: next.slice(prefix, next.length - suffix).join(""),
+  };
+}
+
 function CodeEditor({ file, onChange }: { file: ProjectFile; onChange: (value: string) => void }) {
   const extensions = useMemo(
     () => [file.kind === "document" ? markdown() : javascript()],
@@ -1227,6 +1309,7 @@ const emptyRuntimeResult: RuntimeResult = {
   resultEnvelope: null,
   adapterRun: null,
   conformanceReport: null,
+  editorKernel: null,
   capabilities: null,
   emissions: 0,
   functions: [],
@@ -1250,6 +1333,8 @@ export default function Home() {
 
   const workerRef = useRef<Worker | null>(null);
   const runIdRef = useRef(0);
+  const requestIdRef = useRef(0);
+  const kernelDocumentRef = useRef<{ documentId: string; path: string; source: string; revision: number } | null>(null);
   const lastResultRef = useRef<RuntimeResult | null>(null);
   const activeFile = files.find((file) => file.path === activePath) ?? files[0];
 
@@ -1303,6 +1388,7 @@ export default function Home() {
         resultEnvelope: event.data.resultEnvelope ?? null,
         adapterRun: event.data.adapterRun ?? null,
         conformanceReport: event.data.conformanceReport ?? null,
+        editorKernel: event.data.editorKernel ?? null,
         capabilities: event.data.capabilities ?? null,
         cancelled: event.data.cancelled === true,
         emissions: event.data.emissions ?? 0,
@@ -1338,10 +1424,46 @@ export default function Home() {
     const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
     runIdRef.current = runId;
     setRunning(true);
+    const documentId = `doc:playground:${documentFile.path}`;
+    let kernelDocument = kernelDocumentRef.current;
+    if (!kernelDocument || kernelDocument.documentId !== documentId) {
+      requestIdRef.current += 1;
+      worker.postMessage({
+        type: "open",
+        requestId: `request:${requestIdRef.current}`,
+        document: { documentId, path: documentFile.path, source: documentFile.content, documentRevision: 1 },
+      });
+      requestIdRef.current += 1;
+      worker.postMessage({
+        type: "subscribe",
+        requestId: `request:${requestIdRef.current}`,
+        documentId,
+        subscriptionId: `subscription:${documentId}:system.out`,
+        channels: ["system.out"],
+      });
+      kernelDocument = { documentId, path: documentFile.path, source: documentFile.content, revision: 1 };
+      kernelDocumentRef.current = kernelDocument;
+    } else if (kernelDocument.source !== documentFile.content) {
+      const change = singleTextChange(kernelDocument.source, documentFile.content);
+      requestIdRef.current += 1;
+      worker.postMessage({
+        type: "change",
+        requestId: `request:${requestIdRef.current}`,
+        documentId,
+        baseRevision: kernelDocument.revision,
+        changeSetId: `change:${documentId}:${kernelDocument.revision + 1}`,
+        changes: [change],
+      });
+      kernelDocument = { ...kernelDocument, source: documentFile.content, revision: kernelDocument.revision + 1 };
+      kernelDocumentRef.current = kernelDocument;
+    }
+    requestIdRef.current += 1;
     worker.postMessage({
+      type: "run",
+      requestId: `request:${requestIdRef.current}`,
       runId,
-      documentPath: documentFile.path,
-      documentSource: documentFile.content,
+      documentId,
+      documentRevision: kernelDocument.revision,
       modules: files.filter((file) => file.kind === "module"),
       options: { fixtureId, strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review", "org.textabana.ml-lineage"] },
     });
@@ -1388,6 +1510,7 @@ export default function Home() {
     setActivePath("document.md");
     setPreviousResult(null);
     lastResultRef.current = null;
+    kernelDocumentRef.current = null;
     toast.success(`Fixture laddad: ${playgroundFixtures.find((fixture) => fixture.id === nextFixtureId)?.title ?? nextFixtureId}`);
   };
 
@@ -1397,6 +1520,7 @@ export default function Home() {
     setActivePath("document.md");
     setPreviousResult(null);
     lastResultRef.current = null;
+    kernelDocumentRef.current = null;
     toast.success("Aktuell fixture återställdes");
   };
 
@@ -1427,7 +1551,7 @@ export default function Home() {
 
           <Tabs value={view} onValueChange={setView} className="top-tabs">
             <TabsList>
-              <TabsTrigger value="docs"><BookOpen /> Specifikation 0.5</TabsTrigger>
+              <TabsTrigger value="docs"><BookOpen /> Specifikation 0.6</TabsTrigger>
               <TabsTrigger value="workspace"><Code2 /> Playground Labs</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -1453,8 +1577,11 @@ export default function Home() {
                 <button type="button" role="tab" aria-selected={lab === "language"} className={lab === "language" ? "is-active" : ""} onClick={() => setLab("language")}>
                   <GitBranch /><span><strong>Language & Scope</strong><small>Vad körs, i vilken ordning och varför?</small></span>
                 </button>
+                <button type="button" role="tab" aria-selected={lab === "kernel"} className={lab === "kernel" ? "is-active" : ""} onClick={() => setLab("kernel")}>
+                  <PanelsTopLeft /><span><strong>Editor Kernel</strong><small>open, change, run och metadata-delta</small></span>
+                </button>
                 <button type="button" role="tab" aria-selected={lab === "editor"} className={lab === "editor" ? "is-active" : ""} onClick={() => setLab("editor")}>
-                  <PanelRight /><span><strong>Editor Metadata</strong><small>Anchors, row, line och SourceMap</small></span>
+                  <PanelRight /><span><strong>Editor Metadata</strong><small>Gutter, anchors och SourceMap</small></span>
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "channels"} className={lab === "channels" ? "is-active" : ""} onClick={() => setLab("channels")}>
                   <RadioTower /><span><strong>Channel & Result</strong><small>Descriptors, atomiskt resultat och adapters</small></span>
@@ -1541,8 +1668,8 @@ export default function Home() {
         ) : <Specification />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Interop draft 0.5 · Language 0.4 · Data + Notebook + Annotation + Conformance lab-v1</span>
-          <span className="syntax-hint"><code>source</code> IR <ChevronRight /><code>run</code> result <ChevronRight /><code>adapters</code></span>
+          <span><CheckCircle2 /> Interop draft 0.6 · Language 0.4 · Editor Kernel + adapters lab-v1</span>
+          <span className="syntax-hint"><code>change</code> snapshot <ChevronRight /><code>run</code> result <ChevronRight /><code>delta</code></span>
           <span>Source-first · Typed · Positionsmedveten</span>
         </footer>
       </div>

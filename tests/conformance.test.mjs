@@ -88,11 +88,11 @@ test("golden fixture publishes a passed machine-readable conformance gate", asyn
 
   assert.equal(result.ok, true, result.error);
   assert.equal(report.schema, "textabana.conformance-report/lab-v1");
-  assert.equal(report.suite.suiteId, "textabana.playground/interop-0.5");
-  assert.equal(report.suite.version, "1.0.0-lab.1");
+  assert.equal(report.suite.suiteId, "textabana.playground/interop-0.6");
+  assert.equal(report.suite.version, "1.1.0-lab.1");
   assert.equal(report.gate.status, "passed");
   assert.equal(report.golden.status, "passed");
-  assert.equal(report.golden.expectedStructuralDigest, "fnv1a-lab:7p9j31");
+  assert.equal(report.golden.expectedStructuralDigest, "fnv1a-lab:1i5nwp3");
   assert.equal(report.golden.actualStructuralDigest, report.structuralDigest);
   assert.ok(report.reportId.startsWith("conformance:"));
 });

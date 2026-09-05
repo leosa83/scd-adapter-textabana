@@ -18,6 +18,7 @@ import {
   MapPin,
   NotebookTabs,
   PanelRight,
+  PanelsTopLeft,
   RadioTower,
   Rows3,
   ShieldCheck,
@@ -47,6 +48,7 @@ type PlaygroundOutputProps = {
 
 const labCopy: Record<LabId, { title: string; icon: typeof Braces }> = {
   language: { title: "Language & Scope", icon: Braces },
+  kernel: { title: "Editor Kernel", icon: PanelsTopLeft },
   editor: { title: "Editor Metadata", icon: PanelRight },
   channels: { title: "Channel & Result", icon: RadioTower },
   data: { title: "Data & Lineage", icon: Database },
@@ -271,6 +273,126 @@ function EventCard({ event, selected, onSelect }: { event: ChannelEvent; selecte
   return onSelect ? (
     <button type="button" className={`channel-event event-button ${selected ? "is-selected" : ""}`} onClick={onSelect}>{content}</button>
   ) : <article className="channel-event">{content}</article>;
+}
+
+function editorItemLabel(item: { target?: { rowId?: string }; payload?: unknown }) {
+  if (item.payload && typeof item.payload === "object" && "text" in item.payload) return String(item.payload.text);
+  return item.target?.rowId || "metadata";
+}
+
+function EditorKernelLab({
+  result,
+  onOpenLab,
+  onSelectFixture,
+}: Pick<PlaygroundOutputProps, "result" | "onOpenLab" | "onSelectFixture">) {
+  const [tab, setTab] = useState("revision");
+  const kernel = result.editorKernel;
+  const delta = kernel?.metadataDelta ?? null;
+  const changedCount = delta ? delta.summary.added + delta.summary.removed + delta.summary.changed + delta.summary.moved : 0;
+
+  if (!kernel) {
+    return (
+      <div className="lab-empty kernel-empty">
+        <PanelsTopLeft aria-hidden="true" />
+        <strong>Den här körningen saknar Editor Kernel-evidens.</strong>
+        <p>Öppna den versionshanterade fixturen för att köra <code>open → subscribe → change → run</code>.</p>
+        <Button size="sm" onClick={() => onSelectFixture("editor-kernel-revisions")}>Ladda Kernel revisions</Button>
+      </div>
+    );
+  }
+
+  const session = kernel.session;
+  return (
+    <>
+      <LabTabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: "revision", label: "Revision", icon: GitBranch },
+          { id: "delta", label: "Metadata delta", count: changedCount, icon: Rows3 },
+          { id: "anchors", label: "Anchor continuity", count: delta?.anchorContinuity.transitions.length, icon: MapPin },
+          { id: "protocol", label: "Protocol JSON", icon: FileJson },
+        ]}
+      />
+      {tab === "revision" ? (
+        <div className="lab-scroll kernel-lab">
+          <div className="subset-notice"><CircleDot /> Körbar <code>editor-kernel/lab-v1</code> · inkrementell dokumenttransport · full omkörning per revision</div>
+          <div className="lab-intro">
+            <div><span>Öppen documentsession</span><strong>{session?.path ?? "document.md"} · revision {session?.documentRevision ?? "–"}</strong></div>
+            <p>En accepterad textpatch flyttar document head. Metadata blir aktuell först efter en lyckad, atomisk run.</p>
+          </div>
+          <div className="lab-metrics kernel-metrics">
+            <article><span>Document head</span><strong>{session?.documentRevision ?? "–"}</strong><small>{session?.documentVersion ?? "ingen version"}</small></article>
+            <article><span>Publicerad revision</span><strong>{session?.publishedRevision ?? "–"}</strong><small>{kernel.run.committed ? "current" : "senaste good står kvar"}</small></article>
+            <article><span>Senaste change</span><strong>{kernel.change?.status ?? "open"}</strong><small>{kernel.change ? `${kernel.change.baseRevision} → ${kernel.change.documentRevision}` : "initial snapshot"}</small></article>
+            <article><span>Metadataändringar</span><strong>{changedCount}</strong><small>{delta?.mode ?? "ingen subscription"}</small></article>
+          </div>
+          <section className="kernel-flow" aria-label="Editor Kernel protocol trace">
+            {(kernel.trace ?? []).map((entry, index) => (
+              <article key={`${String(entry.command)}:${index}`}>
+                <span>{String(entry.direction ?? "kernel")}</span>
+                <strong>{String(entry.command ?? "event")}</strong>
+                <code>{String(entry.status ?? "")}</code>
+              </article>
+            ))}
+          </section>
+          <CalloutLike>
+            <strong>Tre separata former av inkrementalitet</strong>
+            <p>Patchinput och delta-output är implementerade. Parser, plan och exekvering räknas fortfarande om i sin helhet.</p>
+          </CalloutLike>
+          <div className="kernel-actions">
+            <Button size="sm" variant="outline" onClick={() => onSelectFixture("editor-kernel-revisions")}><GitBranch /> Ladda revisionsfixture</Button>
+            <Button size="sm" variant="outline" onClick={() => onOpenLab("editor")}><PanelRight /> Visa aktuell metadata</Button>
+          </div>
+        </div>
+      ) : null}
+      {tab === "delta" ? (
+        <div className="lab-scroll kernel-delta-view">
+          <div className="lab-intro"><div><span>{delta?.cursor ?? "Ingen cursor"}</span><strong>{delta?.mode === "initial-snapshot" ? "Initial snapshot" : delta?.state === "committed" ? "Committat metadata-delta" : "Ingen ny commit"}</strong></div><p>Matchning använder stabil metadataidentitet; run-lokala event-id:n och sequence ignoreras.</p></div>
+          {!delta ? <div className="lab-empty">Ingen channel subscription levererade ett delta för denna run.</div> : (
+            <>
+              <div className="delta-summary-grid">
+                {(["added", "moved", "changed", "removed", "unchanged"] as const).map((kind) => <article className={`is-${kind}`} key={kind}><span>{kind}</span><strong>{delta.summary[kind]}</strong></article>)}
+              </div>
+              {delta.mode === "not-committed" ? <div className="error-state compact"><AlertTriangle /><p>Revisionen publicerades inte. Föregående framgångsrika deltabaslinje ändrades inte.</p></div> : null}
+              <div className="delta-list">
+                {delta.collections.added.map((item) => <article key={`added:${item.identity}`} className="is-added"><span>added</span><strong>{item.target.rowId}</strong><p>{editorItemLabel(item)}</p><small>line {item.target.line} · {item.channel}</small></article>)}
+                {delta.collections.moved.map((item) => <article key={`moved:${item.identity}`} className="is-moved"><span>moved</span><strong>{item.after.target.rowId}</strong><p>{editorItemLabel(item.after)}</p><small>line {item.before.target.line} → {item.after.target.line} · stabil identitet</small></article>)}
+                {delta.collections.changed.map((item) => <article key={`changed:${item.identity}`} className="is-changed"><span>changed</span><strong>{item.after.target.rowId}</strong><p><del>{editorItemLabel(item.before)}</del><br />{editorItemLabel(item.after)}</p><small>{item.positionChanged ? `payload + position · line ${item.before.target.line} → ${item.after.target.line}` : "payload ändrad"}</small></article>)}
+                {delta.collections.removed.map((item) => <article key={`removed:${item.identity}`} className="is-removed"><span>removed</span><strong>{item.target.rowId}</strong><p>{editorItemLabel(item)}</p><small>tidigare line {item.target.line}</small></article>)}
+              </div>
+              {changedCount === 0 ? <div className="lab-empty">Revisionen gav samma semantiska metadata. Källtexten kan ändå ha ändrats.</div> : null}
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === "anchors" ? (
+        <div className="lab-scroll kernel-anchor-view">
+          <div className="lab-intro"><div><span>Cross-revision resolution</span><strong>Stabilt ID först, unik quote + origin därefter</strong></div><p><code>ambiguous</code> och <code>orphaned</code> väljer aldrig en kandidat tyst.</p></div>
+          <div className="delta-summary-grid anchor-summary-grid">
+            {Object.entries(delta?.anchorContinuity.summary ?? {}).map(([status, count]) => <article key={status} className={`is-${status}`}><span>{status}</span><strong>{count}</strong></article>)}
+          </div>
+          <div className="anchor-transition-list">
+            {(delta?.anchorContinuity.transitions ?? []).map((transition, index) => {
+              const before = transition.from as { anchorRef?: string; line?: number; quote?: string } | null;
+              const after = transition.to as { anchorRef?: string; line?: number; quote?: string } | null;
+              return <article key={`${transition.status}:${before?.anchorRef ?? after?.anchorRef ?? index}`}><span className={`is-${transition.status}`}>{transition.status}</span><div><strong>{before?.quote ?? after?.quote ?? "Ny eller olöst anchor"}</strong><p>{transition.method} · line {before?.line ?? "–"} → {after?.line ?? "–"}</p></div><code>{Math.round(transition.confidence * 100)}%</code></article>;
+            })}
+          </div>
+        </div>
+      ) : null}
+      {tab === "protocol" ? (
+        <div className="lab-json-scroll kernel-json-view">
+          <div className="subset-notice"><CircleDot /> Maskinläsbar editor-evidens · <code>canonical=false</code> · inte full <code>editor-kernel/1</code>-konformitet</div>
+          <pre>{json(kernel)}</pre>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function CalloutLike({ children }: { children: React.ReactNode }) {
+  return <aside className="kernel-callout"><Workflow aria-hidden="true" /><div>{children}</div></aside>;
 }
 
 function EditorLab({
@@ -1266,6 +1388,7 @@ export function PlaygroundOutput(props: PlaygroundOutputProps) {
   return (
     <ResultShell lab={props.lab} result={props.result} running={props.running}>
       {props.lab === "language" ? <LanguageLab result={props.result} /> : null}
+      {props.lab === "kernel" ? <EditorKernelLab result={props.result} onOpenLab={props.onOpenLab} onSelectFixture={props.onSelectFixture} /> : null}
       {props.lab === "editor" ? <EditorLab result={props.result} previousResult={props.previousResult} onOpenLab={props.onOpenLab} /> : null}
       {props.lab === "channels" ? <ChannelLab result={props.result} onOpenLab={props.onOpenLab} /> : null}
       {props.lab === "data" ? <DataLab result={props.result} onOpenLab={props.onOpenLab} /> : null}

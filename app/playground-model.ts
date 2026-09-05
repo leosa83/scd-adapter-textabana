@@ -4,7 +4,7 @@ export type ProjectFile = {
   content: string;
 };
 
-export type LabId = "language" | "editor" | "channels" | "data" | "notebook" | "annotation" | "conformance";
+export type LabId = "language" | "kernel" | "editor" | "channels" | "data" | "notebook" | "annotation" | "conformance";
 
 export type FunctionMeta = {
   name: string;
@@ -392,6 +392,119 @@ export type RuntimeSourceMap = {
   inputSelectors?: Array<Record<string, unknown>>;
 };
 
+export type EditorMetadataItem = {
+  identity: string;
+  stableIdentity: boolean;
+  eventRef: string;
+  channel: string;
+  kind: string;
+  payload: unknown;
+  target: {
+    mode: string;
+    anchorRef: string | null;
+    rowSet: string;
+    rowId: string;
+    row: number;
+    line: number;
+    column?: number;
+    endLine?: number;
+  };
+  origin: { function: string | null; module: string | null; modality: string | null; scopeId: string | null };
+};
+
+export type EditorAnchorTransition = {
+  status: "retained" | "moved" | "relinked" | "ambiguous" | "orphaned" | "added";
+  method: string;
+  confidence: number;
+  from: Record<string, unknown> | null;
+  to: Record<string, unknown> | null;
+  contentChanged?: boolean;
+  candidates?: Array<Record<string, unknown>>;
+};
+
+export type EditorMetadataDelta = {
+  schema: "textabana.metadata-delta/lab-v1";
+  documentId: string;
+  cursor: string;
+  basis: { documentRevision: number; documentVersion: string; resultId: string } | null;
+  target: { documentRevision: number; documentVersion: string; resultId: string | null };
+  state: "committed" | "failed" | "cancelled" | string;
+  mode: "initial-snapshot" | "delta" | "not-committed";
+  channelFilter: string[];
+  collections: {
+    added: EditorMetadataItem[];
+    removed: EditorMetadataItem[];
+    changed: Array<{ identity: string; before: EditorMetadataItem; after: EditorMetadataItem; positionChanged: boolean }>;
+    moved: Array<{ identity: string; before: EditorMetadataItem; after: EditorMetadataItem }>;
+    unchanged: EditorMetadataItem[];
+  };
+  summary: { added: number; removed: number; changed: number; moved: number; unchanged: number };
+  anchorContinuity: {
+    schema: "textabana.anchor-continuity/lab-v1";
+    transitions: EditorAnchorTransition[];
+    summary: Record<string, number>;
+  };
+  render: { mode: "replace" | "none"; changed: boolean };
+};
+
+export type EditorKernelRun = {
+  schema: "textabana.editor-kernel-run/lab-v1";
+  protocol: "textabana.editor-kernel/lab-v1";
+  session?: {
+    sessionId: string;
+    documentId: string;
+    path: string;
+    documentRevision: number;
+    documentVersion: string;
+    publishedRevision: number | null;
+    characters?: number;
+  };
+  evaluatedSnapshot?: {
+    documentId: string;
+    path: string;
+    documentRevision: number;
+    documentVersion: string;
+  };
+  run: { runId: number; status: "succeeded" | "failed" | "cancelled" | "rejected"; committed: boolean; resultId: string | null };
+  change?: {
+    schema: string;
+    changeSetId: string;
+    status: "accepted";
+    baseRevision: number;
+    documentRevision: number;
+    coordinateUnit: "unicode-code-point";
+    changes: Array<Record<string, unknown>>;
+  } | null;
+  subscription?: {
+    subscriptionId: string;
+    documentId: string;
+    channels: string[];
+    delivery: string;
+    cursor: number;
+  } | null;
+  metadataDelta?: EditorMetadataDelta | null;
+  deliveries?: Array<Record<string, unknown>>;
+  trace?: Array<Record<string, unknown>>;
+  capabilities: {
+    schema: string;
+    protocol: string;
+    documentTransport: string;
+    coordinateUnit: string;
+    parseMode: string;
+    planConstruction: string;
+    executionMode: string;
+    deltaMode: string;
+    reanchorMode: string;
+    subscriptionMode: string;
+    persistentHistory: boolean;
+    collaborativeMerge: boolean;
+    canonical: boolean;
+  };
+  limitations?: string[];
+  error?: RuntimeDiagnostic;
+  extensions: Record<string, unknown>;
+};
+
 export type RuntimeResult = {
   runId?: number;
   ok: boolean;
@@ -408,6 +521,7 @@ export type RuntimeResult = {
   resultEnvelope: Record<string, unknown> | null;
   adapterRun: AdapterRun | null;
   conformanceReport: ConformanceReport | null;
+  editorKernel: EditorKernelRun | null;
   capabilities: Record<string, unknown> | null;
   cancelled?: boolean;
   emissions: number;

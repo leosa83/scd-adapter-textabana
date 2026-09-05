@@ -6,9 +6,10 @@ Den publicerade specifikationen och playgrounden finns på [textpipe-editor.leo-
 
 ## Playground Labs
 
-Sju interaktiva labs visar olika projektioner av samma worker-run:
+Åtta interaktiva labs visar samma källa och valda run från olika semantiska perspektiv:
 
 - **Language & Scope** — block, öppna intervall, inheritance, scope-segment och faktisk exekveringsordning.
+- **Editor Kernel** — documentsession, revisionguardade ChangeSets, channel subscriptions, metadata-delta och anchor continuity.
 - **Editor Metadata** — `system.out`, row/line, Anchor, SourceMap och jämförelse mellan revisioner.
 - **Channel & Result** — deklarerade kanaldeskriptorer, strict validation, global eventtimeline och atomiskt result envelope.
 - **Data & Lineage** — typade dataset/schema-events, stabila records, deterministisk inner join, cell-/record-lineage, derived aggregation och en source-bound JSON-tabellprojektion.
@@ -18,7 +19,15 @@ Sju interaktiva labs visar olika projektioner av samma worker-run:
 
 Channel & Result innehåller även en adapterinspektör. Den visar det körbara kontraktet efter core commit utan att starta en separat run.
 
-Fixturepaketet innehåller `scope-torture`, `editor-revision`, `channel-fanout`, `base64-inverse`, `failed-run`, `data-join`, `notebook-snapshot`, `annotation-review`, `conformance-golden`, två ytterligare negativa cases och `cancellation-probe`.
+Fixturepaketet innehåller `scope-torture`, `editor-revision`, `editor-kernel-revisions`, `channel-fanout`, `base64-inverse`, `failed-run`, `data-join`, `notebook-snapshot`, `annotation-review`, `conformance-golden`, två ytterligare negativa cases och `cancellation-probe`.
+
+## Embedded Editor Kernel
+
+Textabana kan bäddas in som en dokumentkärna bakom editorer. Workern implementerar det versionssatta protokollet `textabana.editor-kernel/lab-v1`: hosten öppnar ett dokument, skickar atomiska Unicode-code-point-ChangeSets mot en explicit basrevision, prenumererar på kanaler och kör exakt valt snapshot. En lyckad run levererar ett separat `textabana.metadata-delta/lab-v1` med `added`, `removed`, `changed`, `moved` och `unchanged`, plus redovisad anchor continuity.
+
+Delta matchas med stabil channel-/domänidentitet, aldrig med run-lokala event-id:n. Failed och cancelled run lämnar föregående committade deltabaslinje orörd. Stabilt anchor-id har företräde; annars får en unik TextQuote + origin relinkas. Flera kandidater blir `ambiguous` och ingen kandidat blir `orphaned` — kärnan gissar inte.
+
+Subseten ger inkrementell dokumenttransport och inkrementell metadataleverans. Den gör fortfarande full dokumentparse, bygger planen från den fulla execution trace och kör en fresh full run. Inkrementell parser/exekvering, persistent historik, OT/CRDT, generell strukturell re-anchor samt färdiga CodeMirror-/Monaco-/LSP-paket ligger i senare vågor i [Editor Kernel-planen](./EDITOR_KERNEL_PLAN.md).
 
 ## Conformance-grind
 
@@ -42,7 +51,7 @@ Annotation-subseten gör inga falska modell- eller verktygsanspråk. Den kör in
 
 ## Status
 
-Dokumentationen är **Textabana Language & Interop draft 0.5**. Webbmotorn implementerar uttryckligen avgränsade playground-subsets av `language-core/0.4`, `runtime-json/1`, `editor/1`, `adapter-contract/1`, `data/1`, `notebook/1` och `annotation/1`; den gör ännu inte anspråk på full profilkonformitet. UI:t redovisar funktioner som ännu saknas som `contract-only`, `unsupported` eller `planned`.
+Dokumentationen är **Textabana Language & Interop draft 0.6**. Webbmotorn implementerar uttryckligen avgränsade playground-subsets av `language-core/0.4`, `runtime-json/1`, `editor/1`, `editor-kernel/1`, `adapter-contract/1`, `data/1`, `notebook/1` och `annotation/1`; den gör ännu inte anspråk på full profilkonformitet. UI:t redovisar funktioner som ännu saknas som `contract-only`, `unsupported` eller `planned`.
 
 ## Utveckling
 
@@ -59,7 +68,8 @@ Viktiga filer:
 
 - `app/specification.tsx` — språk- och interoperabilitetsspecifikation.
 - `app/page.tsx` — delad editor, fixtures och playgroundskal.
-- `app/playground-labs.tsx` — de sju resultatprojektionerna.
+- `app/playground-labs.tsx` — de åtta resultat- och editorprojektionerna.
 - `public/runtime-worker.js` — parser, modulruntime, kanaler, trace, resultatmodell och post-commit adapterregister.
 - `IMPLEMENTATION_PLAN.md` — versionspolicy, sprintar och acceptansgrindar.
+- `EDITOR_KERNEL_PLAN.md` — nästa fem vågor från dokumentprotokoll till produktionskonformitet.
 - `tests/` — regressioner och fixturekontrakt.

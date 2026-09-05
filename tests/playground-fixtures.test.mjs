@@ -84,6 +84,18 @@ test("editor-revision emits stable row anchors and physical line projections", a
   assert.equal(auroraAfter.line, auroraBefore.line + 1);
 });
 
+test("editor-kernel fixture exposes authored identities suitable for changed and moved deltas", async () => {
+  const result = await run(template("editorKernelFixtureDocument"));
+  const rows = result.channels["system.out"];
+
+  assert.equal(result.ok, true, result.error);
+  assert.equal(rows.length, 3);
+  assert.equal(JSON.stringify(rows.map((event) => event.rowId)), JSON.stringify(["claim:aurora", "claim:cargo", "claim:position"]));
+  assert.equal(new Set(rows.map((event) => event.target.anchorRef)).size, 3);
+  assert.equal(result.channelDescriptors.records.key[0], "payload.rowId");
+  assert.doesNotMatch(result.output, />>>>|<<<<|row_id=/);
+});
+
 test("channel fan-out keeps render separate from declared channels", async () => {
   const result = await run(template("channelFixtureDocument"));
 
