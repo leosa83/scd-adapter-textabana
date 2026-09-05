@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Textabana — Semantic text runtime",
+  title: "Textabana — Language & Interop Specification",
   description:
-    "Normativ specifikation och körbar playground för block, intervall, inheritance, flerkanalig output och positionsmedveten metadata.",
+    "Textabana Language & Interop draft 0.4: normativ semantik för text, IR, öppna intervall, typade kanaler, anchors, notebooks, data och AI/ML-adaptrar.",
   icons: {
     icon: "/favicon-textabana.svg",
     shortcut: "/favicon-textabana.svg",

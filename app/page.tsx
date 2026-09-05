@@ -637,7 +637,7 @@ export default function Home() {
 
           <Tabs value={view} onValueChange={setView} className="top-tabs">
             <TabsList>
-              <TabsTrigger value="docs"><BookOpen /> Specifikation</TabsTrigger>
+              <TabsTrigger value="docs"><BookOpen /> Specifikation 0.4</TabsTrigger>
               <TabsTrigger value="workspace"><Code2 /> Playground</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -701,12 +701,12 @@ export default function Home() {
               ) : <Preview result={result} running={running} />}
             </div>
           </main>
-        ) : <Specification functions={result.functions} />}
+        ) : <Specification />}
 
         <footer className="statusbar">
-          <span><CheckCircle2 /> Language draft 0.3</span>
-          <span className="syntax-hint"><code>return</code> render <ChevronRight /><code>emit</code> channels <ChevronRight /><code>system.out</code></span>
-          <span>Positionsmedveten · Flerkanalig</span>
+          <span><CheckCircle2 /> Interop draft 0.4 · Runtime 0.3</span>
+          <span className="syntax-hint"><code>source</code> IR <ChevronRight /><code>run</code> result <ChevronRight /><code>adapters</code></span>
+          <span>Source-first · Typed · Positionsmedveten</span>
         </footer>
       </div>
       <Toaster position="bottom-right" />
