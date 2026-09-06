@@ -6,17 +6,37 @@ import {
   materializeCacheKey,
   semanticValueDigest,
 } from "./execution-graph.js";
+import {
+  cloneParallelValue,
+  createStageCacheStore,
+  createStageCacheTransaction,
+  finalizeStageCacheTransaction,
+  observeStageCache,
+  recordStageResolution,
+  resolveStageCache,
+  snapshotCacheValue,
+  snapshotParallelValue,
+  snapshotStageCacheStore,
+  stageCacheExecutionReport,
+  stageCacheWitness,
+} from "./stage-cache.js";
+import {
+  createRunControl,
+  normalizeRunPolicy,
+  rejectedRunPolicyReport,
+} from "./run-policy.js";
 
 const moduleCache = new Map();
 const activeRuns = new Set();
 const cancelledRuns = new Set();
 const queuedRuns = new Set();
 let runQueue = Promise.resolve();
+let runInstanceSequence = 0;
 
 const cancellationDiagnosticCode = "TBA-RUN-CANCELLED-LAB";
 
 function cancellationError() {
-  const error = new Error("Körningen avbröts vid en kooperativ stage-gräns.");
+  const error = new Error("Körningen avbröts vid en kooperativ runtimegräns.");
   error.name = "AbortError";
   error.code = cancellationDiagnosticCode;
   return error;
@@ -101,15 +121,17 @@ function editorProtocolCapabilities() {
     planConstruction: "post-module-init-pre-transform",
     executionGraph: "textabana.execution-graph/lab-v1",
     invalidationPreview: "advisory-baseline-diff",
-    cacheMode: "disabled-planning-only",
-    scheduler: "sequential",
-    executionMode: "full-fresh-run",
+    cacheMode: "editor-session-verified-two-observations",
+    scheduler: "bounded-deterministic-ready-set",
+    executionMode: "selective-concurrent-safe-branches",
+    parallelMode: "single-worker-async-overlap",
+    concurrentBranchScheduling: true,
     deltaMode: "post-commit-diff",
     reanchorMode: "stable-anchor-id-then-unique-quote-origin",
     subscriptionMode: "exact-channel-or-all",
     persistentHistory: false,
     collaborativeMerge: false,
-    parallelExecution: false,
+    parallelExecution: true,
     canonical: false,
   };
 }
@@ -154,8 +176,9 @@ function openEditorDocument(payload) {
     if (subscription.documentId === documentId) editorSubscriptions.delete(subscriptionId);
   }
   editorSessionSequence += 1;
+  const sessionId = `editor-session:${sourceHash(documentId)}:${editorSessionSequence}`;
   const document = {
-    sessionId: `editor-session:${sourceHash(documentId)}:${editorSessionSequence}`,
+    sessionId,
     documentId,
     path,
     source,
@@ -164,6 +187,7 @@ function openEditorDocument(payload) {
     publishedRevision: null,
     lastChange: null,
     planBaseline: null,
+    stageCache: createStageCacheStore(sessionId),
   };
   editorDocuments.set(documentId, document);
   return { status: existing ? "replaced" : "opened", document: editorDocumentSnapshot(document) };
@@ -319,6 +343,7 @@ function captureEditorRun(payload) {
     previousPublishedRevision: document.publishedRevision,
     lastChange: serializableValue(document.lastChange),
     previousPlanBaseline: serializableValue(document.planBaseline),
+    stageCacheBaseline: snapshotStageCacheStore(document.stageCache),
     subscriptionIds: [...editorSubscriptions.values()]
       .filter((subscription) => subscription.documentId === document.documentId && subscription.sessionId === document.sessionId)
       .map((subscription) => subscription.subscriptionId),
@@ -664,21 +689,37 @@ function emptyEditorDelta(snapshot, subscription, status, result) {
   };
 }
 
-function completeEditorRun(snapshot, result) {
-  const committed = result.ok === true && result.resultEnvelope?.run?.committed === true;
+function completeEditorRun(snapshot, result, cacheTransaction = null) {
+  const coreCommitted = result.ok === true && result.resultEnvelope?.run?.committed === true;
   const document = editorDocuments.get(snapshot.documentId);
+  const headMatches = Boolean(document
+    && document.sessionId === snapshot.sessionId
+    && document.revision === snapshot.documentRevision);
+  const published = coreCommitted && headMatches;
+  const postCommitAccepted = result.adapterRun?.verification?.immutable === true
+    && result.conformanceReport?.gate?.status === "passed";
+  const cacheAccepted = published && postCommitAccepted;
   const deliveries = [];
+  const subscriptionUpdates = [];
   for (const subscriptionId of snapshot.subscriptionIds) {
     const subscription = editorSubscriptions.get(subscriptionId);
     if (!subscription || subscription.sessionId !== snapshot.sessionId) continue;
-    if (!committed) {
+    if (!published) {
       deliveries.push({
         subscription: withoutKeys(subscription, ["baseline"]),
-        delta: emptyEditorDelta(snapshot, subscription, result.cancelled ? "cancelled" : "failed", result),
+        delta: emptyEditorDelta(
+          snapshot,
+          subscription,
+          result.cancelled ? "cancelled" : coreCommitted ? "stale-head" : "failed",
+          result,
+        ),
       });
       continue;
     }
-    subscription.cursor += 1;
+    const nextSubscription = {
+      ...subscription,
+      cursor: subscription.cursor + 1,
+    };
     const current = {
       documentRevision: snapshot.documentRevision,
       documentVersion: snapshot.documentVersion,
@@ -696,32 +737,54 @@ function completeEditorRun(snapshot, result) {
       previous,
       current,
       channels: subscription.channels,
-      cursor: subscription.cursor,
+      cursor: nextSubscription.cursor,
     });
-    subscription.baseline = current;
-    deliveries.push({ subscription: withoutKeys(subscription, ["baseline"]), delta });
+    nextSubscription.baseline = current;
+    subscriptionUpdates.push([subscriptionId, nextSubscription]);
+    deliveries.push({ subscription: withoutKeys(nextSubscription, ["baseline"]), delta });
   }
-  if (committed && document && document.sessionId === snapshot.sessionId && document.revision === snapshot.documentRevision) {
-    document.publishedRevision = snapshot.documentRevision;
-    document.planBaseline = result.plan ? {
-      documentRevision: snapshot.documentRevision,
-      documentVersion: snapshot.documentVersion,
-      plan: serializableValue(result.plan),
-    } : null;
-  }
+
+  const nextStageCache = cacheTransaction
+    ? finalizeStageCacheTransaction(cacheTransaction, {
+        commit: cacheAccepted,
+        currentStore: document?.stageCache || null,
+        reason: result.cancelled
+          ? "rolled-back-cancelled"
+          : coreCommitted
+            ? headMatches
+              ? "rolled-back-post-commit-gate"
+              : "rolled-back-stale-head"
+            : "rolled-back-failed",
+      })
+    : document?.stageCache || null;
+  const nextPlanBaseline = published && result.plan ? {
+    documentRevision: snapshot.documentRevision,
+    documentVersion: snapshot.documentVersion,
+    plan: serializableValue(result.plan),
+  } : null;
+
   const primary = deliveries[0] || null;
   const trace = [
     { direction: "client→kernel", command: "open", status: "accepted", documentRevision: 1 },
     ...snapshot.subscriptionIds.map((subscriptionId) => ({ direction: "client→kernel", command: "subscribe", status: "accepted", subscriptionId })),
     ...(snapshot.lastChange ? [{ direction: "client→kernel", command: "change", status: "accepted", baseRevision: snapshot.lastChange.baseRevision, documentRevision: snapshot.lastChange.documentRevision }] : []),
     { direction: "client→kernel", command: "run", status: "accepted", documentRevision: snapshot.documentRevision, runId: result.runId },
-    { direction: "kernel→client", command: committed ? "published" : result.cancelled ? "cancelled" : "failed", status: committed ? "committed" : "not-committed", documentRevision: snapshot.documentRevision, resultId: result.resultEnvelope?.resultId || null },
+    {
+      direction: "kernel→client",
+      command: published ? "published" : result.cancelled ? "cancelled" : coreCommitted ? "stale-head" : "failed",
+      status: published ? "committed" : "not-published",
+      documentRevision: snapshot.documentRevision,
+      resultId: result.resultEnvelope?.resultId || null,
+    },
     ...(primary ? [{ direction: "kernel→client", command: "metadata-delta", status: primary.delta.state, cursor: primary.delta.cursor }] : []),
   ];
-  return {
+  const completion = {
     schema: "textabana.editor-kernel-run/lab-v1",
     protocol: "textabana.editor-kernel/lab-v1",
-    session: document ? editorDocumentSnapshot(document) : {
+    session: document ? {
+      ...editorDocumentSnapshot(document),
+      publishedRevision: published ? snapshot.documentRevision : document.publishedRevision,
+    } : {
       sessionId: snapshot.sessionId,
       documentId: snapshot.documentId,
       path: snapshot.path,
@@ -737,8 +800,9 @@ function completeEditorRun(snapshot, result) {
     },
     run: {
       runId: result.runId,
-      status: committed ? "succeeded" : result.cancelled ? "cancelled" : "failed",
-      committed,
+      status: published ? "succeeded" : result.cancelled ? "cancelled" : coreCommitted ? "stale" : "failed",
+      committed: coreCommitted,
+      published,
       resultId: result.resultEnvelope?.resultId || null,
     },
     change: snapshot.lastChange,
@@ -748,18 +812,53 @@ function completeEditorRun(snapshot, result) {
     trace,
     capabilities: editorProtocolCapabilities(),
     limitations: [
-      "Full document parse and fresh sequential execution for every accepted run; graph planning does not reuse stage output.",
-      "In-memory single-worker document history only.",
-      "No OT, CRDT, persistent recovery, LSP conversion or external side-effect rollback.",
+      "Full document parse, module initialization and graph construction for every accepted run; only independent trusted effects-free branches may overlap asynchronously.",
+      "Two equal observations verify only the session-local lab cache under a trusted module declaration; arbitrary JavaScript purity is not proven.",
+      "In-memory single-worker document history and async overlap only; no multicore execution or synchronous preemption.",
+      "No OT, CRDT, persistent recovery, streaming, backpressure, hard CPU/memory quota, LSP conversion or external side-effect rollback.",
       "Unique quote + origin re-link is a conservative lab heuristic, not canonical structural re-anchoring.",
       "FNV-1a lab identities are non-cryptographic and non-canonical.",
     ],
     extensions: { "textabana.playground": { canonical: false, fullProfileConformance: false } },
   };
+
+  if (published) {
+    for (const [subscriptionId, subscription] of subscriptionUpdates) editorSubscriptions.set(subscriptionId, subscription);
+    document.publishedRevision = snapshot.documentRevision;
+    document.planBaseline = nextPlanBaseline;
+    if (cacheAccepted && nextStageCache) document.stageCache = nextStageCache;
+  }
+  return completion;
 }
 
 function withoutSystemArgs(args) {
   return Object.fromEntries(Object.entries(args).filter(([key]) => !key.startsWith("@")));
+}
+
+function cloneInvocationValue(value) {
+  if (Array.isArray(value)) return value.map(cloneInvocationValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).map((key) => [key, cloneInvocationValue(value[key])]));
+  }
+  return value;
+}
+
+function detachParallelOutput(value, stageName) {
+  const snapshot = snapshotParallelValue(value);
+  if (!snapshot.ok) {
+    throw cacheContractError(
+      "TBA-PARALLEL-OUTPUT-NOT-DETACHABLE-LAB",
+      `Parallellkandidaten “${stageName}” returnerade ett värde utanför den portabla TextabanaValue-domänen: ${snapshot.detail || snapshot.reason}.`,
+    );
+  }
+  try {
+    return cloneParallelValue(snapshot);
+  } catch (error) {
+    throw cacheContractError(
+      "TBA-PARALLEL-OUTPUT-NOT-DETACHABLE-LAB",
+      `Parallellkandidaten “${stageName}” kunde inte detacheras förlustfritt: ${error instanceof Error ? error.message : String(error)}.`,
+    );
+  }
 }
 
 function serializableMeta(name, descriptor, modulePath, moduleDigest) {
@@ -807,9 +906,12 @@ function valueKind(value) {
 
 function valueSummary(value) {
   let serialized;
+  let summaryValue;
   try {
-    serialized = typeof value === "string" ? value : JSON.stringify(serializableValue(value));
+    summaryValue = typeof value === "string" ? value : serializableValue(value);
+    serialized = typeof value === "string" ? value : JSON.stringify(summaryValue);
   } catch {
+    summaryValue = String(value);
     serialized = String(value);
   }
   const normalized = String(serialized ?? "").replace(/\s+/g, " ").trim();
@@ -817,7 +919,7 @@ function valueSummary(value) {
     kind: valueKind(value),
     length: normalized.length,
     hash: `fnv1a:${sourceHash(normalized)}`,
-    digest: semanticValueDigest(value),
+    digest: semanticValueDigest(summaryValue),
     preview: normalized.length > 132 ? `${normalized.slice(0, 129)}…` : normalized,
   };
 }
@@ -1049,6 +1151,16 @@ const playgroundImplementedCapabilities = [
   "typed-execution-edges",
   "cache-key-recipes",
   "invalidation-preview",
+  "editor-session-stage-cache",
+  "verified-two-observation-reuse",
+  "bounded-safe-branch-concurrency",
+  "cooperative-run-deadline",
+  "stage-resolution-budget",
+  "channel-event-budget",
+  "render-byte-budget",
+  "deterministic-plan-order-commit",
+  "atomic-cache-commit",
+  "execution-report",
 ];
 
 function adapterDiagnostic(code, message, adapterId, severity = "error") {
@@ -1081,6 +1193,54 @@ function allCommittedEvents(result) {
   return Object.values(result.channelSnapshots || {}).flatMap((snapshot) => snapshot.events || []);
 }
 
+function operationalReferenceMap({ runInstanceId = null, channelSnapshots = {}, sourceMaps = [], activities = [] }) {
+  const replacements = new Map();
+  if (runInstanceId) replacements.set(runInstanceId, "run-instance:$semantic");
+  activities.forEach((activity, index) => {
+    const semanticRef = activity.planNodeRef || activity.orderKey || `${activity.function || "stage"}:${index + 1}`;
+    if (activity.runRef) replacements.set(activity.runRef, "run-instance:$semantic");
+    if (activity.stageId) replacements.set(activity.stageId, `stage:${semanticRef}`);
+    if (activity.invocationId) replacements.set(activity.invocationId, `invocation:${semanticRef}`);
+    if (activity.activityId) replacements.set(activity.activityId, `activity:${semanticRef}`);
+  });
+  for (const event of Object.values(channelSnapshots).flatMap((snapshot) => snapshot.events || [])) {
+    const semanticEventId = `event:${event.documentVersion}:${String(event.sequence).padStart(4, "0")}`;
+    if (event.runRef) replacements.set(event.runRef, "run-instance:$semantic");
+    if (event.eventId) replacements.set(event.eventId, semanticEventId);
+    if (event.id) replacements.set(event.id, semanticEventId);
+  }
+  for (const mapping of sourceMaps || []) {
+    const semanticOutputRef = replacements.get(mapping.outputRef) || mapping.outputRef;
+    if (mapping.mappingId) replacements.set(mapping.mappingId, `mapping:${semanticOutputRef}`);
+  }
+  return replacements;
+}
+
+function normalizeOperationalReferences(value, replacements) {
+  if (typeof value === "string") return replacements.get(value) || value;
+  if (Array.isArray(value)) return value.map((item) => normalizeOperationalReferences(item, replacements));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalizeOperationalReferences(item, replacements)]));
+  }
+  return value;
+}
+
+function adapterProjectionSeed(result, manifest, output) {
+  const replacements = operationalReferenceMap({
+    runInstanceId: result.run?.instanceId || null,
+    channelSnapshots: result.channelSnapshots || {},
+    sourceMaps: result.sourceMaps || [],
+    activities: result.provenance?.activities || [],
+  });
+  return {
+    adapterId: manifest.adapterId,
+    adapterVersion: manifest.version,
+    manifestDigest: manifest.manifestDigest,
+    sourceResultId: result.resultId,
+    output: normalizeOperationalReferences(output, replacements),
+  };
+}
+
 function buildResultSummaryProjection(result, manifest) {
   const events = allCommittedEvents(result);
   const activities = result.provenance?.activities || [];
@@ -1103,13 +1263,7 @@ function buildResultSummaryProjection(result, manifest) {
     activities: activities.length,
     artifacts: result.artifacts.length,
   };
-  const projectionSeed = {
-    adapterId: manifest.adapterId,
-    adapterVersion: manifest.version,
-    manifestDigest: manifest.manifestDigest,
-    sourceResultId: result.resultId,
-    output: summary,
-  };
+  const projectionSeed = adapterProjectionSeed(result, manifest, summary);
   return {
     schema: "textabana.adapter-projection/lab-v1",
     projectionId: `projection:${sourceHash(canonicalJson(projectionSeed))}`,
@@ -1251,13 +1405,7 @@ function buildDataTableProjection(result, manifest) {
     cellLineage: cellLineage.map((event) => event.payload),
     aggregates: aggregateEvents.map((event) => event.payload),
   };
-  const projectionSeed = {
-    adapterId: manifest.adapterId,
-    adapterVersion: manifest.version,
-    manifestDigest: manifest.manifestDigest,
-    sourceResultId: result.resultId,
-    output: data,
-  };
+  const projectionSeed = adapterProjectionSeed(result, manifest, data);
   const anchorRefs = uniqueStrings([
     ...consumedEvents.map((event) => event.target?.anchorRef),
     ...sourceMaps.flatMap((mapping) => mapping.inputAnchorRefs || []),
@@ -1392,13 +1540,7 @@ function buildNotebookProjection(result, manifest) {
     cells,
     state,
   };
-  const projectionSeed = {
-    adapterId: manifest.adapterId,
-    adapterVersion: manifest.version,
-    manifestDigest: manifest.manifestDigest,
-    sourceResultId: result.resultId,
-    output: data,
-  };
+  const projectionSeed = adapterProjectionSeed(result, manifest, data);
   return {
     schema: "textabana.adapter-projection/lab-v1",
     projectionId: `projection:${sourceHash(canonicalJson(projectionSeed))}`,
@@ -1667,7 +1809,7 @@ function buildAnnotationReviewProjection(result, manifest) {
       labelStudioTasks,
     },
   };
-  const projectionSeed = { adapterId: manifest.adapterId, adapterVersion: manifest.version, manifestDigest: manifest.manifestDigest, sourceResultId: result.resultId, output: data };
+  const projectionSeed = adapterProjectionSeed(result, manifest, data);
   return {
     schema: "textabana.adapter-projection/lab-v1",
     projectionId: `projection:${sourceHash(canonicalJson(projectionSeed))}`,
@@ -1752,7 +1894,7 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
   const requested = Array.isArray(requestedAdapterIds) && requestedAdapterIds.length
     ? [...new Set(requestedAdapterIds.map(String))]
     : ["org.textabana.result-summary"];
-  const adapterRunId = `adapter-run:${result.run.runId}`;
+  const adapterRunId = `adapter-run:${result.run.instanceId || result.run.runId}`;
   const resultBefore = canonicalJson(result);
   const beforeDigest = `fnv1a:${sourceHash(resultBefore)}`;
   if (result.run.status !== "succeeded" || !result.run.committed) {
@@ -1883,7 +2025,9 @@ function buildCapabilities(inspection) {
     limits: {
       digest: "fnv1a-lab-non-cryptographic",
       channelPayload: "structured-clone-compatible JSON subset",
-      cancellation: "cooperative stage boundaries; synchronous transforms are not preempted",
+      cancellation: "cooperative runtime boundaries; synchronous transforms and never-settling promises are not preempted",
+      scheduler: "bounded async overlap in one browser worker; plan-order commit",
+      runBudgets: "stage resolutions, channel events, render UTF-8 bytes and optional cooperative deadline",
       artifacts: "inline control plane only",
     },
     valueKinds: ["text", "object", "array", "number", "boolean", "null"],
@@ -1893,14 +2037,22 @@ function buildCapabilities(inspection) {
     unsupported: [...new Set([
       ...(inspection?.unsupported || []),
       "incremental-parser",
-      "incremental-execution",
+      "parser-tree-reuse",
+      "persistent-stage-cache",
+      "shared-stage-cache",
+      "cached-event-replay",
+      "streaming-execution",
       "persistent-document-history",
       "collaborative-merge",
       "canonical-structural-reanchor",
       "fuzzy-reanchor",
       "lsp",
       "preemptive-synchronous-cancellation",
-      "deadline-timeout",
+      "multicore-stage-execution",
+      "effectful-branch-concurrency",
+      "preemptive-synchronous-timeout",
+      "hard-cpu-quota",
+      "hard-memory-quota",
       "backpressure",
       "external-side-effect-rollback",
       "artifacts",
@@ -1959,7 +2111,7 @@ const conformanceCases = new Map([
 ]);
 
 const conformanceGoldenBaselines = {
-  "conformance-golden": "fnv1a-lab:u6b48h",
+  "conformance-golden": "fnv1a-lab:3nvbw7",
 };
 
 const conformanceProfileOrder = [
@@ -2022,6 +2174,30 @@ function committedBindingsResolve(result) {
   });
 }
 
+function cacheProvenanceResolves(result) {
+  const entities = result.provenance?.entities || [];
+  const entityById = new Map(entities.map((entity) => [entity.entityId, entity]));
+  if (entityById.size !== entities.length) return false;
+  const materializations = (result.provenance?.activities || []).filter((activity) => activity.activityType === "cache-materialization");
+  return materializations.every((activity) => {
+    const cacheEntity = entityById.get(activity.cacheEntryRef);
+    const evidenceRefs = activity.evidenceRefs || [];
+    if (cacheEntity?.entityType !== "cached-stage-output"
+      || cacheEntity.planNodeRef !== activity.planNodeRef
+      || evidenceRefs.length !== 2
+      || new Set(evidenceRefs).size !== evidenceRefs.length
+      || JSON.stringify(cacheEntity.evidenceRefs || []) !== JSON.stringify(evidenceRefs)) return false;
+    return evidenceRefs.every((evidenceRef) => {
+      const evidence = entityById.get(evidenceRef);
+      return evidence?.entityType === "cache-observation"
+        && evidence.planNodeRef === cacheEntity.planNodeRef
+        && evidence.outputDigest === cacheEntity.outputDigest
+        && typeof evidence.runRef === "string"
+        && evidence.runRef.length > 0;
+    });
+  });
+}
+
 function buildStructuralSnapshot({ result, inspection, plan, executionTrace = [], adapterRun, capabilities, modules }) {
   const channels = Object.fromEntries(Object.entries(result.channelSnapshots || {}).map(([name, snapshot]) => [
     name,
@@ -2034,11 +2210,19 @@ function buildStructuralSnapshot({ result, inspection, plan, executionTrace = []
         target: event.target,
         payload: event.payload,
         source: event.source,
-        origin: withoutKeys(event.origin, ["invocationId"]),
+        origin: withoutKeys(event.origin, ["stageId", "invocationId"]),
         state: event.state,
       })),
     },
   ]));
+  const normalizedExecutionTrace = executionTrace.map((step) => ({
+    ...withoutKeys(step, ["duration", "runRef", "stageId", "invocationId", "activityId", "executionMode", "functionInvoked"]),
+    cache: step.cache ? {
+      eligibility: step.cache.eligibility,
+      staticKey: step.cache.staticKey,
+      semanticKey: step.cache.semanticKey,
+    } : null,
+  }));
   return canonicalValue({
     normalization: {
       policy: "textabana.structural-snapshot/lab-v1",
@@ -2049,7 +2233,16 @@ function buildStructuralSnapshot({ result, inspection, plan, executionTrace = []
         "/events/*/runRef",
         "/events/*/eventId",
         "/events/*/id",
+        "/events/*/provenanceRef",
+        "/events/*/origin/{stageId,invocationId}",
         "/executionTrace/*/duration",
+        "/executionTrace/*/runRef",
+        "/executionTrace/*/stageId",
+        "/executionTrace/*/executionMode",
+        "/executionTrace/*/functionInvoked",
+        "/executionTrace/*/cache/{mode,read,write,hit,reused,lookup,reason,evidence,verification}",
+        "/result/anchors/*/origin/{stageId,invocationId}",
+        "/result/sourceMaps/*/{mappingId,outputRef,generatingActivity}",
         "/adapterRun/adapterRunId",
         "/diagnostics/*/diagnosticId",
         "/cancellation/cancelToken",
@@ -2095,7 +2288,7 @@ function buildStructuralSnapshot({ result, inspection, plan, executionTrace = []
       runtimePolicy: plan.runtimePolicy,
       unsupported: plan.unsupported,
     } : null,
-    executionTrace: executionTrace.map((step) => withoutKeys(step, ["duration", "invocationId", "activityId"])),
+    executionTrace: normalizedExecutionTrace,
     result: {
       schema: result.schema,
       resultId: result.resultId,
@@ -2103,8 +2296,11 @@ function buildStructuralSnapshot({ result, inspection, plan, executionTrace = []
       committed: result.run.committed,
       render: { kind: result.render.kind, mediaType: result.render.mediaType, digest: `fnv1a-lab:${sourceHash(String(result.render.data || ""))}` },
       channels,
-      anchors: result.anchors,
-      sourceMaps: result.sourceMaps,
+      anchors: result.anchors.map((anchor) => ({
+        ...anchor,
+        origin: withoutKeys(anchor.origin, ["stageId", "invocationId"]),
+      })),
+      sourceMaps: result.sourceMaps.map((mapping) => withoutKeys(mapping, ["mappingId", "outputRef", "generatingActivity"])),
       diagnostics: (result.diagnostics || []).map((diagnostic) => withoutKeys(diagnostic, ["diagnosticId"])),
     },
     projection: adapterRun ? {
@@ -2162,6 +2358,7 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
     checkedRequirement("RUNTIME-RESULT-SCHEMA", result.schema === "textabana.result/lab-v1", "Result-envelope har förväntat playgroundschema.", "Result-envelope saknar förväntat schema.", [resultRef]),
     checkedRequirement("RUNTIME-ATOMIC-TERMINAL", isSuccessful || isTerminalWithoutCommit, "Terminalstatus och commitgräns är atomiskt konsistenta.", "Terminalstatus läckte render, channels, anchors, SourceMaps eller provenance.", [resultRef]),
     checkedRequirement("RUNTIME-DESCRIPTORS", !isSuccessful || Object.values(result.channelSnapshots || {}).every((snapshot) => snapshot.descriptor?.declared !== false && snapshot.events.every((event) => event.state === "committed")), "Alla durable snapshots har deklarerade descriptors och committed events.", "Ett committed snapshot saknar descriptor eller innehåller tentative events.", [resultRef]),
+    checkedRequirement("RUNTIME-CACHE-PROVENANCE", cacheProvenanceResolves(result), "Varje cachematerialisering har två unika, resolverbara och outputbundna observationsposter.", "En cachematerialisering saknar exakt matchande och resolverbara observationsposter.", [resultRef]),
   ];
 
   const editorApplicable = isSuccessful && events.length > 0;
@@ -2237,12 +2434,12 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
   const cancellationRequested = expected.expectedOutcome === "cancelled" || actualOutcome === "cancelled";
   const cancellationObserved = actualOutcome === "cancelled" && diagnosticCodes.includes(cancellationDiagnosticCode) && isTerminalWithoutCommit;
   const cancellation = {
-    support: "cooperative-stage-boundary",
+    support: "cooperative-runtime-boundary",
     status: cancellationRequested ? cancellationObserved ? "passed" : "failed" : "not-run",
     requested: cancellationRequested,
     observed: cancellationObserved,
     diagnosticCode: cancellationDiagnosticCode,
-    limitation: "Avbrytning kontrolleras före och efter stages samt emits; synkrona CPU-loopar preempteras inte och externa sidoeffekter kan inte rullas tillbaka.",
+    limitation: "Avbrytning och valfri deadline kontrolleras vid runtime-/checkpointgränser; synkrona CPU-loopar och aldrig settlande Promises preempteras inte och externa sidoeffekter kan inte rullas tillbaka.",
   };
   if (cancellation.status === "failed") caseRequirements.push(conformanceRequirement("CANCELLATION-ATOMIC", "failed", "Cancellation nådde inte en atomisk cancelled-terminalstatus.", [resultRef]));
 
@@ -2253,7 +2450,7 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
   const counts = profiles.reduce((summary, profile) => ({ ...summary, [profile.status]: summary[profile.status] + 1 }), { passed: 0, failed: 0, "not-run": 0 });
   const reportSeed = {
     suite: "textabana.playground/interop-0.7",
-    suiteVersion: "1.2.0-lab.1",
+    suiteVersion: "1.4.0-lab.1",
     fixtureId,
     caseId: expected.caseId,
     sourceResultRef: resultRef,
@@ -2265,7 +2462,7 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
     schema: "textabana.conformance-report/lab-v1",
     reportId: `conformance:${sourceHash(canonicalJson(reportSeed))}`,
     sourceResultRef: resultRef,
-    suite: { suiteId: "textabana.playground/interop-0.7", version: "1.2.0-lab.1" },
+    suite: { suiteId: "textabana.playground/interop-0.7", version: "1.4.0-lab.1" },
     case: {
       caseId: expected.caseId,
       fixtureId,
@@ -2282,7 +2479,7 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
     structuralSnapshot,
     structuralDigest,
     golden: {
-      baselineId: expectedStructuralDigest ? `${fixtureId}@1.2.0-lab.1` : null,
+      baselineId: expectedStructuralDigest ? `${fixtureId}@1.4.0-lab.1` : null,
       expectedStructuralDigest,
       actualStructuralDigest: structuralDigest,
       status: goldenStatus,
@@ -2368,7 +2565,7 @@ function serializationProblem(value, seen = new WeakSet(), path = "payload") {
   return null;
 }
 
-function createChannelBus({ runId, documentVersion, documentPath, documentId = null, documentSource, strictChannels = false, isCancelled = () => false }) {
+function createChannelBus({ runId, runInstanceId, documentVersion, documentPath, documentId = null, documentSource, strictChannels = false, isCancelled = () => false, runControl = null }) {
   const channels = new Map();
   const descriptors = new Map();
   const anchors = new Map();
@@ -2380,8 +2577,10 @@ function createChannelBus({ runId, documentVersion, documentPath, documentId = n
   let invocationSequence = 0;
 
   const throwIfCancelled = () => {
-    if (isCancelled()) throw cancellationError();
+    if (runControl) runControl.assertActive();
+    else if (isCancelled()) throw cancellationError();
   };
+  const runtimeAborted = () => runControl ? runControl.isAborted() : isCancelled();
 
   const declare = (name, rawDescriptor = {}) => {
     const channel = String(name || "").trim();
@@ -2530,6 +2729,7 @@ function createChannelBus({ runId, documentVersion, documentPath, documentId = n
     const rowId = location.rowId === undefined
       ? `${documentVersion}:${execution.functionName}:${line}:${row}`
       : String(location.rowId);
+    runControl?.beforeChannelEvent();
     const anchor = createAnchor({
       line,
       row,
@@ -2584,13 +2784,13 @@ function createChannelBus({ runId, documentVersion, documentPath, documentId = n
       : serializableValue(location.outputSelector);
 
     sequence += 1;
-    const eventId = `event:${documentVersion}:${String(sequence).padStart(4, "0")}`;
+    const eventId = `event:${runInstanceId}:${documentVersion}:${String(sequence).padStart(4, "0")}`;
     const event = {
       schema: "textabana.event/v1",
       eventId,
       id: eventId,
       runId,
-      runRef: `run:${runId}`,
+      runRef: runInstanceId,
       documentVersion,
       sequence,
       channel,
@@ -2652,31 +2852,44 @@ function createChannelBus({ runId, documentVersion, documentPath, documentId = n
       ...(outputSelector ? { outputSelector } : {}),
       ...(inputSelectors ? { inputSelectors } : {}),
     });
+    runControl?.recordChannelEvent();
     return event;
   };
 
   return {
     declare,
     emit,
-    isCancelled,
+    isCancelled: runtimeAborted,
+    abortReason() { return runControl?.abortReason() || (isCancelled() ? "cancelled" : null); },
     throwIfCancelled,
+    checkpoint() {
+      if (runControl) runControl.checkpoint();
+      else throwIfCancelled();
+    },
     createExecution(base) {
       invocationSequence += 1;
       const ordinal = String(invocationSequence).padStart(4, "0");
+      const executionMode = base.executionMode || "fresh-transform";
       return {
         ...base,
-        stageId: `stage:${ordinal}:${base.modality || "block"}:${base.scopeId || base.functionName}:${base.stageLine}`,
-        invocationId: `invocation:${ordinal}`,
-        activityId: `activity:invocation:${ordinal}`,
+        executionMode,
+        runRef: runInstanceId,
+        stageId: `stage:${runInstanceId}:${ordinal}:${base.modality || "block"}:${base.scopeId || base.functionName}:${base.stageLine}`,
+        invocationId: `invocation:${runInstanceId}:${ordinal}`,
+        activityId: executionMode === "cache-reuse"
+          ? `activity:cache-materialization:${runInstanceId}:${ordinal}`
+          : `activity:invocation:${runInstanceId}:${ordinal}`,
       };
     },
     recordStage(stage) {
       stageSequence += 1;
-      const input = valueSummary(stage.input);
-      const output = valueSummary(stage.output);
+      const input = stage.inputSummary || valueSummary(stage.input);
+      const output = stage.outputSummary || valueSummary(stage.output);
       const cachePlan = stage.execution.cachePlan;
+      const cacheResolution = stage.cacheResolution || null;
       executionTrace.push({
-        schema: "textabana.execution-step/lab-v1",
+        schema: "textabana.execution-step/lab-v2",
+        runRef: stage.execution.runRef,
         step: stageSequence,
         stageId: stage.execution.stageId,
         invocationId: stage.execution.invocationId,
@@ -2693,17 +2906,29 @@ function createChannelBus({ runId, documentVersion, documentPath, documentId = n
         args: serializableValue(stage.args),
         orderKey: stage.execution.planOrderKey || [stageSequence, 1, 0],
         status: stage.status,
+        executionMode: stage.execution.executionMode || "fresh-transform",
+        functionInvoked: stage.functionInvoked !== false,
         input,
         output,
         cache: cachePlan ? {
-          mode: "disabled-planning-only",
+          mode: cachePlan.mode || "disabled-non-editor",
           eligibility: cachePlan.eligibility,
           staticKey: cachePlan.staticKey,
-          semanticKey: materializeCacheKey({ cache: cachePlan }, input.digest),
-          read: false,
-          write: false,
-          hit: false,
-          reused: false,
+          semanticKey: cacheResolution?.cache?.semanticKey
+            || materializeCacheKey({ cache: cachePlan }, input.digest),
+          inputDigest: cacheResolution?.cache?.inputDigest ?? null,
+          cacheEntryId: cacheResolution?.cache?.cacheEntryId || null,
+          outputDigest: cacheResolution?.cache?.outputDigest || null,
+          evidenceRefs: cacheResolution?.cache?.evidenceRefs || [],
+          evidenceRecords: cacheResolution?.cache?.evidenceRecords || [],
+          read: Boolean(cacheResolution?.cache?.read),
+          write: Boolean(cacheResolution?.cache?.write),
+          hit: Boolean(cacheResolution?.cache?.hit),
+          reused: Boolean(cacheResolution?.cache?.reused),
+          lookup: cacheResolution?.lookup || "bypassed",
+          reason: cacheResolution?.reason || "cache-disabled",
+          evidence: cacheResolution?.cache?.evidence || 0,
+          verification: cacheResolution?.cache?.verification || "unverified",
         } : null,
         duration: stage.duration,
         ...(stage.error ? { error: stage.error } : {}),
@@ -2753,7 +2978,7 @@ async function compileModule(path, source) {
     if (!descriptor || typeof descriptor.transform !== "function") {
       throw new Error(`${path}: funktionen “${name}” saknar transform(input, args, context).`);
     }
-    return { name, descriptor, modulePath: path, moduleDigest };
+    return { name, descriptor, modulePath: path, moduleDigest, moduleSource: source };
   });
   moduleCache.set(cacheKey, compiled);
   return compiled;
@@ -2787,7 +3012,15 @@ function stringifyResult(value) {
   return `\n\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\`\n`;
 }
 
-async function callFunction(stage, input, registry, diagnostics, channelBus, contextExtra = {}) {
+function cacheContractError(code, message) {
+  const error = new Error(message);
+  error.name = "StageCacheContractError";
+  error.code = code;
+  error.phase = "execution";
+  return error;
+}
+
+async function callFunction(stage, input, registry, diagnostics, channelBus, contextExtra = {}, runtimeHooks = {}) {
   channelBus.throwIfCancelled();
   const entry = registry.get(stage.name);
   if (!entry) throw new Error(`Rad ${stage.line}: okänd funktion “${stage.name}”.`);
@@ -2796,7 +3029,7 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
   }
   const warnings = [];
   const source = contextExtra.source || { startLine: stage.line, endLine: stage.line };
-  const execution = channelBus.createExecution({
+  const execution = contextExtra.execution || channelBus.createExecution({
     functionName: stage.name,
     modulePath: entry.modulePath,
     modality: contextExtra.modality || "block",
@@ -2807,9 +3040,26 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
     planNodeRef: contextExtra.planNode?.nodeId || null,
     planOrderKey: contextExtra.planNode?.orderKey || null,
     cachePlan: contextExtra.planNode?.cache || null,
+    executionMode: "fresh-transform",
     source,
   });
-  const emit = (channel, value, location) => channelBus.emit(channel, value, location, execution);
+  let invocationLeaseOpen = true;
+  const assertEffectAllowed = () => {
+    if (!invocationLeaseOpen) {
+      throw cacheContractError("TBA-STAGE-LEASE-CLOSED-LAB", `Funktionen “${stage.name}” försökte emittera efter att dess invocation avslutats.`);
+    }
+    if (runtimeHooks.enforceNoEffects) {
+      const parallelOnly = runtimeHooks.enforceNoEffects === "parallel";
+      throw cacheContractError(
+        parallelOnly ? "TBA-PARALLEL-EFFECT-VIOLATION-LAB" : "TBA-CACHE-EFFECT-VIOLATION-LAB",
+        `${parallelOnly ? "Parallellkandidaten" : "Cachekandidaten"} “${stage.name}” deklarerade effects=[] men försökte skapa en observerbar effekt.`,
+      );
+    }
+  };
+  const emit = (channel, value, location) => {
+    assertEffectAllowed();
+    return channelBus.emit(channel, value, location, execution);
+  };
   const systemOut = (value, location) => emit("system.out", value, location);
   systemOut.line = (value, location = {}) => emit("system.out", value, { ...location, mode: location.mode || "line" });
   systemOut.row = (rowId, value, location = {}) => emit("system.out", value, {
@@ -2818,20 +3068,23 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
     mode: location.mode || "row",
   });
   const context = {
-    ...contextExtra,
     functionName: stage.name,
     modulePath: entry.modulePath,
+    modality: contextExtra.modality || "block",
+    scopeId: contextExtra.scopeId || null,
     source: { ...source, stageLine: stage.line },
+    ...(contextExtra.authoredInput === undefined ? {} : { authoredInput: contextExtra.authoredInput }),
     emit,
     signal: {
       get aborted() { return channelBus.isCancelled(); },
+      get reason() { return channelBus.abortReason(); },
       throwIfAborted() { channelBus.throwIfCancelled(); },
     },
     checkpoint() {
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           try {
-            channelBus.throwIfCancelled();
+            channelBus.checkpoint();
             resolve();
           } catch (error) {
             reject(error);
@@ -2842,36 +3095,48 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
     system: { out: systemOut },
     annotate(value, location = {}) { return emit("system.out", value, { ...location, kind: location.kind || "annotation" }); },
     warn(message, location) {
+      assertEffectAllowed();
       const normalized = String(message);
       warnings.push({ message: normalized, location });
-      emit("diagnostics", { severity: "warning", level: "warning", message: normalized }, { ...location, kind: "diagnostic" });
+      return channelBus.emit("diagnostics", { severity: "warning", level: "warning", message: normalized }, { ...location, kind: "diagnostic" }, execution);
     },
   };
-  const args = withoutSystemArgs(stage.args);
+  const authoredArgs = cloneInvocationValue(withoutSystemArgs(stage.args));
+  const args = cloneInvocationValue(authoredArgs);
+  const recordStage = runtimeHooks.recordStage || ((record) => channelBus.recordStage(record));
   const started = performance.now();
   let output;
   try {
     output = await entry.descriptor.transform(input, args, context);
+    invocationLeaseOpen = false;
     channelBus.throwIfCancelled();
-    channelBus.recordStage({
+    const cacheResolution = runtimeHooks.validateSuccess
+      ? runtimeHooks.validateSuccess({ input, output, execution })
+      : runtimeHooks.lookup?.resolution || null;
+    recordStage({
       execution,
-      args,
+      args: authoredArgs,
       input,
       output,
       status: "succeeded",
       duration: performance.now() - started,
+      cacheResolution,
     });
   } catch (error) {
-    channelBus.recordStage({
+    invocationLeaseOpen = false;
+    recordStage({
       execution,
-      args,
+      args: authoredArgs,
       input,
       output: null,
       status: error?.code === cancellationDiagnosticCode ? "cancelled" : "failed",
       duration: performance.now() - started,
+      cacheResolution: runtimeHooks.lookup?.resolution || null,
       error: error instanceof Error ? error.message : String(error),
     });
     throw error;
+  } finally {
+    invocationLeaseOpen = false;
   }
   for (const warning of warnings) {
     const warningLine = Number(warning.location?.line);
@@ -2889,48 +3154,280 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
   return output;
 }
 
-async function executeExecutionGraph(compiled, registry, diagnostics, channelBus) {
+async function executeExecutionGraph(compiled, registry, diagnostics, channelBus, cacheTransaction, runControl) {
   const values = new Map();
   const publicNodes = new Map(compiled.plan.graph.nodes.map((node) => [node.nodeId, node]));
+  const operationOrder = new Map(compiled.operations.map((operation, index) => [operation.nodeId, index]));
+  const pending = new Map(compiled.operations.map((operation) => [operation.nodeId, operation]));
+  const stageOperations = compiled.operations.filter((operation) => operation.kind === "stage");
+  const reservedExecutions = new Map(stageOperations.map((operation) => {
+    const planNode = publicNodes.get(operation.nodeId);
+    if (!planNode || planNode.kind !== "stage") throw planningError(`Stage-operationen ${operation.nodeId} saknar motsvarande grafnod.`);
+    return [operation.nodeId, channelBus.createExecution({
+      functionName: operation.stage.name,
+      modulePath: planNode.module,
+      modality: operation.context.modality || "block",
+      scopeId: operation.context.scopeId,
+      stageLine: operation.stage.line,
+      syntaxStageId: operation.stage.stageId || null,
+      syntaxSpan: operation.stage.sourceSpan || null,
+      planNodeRef: planNode.nodeId,
+      planOrderKey: planNode.orderKey,
+      cachePlan: planNode.cache,
+      executionMode: "fresh-transform",
+      source: operation.context.source,
+    })];
+  }));
+  const pendingStageCommits = new Map();
+  let nextStageCommitIndex = 0;
+  const dependencies = (operation) => {
+    if (operation.kind === "source") return [];
+    if (operation.kind === "merge") return operation.inputNodeIds;
+    if (operation.kind === "stage" || operation.kind === "render") return [operation.inputNodeId];
+    throw planningError(`Okänd operationstyp “${operation.kind}”.`);
+  };
+  const sortOperations = (operations) => [...operations]
+    .sort((left, right) => operationOrder.get(left.nodeId) - operationOrder.get(right.nodeId));
+  const readyOperations = () => sortOperations([...pending.values()]
+    .filter((operation) => dependencies(operation).every((nodeId) => values.has(nodeId))));
+  const isStaticParallelCandidate = (operation) => publicNodes.get(operation.nodeId)?.contract?.parallelEligibility === "candidate";
+  const isRuntimeParallelCandidate = (operation) => {
+    if (!isStaticParallelCandidate(operation) || !values.has(operation.inputNodeId)) return false;
+    return snapshotCacheValue(values.get(operation.inputNodeId)).ok;
+  };
 
-  for (const operation of compiled.operations) {
-    channelBus.throwIfCancelled();
-    if (operation.kind === "source") {
-      values.set(operation.nodeId, operation.text);
-      continue;
+  const prepareStage = (operation) => {
+    const planNode = publicNodes.get(operation.nodeId);
+    if (!planNode || planNode.kind !== "stage") {
+      throw planningError(`Stage-operationen ${operation.nodeId} saknar motsvarande grafnod.`);
     }
-    if (operation.kind === "stage") {
-      if (!values.has(operation.inputNodeId)) {
-        throw planningError(`Stage-noden ${operation.nodeId} saknar sitt planerade inputvärde.`);
+    if (!values.has(operation.inputNodeId)) {
+      throw planningError(`Stage-noden ${operation.nodeId} saknar sitt planerade inputvärde.`);
+    }
+    const input = values.get(operation.inputNodeId);
+    const parallelCandidate = planNode.contract.parallelEligibility === "candidate";
+    const cacheEligible = cacheTransaction.enabled && planNode.contract.cacheEligibility === "candidate";
+    const inputSnapshot = cacheEligible || parallelCandidate
+      ? snapshotCacheValue(input)
+      : { ok: false, reason: cacheTransaction.enabled ? "contract-ineligible" : "cache-disabled" };
+    const semanticKey = materializeCacheKey(planNode, inputSnapshot.ok ? inputSnapshot.digest : null);
+    const witnessSnapshot = cacheEligible
+      ? stageCacheWitness({
+          nodeId: operation.nodeId,
+          witnessBase: operation.cacheWitnessBase,
+          inputSnapshot,
+        })
+      : { ok: false, reason: inputSnapshot.reason };
+    const lookup = resolveStageCache(cacheTransaction, {
+      nodeId: operation.nodeId,
+      semanticKey,
+      witness: witnessSnapshot.ok ? witnessSnapshot.wire : null,
+      witnessFailure: witnessSnapshot.ok ? null : witnessSnapshot,
+      eligibility: planNode.contract.cacheEligibility,
+      inputSnapshot,
+    });
+    const execution = reservedExecutions.get(operation.nodeId);
+    if (!execution) throw planningError(`Stage-operationen ${operation.nodeId} saknar reserverad execution-identitet.`);
+    if (lookup.hit) {
+      execution.executionMode = "cache-reuse";
+      execution.activityId = execution.activityId.replace("activity:invocation:", "activity:cache-materialization:");
+    }
+    return { operation, planNode, input, inputSnapshot, lookup, execution, cacheEligible, parallelCandidate, record: null };
+  };
+
+  const commitStageOutcome = (outcome) => {
+    const { item } = outcome;
+    if (outcome.kind === "cache-hit") {
+      channelBus.recordStage({
+        execution: item.execution,
+        args: cloneInvocationValue(withoutSystemArgs(item.operation.stage.args)),
+        input: item.input,
+        output: outcome.traceOutput,
+        status: "succeeded",
+        duration: 0,
+        cacheResolution: item.lookup.resolution,
+        functionInvoked: false,
+      });
+    } else {
+      if (outcome.kind === "succeeded" && item.cacheEligible) {
+        observeStageCache(cacheTransaction, item.lookup, outcome.outputSnapshot);
       }
-      const planNode = publicNodes.get(operation.nodeId);
-      if (!planNode || planNode.kind !== "stage") {
-        throw planningError(`Stage-operationen ${operation.nodeId} saknar motsvarande grafnod.`);
-      }
+      if (item.record) channelBus.recordStage(item.record);
+    }
+    recordStageResolution(cacheTransaction, item.lookup.resolution);
+  };
+  const flushStageCommits = (force = false) => {
+    if (force) {
+      const orderedPending = stageOperations
+        .slice(nextStageCommitIndex)
+        .map((operation) => pendingStageCommits.get(operation.nodeId))
+        .filter(Boolean);
+      orderedPending.forEach(commitStageOutcome);
+      orderedPending.forEach((outcome) => pendingStageCommits.delete(outcome.item.operation.nodeId));
+      return;
+    }
+    while (nextStageCommitIndex < stageOperations.length) {
+      const operation = stageOperations[nextStageCommitIndex];
+      const outcome = pendingStageCommits.get(operation.nodeId);
+      if (!outcome) break;
+      commitStageOutcome(outcome);
+      pendingStageCommits.delete(operation.nodeId);
+      nextStageCommitIndex += 1;
+    }
+  };
+
+  const resolveStageWave = async (operations, requestedMode) => {
+    runControl.assertActive();
+    const prepared = operations.map(prepareStage);
+    const fresh = prepared.filter((item) => !item.lookup.hit);
+    const requiresDetachedOutput = fresh.length > 1;
+    cacheTransaction.stats.executed += fresh.length;
+    const settlements = await Promise.allSettled(fresh.map(async (item) => {
       const output = await callFunction(
-        operation.stage,
-        values.get(operation.inputNodeId),
+        item.operation.stage,
+        item.input,
         registry,
         diagnostics,
         channelBus,
-        { ...operation.context, planNode },
+        { ...item.operation.context, planNode: item.planNode, execution: item.execution },
+        {
+          lookup: item.lookup,
+          enforceNoEffects: item.cacheEligible ? "cache" : item.parallelCandidate ? "parallel" : false,
+          recordStage(record) {
+            const recordedOutput = record.status === "succeeded" && item.outputDetached
+              ? item.detachedOutput
+              : record.output;
+            item.record = {
+              ...record,
+              output: recordedOutput,
+              inputSummary: valueSummary(record.input),
+              outputSummary: valueSummary(recordedOutput),
+            };
+          },
+          validateSuccess({ output: invocationOutput }) {
+            if (item.inputSnapshot.ok) {
+              const inputAfter = snapshotCacheValue(item.input);
+              if (!inputAfter.ok || inputAfter.wire !== item.inputSnapshot.wire || inputAfter.digest !== item.inputSnapshot.digest) {
+                const parallelOnly = item.parallelCandidate && !item.cacheEligible;
+                throw cacheContractError(
+                  parallelOnly ? "TBA-PARALLEL-INPUT-MUTATION-LAB" : "TBA-CACHE-INPUT-MUTATION-LAB",
+                  `${parallelOnly ? "Parallellkandidaten" : "Cachekandidaten"} “${item.operation.stage.name}” muterade sitt inputvärde; körningen rullas tillbaka.`,
+                );
+              }
+            }
+            item.cacheOutputSnapshot = item.cacheEligible ? snapshotCacheValue(invocationOutput) : null;
+            if (requiresDetachedOutput) {
+              item.detachedOutput = detachParallelOutput(invocationOutput, item.operation.stage.name);
+              item.outputDetached = true;
+            }
+            return item.lookup.resolution;
+          },
+        },
       );
-      values.set(operation.nodeId, output);
-      continue;
+      return {
+        output: item.outputDetached ? item.detachedOutput : output,
+        outputSnapshot: item.cacheEligible ? item.cacheOutputSnapshot : null,
+      };
+    }));
+    fresh.forEach((item, index) => { item.settlement = settlements[index]; });
+    const errors = [];
+    for (const item of prepared) {
+      if (item.lookup.hit) {
+        values.set(item.operation.nodeId, item.lookup.output);
+        pendingStageCommits.set(item.operation.nodeId, {
+          kind: "cache-hit",
+          item,
+          traceOutput: cloneInvocationValue(item.lookup.output),
+        });
+        continue;
+      }
+      if (item.settlement?.status === "fulfilled") {
+        values.set(item.operation.nodeId, item.settlement.value.output);
+        pendingStageCommits.set(item.operation.nodeId, {
+          kind: "succeeded",
+          item,
+          outputSnapshot: item.cacheEligible ? item.settlement.value.outputSnapshot : null,
+        });
+        continue;
+      }
+      const error = item.settlement?.reason || planningError(`Stage-noden ${item.operation.nodeId} saknar terminalt utfall.`);
+      item.lookup.resolution.reason = error?.code || "function-failed";
+      pendingStageCommits.set(item.operation.nodeId, { kind: "failed", item, error });
+      errors.push(error);
     }
-    if (operation.kind === "merge") {
-      const missing = operation.inputNodeIds.find((nodeId) => !values.has(nodeId));
-      if (missing) throw planningError(`Merge-noden ${operation.nodeId} saknar input från ${missing}.`);
-      values.set(operation.nodeId, operation.inputNodeIds.map((nodeId) => stringifyResult(values.get(nodeId))).join(""));
-      continue;
+    const freshNodeRefs = fresh.map((item) => item.operation.nodeId);
+    const reusedNodeRefs = prepared.filter((item) => item.lookup.hit).map((item) => item.operation.nodeId);
+    const mode = requestedMode === "barrier"
+      ? "barrier"
+      : freshNodeRefs.length > 1 ? "concurrent" : freshNodeRefs.length ? "safe-single" : "cache-materialization";
+    runControl.recordWave({
+      nodeRefs: prepared.map((item) => item.operation.nodeId),
+      freshNodeRefs,
+      reusedNodeRefs,
+      mode,
+    });
+    runControl.assertActive();
+    if (errors.length) {
+      flushStageCommits(true);
+      throw errors[0];
     }
-    if (operation.kind === "render") {
-      if (!values.has(operation.inputNodeId)) throw planningError(`Rendernoden ${operation.nodeId} saknar sitt planerade inputvärde.`);
-      values.set(operation.nodeId, String(values.get(operation.inputNodeId)));
-      continue;
+    flushStageCommits(false);
+  };
+
+  try {
+    while (pending.size) {
+      runControl.assertActive();
+      const ready = readyOperations();
+      if (!ready.length) throw planningError("ExecutionGraph kunde inte producera ett färdigt ready set.");
+      const synchronous = ready.filter((operation) => operation.kind !== "stage");
+      if (synchronous.length) {
+        for (const operation of synchronous) {
+          runControl.assertActive();
+          if (operation.kind === "source") values.set(operation.nodeId, operation.text);
+          else if (operation.kind === "merge") {
+            const missing = operation.inputNodeIds.find((nodeId) => !values.has(nodeId));
+            if (missing) throw planningError(`Merge-noden ${operation.nodeId} saknar input från ${missing}.`);
+            values.set(operation.nodeId, operation.inputNodeIds.map((nodeId) => stringifyResult(values.get(nodeId))).join(""));
+          } else if (operation.kind === "render") {
+            if (!values.has(operation.inputNodeId)) throw planningError(`Rendernoden ${operation.nodeId} saknar sitt planerade inputvärde.`);
+            const render = String(values.get(operation.inputNodeId));
+            runControl.checkRender(render);
+            values.set(operation.nodeId, render);
+          } else throw planningError(`Okänd operationstyp “${operation.kind}”.`);
+          pending.delete(operation.nodeId);
+        }
+        continue;
+      }
+      const firstPendingStaticBarrier = stageOperations.find((operation) => (
+        pending.has(operation.nodeId) && !isStaticParallelCandidate(operation)
+      ));
+      const barrierOrder = firstPendingStaticBarrier
+        ? operationOrder.get(firstPendingStaticBarrier.nodeId)
+        : Number.POSITIVE_INFINITY;
+      const readyStages = ready
+        .filter((operation) => operation.kind === "stage")
+        .filter((operation) => operationOrder.get(operation.nodeId) <= barrierOrder);
+      const first = readyStages[0];
+      if (!first) throw planningError("ExecutionGraph saknar körbar operation i sitt ready set.");
+      if (!isRuntimeParallelCandidate(first)) {
+        await resolveStageWave([first], isStaticParallelCandidate(first) ? "safe" : "barrier");
+        pending.delete(first.nodeId);
+        continue;
+      }
+      const selected = [];
+      for (const operation of readyStages) {
+        if (selected.length >= runControl.report().scheduling.maxConcurrency) break;
+        if (!isRuntimeParallelCandidate(operation)) break;
+        selected.push(operation);
+      }
+      await resolveStageWave(selected, "safe");
+      selected.forEach((operation) => pending.delete(operation.nodeId));
     }
-    throw planningError(`Okänd operationstyp “${operation.kind}”.`);
+  } catch (error) {
+    flushStageCommits(true);
+    throw error;
   }
+  flushStageCommits(false);
 
   const plannedStages = compiled.plan.graph.nodes.filter((node) => node.kind === "stage").map((node) => node.nodeId);
   const observedStages = channelBus.traceSnapshot().map((step) => step.planNodeRef);
@@ -2940,18 +3437,47 @@ async function executeExecutionGraph(compiled, registry, diagnostics, channelBus
   return values.get(compiled.plan.graph.terminalNodeId) || "";
 }
 
-function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitStatus, output, error, diagnostics, channels, descriptors, anchors, sourceMaps, executionTrace = [], ir, duration }) {
+function synchronizeCommittedCacheTrace(executionTrace, executionReport) {
+  const resolutions = new Map((executionReport?.nodeResolutions || []).map((resolution) => [resolution.planNodeRef, resolution]));
+  for (const step of executionTrace || []) {
+    const resolution = resolutions.get(step.planNodeRef);
+    if (!step.cache || !resolution) continue;
+    step.cache.write = resolution.cache.write;
+    step.cache.lookup = resolution.lookup;
+    step.cache.reason = resolution.reason;
+    step.cache.evidence = resolution.cache.evidence;
+    step.cache.cacheEntryId = resolution.cache.cacheEntryId;
+    step.cache.outputDigest = resolution.cache.outputDigest;
+    step.cache.evidenceRefs = resolution.cache.evidenceRefs;
+    step.cache.evidenceRecords = resolution.cache.evidenceRecords;
+    step.cache.verification = resolution.cache.verification;
+  }
+}
+
+function buildResultEnvelope({ runId, runInstanceId, profile = "fresh", ok, status: explicitStatus, output, error, diagnostics, channels, descriptors, anchors, sourceMaps, executionTrace = [], ir, duration }) {
   const status = explicitStatus || (ok ? "succeeded" : "failed");
   const committed = ok && status === "succeeded";
   const committedChannels = committed ? channels : {};
   const channelSnapshots = Object.fromEntries(Object.entries(descriptors)
     .filter(([name]) => committed && descriptors[name].persistence !== "transient" && (committedChannels[name] || descriptors[name].required))
     .map(([name, descriptor]) => [name, { descriptor, events: committedChannels[name] || [] }]));
+  const semanticReferences = operationalReferenceMap({
+    runInstanceId,
+    channelSnapshots,
+    sourceMaps,
+    activities: executionTrace,
+  });
   const semanticChannelSnapshots = Object.fromEntries(Object.entries(channelSnapshots).map(([name, snapshot]) => [
     name,
     {
       descriptor: snapshot.descriptor,
-      events: snapshot.events.map((event) => withoutKeys(event, ["runId", "runRef", "eventId", "id"])),
+      events: snapshot.events.map((event) => {
+        const stable = withoutKeys(event, ["runId", "runRef", "eventId", "id", "provenanceRef"]);
+        return normalizeOperationalReferences(
+          { ...stable, origin: withoutKeys(event.origin, ["stageId", "invocationId"]) },
+          semanticReferences,
+        );
+      }),
     },
   ]));
   const semanticSeed = canonicalJson({
@@ -2961,11 +3487,37 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitSta
     channels: semanticChannelSnapshots,
     diagnostics: diagnostics.map((diagnostic) => withoutKeys(diagnostic, ["diagnosticId"])),
   });
+  const cacheProvenanceEntities = new Map();
+  if (committed) {
+    for (const step of executionTrace) {
+      if (step.functionInvoked !== false || !step.cache?.cacheEntryId) continue;
+      cacheProvenanceEntities.set(step.cache.cacheEntryId, {
+        entityId: step.cache.cacheEntryId,
+        entityType: "cached-stage-output",
+        planNodeRef: step.planNodeRef,
+        outputDigest: step.cache.outputDigest,
+        semanticOutputDigest: step.output.digest,
+        evidenceRefs: step.cache.evidenceRefs || [],
+      });
+      for (const evidence of step.cache.evidenceRecords || []) {
+        cacheProvenanceEntities.set(evidence.evidenceId, {
+          entityId: evidence.evidenceId,
+          entityType: "cache-observation",
+          runRef: evidence.runRef,
+          documentRevision: evidence.documentRevision,
+          documentVersion: evidence.documentVersion,
+          planNodeRef: step.planNodeRef,
+          outputDigest: evidence.outputDigest,
+        });
+      }
+    }
+  }
   return {
     schema: "textabana.result/lab-v1",
     resultId: `lab:${sourceHash(semanticSeed)}`,
     run: {
       runId: `run:${runId}`,
+      instanceId: runInstanceId,
       profile,
       status,
       committed,
@@ -2981,13 +3533,22 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitSta
     sourceMaps: committed ? sourceMaps : [],
     artifacts: [],
     provenance: {
-      entities: [],
+      entities: [...cacheProvenanceEntities.values()],
       activities: committed ? executionTrace.map((step) => ({
         activityId: step.activityId,
+        runRef: step.runRef,
+        planNodeRef: step.planNodeRef,
         stageId: step.stageId,
         invocationId: step.invocationId,
         function: step.function,
         orderKey: step.orderKey,
+        activityType: step.functionInvoked === false ? "cache-materialization" : "transform-invocation",
+        executionMode: step.executionMode || "fresh-transform",
+        functionInvoked: step.functionInvoked !== false,
+        ...(step.functionInvoked === false && step.cache?.cacheEntryId ? {
+          cacheEntryRef: step.cache.cacheEntryId,
+          evidenceRefs: step.cache.evidenceRefs || [],
+        } : {}),
       })) : [],
       agents: [],
     },
@@ -3009,27 +3570,48 @@ function buildResultEnvelope({ runId, profile = "fresh", ok, status: explicitSta
 
 async function executeRun(payload) {
   const { runId, documentSource, modules = [], documentPath = "document.md", documentId = null, options = {}, editorSnapshot = null } = payload;
+  runInstanceSequence += 1;
+  const runInstanceId = `run-instance:${String(runInstanceSequence).padStart(6, "0")}`;
   const started = performance.now();
   const diagnostics = [];
   queuedRuns.delete(runId);
   activeRuns.add(runId);
   const runProfile = "fresh";
   moduleCache.clear();
+  let runPolicyError = null;
+  let runPolicy;
+  try {
+    runPolicy = normalizeRunPolicy(options);
+  } catch (error) {
+    runPolicyError = error;
+    runPolicy = normalizeRunPolicy();
+  }
+  const runControl = createRunControl({
+    policy: runPolicy,
+    startedAt: started,
+    now: () => performance.now(),
+    isCancelled: () => cancelledRuns.has(runId),
+    cancellationError,
+  });
   const channelBus = createChannelBus({
     runId,
+    runInstanceId,
     documentVersion: sourceHash(documentSource),
     documentPath,
     documentId,
     documentSource,
     strictChannels: Boolean(options.strictChannels),
     isCancelled: () => cancelledRuns.has(runId),
+    runControl,
   });
   const registry = new Map();
   const loaded = new Set();
   let inspection = null;
   let plan = null;
   let invalidationPreview = null;
+  let cacheTransaction = null;
   try {
+    if (runPolicyError) throw runPolicyError;
     channelBus.throwIfCancelled();
     const parsed = parseDocument(documentSource, { documentPath, documentId });
     inspection = parsed.ir;
@@ -3055,6 +3637,11 @@ async function executeRun(payload) {
       if (directive.kind === "IncludeDirective") await loadModule(directive.path, files, registry, loaded, loading);
     }
     channelBus.throwIfCancelled();
+    const moduleSet = [...loaded].map((path) => ({
+      path,
+      digest: `fnv1a-lab:${sourceHash(String(files[path] || ""))}`,
+      source: String(files[path] || ""),
+    }));
     const compiled = compileExecutionGraph({
       program: parsed.program,
       documentSource,
@@ -3063,10 +3650,24 @@ async function executeRun(payload) {
       registry,
       config,
       runProfile,
+      cacheRuntime: Boolean(editorSnapshot),
+      moduleSet,
     });
     plan = compiled.plan;
     invalidationPreview = buildInvalidationPreview(plan, editorSnapshot?.previousPlanBaseline || null);
-    const output = await executeExecutionGraph(compiled, registry, diagnostics, channelBus);
+    cacheTransaction = createStageCacheTransaction({
+      enabled: Boolean(editorSnapshot),
+      store: editorSnapshot?.stageCacheBaseline || null,
+      runId,
+      runInstanceId,
+      sessionId: editorSnapshot?.sessionId || null,
+      documentRevision: editorSnapshot?.documentRevision ?? null,
+      documentVersion: editorSnapshot?.documentVersion || null,
+      retainedCandidateNodeIds: invalidationPreview.retainedCandidateNodeIds,
+      planned: plan.graph.nodes.filter((node) => node.kind === "stage").length,
+    });
+    runControl.registerPlan(cacheTransaction.stats.planned);
+    const output = await executeExecutionGraph(compiled, registry, diagnostics, channelBus, cacheTransaction, runControl);
     channelBus.throwIfCancelled();
     const channels = channelBus.snapshot();
     const channelDescriptors = channelBus.descriptorSnapshot();
@@ -3074,6 +3675,7 @@ async function executeRun(payload) {
     const duration = performance.now() - started;
     const resultEnvelope = buildResultEnvelope({
       runId,
+      runInstanceId,
       profile: runProfile,
       ok: true,
       output,
@@ -3098,6 +3700,7 @@ async function executeRun(payload) {
       capabilities,
       modules,
     });
+    runControl.assertActive();
     activeRuns.delete(runId);
     cancelledRuns.delete(runId);
     const message = {
@@ -3115,7 +3718,8 @@ async function executeRun(payload) {
       anchors: channelBus.anchorSnapshot(),
       sourceMaps: channelBus.sourceMapSnapshot(),
       executionTrace,
-      executionStats: invalidationPreview.cacheStats,
+      executionReport: null,
+      executionStats: null,
       resultEnvelope,
       adapterRun,
       conformanceReport,
@@ -3124,9 +3728,14 @@ async function executeRun(payload) {
       modulesLoaded: loaded.size,
       duration,
     };
-    if (editorSnapshot) message.editorKernel = completeEditorRun(editorSnapshot, message);
+    if (editorSnapshot) message.editorKernel = completeEditorRun(editorSnapshot, message, cacheTransaction);
+    else finalizeStageCacheTransaction(cacheTransaction, { commit: false, currentStore: null, reason: "disabled" });
+    message.executionReport = stageCacheExecutionReport(cacheTransaction, runControl.report());
+    message.executionStats = message.executionReport.stats;
+    synchronizeCommittedCacheTrace(message.executionTrace, message.executionReport);
     self.postMessage(message);
   } catch (error) {
+    runControl.markError(error);
     const message = error instanceof Error ? error.message : String(error);
     const cancelled = error?.code === cancellationDiagnosticCode;
     const diagnostic = error?.diagnostic || {
@@ -3141,8 +3750,22 @@ async function executeRun(payload) {
     if (!diagnostics.includes(diagnostic)) diagnostics.push(diagnostic);
     const duration = performance.now() - started;
     const executionTrace = channelBus.traceSnapshot();
+    if (!cacheTransaction) {
+      cacheTransaction = createStageCacheTransaction({
+        enabled: false,
+        store: null,
+        runId,
+        runInstanceId,
+        sessionId: editorSnapshot?.sessionId || null,
+        documentRevision: editorSnapshot?.documentRevision ?? null,
+        documentVersion: editorSnapshot?.documentVersion || null,
+        planned: plan?.graph?.nodes?.filter((node) => node.kind === "stage").length || 0,
+      });
+      cacheTransaction.stats.executed = executionTrace.filter((step) => step.functionInvoked !== false).length;
+    }
     const resultEnvelope = buildResultEnvelope({
       runId,
+      runInstanceId,
       profile: runProfile,
       ok: false,
       status: cancelled ? "cancelled" : "failed",
@@ -3188,7 +3811,8 @@ async function executeRun(payload) {
       anchors: [],
       sourceMaps: [],
       executionTrace,
-      executionStats: invalidationPreview?.cacheStats || { reads: 0, writes: 0, hits: 0, reused: 0 },
+      executionReport: null,
+      executionStats: null,
       resultEnvelope,
       adapterRun,
       conformanceReport,
@@ -3197,7 +3821,11 @@ async function executeRun(payload) {
       modulesLoaded: loaded.size,
       duration,
     };
-    if (editorSnapshot) resultMessage.editorKernel = completeEditorRun(editorSnapshot, resultMessage);
+    if (editorSnapshot) resultMessage.editorKernel = completeEditorRun(editorSnapshot, resultMessage, cacheTransaction);
+    else finalizeStageCacheTransaction(cacheTransaction, { commit: false, currentStore: null, reason: "disabled" });
+    resultMessage.executionReport = stageCacheExecutionReport(cacheTransaction, runControl.report());
+    resultMessage.executionStats = resultMessage.executionReport.stats;
+    synchronizeCommittedCacheTrace(resultMessage.executionTrace, resultMessage.executionReport);
     self.postMessage(resultMessage);
   }
 }
@@ -3232,7 +3860,7 @@ function postEditorProtocolError(payload, command, error) {
   });
 }
 
-function postRejectedEditorRun(payload, error) {
+function postRejectedEditorRun(payload, error, includeEditorKernel = true) {
   const message = error instanceof Error ? error.message : String(error);
   const diagnostic = {
     diagnosticId: `diag:editor-protocol:${payload.runId || "unknown"}`,
@@ -3243,8 +3871,9 @@ function postRejectedEditorRun(payload, error) {
     message,
     phase: "editor-protocol",
   };
+  const runtimeReport = rejectedRunPolicyReport();
   self.postMessage({
-    type: "run-result",
+    ...(includeEditorKernel ? { type: "run-result" } : {}),
     runId: payload.runId,
     ok: false,
     output: "",
@@ -3258,7 +3887,19 @@ function postRejectedEditorRun(payload, error) {
     plan: null,
     invalidationPreview: null,
     executionTrace: [],
-    executionStats: { reads: 0, writes: 0, hits: 0, reused: 0 },
+    executionReport: {
+      schema: "textabana.execution-report/lab-v1",
+      mode: "fresh-cache-disabled",
+      transactionState: "rejected",
+      sessionId: null,
+      documentRevision: null,
+      verificationPolicy: "two-distinct-committed-revisions",
+      nodeResolutions: [],
+      stats: { planned: 0, executed: 0, reads: 0, hits: 0, misses: 0, reused: 0, bypassed: 0, observations: 0, observationAttempts: 0, verified: 0, writes: 0, writeAttempts: 0, quarantined: 0 },
+      limits: { scope: "single-editor-session-memory", maxEntries: 128, maxValueBytes: 65536, maxTotalValueBytes: 1048576, maxWitnessBytes: 131072, maxQuarantines: 128, maxQuarantineBytes: 16777216, persistent: false, shared: false },
+      ...runtimeReport,
+    },
+    executionStats: { planned: 0, executed: 0, reads: 0, hits: 0, misses: 0, reused: 0, bypassed: 0, observations: 0, observationAttempts: 0, verified: 0, writes: 0, writeAttempts: 0, quarantined: 0 },
     resultEnvelope: null,
     adapterRun: null,
     conformanceReport: null,
@@ -3268,14 +3909,14 @@ function postRejectedEditorRun(payload, error) {
     functions: [],
     modulesLoaded: 0,
     duration: 0,
-    editorKernel: {
+    ...(includeEditorKernel ? { editorKernel: {
       schema: "textabana.editor-kernel-run/lab-v1",
       protocol: "textabana.editor-kernel/lab-v1",
       run: { runId: payload.runId, status: "rejected", committed: false, resultId: null },
       error: diagnostic,
       capabilities: editorProtocolCapabilities(),
       extensions: { "textabana.playground": { canonical: false, fullProfileConformance: false } },
-    },
+    } } : {}),
   });
 }
 
@@ -3306,8 +3947,17 @@ self.onmessage = (event) => {
     catch (error) { postEditorProtocolError(payload, "subscribe", error); }
     return Promise.resolve();
   }
+  const editorRun = payload.type === "run";
+  if (activeRuns.has(payload.runId) || queuedRuns.has(payload.runId)) {
+    postRejectedEditorRun(payload, editorProtocolError(
+      editorRun ? "TBA-EDITOR-RUN-ID-INFLIGHT-LAB" : "TBA-RUN-ID-INFLIGHT-LAB",
+      `runId ${String(payload.runId)} används redan av en aktiv eller köad körning.`,
+      { runId: payload.runId },
+    ), editorRun);
+    return Promise.resolve();
+  }
   let runPayload = payload;
-  if (payload.type === "run") {
+  if (editorRun) {
     try {
       const editorSnapshot = captureEditorRun(payload);
       runPayload = {

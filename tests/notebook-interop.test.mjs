@@ -20,6 +20,7 @@ async function run(documentSource, { runId = 1, moduleSource = template("noteboo
     performance,
     TextEncoder,
     TextDecoder,
+    structuredClone,
     Uint8Array,
     btoa,
     atob,

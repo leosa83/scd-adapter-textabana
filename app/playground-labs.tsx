@@ -145,6 +145,9 @@ function StageFlow({ steps, compact = false }: { steps: ExecutionStep[]; compact
             <div className="stage-card-head">
               <strong>{step.function}</strong>
               <span className={`stage-modality is-${step.modality}`}>{step.modality}</span>
+              <span className={`stage-modality ${step.functionInvoked === false ? "is-interval" : ""}`}>
+                {step.functionInvoked === false ? "cache reuse" : "fresh"}
+              </span>
               {step.scopeId ? <code>@{step.scopeId}</code> : null}
               <small>line {step.source.startLine}{step.source.endLine !== step.source.startLine ? `–${step.source.endLine}` : ""}</small>
             </div>
@@ -172,6 +175,11 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
   const graphStages = graphNodes.filter((node) => node.kind === "stage");
   const graphEdges = result.plan?.graph.edges ?? [];
   const invalidation = result.invalidationPreview;
+  const executionReport = result.executionReport;
+  const executionStats = result.executionStats;
+  const scheduling = executionReport?.scheduling;
+  const resources = executionReport?.resources;
+  const graphStageById = new Map(graphStages.map((node) => [node.nodeId, node]));
   const affectedNodeCount = new Set([
     ...(invalidation?.directlyAffectedNodeIds ?? []),
     ...(invalidation?.transitivelyAffectedNodeIds ?? []),
@@ -235,7 +243,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
         <div className="lab-scroll">
           <div className="lab-intro">
             <div><span>Post-module-init · pre-transform</span><strong>{result.plan?.graph.schema ?? "Ingen graf"}</strong></div>
-            <p>Grafen är exekveringsauktoritet, men denna första våg 3-slice kör fortfarande alla stages fresh och sekventiellt.</p>
+            <p>Grafen är exekveringsauktoritet. Oberoende betrodda, effects-free grenar kan överlappa asynkront i en Worker; all publicering sker fortsatt i planordning.</p>
           </div>
           {result.plan ? (
             <>
@@ -243,12 +251,55 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
                 <article><span>Noder</span><strong>{graphNodes.length}</strong><small>source · stage · merge · render</small></article>
                 <article><span>Typed edges</span><strong>{graphEdges.length}</strong><small>acyklisk topologisk ordning</small></article>
                 <article><span>Planerat dirty</span><strong>{affectedNodeCount}</strong><small>{invalidation?.mode ?? "ingen baslinje"} · forced {invalidation?.forcedEffectNodeIds.length ?? 0}</small></article>
-                <article><span>Återanvända</span><strong>{invalidation?.cacheStats.reused ?? 0}</strong><small>cache reads {invalidation?.cacheStats.reads ?? 0}</small></article>
+                <article><span>Fresh / reuse</span><strong>{executionStats.executed} / {executionStats.reused}</strong><small>{executionStats.hits} hits · {executionStats.misses} misses · {executionStats.writes} committade cacheändringar</small></article>
               </div>
-              <div className="subset-notice"><CircleDot /> Preview only · full fresh run · sequential · cache reuse 0</div>
+              <div className="lab-metrics">
+                <article><span>Scheduler</span><strong>{scheduling?.mode ?? "–"}</strong><small>{scheduling?.hostMode ?? "ingen runtime-rapport"}</small></article>
+                <article><span>Waves / peak</span><strong>{scheduling?.waveCount ?? 0} / {scheduling?.peakConcurrency ?? 0}</strong><small>max {scheduling?.maxConcurrency ?? 0} samtidiga invocationer</small></article>
+                <article><span>Seriella barriärer</span><strong>{scheduling?.barrierNodeRefs.length ?? 0}</strong><small>unknown · stateful · effectful</small></article>
+                <article><span>Run-budget</span><strong>{resources?.status ?? "–"}</strong><small>{resources?.usage.resolvedStageResolutions ?? 0}/{resources?.effective.maxStageResolutions ?? 0} stages · {resources?.usage.renderBytes ?? 0} bytes</small></article>
+              </div>
+              <div className="subset-notice"><CircleDot /> {executionReport?.transactionState ?? "ingen cachetransaktion"} · bounded async overlap · deterministic plan-order commit · två skilda committed revisioner före reuse</div>
+              {scheduling?.waves.length ? (
+                <div className="data-table-wrap">
+                  <table className="data-table">
+                    <thead><tr><th>Wave</th><th>Läge</th><th>Noder</th><th>Fresh / reuse</th><th>Commit</th></tr></thead>
+                    <tbody>
+                      {scheduling.waves.map((wave) => (
+                        <tr key={wave.waveId}>
+                          <th><code>{wave.waveId}</code></th>
+                          <td>{wave.mode}</td>
+                          <td>{wave.nodeRefs.length}</td>
+                          <td>{wave.freshNodeRefs.length} / {wave.reusedNodeRefs.length}</td>
+                          <td><code>{wave.commitOrder}</code></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+              {executionReport?.nodeResolutions.length ? (
+                <div className="data-table-wrap">
+                  <table className="data-table">
+                    <thead><tr><th>Stage</th><th>Utfall</th><th>Lookup</th><th>Evidens</th><th>Orsak</th></tr></thead>
+                    <tbody>
+                      {executionReport.nodeResolutions.map((resolution) => (
+                        <tr key={resolution.planNodeRef}>
+                          <th><code>{graphStageById.get(resolution.planNodeRef)?.function ?? resolution.planNodeRef}</code></th>
+                          <td>{resolution.disposition}</td>
+                          <td>{resolution.lookup}</td>
+                          <td>{resolution.cache.evidence} · {resolution.cache.verification}</td>
+                          <td><code>{resolution.reason}</code></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
               <div className="lab-json-scroll parser-json">
-                <pre>{json({ plan: result.plan, invalidationPreview: invalidation })}</pre>
+                <pre>{json({ plan: result.plan, invalidationPreview: invalidation, executionReport })}</pre>
               </div>
+              <div className="unsupported-strip"><AlertTriangle /> En Worker · endast async overlap · ingen multicore · ingen streaming/backpressure · ingen synkron preemption eller hård CPU-/minneskvot</div>
             </>
           ) : (
             <div className="lab-empty"><AlertTriangle /> Ingen graf — compile gate eller modulbindning blockerade planeringen.</div>
@@ -258,13 +309,14 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
       {tab === "trace" ? (
         <div className="lab-scroll">
           <div className="lab-intro">
-            <div><span>Observerad exekveringsordning</span><strong>{steps.length} stage-invocations</strong></div>
-            <p>Varje trace-post binds direkt till sin pre-execution-nod med <code>planNodeRef</code>.</p>
+            <div><span>Observerad stage-resolution</span><strong>{steps.length} steg · {executionStats.executed} transforms · {executionStats.reused} reuse</strong></div>
+            <p>Varje startad stage får en trace-post i planordning, aldrig completionordning. <code>functionInvoked</code> skiljer ett transformanrop från cachematerialisering.</p>
           </div>
           <StageFlow steps={steps} />
           {(result.plan?.unsupported.length ?? 0) > 0 ? (
             <div className="unsupported-strip"><AlertTriangle /> Definierat men ännu unsupported: {result.plan?.unsupported.join(" · ")}</div>
           ) : null}
+          <div className="unsupported-strip"><AlertTriangle /> Single-worker async overlap · ingen streaming/backpressure · ingen synkron preemption eller hård CPU-/minneskvot</div>
         </div>
       ) : null}
       {tab === "semantics" ? (
@@ -272,7 +324,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
           <div className="lab-metrics">
             <article><span>Intervall</span><strong>{scopes.length}</strong><small>sortering {ir?.configuration.scopeOrder ?? "–"}</small></article>
             <article><span>Block</span><strong>{blocks.length}</strong><small>strict nesting</small></article>
-            <article><span>Körda steg</span><strong>{steps.length}</strong><small>actual trace</small></article>
+            <article><span>Stage-resolutioner</span><strong>{steps.length}</strong><small>fresh + materialized</small></article>
             <article><span>Syntaxnoder</span><strong>{ir?.nodes.length ?? 0}</strong><small>source projection</small></article>
           </div>
 
@@ -310,7 +362,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
           </section>
 
           <section className="semantic-section">
-            <div className="semantic-section-title"><Workflow /><div><strong>Vad kördes?</strong><span>Samma observerade trace visas i detalj under Körspår</span></div></div>
+            <div className="semantic-section-title"><Workflow /><div><strong>Hur resolverades stages?</strong><span>Samma observerade resolution trace visas i detalj under Körspår</span></div></div>
             <StageFlow steps={steps} compact />
           </section>
         </div>

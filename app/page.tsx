@@ -163,6 +163,20 @@ Lasten uppgavs innehålla silver.
 Den sista dokumenterade positionen behöver verifieras.
 <<<< collect_row`;
 
+const stageCacheFixtureDocument = `>>>>! include "./modules/cache.js"
+
+# Verifierad stage-cache
+
+Ändra ”Göteborg” i den högra grenen, vänta på auto-run och klicka sedan Kör en gång. Två lika observationer i skilda committed revisioner verifierar den orörda vänstra grenen; den manuella körningen kan materialisera dess output utan ett nytt transformanrop.
+
+>>>> cache_branch branch="left"
+Aurora
+<<<< cache_branch
+
+>>>> cache_branch branch="right"
+Göteborg
+<<<< cache_branch`;
+
 const channelFixtureDocument = `>>>>! include "./modules/metadata.js"
 
 # En källa, flera outputs
@@ -316,6 +330,12 @@ const playgroundFixtures: PlaygroundFixture[] = [
     document: editorKernelFixtureDocument,
   },
   {
+    id: "verified-stage-cache",
+    title: "Cache & safe branches",
+    summary: "Två oberoende async-grenar, planordnad commit och verifierad sessionslokal cache reuse.",
+    document: stageCacheFixtureDocument,
+  },
+  {
     id: "channel-fanout",
     title: "Channel fan-out",
     summary: "Ett funktionsanrop producerar render, system.out, records och metrics.",
@@ -442,6 +462,23 @@ const coreModule = `define({
         .filter(Boolean)
         .map(line => "- " + line)
         .join("\\n");
+    }
+  }
+});`;
+
+const cacheModule = `define({
+  cache_branch: {
+    description: "Ren, deterministisk referensstage för sessionslokal cacheverifiering.",
+    version: "1.0.0",
+    behavior: "segment-preserving",
+    state: "pure",
+    determinism: "deterministic",
+    effects: [],
+    outputs: ["render"],
+    args: { branch: { type: "string", description: "Stabil demonstrationsgren" } },
+    async transform(input, args, context) {
+      await context.checkpoint();
+      return "**" + String(args.branch || "branch") + ":** " + String(input).trim() + "\\n";
     }
   }
 });`;
@@ -1254,6 +1291,7 @@ define({
 const initialFiles: ProjectFile[] = [
   { path: "document.md", kind: "document", content: sampleDocument },
   { path: "modules/core.js", kind: "module", content: coreModule },
+  { path: "modules/cache.js", kind: "module", content: cacheModule },
   { path: "modules/editorial.js", kind: "module", content: editorialModule },
   { path: "modules/base64.js", kind: "module", content: base64Module },
   { path: "modules/metadata.js", kind: "module", content: metadataModule },
@@ -1263,7 +1301,7 @@ const initialFiles: ProjectFile[] = [
   { path: "modules/conformance.js", kind: "module", content: conformanceModule },
 ];
 
-const storageKey = "textabana-project-v10-conformance";
+const storageKey = "textabana-project-v12-concurrent-scheduler";
 
 function filesForFixture(fixtureId: string): ProjectFile[] {
   const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
@@ -1354,7 +1392,8 @@ const emptyRuntimeResult: RuntimeResult = {
   plan: null,
   invalidationPreview: null,
   executionTrace: [],
-  executionStats: { reads: 0, writes: 0, hits: 0, reused: 0 },
+  executionReport: null,
+  executionStats: { planned: 0, executed: 0, reads: 0, hits: 0, misses: 0, reused: 0, bypassed: 0, observations: 0, observationAttempts: 0, verified: 0, writes: 0, writeAttempts: 0, quarantined: 0 },
   resultEnvelope: null,
   adapterRun: null,
   conformanceReport: null,
@@ -1459,7 +1498,8 @@ export default function Home() {
         plan: event.data.plan ?? null,
         invalidationPreview: event.data.invalidationPreview ?? null,
         executionTrace: event.data.executionTrace ?? [],
-        executionStats: event.data.executionStats ?? { reads: 0, writes: 0, hits: 0, reused: 0 },
+        executionReport: event.data.executionReport ?? null,
+        executionStats: event.data.executionStats ?? { planned: 0, executed: 0, reads: 0, hits: 0, misses: 0, reused: 0, bypassed: 0, observations: 0, observationAttempts: 0, verified: 0, writes: 0, writeAttempts: 0, quarantined: 0 },
         resultEnvelope: event.data.resultEnvelope ?? null,
         adapterRun: event.data.adapterRun ?? null,
         conformanceReport: event.data.conformanceReport ?? null,

@@ -25,6 +25,8 @@ export type FunctionMeta = {
     observableEffects: string[];
     cacheEligibility: "candidate" | "ineligible";
     cacheBlockers: string[];
+    parallelEligibility: "candidate" | "ineligible";
+    parallelBlockers: string[];
   };
   outputs: string[];
   channels?: Record<string, ChannelDescriptor>;
@@ -129,6 +131,7 @@ export type ChannelEvent = {
 
 export type ExecutionStep = {
   schema: string;
+  runRef: string;
   step: number;
   stageId: string;
   invocationId: string;
@@ -145,17 +148,30 @@ export type ExecutionStep = {
   args: Record<string, unknown>;
   orderKey: [number, number, number];
   status: "succeeded" | "failed" | "cancelled";
+  executionMode: "fresh-transform" | "cache-reuse" | string;
+  functionInvoked: boolean;
   input: { kind: string; length: number; hash: string; digest: string; preview: string };
   output: { kind: string; length: number; hash: string; digest: string; preview: string };
   cache: {
-    mode: "disabled-planning-only";
+    mode: string;
     eligibility: "candidate" | "ineligible";
     staticKey: string;
     semanticKey: string;
-    read: false;
-    write: false;
-    hit: false;
-    reused: false;
+    inputDigest: string | null;
+    cacheEntryId: string | null;
+    outputDigest: string | null;
+    evidenceRefs: string[];
+    evidenceRecords: Array<{ evidenceId: string; runRef: string; documentRevision: number; documentVersion: string; outputDigest: string }>;
+    read: boolean;
+    write: boolean;
+    writePending: boolean;
+    observationAttempted: boolean;
+    hit: boolean;
+    reused: boolean;
+    lookup: "hit" | "miss" | "bypassed" | string;
+    reason: string;
+    evidence: number;
+    verification: "unverified" | "probation" | "verified-by-two-observations" | "quarantined" | string;
   } | null;
   duration: number;
   error?: string;
@@ -393,10 +409,14 @@ export type RuntimePlan = {
   };
   runtimePolicy: {
     profile: string;
-    scheduler: "sequential" | string;
-    execution: "full-fresh-run" | string;
-    cache: "disabled-planning-only" | string;
+    scheduler: "bounded-deterministic-ready-set" | string;
+    execution: "full-concurrent-safe-branches" | "selective-concurrent-safe-branches" | string;
+    cache: "disabled-non-editor" | "session-verified-two-observations" | string;
     parallel: boolean;
+    parallelMode: "single-worker-async-overlap" | string;
+    parallelEligibility: string;
+    serialBarriers: string[];
+    commitOrder: "plan-order" | string;
   };
   unsupported: string[];
 };
@@ -414,9 +434,91 @@ export type InvalidationPreview = {
   removedNodeIds: string[];
   forcedEffectNodeIds: string[];
   retainedCandidateNodeIds: string[];
-  executionDisposition: { mode: "planned-fresh"; plannedNodeIds: string[]; reusedNodeIds: string[] };
-  cacheStats: { reads: number; writes: number; hits: number; reused: number };
+  executionDisposition: { mode: "advisory" | string; plannedNodeIds: string[]; reusedNodeIds: string[] };
+  cacheStats: { reads: number; writes: number; hits: number; misses: number; reused: number };
   reasons: Array<{ code: string; nodeIds: string[] }>;
+};
+
+export type ExecutionStats = {
+  planned: number;
+  executed: number;
+  reads: number;
+  hits: number;
+  misses: number;
+  reused: number;
+  bypassed: number;
+  observations: number;
+  observationAttempts: number;
+  verified: number;
+  writes: number;
+  writeAttempts: number;
+  quarantined: number;
+};
+
+export type ExecutionReport = {
+  schema: "textabana.execution-report/lab-v1" | string;
+  mode: "editor-session-verified-cache" | "fresh-cache-disabled" | string;
+  transactionState: string;
+  sessionId: string | null;
+  documentRevision: number | null;
+  verificationPolicy: "two-distinct-committed-revisions" | string;
+  nodeResolutions: Array<{
+    planNodeRef: string;
+    disposition: "executed" | "reused";
+    functionInvoked: boolean;
+    lookup: "hit" | "miss" | "bypassed" | string;
+    reason: string;
+    cache: {
+      eligibility: "candidate" | "ineligible";
+      semanticKey: string;
+      inputDigest: string | null;
+      cacheEntryId: string | null;
+      outputDigest: string | null;
+      evidenceRefs: string[];
+      evidenceRecords: Array<{ evidenceId: string; runRef: string; documentRevision: number; documentVersion: string; outputDigest: string }>;
+      read: boolean;
+      hit: boolean;
+      reused: boolean;
+      write: boolean;
+      writePending: boolean;
+      observationAttempted: boolean;
+      evidence: number;
+      verification: string;
+    };
+  }>;
+  stats: ExecutionStats;
+  limits: { scope: string; maxEntries: number; maxValueBytes: number; maxTotalValueBytes: number; maxWitnessBytes: number; maxQuarantines: number; maxQuarantineBytes: number; persistent: boolean; shared: boolean };
+  scheduling: {
+    schema: "textabana.scheduler-report/lab-v1" | string;
+    mode: "bounded-safe-branch-concurrency" | string;
+    eligibility: string;
+    maxConcurrency: number;
+    peakConcurrency: number;
+    waveCount: number;
+    parallelizedNodeRefs: string[];
+    barrierNodeRefs: string[];
+    waves: Array<{
+      waveId: string;
+      mode: "concurrent" | "safe-single" | "cache-materialization" | "barrier" | string;
+      nodeRefs: string[];
+      freshNodeRefs: string[];
+      reusedNodeRefs: string[];
+      commitOrder: "plan-order" | string;
+    }>;
+    commitOrder: "plan-order" | string;
+    hostMode: "single-worker-async-overlap" | string;
+    cpuParallel: boolean;
+  };
+  resources: {
+    schema: "textabana.resource-report/lab-v1" | string;
+    requested: Record<string, number | null>;
+    effective: { maxParallelism: number; maxStageResolutions: number; maxChannelEvents: number; maxRenderBytes: number; deadlineMs: number | null };
+    hostCeilings: Record<string, number>;
+    enforcement: Record<string, string | boolean>;
+    usage: { elapsedMs: number; plannedStageResolutions: number; resolvedStageResolutions: number; freshStageInvocations: number; channelEvents: number; renderBytes: number; checkpointCount: number; peakConcurrency: number };
+    status: string;
+    diagnosticCode: string | null;
+  };
 };
 
 export type RuntimeDiagnostic = {
@@ -578,7 +680,7 @@ export type ConformanceReport = {
     purpose: string;
   }>;
   cancellation: {
-    support: "cooperative-stage-boundary";
+    support: "cooperative-runtime-boundary" | string;
     status: ConformanceStatus;
     requested: boolean;
     observed: boolean;
@@ -691,7 +793,7 @@ export type EditorKernelRun = {
     documentRevision: number;
     documentVersion: string;
   };
-  run: { runId: number; status: "succeeded" | "failed" | "cancelled" | "rejected"; committed: boolean; resultId: string | null };
+  run: { runId: number; status: "succeeded" | "failed" | "cancelled" | "rejected" | "stale"; committed: boolean; published?: boolean; resultId: string | null };
   change?: {
     schema: string;
     changeSetId: string;
@@ -728,6 +830,8 @@ export type EditorKernelRun = {
     cacheMode: string;
     scheduler: string;
     executionMode: string;
+    parallelMode: string;
+    concurrentBranchScheduling: boolean;
     deltaMode: string;
     reanchorMode: string;
     subscriptionMode: string;
@@ -755,7 +859,8 @@ export type RuntimeResult = {
   plan: RuntimePlan | null;
   invalidationPreview: InvalidationPreview | null;
   executionTrace: ExecutionStep[];
-  executionStats: { reads: number; writes: number; hits: number; reused: number };
+  executionReport: ExecutionReport | null;
+  executionStats: ExecutionStats;
   resultEnvelope: Record<string, unknown> | null;
   adapterRun: AdapterRun | null;
   conformanceReport: ConformanceReport | null;

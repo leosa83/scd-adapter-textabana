@@ -30,6 +30,14 @@ function withoutSystemArgs(args = {}) {
   return Object.fromEntries(Object.entries(args).filter(([key]) => !key.startsWith("@")));
 }
 
+function cloneAuthoredValue(value) {
+  if (Array.isArray(value)) return value.map(cloneAuthoredValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).map((key) => [key, cloneAuthoredValue(value[key])]));
+  }
+  return value;
+}
+
 function semanticValue(value) {
   if (value === undefined) return { type: "undefined" };
   if (value === null) return { type: "null", value: null };
@@ -55,6 +63,23 @@ export function semanticValueDigest(value) {
   return `fnv1a-lab:${hashSource(canonicalJson(semanticValue(value)))}`;
 }
 
+function authoredSemanticValue(value, seen = new WeakSet()) {
+  if (value === undefined) return ["undefined"];
+  if (value === null) return ["null"];
+  if (typeof value === "number") return ["number", Number.isFinite(value) ? Object.is(value, -0) ? "-0" : value : String(value)];
+  if (typeof value === "string" || typeof value === "boolean") return [typeof value, value];
+  if (typeof value === "bigint") return ["bigint", value.toString()];
+  if (typeof value !== "object") return [typeof value, String(value)];
+  if (seen.has(value)) return ["repeated-reference"];
+  seen.add(value);
+  if (Array.isArray(value)) return ["array", value.map((item) => authoredSemanticValue(item, seen))];
+  return ["object", Object.keys(value).map((key) => [key, authoredSemanticValue(value[key], seen)])];
+}
+
+export function authoredValueDigest(value) {
+  return `fnv1a-lab:${hashSource(JSON.stringify(authoredSemanticValue(value)))}`;
+}
+
 export function describeFunctionExecution(entry) {
   const descriptor = entry?.descriptor || {};
   const state = FUNCTION_STATES.has(descriptor.state) ? descriptor.state : "unknown";
@@ -77,8 +102,9 @@ export function describeFunctionExecution(entry) {
   }
   if (declaredEffects === null) cacheBlockers.push("effects-undeclared");
   if (observableEffects.length) cacheBlockers.push("observable-effects");
+  const parallelBlockers = [...cacheBlockers];
   return {
-    schema: "textabana.function-execution-contract/lab-v1",
+    schema: "textabana.function-execution-contract/lab-v2",
     version: descriptor.version == null ? null : String(descriptor.version),
     behavior: descriptor.behavior || "unspecified",
     state,
@@ -87,6 +113,8 @@ export function describeFunctionExecution(entry) {
     observableEffects,
     cacheEligibility: cacheBlockers.length ? "ineligible" : "candidate",
     cacheBlockers,
+    parallelEligibility: parallelBlockers.length ? "ineligible" : "candidate",
+    parallelBlockers,
   };
 }
 
@@ -128,6 +156,7 @@ function nodeDependency(nodesById, nodeId) {
     sourceDigests: [],
     irDigests: [],
     signature: semanticValueDigest(null),
+    witness: null,
   };
 }
 
@@ -144,6 +173,8 @@ export function compileExecutionGraph({
   config,
   runProfile = "fresh",
   environmentDigest = "fnv1a-lab:web-worker-0.7",
+  cacheRuntime = false,
+  moduleSet = [],
 }) {
   const publicNodes = [];
   const operations = [];
@@ -154,6 +185,9 @@ export function compileExecutionGraph({
   let nodeSequence = 0;
   let edgeSequence = 0;
   let scopeSequence = 0;
+  const resolvedModuleSet = [...moduleSet]
+    .map((module) => ({ path: String(module.path), digest: String(module.digest), source: String(module.source) }));
+  const moduleSetDigest = semanticValueDigest(resolvedModuleSet.map(({ path, digest }) => ({ path, digest })));
 
   const allocateId = (kind, logicalKey) => {
     const base = `${kind}:${hashSource(canonicalJson(logicalKey))}`;
@@ -197,6 +231,13 @@ export function compileExecutionGraph({
       sourceDigests: [contentDigest],
       irDigests: [irDigest],
       signature: semanticValueDigest({ contentDigest, irDigest }),
+      witness: {
+        kind: "source",
+        containerKey,
+        flushIndex,
+        text,
+        irNodes: buffer.map((node) => ({ kind: node.kind, nodeId: node.nodeId })),
+      },
     };
     return addNode(
       "source",
@@ -216,7 +257,7 @@ export function compileExecutionGraph({
   const addStage = (stage, inputNodeId, context, edgeKind, applicationKey) => {
     const entry = registry.get(stage.name);
     const contract = describeFunctionExecution(entry);
-    const args = withoutSystemArgs(stage.args);
+    const args = cloneAuthoredValue(withoutSystemArgs(stage.args));
     const inputDependency = nodeDependency(nodesById, inputNodeId);
     const stageIrDigest = semanticValueDigest({
       function: stage.name,
@@ -227,32 +268,76 @@ export function compileExecutionGraph({
     });
     const sourceDependencyDigest = digestList(inputDependency.sourceDigests);
     const irDependencyDigest = digestList([...inputDependency.irDigests, stageIrDigest]);
+    const contextWitness = {
+      modality: context.modality,
+      scopeId: context.scopeId || null,
+      source: context.source,
+      authoredInput: context.authoredInput ?? null,
+    };
+    const contractDigest = semanticValueDigest(contract);
+    const dependencyDigest = semanticValueDigest({
+      signature: inputDependency.signature,
+      edgeKind,
+      applicationKey,
+    });
     const keyComponents = {
       sourceDigest: sourceDependencyDigest,
       irDigest: irDependencyDigest,
+      dependencyDigest,
+      functionDigest: semanticValueDigest(stage.name),
       moduleDigest: entry?.moduleDigest || null,
       moduleIdentityDigest: semanticValueDigest({ path: entry?.modulePath || null, digest: entry?.moduleDigest || null }),
+      moduleSetDigest,
       inputDigest: null,
-      argsDigest: semanticValueDigest(args),
+      argsDigest: authoredValueDigest(args),
       configDigest: semanticValueDigest(config),
+      contextDigest: semanticValueDigest(contextWitness),
+      contractDigest,
       profileDigest: semanticValueDigest(runProfile),
       environmentDigest,
     };
     const staticKey = semanticValueDigest(keyComponents);
     const ownKey = semanticValueDigest({
       stageIrDigest,
+      functionDigest: keyComponents.functionDigest,
       moduleDigest: keyComponents.moduleDigest,
       moduleIdentityDigest: keyComponents.moduleIdentityDigest,
+      moduleSetDigest: keyComponents.moduleSetDigest,
       argsDigest: keyComponents.argsDigest,
       configDigest: keyComponents.configDigest,
+      contextDigest: keyComponents.contextDigest,
+      contractDigest,
       profileDigest: keyComponents.profileDigest,
       environmentDigest,
       contract,
     });
+    const cacheWitnessBase = {
+      schema: "textabana.stage-cache-key-witness/lab-v1",
+      dependency: inputDependency.witness,
+      edge: { kind: edgeKind, applicationKey },
+      stage: {
+        function: stage.name,
+        syntaxStageRef: stage.stageId || null,
+        syntaxSpan: stage.sourceSpan || null,
+        args,
+      },
+      context: contextWitness,
+      module: {
+        path: entry?.modulePath || null,
+        digest: entry?.moduleDigest || null,
+        source: entry?.moduleSource || null,
+      },
+      moduleSet: resolvedModuleSet,
+      config,
+      profile: runProfile,
+      environmentDigest,
+      contract,
+    };
     const dependency = {
       sourceDigests: inputDependency.sourceDigests,
       irDigests: [...inputDependency.irDigests, stageIrDigest],
       signature: staticKey,
+      witness: { kind: "stage", cacheWitnessBase },
     };
     const nodeId = addNode(
       "stage",
@@ -271,7 +356,7 @@ export function compileExecutionGraph({
         outputPort: { name: "value", valueKind: entry?.descriptor?.returns || "text" },
         contract,
         cache: {
-          mode: "planning-only",
+          mode: cacheRuntime ? "session-verified" : "disabled-non-editor",
           eligibility: contract.cacheEligibility,
           blockers: contract.cacheBlockers,
           staticKey,
@@ -279,7 +364,7 @@ export function compileExecutionGraph({
           keyComponents,
         },
       },
-      { stage, inputNodeId, context },
+      { stage: { ...stage, args: cloneAuthoredValue(stage.args) }, inputNodeId, context, cacheWitnessBase },
       dependency,
     );
     addEdge(edgeKind, inputNodeId, nodeId);
@@ -311,7 +396,19 @@ export function compileExecutionGraph({
     const dependency = {
       sourceDigests: uniqueStrings(dependencies.flatMap((item) => item.sourceDigests)),
       irDigests: uniqueStrings(dependencies.flatMap((item) => item.irDigests)),
-      signature: semanticValueDigest(dependencies.map((item) => item.signature)),
+      signature: semanticValueDigest(inputNodeIds.map((nodeId, index) => ({
+        nodeId,
+        port: `item:${index}`,
+        signature: dependencies[index].signature,
+      }))),
+      witness: {
+        kind: "ordered-merge",
+        inputs: inputNodeIds.map((nodeId, index) => ({
+          nodeId,
+          port: `item:${index}`,
+          dependency: dependencies[index].witness,
+        })),
+      },
     };
     const nodeId = addNode(
       "merge",
@@ -481,12 +578,28 @@ export function compileExecutionGraph({
       graph,
       runtimePolicy: {
         profile: runProfile,
-        scheduler: "sequential",
-        execution: "full-fresh-run",
-        cache: "disabled-planning-only",
-        parallel: false,
+        scheduler: "bounded-deterministic-ready-set",
+        execution: cacheRuntime ? "selective-concurrent-safe-branches" : "full-concurrent-safe-branches",
+        cache: cacheRuntime ? "session-verified-two-observations" : "disabled-non-editor",
+        parallel: true,
+        parallelMode: "single-worker-async-overlap",
+        parallelEligibility: "pure-deterministic-effects-free-render-only",
+        serialBarriers: ["unknown-stage", "stateful-stage", "effectful-stage", "merge", "render"],
+        commitOrder: "plan-order",
       },
-      unsupported: ["cache-read", "cache-write", "cache-reuse", "selective-execution", "parallel-execution", "streaming", "backpressure", "deadline-timeout"],
+      unsupported: [
+        ...(!cacheRuntime ? ["cache-read", "cache-write", "cache-reuse", "selective-execution"] : []),
+        "persistent-cache",
+        "shared-cache",
+        "cached-event-replay",
+        "streaming",
+        "backpressure",
+        "multicore-stage-execution",
+        "effectful-branch-concurrency",
+        "preemptive-synchronous-timeout",
+        "hard-cpu-quota",
+        "hard-memory-quota",
+      ],
     },
     operations,
   };
@@ -706,18 +819,18 @@ export function buildInvalidationPreview(plan, previousBaseline = null) {
     forcedEffectNodeIds: forcedEffect,
     retainedCandidateNodeIds: retainedCandidates,
     executionDisposition: {
-      mode: "planned-fresh",
+      mode: "advisory",
       plannedNodeIds: currentStages.map((node) => node.nodeId),
       reusedNodeIds: [],
     },
-    cacheStats: { reads: 0, writes: 0, hits: 0, reused: 0 },
+    cacheStats: { reads: 0, writes: 0, hits: 0, misses: 0, reused: 0 },
     reasons: [
       ...(!previousPlan ? [{ code: "TBA-INVALIDATION-COLD-LAB", nodeIds: currentStages.map((node) => node.nodeId) }] : []),
       ...(directRoots.length ? [{ code: "TBA-INVALIDATION-DEPENDENCY-LAB", nodeIds: uniqueStrings(directRoots) }] : []),
       ...(topologyRoots.length ? [{ code: "TBA-INVALIDATION-TOPOLOGY-LAB", nodeIds: uniqueStrings(topologyRoots) }] : []),
       ...(unexplainedDependencyChanges.length ? [{ code: "TBA-INVALIDATION-STATIC-KEY-LAB", nodeIds: unexplainedDependencyChanges }] : []),
       ...(forcedEffect.length ? [{ code: "TBA-INVALIDATION-FORCED-EFFECT-LAB", nodeIds: forcedEffect }] : []),
-      { code: "TBA-EXECUTION-FRESH-LAB", nodeIds: currentStages.map((node) => node.nodeId) },
+      { code: "TBA-INVALIDATION-ADVISORY-LAB", nodeIds: currentStages.map((node) => node.nodeId) },
     ],
   };
 }

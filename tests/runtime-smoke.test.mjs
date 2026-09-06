@@ -12,6 +12,7 @@ async function runRuntime(documentSource, modules, options = {}) {
     performance,
     TextEncoder,
     TextDecoder,
+    structuredClone,
     Uint8Array,
     btoa,
     atob,

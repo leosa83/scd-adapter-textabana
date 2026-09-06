@@ -12,6 +12,7 @@ function createHarness() {
     performance,
     TextEncoder,
     TextDecoder,
+    structuredClone,
     Uint8Array,
     btoa,
     atob,
@@ -21,6 +22,7 @@ function createHarness() {
   });
   vm.runInContext(workerSource, context);
   return {
+    context,
     messages,
     async send(data) {
       await context.self.onmessage({ data });
@@ -228,7 +230,10 @@ test("open, Unicode change and revision guards form one atomic document protocol
   assert.equal(run.output, "A😀C");
   assert.equal(run.editorKernel.evaluatedSnapshot.documentRevision, 2);
   assert.equal(run.editorKernel.capabilities.parseMode, "full-document");
-  assert.equal(run.editorKernel.capabilities.executionMode, "full-fresh-run");
+  assert.equal(run.editorKernel.capabilities.executionMode, "selective-concurrent-safe-branches");
+  assert.equal(run.editorKernel.capabilities.parallelMode, "single-worker-async-overlap");
+  assert.equal(run.editorKernel.capabilities.concurrentBranchScheduling, true);
+  assert.equal(run.editorKernel.capabilities.cacheMode, "editor-session-verified-two-observations");
 });
 
 test("invalid or overlapping ChangeSets never mutate the document head", async () => {
@@ -540,7 +545,7 @@ test("a queued run keeps its captured revision when the document changes before 
   const harness = createHarness();
   const slowModule = {
     path: "modules/slow.js",
-    content: `define({ slow: { async transform(input) { await new Promise(resolve => setTimeout(resolve, 35)); return input; } } });`,
+    content: `define({ slow: { state: "pure", determinism: "deterministic", effects: [], async transform(input) { await new Promise(resolve => setTimeout(resolve, 35)); return input; } } });`,
   };
   const before = `>>>>! include "./modules/slow.js"\n>>>> slow\nold snapshot\n<<<< slow`;
   const after = before.replace("old snapshot", "new snapshot");
@@ -554,8 +559,116 @@ test("a queued run keeps its captured revision when the document changes before 
   assert.match(first.output, /old snapshot/);
   assert.equal(first.editorKernel.evaluatedSnapshot.documentRevision, 1);
   assert.equal(first.editorKernel.session.documentRevision, 2);
+  assert.equal(first.editorKernel.run.published, false);
+  assert.equal(first.executionReport.transactionState, "rolled-back-stale-head");
+  assert.equal(first.executionStats.writes, 0);
+  assert.equal(first.executionStats.observations, 0);
+  assert.equal(first.executionReport.nodeResolutions[0].cache.write, false);
+  assert.equal(first.executionReport.nodeResolutions[0].cache.evidence, 0);
+  assert.equal(first.executionReport.nodeResolutions[0].cache.cacheEntryId, null);
+  assert.equal(JSON.stringify(first.executionReport.nodeResolutions[0].cache.evidenceRefs), "[]");
 
   const second = await runRevision(harness, 13, 2, [slowModule]);
   assert.match(second.output, /new snapshot/);
   assert.equal(second.editorKernel.evaluatedSnapshot.documentRevision, 2);
+  assert.equal(second.executionReport.nodeResolutions[0].cache.evidence, 1);
+});
+
+test("cancellation discards pure-stage cache observations collected before a slow boundary", async () => {
+  const harness = createHarness();
+  const source = `>>>>! include "./modules/cache-before-cancel.js"
+>>>> cached | slow
+value
+<<<< cached`;
+  const cacheCancelModule = {
+    path: "modules/cache-before-cancel.js",
+    content: `define({
+  cached: {
+    state: "pure", determinism: "deterministic", effects: [],
+    transform(input) { self.cacheBeforeCancelCalls = (self.cacheBeforeCancelCalls || 0) + 1; return String(input).trim(); }
+  },
+  slow: {
+    state: "run", determinism: "deterministic", effects: ["timer"],
+    async transform(input, _args, context) { await new Promise(resolve => setTimeout(resolve, 45)); await context.checkpoint(); return input; }
+  }
+});`,
+  };
+  const opened = await harness.send({
+    type: "open",
+    requestId: "open:cache-cancel",
+    document: { documentId: "doc:cache-cancel", path: "document.md", source, documentRevision: 1 },
+  });
+  const pending = harness.sendWithoutWaiting({
+    type: "run", requestId: "run:cache-cancel:1", runId: 71, documentId: "doc:cache-cancel", documentRevision: opened.document.documentRevision, modules: [cacheCancelModule], options: {},
+  });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  await harness.send({ type: "cancel", runId: 71 });
+  await pending;
+  const cancelled = harness.runResult(71);
+  assert.equal(cancelled.cancelled, true);
+  assert.equal(cancelled.executionReport.transactionState, "rolled-back-cancelled");
+  assert.equal(cancelled.executionStats.writes, 0);
+  assert.equal(cancelled.executionStats.observations, 0);
+  assert.equal(cancelled.executionReport.nodeResolutions[0].cache.write, false);
+  assert.equal(cancelled.executionReport.nodeResolutions[0].cache.evidence, 0);
+  assert.equal(cancelled.executionReport.nodeResolutions[0].cache.cacheEntryId, null);
+  assert.equal(JSON.stringify(cancelled.executionReport.nodeResolutions[0].cache.evidenceRefs), "[]");
+
+  const recovered = await harness.send({
+    type: "run", requestId: "run:cache-cancel:2", runId: 72, documentId: "doc:cache-cancel", documentRevision: opened.document.documentRevision, modules: [cacheCancelModule], options: {},
+  });
+  assert.equal(recovered.ok, true, recovered.error);
+  assert.equal(recovered.executionStats.reused, 0);
+  assert.equal(recovered.executionReport.nodeResolutions[0].cache.evidence, 1);
+  assert.equal(recovered.executionStats.writes, 1);
+  assert.equal(harness.context.self.cacheBeforeCancelCalls, 2);
+});
+
+test("an in-flight editor run id is unique and cancellation cannot target two runs", async () => {
+  const harness = createHarness();
+  const source = `>>>>! include "./modules/slow-identity.js"\n>>>> slow_identity\nvalue\n<<<< slow_identity`;
+  const slowModule = {
+    path: "modules/slow-identity.js",
+    content: `define({ slow_identity: { async transform(input, _args, context) { await new Promise(resolve => setTimeout(resolve, 45)); await context.checkpoint(); return input; } } });`,
+  };
+  const opened = await harness.send({
+    type: "open",
+    requestId: "open:run-identity",
+    document: { documentId: "doc:run-identity", path: "document.md", source, documentRevision: 1 },
+  });
+  const first = harness.sendWithoutWaiting({
+    type: "run", requestId: "run:identity:first", runId: 42, documentId: "doc:run-identity",
+    documentRevision: opened.document.documentRevision, modules: [slowModule], options: {},
+  });
+  await harness.sendWithoutWaiting({
+    type: "run", requestId: "run:identity:duplicate", runId: 42, documentId: "doc:run-identity",
+    documentRevision: opened.document.documentRevision, modules: [slowModule], options: {},
+  });
+  await harness.send({ type: "cancel", runId: 42 });
+  await first;
+
+  const results = harness.messages.filter((message) => message.type === "run-result" && message.runId === 42);
+  assert.equal(results.length, 2);
+  assert.equal(results.some((result) => result.diagnostics?.[0]?.code === "TBA-EDITOR-RUN-ID-INFLIGHT-LAB" && result.editorKernel.run.status === "rejected"), true);
+  assert.equal(results.some((result) => result.cancelled === true && result.editorKernel.run.status === "cancelled"), true);
+  assert.equal(results.some((result) => result.ok === true), false);
+});
+
+test("the raw run bridge also rejects a duplicate in-flight run id", async () => {
+  const harness = createHarness();
+  const source = `>>>>! include "./modules/raw-slow.js"\n>>>> raw_slow\nvalue\n<<<< raw_slow`;
+  const rawSlowModule = {
+    path: "modules/raw-slow.js",
+    content: `define({ raw_slow: { async transform(input, _args, context) { await new Promise(resolve => setTimeout(resolve, 45)); await context.checkpoint(); return input; } } });`,
+  };
+  const first = harness.sendWithoutWaiting({ runId: 84, documentPath: "document.md", documentSource: source, modules: [rawSlowModule], options: {} });
+  await harness.sendWithoutWaiting({ runId: 84, documentPath: "document.md", documentSource: source, modules: [rawSlowModule], options: {} });
+  await harness.send({ type: "cancel", runId: 84 });
+  await first;
+
+  const results = harness.messages.filter((message) => message.runId === 84 && Object.hasOwn(message, "ok"));
+  assert.equal(results.length, 2);
+  assert.equal(results.some((result) => result.diagnostics?.[0]?.code === "TBA-RUN-ID-INFLIGHT-LAB" && result.resultEnvelope === null), true);
+  assert.equal(results.some((result) => result.cancelled === true), true);
+  assert.equal(results.some((result) => result.ok === true), false);
 });

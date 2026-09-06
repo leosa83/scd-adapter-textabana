@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.1.1` |
-| Status | Pågår · Våg 1–2 och sprint 3.1 genomförda · Våg 3 aktiv |
+| Planversion | `1.3.1` |
+| Status | Pågår · Våg 1–2 och sprint 3.1–3.3 genomförda · Våg 3 aktiv |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -115,7 +115,7 @@ Textabana Editor Kernel
 
 ### Våg 3 — Inkrementell planering och exekveringsgraf
 
-**Status:** aktiv · sprint 3.1 genomförd
+**Status:** aktiv · sprint 3.1–3.3 genomförda
 
 **Mål:** Göra ändringsmängder beräkningsmässigt värdefulla genom att ogiltigförklara och köra om endast beroende delgraf.
 
@@ -143,6 +143,49 @@ Textabana Editor Kernel
 - `textabana.invalidation-preview/lab-v1` skiljer cold/no-baseline från editorbaserad diff och redovisar direct, transitive, unchanged, added, removed samt forced-effect. Previewn ligger utanför semantisk Result-identitet; planerad fresh-körning skiljs från observerad trace.
 - Language & Scope Lab har separata Graf- och Körspår-flikar. Specifikationen, README och parserkontraktet anger att cache reads, writes, hits och reuse är noll och att full parse, fresh scheduler samt sekventiell körning består.
 - Releasegrind: 126 automatiska test, ESLint och Sites produktionsbygge passerar. En befintlig chunkstorleksvarning är fortsatt icke-blockerande.
+
+#### Sprint 3.2 — Verifierad stage-cache och selektiv återanvändning
+
+**Status:** genomförd 2026-09-06
+
+**Leverans:** aktivera en begränsad, sessionslokal och minnesbaserad cache för stageoutput i Editor Kernel. Endast stages med kontraktet `pure + deterministic + effects=[]`, utan kanaler eller icke-render-output, kan bli kandidater. Samma fullständiga semantic key måste exekveras fresh i två skilda, lyckade och publicerade dokumentrevisioner med exakt samma typade output innan posten verifieras; första möjliga återanvändning sker därför vid en tredje kvalificerad förekomst. En omkörning av samma revision kan använda en redan verifierad post men får aldrig räknas som en ny observation. Varje run använder en immutable cachebaslinje och ett pending journal som committas atomiskt tillsammans med aktuell editor-head. En faktisk `textabana.execution-report/lab-v1` skiljer exekverade stages från cachematerialisering och hålls separat från rådgivande invalidation.
+
+**Acceptans:** cacheläsning kräver samma editorsession, stabil plan-node-identitet, exakt full key witness, ett verifierat tvåobservationsunderlag och en nod som invalidation klassar som retained candidate. Effectful, unknown, direkt eller transitivt invaliderade stages körs alltid fresh. Failed, cancelled, stale och ersatta sessioner får varken främja observationer eller skriva cache. Cachevärden begränsas till en förlustfri, typad JSON-domän, klonas vid skrivning och varje läsning samt jämförs på både bytes och digest. Återanvändning skapar nya run-lokala activity-/traceposter och påverkar inte render, kanaler, semantiskt Result-ID eller conformance-golden.
+
+**Avgränsning:** varje run gör fortsatt full dokumentparse, modulinitiering och grafbyggnad och använder den sekventiella schedulern. Cachen gäller endast Editor Kernel-sessioner och överlever vanliga `change`, men inte sessionsbyte, Worker-omstart eller hostreset. Persistent eller delad cache, parserträdsåteranvändning, cached event replay, parallellism, streaming, backpressure, timeout och generell resursbudget ligger kvar i senare sprintar. Två lika observationer verifierar endast denna lab-cache under en betrodd moduldeklaration; de bevisar inte att godtycklig JavaScript är ren.
+
+**Acceptansevidens:**
+
+- Editor Kernel håller en sessionslokal `textabana.stage-cache/lab-v1`. Två fresh observationer i skilda committade revisioner krävs; samma revision främjar aldrig evidensen och första reuse kan ske först vid en tredje kvalificerad förekomst.
+- Den exakta key witnessen binder authored args inklusive egenskapsordning, rekursiv edge-/mergeidentitet och hela den faktiskt initierade modulclosure i initieringsordning. Compact FNV-bucket jämförs alltid tillsammans med full witness, och kollisioner kan varken kombinera evidens eller lämna quarantine.
+- Cachevärden begränsas till `null`, sträng, boolesk, ändligt tal, tät standardarray och extensible plain/null-prototype object med standarddeskriptorer. Delade/cykliska referenser, getters, symboler, custom prototypes, sparse arrays, non-enumerable/readonly/frozen värden, proxies och för stora värden bypassas fresh.
+- Varje cachetransaktion använder immutable baseline och pending journal. Endast poster som faktiskt finns kvar efter commit/eviction räknas som `observations` eller `writes`; attempts redovisas separat. Failed, cancelled, stale head, post-commit-gate, sessionsbyte och cache-CAS-konflikt återställer committad evidens i rapporten.
+- `textabana.execution-report/lab-v1` redovisar varje planerad stages faktiska resolution. `textabana.execution-step/lab-v2` skiljer fresh invocation från cachematerialisering, och semantisk Result-/projektionidentitet förblir transportoberoende.
+- Varje run, adapter-run, stage, invocation, activity och event får ny run-lokal instansidentitet. En cachematerialisering pekar på en cachepost och två unika, exakt kvalificerade observationsentiteter; conformance-grinden verifierar att plan-node och output-digest matchar.
+- Duplicerade samtidiga `runId` avvisas i både Editor Kernel- och raw-run-gränsen, så cancellation kan aldrig träffa två körningar. Den avsedda playgroundsekvensen `open → run → edit höger gren → auto-run → manual run` återanvänder endast den oförändrade vänstergrenen.
+- Releasegrind: 153 automatiska test, ESLint och Sites produktionsbygge passerar. Golden-baselinen är omfryst efter två identiska körningar. Den befintliga chunkstorleksvarningen är fortsatt icke-blockerande.
+
+#### Sprint 3.3 — Bounded concurrent scheduler & run budgets
+
+**Status:** genomförd 2026-09-06
+
+**Leverans:** ersätt den sekventiella operationstape-loopen med en deterministisk ready-set-scheduler som får överlappa oberoende stages med ett separat parallellkontrakt: `pure + deterministic + effects=[]`, inga deklarerade kanaler och inga icke-render-outputs. Överlappningen sker asynkront i en enda Web Worker och är inte flertrådad CPU-parallellism. `unknown`-, stateful- och effectful-stages är globala seriella barriärer; även en pending barriär fence:ar senare ready branches. Outputs från faktiskt samtidiga fresh-invocations detacheras vid settlement genom en förlustfri snapshot av den portabla TextabanaValue-domänen. Samtliga execution-ID:n reserveras och values, trace, cachejournal samt merge publiceras i planordning efter att en startad batch har dränerats. Samma sprint inför en kooperativ run-deadline och explicita hosttak för stage-resolutioner, kanalhändelser, renderbytes och samtidiga invocationer.
+
+**Acceptans:** ready sets härleds från den validerade DAG:en och endast noder utan inbördes beroende får starta tillsammans. Omvänd settlementordning eller efterföljande mutation av ett returnerat branchobjekt får aldrig ändra render, execution trace, provenance, cache-resolutioner eller normalized conformance-resultat. En osäker stage kör ensam och blockerar även planmässigt senare ready branches tills den har avslutats. Ett branchfel stoppar ny scheduling och dränerar redan startade syskon. En aktiv cancel/deadline-signal efter drain har företräde; bland övriga fel väljs tidigaste planordnade fel som terminalorsak. User cancellation förblir `cancelled`; deadline- och budgetbrott blir `failed`. Alla terminalfel revokerar durable channels, render, SourceMaps, anchors, metadata-delta och pending cacheevidens atomiskt. Rapporten skiljer strikt typade begärda och effektiva gränser, faktisk peak concurrency och planordnad commit från completion timing.
+
+**Avgränsning:** schedulern ger endast async-överlappning i en Worker. Den kan inte preemptera synkrona CPU-loopar eller en Promise som aldrig settles, ger ingen multicore-exekvering och är ingen generell CPU-/minnessandbox. Purity- och effektdeklarationer är fortsatt en betrodd modulgräns; godtyckliga writes via globalt JavaScript kan inte bevisas rena. Parser-/compilerträdsreuse, persistent/delad cache, cached event replay, streaming, backpressure och extern side-effect-rollback ligger kvar i senare arbete.
+
+**Acceptansevidens:**
+
+- Den validerade operationstapen driver en bounded ready-set-scheduler. `parallelEligibility` är skild från cache eligibility; endast oberoende `pure + deterministic + effects=[]`-stages utan deklarerade kanaler eller icke-render-outputs får ingå i samma wave.
+- Execution-, invocation- och activity-ID:n reserveras i planordning. Cachelookup sker före dispatch, startade Promises dräneras med `allSettled`, och values, trace samt cacheobservationer publiceras därefter i global planordning även när branches avslutas i omvänd ordning.
+- Stateful, effectful och `unknown`-stages är seriella barriärer. Pipelineberoenden startar aldrig före sin föregångare, och en branch som bryter no-effects-kontraktet får terminalt, atomiskt fel.
+- En pending seriell barriär fence:ar senare ready branches. Outputs från två eller fler faktiskt samtidiga fresh-invocations snapshotas och klonas omedelbart inom den portabla TextabanaValue-domänen; specialprototyper, specialdeskriptorer, shared memory, alias och cykler avvisas atomiskt. Cachetypning och cachevärdets 64 KiB-tak utvärderas separat och påverkar inte safe-single-semantik.
+- `textabana.scheduler-report/lab-v1` redovisar waves, peak concurrency, barriärer och commitordning. `textabana.resource-report/lab-v1` skiljer begärda, effektiva och fasta hosttak samt faktisk användning.
+- Deadlinen börjar när en köad run verkligen tas upp för exekvering och kontrolleras kooperativt vid runtimegränser. Explicit cancellation har företräde och förblir `cancelled`; deadline, stage-, event- och renderbudgetbrott blir `failed` med stabila diagnostikkoder.
+- Branchfel och cancellation dränerar redan startade syskon men stoppar ny dispatch. Cancel/deadline har efter drain företräde framför ett vanligt branchfel; övriga fel väljs i planordning. Durable render, channels, SourceMaps, anchors, metadata-delta och cachejournal rollbackas tillsammans.
+- Language & Scope Lab visar faktisk scheduler- och resursrapport utan en ny top-level-playground. Specifikation, README och parserkontrakt markerar single-worker async overlap, ingen CPU-parallellism, ingen synkron preemption och ingen streaming/backpressure.
+- Releasegrind: 166 automatiska test passerar, inklusive omvänd settlementordning, pending effektbarriär, eftersettlement-mutation, portabel outputdomän, `maxParallelism=1`, cache hit + fresh sibling, branchfel, terminalprioritet, editor-cancellation, köad deadline och samtliga budgetfel. ESLint och Sites produktionsbygge passerar; normalized golden är stabil över upprepade körningar. Den befintliga chunkstorleksvarningen är fortsatt icke-blockerande.
 
 ### Våg 4 — Host-SDK:er och säkra modulpaket
 
@@ -175,6 +218,31 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.3.1 — 2026-09-06
+
+- Sprint 3.3 markerad som genomförd med bounded ready-set-scheduling, separat parallell eligibility, effektbarriärer och deterministisk planordnad commit.
+- Kooperativ deadline och explicita stage-, event-, render- och concurrencytak publiceras i maskinläsbara scheduler-/resursrapporter med atomisk rollback.
+- Releaseevidens uppdaterad till 166 passerade test, ESLint och Sites produktionsbygge. Våg 3 förblir aktiv för parser-/compilerträdsreuse, persistent/delad cache, streaming och backpressure.
+
+### 1.3.0 — 2026-09-06
+
+- Sprint 3.3 aktiverad för deterministisk, begränsad async branch-concurrency i en Web Worker.
+- Parallell eligibility skiljs från cache eligibility; effectful och okända stages förblir seriella barriärer och all publik commit sker i planordning.
+- Kooperativ deadline samt explicita tak för stage-resolutioner, kanalhändelser, renderbytes och samtidighet ingår; hård synkron preemption, multicore, generell CPU-/minnesbudget, streaming och backpressure gör det inte.
+
+### 1.2.1 — 2026-09-06
+
+- Sprint 3.2 markerad som genomförd med sessionslokal tvåobservationscache, sekventiell selective reuse, faktisk execution report och `execution-step/lab-v2`.
+- Cacheidentitet, typad värdedomän, outputkloning, modulclosure, argsordning, kollision/quarantine, eviction, CAS och atomisk rollback verifierade med negativa regressioner.
+- Run-lokal provenance använder unika instans-ID:n och exakt kvalificerad cacheevidens; conformance-grinden verifierar varje materialiserings två resolverbara observationer.
+- Releaseevidens uppdaterad till 153 passerade test, ESLint och Sites produktionsbygge. Våg 3 förblir aktiv för parser/compiler-reuse, parallell scheduling, streaming, backpressure, timeout och resursbudget.
+
+### 1.2.0 — 2026-09-06
+
+- Sprint 3.2 aktiverad för sessionslokal, atomiskt committad stage-output-cache och sekventiell selektiv återanvändning.
+- Två skilda lyckade editorrevisioner krävs som verifiering innan en tredje kvalificerad förekomst får återanvända output; samma revision får inte främja observationsunderlaget.
+- Faktisk cachetelemetri separeras från rådgivande invalidation; full parse, modulinitiering och sekventiell scheduler består.
 
 ### 1.1.1 — 2026-09-05
 

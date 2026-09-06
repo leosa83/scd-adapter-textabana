@@ -8,7 +8,7 @@ Den publicerade specifikationen och playgrounden finns på [textpipe-editor.leo-
 
 Åtta interaktiva labs visar samma källa och valda run från olika semantiska perspektiv:
 
-- **Language & Scope** — lossless CST, AST, typed IR, recovery, Unicode-spans, block, öppna intervall, pre-execution-graf, invalidation preview och separat observerat körspår.
+- **Language & Scope** — lossless CST, AST, typed IR, recovery, Unicode-spans, block, öppna intervall, pre-execution-graf, rådgivande invalidation, faktisk execution report och separat observerat körspår.
 - **Editor Kernel** — documentsession, revisionguardade ChangeSets, channel subscriptions, metadata-delta och anchor continuity.
 - **Editor Metadata** — `system.out`, row/line, Anchor, SourceMap och jämförelse mellan revisioner.
 - **Channel & Result** — deklarerade kanaldeskriptorer, strict validation, global eventtimeline och atomiskt result envelope.
@@ -19,7 +19,7 @@ Den publicerade specifikationen och playgrounden finns på [textpipe-editor.leo-
 
 Channel & Result innehåller även en adapterinspektör. Den visar det körbara kontraktet efter core commit utan att starta en separat run.
 
-Fixturepaketet innehåller bland annat `parser-recovery`, `scope-torture`, `editor-revision`, `editor-kernel-revisions`, `channel-fanout`, `base64-inverse`, `failed-run`, `data-join`, `notebook-snapshot`, `annotation-review`, `conformance-golden`, två ytterligare negativa cases och `cancellation-probe`.
+Fixturepaketet innehåller bland annat `parser-recovery`, `scope-torture`, `editor-revision`, `editor-kernel-revisions`, `verified-stage-cache`, `channel-fanout`, `base64-inverse`, `failed-run`, `data-join`, `notebook-snapshot`, `annotation-review`, `conformance-golden`, två ytterligare negativa cases och `cancellation-probe`.
 
 ## Embedded Editor Kernel
 
@@ -27,15 +27,21 @@ Textabana kan bäddas in som en dokumentkärna bakom editorer. Workern implement
 
 Delta matchas med stabil channel-/domänidentitet, aldrig med run-lokala event-id:n. Failed och cancelled run lämnar föregående committade deltabaslinje orörd. Stabilt anchor-id har företräde; annars får en unik TextQuote + origin relinkas. Flera kandidater blir `ambiguous` och ingen kandidat blir `orphaned` — kärnan gissar inte.
 
-Subseten ger inkrementell dokumenttransport och inkrementell metadataleverans. Den använder en formell Lezer-parser och `textabana.ir/lab-v2`. Våg 3 har nu börjat med en planning-only `textabana.execution-plan/lab-v2`: efter modulinitiering men före första transform byggs en typed DAG som själv styr den sekventiella körningen. En advisory invalidation preview kan jämföra mot senaste lyckade editorbaslinje. Varje `analyze`/`run` gör fortfarande en full dokumentparse, alla stages körs fresh och cache reads, writes, hits samt reuse är noll. Inkrementell parseråteranvändning, stageoutput-cache och selektiv eller parallell exekvering återstår i [Editor Kernel-planen](./EDITOR_KERNEL_PLAN.md).
+Subseten ger inkrementell dokumenttransport, inkrementell metadataleverans och konservativ selektiv stage-exekvering. Den använder en formell Lezer-parser och `textabana.ir/lab-v2`. Efter modulinitiering men före första transform byggs en typed `textabana.execution-plan/lab-v2` som styr en deterministisk ready-set-scheduler. Oberoende stages med det betrodda kontraktet `pure + deterministic + effects=[]`, render-only output och lossless snapshotbart input får överlappa asynkront i samma Worker; unknown, stateful och effectful stages är seriella barriärer. `textabana.invalidation-preview/lab-v1` jämför rådgivande mot senaste lyckade editorbaslinje; faktisk lookup, hit, fresh invocation, reuse och scheduler-wave redovisas separat i `textabana.execution-report/lab-v1`.
+
+Stage-cachen är endast minnes- och sessionslokal. En kandidat måste deklarera `pure + deterministic + effects=[]`, sakna kanaler och icke-render-output och ge exakt samma typade output för samma fulla key witness i två skilda committed editorrevisioner. Witnessen binder authored args med observerbar egenskapsordning, den rekursiva delgrafen och hela den faktiskt initierade modulclosure i initieringsordning; FNV-labbucket jämförs alltid med den fulla witnessen. Först därefter får en senare förekomst materialisera en klonad output.
+
+Cachevärdedomänen är medvetet strikt: endast `null`, sträng, boolesk, ändliga tal, täta standardarrayer och extensible plain/null-prototype objects med standarddeskriptorer accepteras. Alias/cykler, getters, symboler, specialprototyper, sparse eller utökade arrayer, readonly/frozen värden, proxies och för stora outputs körs fresh. Pending observationer committas först efter core-resultat, immutable adapterfan-out, conformance-gate och aktuell editor-head; failed, cancelled, stale, gate-rejected, cache-CAS och ersatta sessioner lämnar ingen committad evidens. Rapporten skiljer attempts från synliga writes/observations även vid eviction. Alla startade concurrent branches dräneras med `allSettled`, men values, trace, provenance och cachejournal publiceras alltid i planordning.
+
+Run-policyn tar endast strikt positiva heltal och har hosttak för samtidiga invocationer, planerade stage-resolutioner, kanalhändelser och final renderstorlek i UTF-8-bytes samt en valfri kooperativ deadline. Deadline kontrolleras vid runtime-/checkpointgränser och budgetfel ger ett atomiskt `failed`-resultat; user cancellation förblir `cancelled`. Outputs från faktiskt samtidiga fresh-invocations detacheras direkt vid settlement genom en förlustfri snapshot av den portabla TextabanaValue-domänen: primitives, täta standardarrayer och extensible plain/null-prototype objects utan accessors, specialdeskriptorer, alias eller cykler. Ett värde utanför domänen stoppar batchen atomiskt. Cachevärdering är separat och dess 64 KiB-gräns ändrar inte en safe-single-körnings resultat. Detta är inte en sandbox: en synkron CPU-loop eller Promise som aldrig settles kan inte preempteras, och godtyckliga JavaScript-writes utanför `context` kan inte rullas tillbaka. Full dokumentparse, modulinitiering och grafbyggnad består; parser-/compilerträdsreuse, persistent/delad cache, cached event replay, multicore-exekvering, streaming och backpressure återstår i [Editor Kernel-planen](./EDITOR_KERNEL_PLAN.md).
 
 ## Parser och typed IR
 
 Dokumentet går genom exakt en auktoritativ kedja: `source → Lezer CST → Textabana AST → typed IR → compile gate`. Include-resolution, config, Language Lab och runtime läser samma resultat. Error-level recovery ger partial editorstruktur men blockerar modulinitiering, plan och domänexekvering. Fenced code och `\>>>>`/`\<<<<` är literal syntax; funktionsoutput reparsas aldrig. Alla publika spans använder halvöppna Unicode-code-point-offsets. Det körbara grammatikkontraktet, samtliga implementerade recoveryfamiljer, typed node-unionen och Lezer-beslutet finns i [parserkontraktet](./TEXTABANA_PARSER.md).
 
-Ett giltigt snapshot får `textabana.execution-plan/lab-v2` och `textabana.execution-graph/lab-v1` efter att include-moduler har initierats men innan någon transform anropas. Source-, stage-, merge- och rendernoder binds med typed edges och deterministisk topologisk ordning. Observerad `executionTrace` är en separat artefakt vars poster refererar grafens stage-noder via `planNodeRef`; även ett senare misslyckat stage lämnar därför resten av den förkompilerade grafen inspekterbar.
+Ett giltigt snapshot får `textabana.execution-plan/lab-v2` och `textabana.execution-graph/lab-v1` efter att include-moduler har initierats men innan någon transform anropas. Source-, stage-, merge- och rendernoder binds med typed edges och deterministisk topologisk ordning. Observerad `executionTrace` använder `textabana.execution-step/lab-v2`: varje post refererar en stage-nod via `planNodeRef` och redovisar antingen fresh invocation eller cachematerialisering. Även ett senare misslyckat stage lämnar därför resten av den förkompilerade grafen inspekterbar.
 
-Varje stage publicerar ett planning-only cache-recept med stage-lokala source- och IR-digests samt resolved module identity, module-, input-, args-, config-, profile- och environment-komponenter. Exakt typed input-digest materialiseras först vid anropet och skiljer bland annat whitespace och värdetyper. `behavior` beskriver mapping och används aldrig som puritysignal: legacyfunktioner utan explicit `state`, `determinism` och `effects` är `unknown` och icke-cachebara. En deklarerad cachekandidat är fortfarande varken verifierat pure, en cache hit eller reuse, och playgrounden återanvänder ännu ingenting.
+Varje stage publicerar ett cache-recept med stage-lokala source- och IR-digests, edge-/mergeberoende, funktions- och contextdigest samt resolved module identity, ordnad initierad module closure, input-, authored-args-, config-, contract-, profile- och environment-komponenter. Exakt typad input-digest materialiseras först vid stage-resolution och skiljer bland annat whitespace och värdetyper; full key witness jämförs dessutom byte-för-byte så att ett 32-bitars labdigest aldrig ensamt kan ge en träff. `behavior` beskriver mapping och används aldrig som puritysignal: legacyfunktioner utan explicit `state`, `determinism` och `effects` är `unknown` och icke-cachebara. Två lika observationer verifierar bara den aktuella sessionens cachepost under en betrodd deklaration — inte att godtycklig JavaScript faktiskt är ren. En reuse får alltid nya run-lokala instans-ID:n och pekar på två exakt kvalificerade, resolverbara observationsentiteter.
 
 ## Conformance-grind
 
@@ -59,7 +65,7 @@ Annotation-subseten gör inga falska modell- eller verktygsanspråk. Den kör in
 
 ## Status
 
-Dokumentationen är **Textabana Language & Interop draft 0.7 med Våg 3 lab-addendum**. Webbmotorn implementerar `textabana.parser/lab-v1`, `textabana.cst/lab-v1`, `textabana.ast/lab-v1`, `textabana.ir/lab-v2`, `textabana.execution-plan/lab-v2`, `textabana.execution-graph/lab-v1` och `textabana.invalidation-preview/lab-v1` samt uttryckligen avgränsade playground-subsets av `language-core/0.4`, `runtime-json/1`, `editor/1`, `editor-kernel/1`, `adapter-contract/1`, `data/1`, `notebook/1` och `annotation/1`; den gör ännu inte anspråk på full profilkonformitet eller inkrementell exekvering.
+Dokumentationen är **Textabana Language & Interop draft 0.7 med Våg 3 lab-addendum**. Webbmotorn implementerar `textabana.parser/lab-v1`, `textabana.cst/lab-v1`, `textabana.ast/lab-v1`, `textabana.ir/lab-v2`, `textabana.execution-plan/lab-v2`, `textabana.execution-graph/lab-v1`, `textabana.execution-step/lab-v2`, `textabana.invalidation-preview/lab-v1` och `textabana.execution-report/lab-v1` med nästlade scheduler-/resursrapporter samt uttryckligen avgränsade playground-subsets av `language-core/0.4`, `runtime-json/1`, `editor/1`, `editor-kernel/1`, `adapter-contract/1`, `data/1`, `notebook/1` och `annotation/1`. Den gör anspråk på sessionslokal selective reuse och begränsad async branch-concurrency i en Worker — inte generell inkrementell, flertrådad eller full profilkonform exekvering.
 
 ## Utveckling
 
@@ -80,6 +86,8 @@ Viktiga filer:
 - `runtime/textabana.grammar` — versionssatt Lezer-grammatik för den radankrade syntaxytan.
 - `runtime/parser.js` — CST → AST → typed IR, Unicode-spans, diagnostics och recovery.
 - `runtime/worker-entry.js` — modulruntime, exekvering, kanaler, trace, resultatmodell och adapterregister.
+- `runtime/run-policy.js` — bounded ready-set-policy, kooperativ deadline och stage-/event-/renderbudget.
+- `runtime/stage-cache.js` — förlustfri cachevärdesdomän, tvåobservationsverifiering och atomisk sessionscommit.
 - `public/runtime-worker.js` — deterministiskt genererad klassisk Worker-bundle som UI och headless-test kör.
 - `TEXTABANA_PARSER.md` — formell grammatik, lagergränser, recoverymatris och parserarkitekturbeslut.
 - `IMPLEMENTATION_PLAN.md` — versionspolicy, sprintar och acceptansgrindar.

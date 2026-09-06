@@ -14,6 +14,7 @@ function template(name) {
 
 const modules = [
   { path: "modules/core.js", content: template("coreModule") },
+  { path: "modules/cache.js", content: template("cacheModule") },
   { path: "modules/editorial.js", content: template("editorialModule") },
   { path: "modules/metadata.js", content: template("metadataModule") },
   { path: "modules/base64.js", content: template("base64Module") },
@@ -31,6 +32,7 @@ async function run(documentSource, runId = 1) {
     performance,
     TextEncoder,
     TextDecoder,
+    structuredClone,
     Uint8Array,
     btoa,
     atob,
@@ -49,6 +51,36 @@ async function run(documentSource, runId = 1) {
     },
   });
   return message;
+}
+
+function createEditorHarness() {
+  const waiters = [];
+  const context = vm.createContext({
+    console,
+    performance,
+    TextEncoder,
+    TextDecoder,
+    structuredClone,
+    Uint8Array,
+    btoa,
+    atob,
+    setTimeout,
+    clearTimeout,
+    self: {
+      postMessage(message) {
+        const waiter = waiters.shift();
+        if (waiter) waiter(message);
+      },
+    },
+  });
+  vm.runInContext(workerSource, context);
+  return {
+    async send(data) {
+      const response = new Promise((resolve) => waiters.push(resolve));
+      await context.self.onmessage({ data });
+      return response;
+    },
+  };
 }
 
 test("scope-torture drives the shared language, editor and channel projections", async () => {
@@ -94,6 +126,64 @@ test("editor-kernel fixture exposes authored identities suitable for changed and
   assert.equal(new Set(rows.map((event) => event.target.anchorRef)).size, 3);
   assert.equal(result.channelDescriptors.records.key[0], "payload.rowId");
   assert.doesNotMatch(result.output, />>>>|<<<<|row_id=/);
+});
+
+test("verified-stage-cache fixture exposes two independent pure candidates", async () => {
+  const result = await run(template("stageCacheFixtureDocument"));
+  const stages = result.plan.graph.nodes.filter((node) => node.kind === "stage");
+
+  assert.equal(result.ok, true, result.error);
+  assert.equal(stages.length, 2);
+  assert.equal(stages.every((stage) => stage.contract.cacheEligibility === "candidate"), true);
+  assert.equal(stages.every((stage) => stage.contract.parallelEligibility === "candidate"), true);
+  assert.equal(result.executionReport.mode, "fresh-cache-disabled");
+  assert.equal(result.executionReport.scheduling.mode, "bounded-safe-branch-concurrency");
+  assert.equal(result.executionReport.scheduling.peakConcurrency, 2);
+  assert.equal(result.executionReport.scheduling.waves[0].mode, "concurrent");
+  assert.equal(result.executionStats.reused, 0);
+});
+
+test("verified-stage-cache recipe reuses the left branch after the right-branch auto-run", async () => {
+  const harness = createEditorHarness();
+  const source = template("stageCacheFixtureDocument");
+  const cacheOnly = modules.filter((module) => module.path === "modules/cache.js");
+  const opened = await harness.send({
+    type: "open",
+    requestId: "open:fixture-cache",
+    document: { documentId: "doc:fixture-cache", path: "document.md", source, documentRevision: 1 },
+  });
+  await harness.send({
+    type: "run", requestId: "run:fixture-cache:1", runId: 301, documentId: "doc:fixture-cache", documentRevision: opened.document.documentRevision, modules: cacheOnly, options: {},
+  });
+  const wordStart = Array.from(source.slice(0, source.lastIndexOf("Göteborg"))).length;
+  const changed = await harness.send({
+    type: "change",
+    requestId: "change:fixture-cache:right",
+    documentId: "doc:fixture-cache",
+    baseRevision: 1,
+    changes: [{ range: { from: wordStart, to: wordStart + Array.from("Göteborg").length }, insert: "Stockholm" }],
+  });
+  const autoRun = await harness.send({
+    type: "run", requestId: "run:fixture-cache:auto", runId: 302, documentId: "doc:fixture-cache", documentRevision: changed.document.documentRevision, modules: cacheOnly, options: {},
+  });
+  const manualRun = await harness.send({
+    type: "run", requestId: "run:fixture-cache:manual", runId: 303, documentId: "doc:fixture-cache", documentRevision: changed.document.documentRevision, modules: cacheOnly, options: {},
+  });
+
+  assert.equal(autoRun.executionReport.nodeResolutions[0].cache.evidence, 2);
+  assert.equal(autoRun.executionReport.nodeResolutions[0].cache.verification, "verified-by-two-observations");
+  assert.equal(manualRun.executionStats.reused, 1);
+  assert.equal(manualRun.executionReport.scheduling.waves[0].nodeRefs.length, 2);
+  assert.equal(manualRun.executionReport.scheduling.waves[0].reusedNodeRefs.length, 1);
+  assert.equal(manualRun.executionReport.scheduling.waves[0].freshNodeRefs.length, 1);
+  assert.equal(
+    JSON.stringify(manualRun.executionReport.nodeResolutions.map((resolution) => resolution.planNodeRef)),
+    JSON.stringify(manualRun.plan.graph.nodes.filter((node) => node.kind === "stage").map((node) => node.nodeId)),
+  );
+  assert.equal(manualRun.executionTrace[0].functionInvoked, false);
+  assert.equal(manualRun.executionTrace[1].functionInvoked, true);
+  assert.match(manualRun.output, /left:\*\* Aurora/);
+  assert.match(manualRun.output, /right:\*\* Stockholm/);
 });
 
 test("the playground advances Editor Kernel state only from correlated acknowledgements", () => {

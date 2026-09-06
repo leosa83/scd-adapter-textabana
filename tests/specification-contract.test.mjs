@@ -32,6 +32,7 @@ test("the Interop 0.7 specification preserves its foundational contracts", () =>
     "PLAN-002",
     "PLAN-003",
     "PLAN-004",
+    "PLAN-005",
     "SOURCEMAP-001",
     "RESULT-002",
     "CHANNEL-002",
@@ -54,6 +55,11 @@ test("the Interop 0.7 specification preserves its foundational contracts", () =>
     "DELTA-004",
     "REANCHOR-001",
     "RUN-005",
+    "RUN-006",
+    "RUN-007",
+    "RUN-008",
+    "RUN-009",
+    "RUNTIME-CACHE-PROVENANCE",
     "JUPYTER-001",
     "DATA-001",
     "ANNOTATION-002",
@@ -110,20 +116,26 @@ test("the Interop 0.7 specification preserves its foundational contracts", () =>
   assert.match(source, /Contract-only.*aldrig claimable/s);
   assert.match(source, /normaliseringspolicy.*actual digest.*expected digest/s);
   assert.match(source, /Negativa fixtures.*exakt diagnostikkod.*atomiskt tom durable commit/s);
-  assert.match(source, /kooperativ vid async- och stage-gränser.*synkron preemption/s);
+  assert.match(source, /kooperativ cancellation.*kooperativ deadline.*synkron preemption/s);
   assert.match(source, /textabana\.editor-kernel\/lab-v1/);
   assert.match(source, /textabana\.parser\/lab-v1/);
   assert.match(source, /textabana\.cst\/lab-v1/);
   assert.match(source, /textabana\.ir\/lab-v2/);
   assert.match(source, /textabana\.execution-plan\/lab-v2/);
   assert.match(source, /textabana\.execution-graph\/lab-v1/);
+  assert.match(source, /textabana\.execution-step\/lab-v2/);
+  assert.match(source, /textabana\.execution-report\/lab-v1/);
+  assert.match(source, /bounded-deterministic-ready-set/);
+  assert.match(source, /single-worker-async-overlap/);
+  assert.match(source, /completionordning.*planordnad trace.*cachejournal.*merge/s);
+  assert.match(source, /stage-, event- och rendergränser.*synkron preemption.*hårda CPU-\/minneskvoter/s);
   assert.match(source, /post-module-init-pre-transform/);
-  assert.match(source, /cache reads, writes, hits och reuse är noll/);
+  assert.match(source, /två.*observationer.*skilda committed revisioner/is);
   assert.match(source, /analyze.*partial.*IR.*inga moduler eller stages/s);
   assert.match(source, /korrelerade.*open.*change.*Optimistiskt antagen revision\/version/s);
-  assert.match(source, /inkrementell input.*Implementerat.*inkrementell beräkning.*Ej implementerat.*inkrementell leverans.*Implementerat/is);
+  assert.match(source, /inkrementell input.*Implementerat.*inkrementell stage-exekvering.*Avgränsad lab-subset.*Parser-\/compilerreuse.*Ej implementerat.*inkrementell leverans.*Implementerat/is);
   assert.match(source, /run-lokala.*eventId.*sequence/s);
   assert.match(source, /Flera giltiga kandidater.*ambiguous.*ingen giltig kandidat.*orphaned/s);
-  assert.match(source, /full dokumentparse.*Parserträdsreuse.*selektiv exekvering återstår i Våg 3/s);
+  assert.match(source, /full dokumentparse.*snapshotbara effects-free stages.*Parser-\/compilerträdsreuse.*persistent\/delad cache/s);
   assert.match(source, /Recovery.*executable=false/s);
 });

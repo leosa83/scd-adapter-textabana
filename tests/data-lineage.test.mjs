@@ -20,6 +20,7 @@ async function run(documentSource, { runId = 1, modules, adapters = ["org.textab
     performance,
     TextEncoder,
     TextDecoder,
+    structuredClone,
     Uint8Array,
     btoa,
     atob,
