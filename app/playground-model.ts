@@ -866,6 +866,7 @@ export type RuntimeResult = {
   resultEnvelope: Record<string, unknown> | null;
   adapterRun: AdapterRun | null;
   conformanceReport: ConformanceReport | null;
+  semanticIdentity?: { profile: string; source: { id: string }; context: { id: string }; ir: { id: string } | null; plan: { id: string } | null; result: { id: string } | null } | null;
   editorKernel: EditorKernelRun | null;
   capabilities: Record<string, unknown> | null;
   cancelled?: boolean;

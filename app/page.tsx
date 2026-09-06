@@ -1415,6 +1415,7 @@ export default function Home() {
   const [mobilePane, setMobilePane] = useState<"editor" | "preview">("editor");
   const [workerReady, setWorkerReady] = useState(false);
   const [running, setRunning] = useState(true);
+  const [semanticIdentity, setSemanticIdentity] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [result, setResult] = useState<RuntimeResult>(emptyRuntimeResult);
   const [previousResult, setPreviousResult] = useState<RuntimeResult | null>(null);
@@ -1503,6 +1504,7 @@ export default function Home() {
         resultEnvelope: event.data.resultEnvelope ?? null,
         adapterRun: event.data.adapterRun ?? null,
         conformanceReport: event.data.conformanceReport ?? null,
+        semanticIdentity: event.data.semanticIdentity ?? null,
         editorKernel: event.data.editorKernel ?? null,
         capabilities: event.data.capabilities ?? null,
         cancelled: event.data.cancelled === true,
@@ -1631,7 +1633,7 @@ export default function Home() {
         documentId,
         documentRevision: kernelDocument.revision,
         modules: files.filter((file) => file.kind === "module"),
-        options: { fixtureId, strictChannels, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review", "org.textabana.ml-lineage"] },
+        options: { fixtureId, strictChannels, semanticIdentity, adapters: ["org.textabana.result-summary", "org.textabana.data-table", "org.textabana.notebook", "org.textabana.annotation-review", "org.textabana.ml-lineage"] },
       });
       postedRunIdsRef.current.add(runId);
       if (latchedCancellationRef.current.delete(runId)) {
@@ -1654,7 +1656,7 @@ export default function Home() {
       setRunning(false);
       toast.error(message);
     });
-  }, [files, fixtureId, sendKernelCommand, strictChannels]);
+  }, [files, fixtureId, sendKernelCommand, strictChannels, semanticIdentity]);
 
   const cancelRun = useCallback(() => {
     if (!running || !workerRef.current) return;
@@ -1803,6 +1805,10 @@ export default function Home() {
                 <label className="strict-control">
                   <Switch size="sm" checked={strictChannels} onCheckedChange={setStrictChannels} aria-label="Strict channel mode" />
                   <span>Strict channels</span>
+                </label>
+                <label className="strict-control">
+                  <Switch size="sm" checked={semanticIdentity} onCheckedChange={setSemanticIdentity} aria-label="Beräkna SHA-256-identiteter" />
+                  <span>SHA-256-identiteter</span>
                 </label>
               </div>
             </div>

@@ -1,0 +1,16 @@
+{
+  "schema": "textabana.semantic-suite/v1",
+  "profile": "textabana.semantic-artifacts/v1",
+  "version": "1.0.0",
+  "cases": [
+    { "id": "unicode", "source": "Hej 😀\n", "modules": [], "expect": { "ok": true, "output": "Hej 😀\n" } },
+    { "id": "empty", "source": "", "modules": [], "expect": { "ok": true, "output": "" } },
+    { "id": "pure-stage", "source": ">>>>! include \"./m.js\"\n>>>> upper\nHej\n<<<< upper", "modules": [{ "path": "m.js", "content": "define({upper:{state:'pure',determinism:'deterministic',effects:[],transform(input){return String(input).toUpperCase();}}});" }], "expect": { "ok": true, "output": "HEJ\n" } },
+    { "id": "payload-fields", "source": ">>>>! include \"./m.js\"\n>>>> emit\nHej\n<<<< emit", "modules": [{ "path": "m.js", "content": "define({emit:{state:'run',determinism:'deterministic',effects:['channel:system.out'],transform(input,_args,ctx){ctx.system.out.line({id:'event:run-instance:000001:x:0001',runId:'run-instance:000001',duration:7,revision:42,documentVersion:'fnv1a:abc',nested:{stageId:'stage:run-instance:000001'}},{row:1,rowId:'authored-row'});return input;}}});" }], "expect": { "ok": true, "output": "Hej\n" } },
+    { "id": "syntax-failure", "source": ">>>> upper\nHej", "modules": [], "expect": { "ok": false, "output": "", "code": "TBA-PARSE-BLOCK-UNCLOSED-LAB" } },
+    { "id": "stage-failure", "source": ">>>>! include \"./m.js\"\n>>>> fail\nHej\n<<<< fail", "modules": [{ "path": "m.js", "content": "define({fail:{transform(){throw new Error('fixture failed');}}});" }], "expect": { "ok": false, "output": "", "code": "TBA-RUN-LAB" } },
+    { "id": "missing-module", "source": ">>>>! include \"./missing.js\"\nHej", "modules": [], "expect": { "ok": false, "output": "", "code": "TBA-RESOLVE-LAB" } },
+    { "id": "module-change", "source": ">>>>! include \"./m.js\"\n>>>> upper\nHej\n<<<< upper", "modules": [{ "path": "m.js", "content": "define({upper:{state:'pure',determinism:'deterministic',effects:[],transform(input){return String(input).toUpperCase();}}}); // changed module bytes" }], "expect": { "ok": true, "output": "HEJ\n" } },
+    { "id": "warning", "source": ">>>>! include \"./m.js\"\n>>>> warn\nHej\n<<<< warn", "modules": [{ "path": "m.js", "content": "define({warn:{transform(input,_args,ctx){ctx.warn('a benign warning');return input;}}});" }], "expect": { "ok": true, "output": "Hej\n" } }
+  ]
+}

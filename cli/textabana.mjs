@@ -6,6 +6,8 @@ import { NodeKernelTransport } from "../sdk/node/transport.mjs";
 import { rawClient, runHostSuite } from "../conformance/host-runner.mjs";
 import { signReport, verifyReport } from "../conformance/report-signing.mjs";
 import { verifyRegistry } from "../conformance/registry.mjs";
+import { verifySemanticBundle } from "../runtime/semantic-identity.js";
+import { runSemanticSuite } from "../conformance/semantic-runner.mjs";
 
 const [command, filename, keyfile] = process.argv.slice(2);
 const output = (value) => process.stdout.write(`${JSON.stringify(value)}\n`);
@@ -50,20 +52,26 @@ async function main() {
   if (command === "conformance") {
     const report = await runHostSuite(); output(report); if (report.status !== "passed") process.exitCode = 1; return;
   }
+  if (command === "conformance-semantic") {
+    const report = await runSemanticSuite(); output(report); if (report.status !== "passed") process.exitCode = 1; return;
+  }
+  if (command === "verify-identity") return output(await verifySemanticBundle(await json(filename)));
   if (command === "sign") return output(await signReport(await json(filename), await readFile(keyfile, "utf8")));
   if (command === "verify") return output(await verifyReport(await json(filename), await readFile(keyfile, "utf8")));
   if (command === "registry-check") return output(await verifyRegistry(filename));
-  if (command === "run" || command === "analyze") {
+  if (command === "run" || command === "analyze" || command === "identify") {
     const transport = new NodeKernelTransport(); const client = rawClient(transport);
     try {
-      await client.command("open", { document: { documentId: "cli", path: filename, source: await readFile(filename, "utf8"), documentRevision: 1 } });
+      const source = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(await readFile(filename));
+      await client.command("open", { document: { documentId: "cli", path: filename, source, documentRevision: 1 } });
       const configuration = keyfile ? await json(keyfile) : {};
-      const response = await client.command(command, { ...configuration, documentId: "cli", documentRevision: 1, runId: 1 });
-      output(response); if (!response.ok || response.analysis?.executable === false) process.exitCode = 1;
+      const response = await client.command(command === "identify" ? "run" : command, { ...configuration, documentId: "cli", documentRevision: 1, runId: 1,
+        ...(command === "identify" ? { options: { ...configuration.options, semanticIdentity: true } } : {}) });
+      output(command === "identify" ? response.semanticIdentity ?? { error: response.error, diagnostics: response.diagnostics } : response); if (!response.ok || response.analysis?.executable === false) process.exitCode = 1;
     } finally { client.dispose(); await transport.close(); }
     return;
   }
   if (command && command !== "help" && command !== "--help") throw new Error(`Unknown command: ${command}`);
-  process.stdout.write("Textabana CLI\n  run <document.md> [modules-and-options.json]\n  analyze <document.md>\n  serve  (JSONL kernel transport)\n  canonical <input.json>\n  digest <input.json>\n  conformance\n  sign <report.json> <ed25519-private.pem>\n  verify <signed-report.json> <trusted-public.pem>\n  registry-check <registry.json>\n");
+  process.stdout.write("Textabana CLI\n  run <document.md> [modules-and-options.json]\n  analyze <document.md>\n  identify <document.md> [modules-and-options.json]\n  verify-identity <bundle.json>\n  serve  (JSONL kernel transport)\n  canonical <input.json>\n  digest <input.json>\n  conformance\n  conformance-semantic\n  sign <report.json> <ed25519-private.pem>\n  verify <signed-report.json> <trusted-public.pem>\n  registry-check <registry.json>\n");
 }
 main().catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });

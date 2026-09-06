@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.6.0` |
-| Status | Våg 5 aktiv · sprint 5.1 genomförd |
+| Planversion | `1.7.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.2 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1 genomförd 2026-09-06
+**Status:** aktiv · sprint 5.1–5.2 genomförda 2026-09-06
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -247,7 +247,21 @@ Textabana Editor Kernel
 
 **Avgränsning:** profilen `textabana.host-protocol/lab-v1` verifierar värdar runt samma JavaScript-kärna, inte oberoende språkimplementationer. RFC 8785 gäller JSON-serialisering; semantiska IR/Plan/Result-identiteter förblir labb-FNV. Paketregistret är en lokal integritetskontrollerad katalog. Publicerad rapport är osignerad tills en release-signeringsidentitet finns.
 
-**Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga fixtures, kanonisk semantisk IR/Plan/Result-identitet, jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår; denna sprint uppgraderar inga sådana anspråk.
+#### Sprint 5.2 — Kanoniska semantiska artefakter och profilgrind
+
+**Status:** genomförd 2026-09-06
+
+**Leveranser och evidens:**
+
+- Opt-in-profilen `textabana.semantic-artifacts/v1` ger separata SHA-256-identiteter för källa, körningsvillkor, IR, Plan och committat Result. Faktiska käll-/modulbytes binds kryptografiskt; JCS används för versionssatta artefakter och kedjade referenser. Befintliga labb-ID:n behålls.
+- Inkrementell parserhistorik, operativa run-ID:n och cachetelemetri skiljs från identifierat innehåll. Användarpayload, argument, selectors och författade revisions-/rad-ID:n bevaras. Bara kända referensfält normaliseras.
+- Artefakter och det committade resultatet kopieras före asynkron hashning. En kvarhållen eventreferens kan inte ändra den identifierade snapshoten. Misslyckade eller avbrutna körningar får aldrig ett committat Result-ID; avvisning före identifieringsfasen kan sakna hela paketet.
+- CLI-kommandona `identify`, `verify-identity` och `conformance-semantic` samt Conformance-labbets Identiteter-vy exponerar samma profil. Integritetsverifiering gör inget konformitetsanspråk.
+- Nio fastställda fixtures jämförs med incheckade SHA-256-goldens i direkt körning, editorsession och faktisk inkrementell parsning, plus en bevisad cacheåteranvändning: 28 utfall. Positiva, syntax-/stage-/resolution-negativa och warning-cases ingår. Payload-/mappningsmutationer, kedjebyten, optionsnormalisering och cache/fresh-paritet testas separat.
+
+**Kontrakt och gräns:** [SEMANTIC_IDENTITY.md](./SEMANTIC_IDENTITY.md) definierar källbunden innehållsidentitet över befintliga carrier-scheman. Detta är inte generell programekvivalens, oberoende runtimekonformitet eller byte av alla ursprungliga labb-ID:n. Bara den passerade externa profilen får ge det avgränsade artefaktanspråket.
+
+**Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga scheman/fixtures, jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår.
 
 ## Beroenden och ordning
 
@@ -260,6 +274,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.7.0 — 2026-09-06
+
+- Sprint 5.2 levererad: versionerade SHA-256-artefakter för Source/Context/IR/Plan/Result, explicita referensnormaliseringar och atomiska snapshots före hashning.
+- Ny extern semantisk profil med 28 verifieringsutfall, frysta golden-identiteter och CLI-/labbvy för beräkning och integritetsverifiering.
+- Våg 5 förblir aktiv för fullständiga produktionsprofiler, oberoende runtime, release-signering och registertjänst.
 
 ### 1.6.0 — 2026-09-06
 

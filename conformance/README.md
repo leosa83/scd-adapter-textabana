@@ -25,7 +25,7 @@ The report checks expected Unicode character counts, two document changes, analy
 
 `canonical <json>` implements [RFC 8785 JCS](https://www.rfc-editor.org/rfc/rfc8785): recursive UTF-16 key sorting, ECMAScript finite-number encoding, unchanged Unicode, and no insignificant whitespace. The trailing CLI newline is a record separator and is excluded from the digest. The strict JSON reader rejects duplicate keys (including escaped aliases), lone surrogates, nonfinite numbers and nesting beyond 128 levels. The value API rejects unsupported, sparse, decorated or cyclic values instead of losing data.
 
-`digest <json>` hashes UTF-8 canonical bytes with SHA-256. Canonical serialization is not canonical Textabana execution identity. Existing IR/Plan/Result identities remain lab FNV identifiers; no conversion command upgrades them. Reports explicitly set `canonicalRuntime`, `independentImplementations` and `fullProfileConformance` to false.
+`digest <json>` hashes UTF-8 canonical bytes with SHA-256. It does not identify Textabana execution. Sprint 5.2 adds separate [semantic artifact identities](../SEMANTIC_IDENTITY.md) through `identify`, `verify-identity` and `conformance-semantic`. Legacy IR/Plan/Result carrier IDs remain available; no conversion command upgrades them. Reports explicitly keep `canonicalRuntime`, `independentImplementations` and `fullProfileConformance` false.
 
 ## Signing and verification
 
@@ -42,4 +42,4 @@ Keys must be Ed25519 PEM keys supplied by the caller. The CLI does not generate,
 
 ## Remaining Wave 5 work
 
-The production language/runtime profile fixtures, canonical semantic IR/Plan/Result identity, independently implemented runtime comparison, configured release signer and published registry service remain open. This release completes sprint 5.1, the reproducible verification tooling, while Wave 5 stays active.
+Sprints 5.1–5.2 provide reproducible verification tooling and the source-bound semantic artifact profile. Full production language/runtime profile schemas and fixtures, independently implemented runtime comparison, configured release signer and published registry service remain open. Wave 5 stays active.

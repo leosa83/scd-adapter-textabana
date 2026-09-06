@@ -1,4 +1,5 @@
 import { parseDocument } from "./parser.js";
+import { createIdentityContext, identifyIR, identifyPlan, identifyResult } from "./semantic-identity.js";
 import {
   buildInvalidationPreview,
   compileExecutionGraph,
@@ -2121,6 +2122,7 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
 function buildCapabilities(inspection) {
   return {
     schema: "textabana.capabilities/lab-v1",
+    optionalProfiles: [{ profile: "textabana.semantic-artifacts/v1", activation: "options.semanticIdentity=true", available: Boolean(globalThis.crypto?.subtle), scope: "source-bound-artifact-identity", fullRuntimeConformance: false }],
     profiles: {
       "language-core/0.4": "playground-subset",
       "runtime-json/1": "playground-subset",
@@ -3799,15 +3801,21 @@ async function executeRun(payload) {
   let plan = null;
   let invalidationPreview = null;
   let cacheTransaction = null;
+  let semanticIdentity = null;
   try {
     if (runPolicyError) throw runPolicyError;
     channelBus.throwIfCancelled();
+    if (options.semanticIdentity === true) {
+      semanticIdentity = await createIdentityContext({ documentSource, documentPath, documentId,
+        modules: modules.map((module) => ({ ...module, path: normalizePath(module.path) })), options, runPolicy, profile: runProfile });
+    }
     const verifiedModules = await verifyModulePackages(modules, options);
     const parseResolution = editorSnapshot
       ? parseEditorSnapshot(editorSnapshot)
       : { parsed: parseDocument(documentSource, { documentPath, documentId }), reuse: "fresh" };
     const parsed = parseResolution.parsed;
     inspection = parsed.ir;
+    if (semanticIdentity) semanticIdentity.ir = await identifyIR(semanticIdentity, inspection, documentSource);
     diagnostics.push(...parsed.diagnostics);
     if (!parsed.executable) {
       const primary = parsed.diagnostics[0];
@@ -3848,6 +3856,7 @@ async function executeRun(payload) {
       moduleSet,
     });
     plan = compiled.plan;
+    if (semanticIdentity) semanticIdentity.plan = await identifyPlan(semanticIdentity, plan, compiled.operations, [...loaded]);
     invalidationPreview = buildInvalidationPreview(plan, editorSnapshot?.previousPlanBaseline || null);
     cacheTransaction = createStageCacheTransaction({
       enabled: Boolean(editorSnapshot),
@@ -3863,11 +3872,11 @@ async function executeRun(payload) {
     runControl.registerPlan(cacheTransaction.stats.planned);
     const output = await executeExecutionGraph(compiled, registry, diagnostics, channelBus, cacheTransaction, runControl);
     channelBus.throwIfCancelled();
-    const channels = channelBus.snapshot();
-    const channelDescriptors = channelBus.descriptorSnapshot();
+    const channels = semanticIdentity ? structuredClone(channelBus.snapshot()) : channelBus.snapshot();
+    const channelDescriptors = semanticIdentity ? structuredClone(channelBus.descriptorSnapshot()) : channelBus.descriptorSnapshot();
     const executionTrace = channelBus.traceSnapshot();
     const duration = performance.now() - started;
-    const resultEnvelope = buildResultEnvelope({
+    let resultEnvelope = buildResultEnvelope({
       runId,
       runInstanceId,
       profile: runProfile,
@@ -3883,6 +3892,10 @@ async function executeRun(payload) {
       duration,
     });
     const capabilities = buildCapabilities(inspection);
+    if (semanticIdentity) {
+      resultEnvelope = structuredClone(resultEnvelope);
+      semanticIdentity.result = await identifyResult(semanticIdentity, resultEnvelope, plan, { channels, descriptors: channelDescriptors });
+    }
     const adapterRun = runAdapters(resultEnvelope, options.adapters, capabilities.implemented);
     const conformanceReport = buildConformanceReport({
       fixtureId: String(options.fixtureId || "ad-hoc"),
@@ -3910,8 +3923,8 @@ async function executeRun(payload) {
       inspection,
       plan,
       invalidationPreview,
-      anchors: channelBus.anchorSnapshot(),
-      sourceMaps: channelBus.sourceMapSnapshot(),
+      anchors: semanticIdentity ? resultEnvelope.anchors : channelBus.anchorSnapshot(),
+      sourceMaps: semanticIdentity ? resultEnvelope.sourceMaps : channelBus.sourceMapSnapshot(),
       executionTrace,
       executionReport: null,
       executionStats: null,
@@ -3920,6 +3933,7 @@ async function executeRun(payload) {
       conformanceReport,
       capabilities,
       functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath, entry.moduleDigest)),
+      ...(semanticIdentity ? { semanticIdentity } : {}),
       modulesLoaded: loaded.size,
       duration,
     };
@@ -3930,6 +3944,7 @@ async function executeRun(payload) {
     synchronizeCommittedCacheTrace(message.executionTrace, message.executionReport);
     self.postMessage(message);
   } catch (error) {
+    if (semanticIdentity) semanticIdentity.result = null;
     runControl.markError(error);
     const message = error instanceof Error ? error.message : String(error);
     const cancelled = error?.code === cancellationDiagnosticCode;
@@ -4013,6 +4028,7 @@ async function executeRun(payload) {
       adapterRun,
       conformanceReport,
       capabilities,
+      ...(semanticIdentity ? { semanticIdentity } : {}),
       functions: [...registry.values()].map((entry) => serializableMeta(entry.name, entry.descriptor, entry.modulePath, entry.moduleDigest)),
       modulesLoaded: loaded.size,
       duration,

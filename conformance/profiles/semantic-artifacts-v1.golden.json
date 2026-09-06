@@ -1,0 +1,69 @@
+{
+  "schema": "textabana.semantic-golden/v1",
+  "suiteDigest": "sha256:73c354e5d086918d98ffbbbe11e1bce8816b53447278935160ceeca3be1ab6b8",
+  "cases": {
+    "unicode": {
+      "source": "sha256:2cbb049277b6b400a64de669648f5784874eb50b70aa645b9e1263e4719a6239",
+      "context": "sha256:30c7383fc61614812355cd850f71e09716af643ef6f9d352e1c0b71a602bde21",
+      "ir": "sha256:669cd6cb26647b186c053f718845c7dff2c791c91c8d3bf37da715915fbc9c25",
+      "plan": "sha256:c971b21d14a2e50bd076bfd2490128177234d8e922c20726f7176849a55e0c8a",
+      "result": "sha256:f395ece71054f6b7442a671aea4424d4763c3e7ffbfccaa61513e3c505579257"
+    },
+    "empty": {
+      "source": "sha256:6dae7728bbe3d8af9901c75f5c801b59129ca313648536859ff4015399fcaf5b",
+      "context": "sha256:2698cfc0ecc373f34f073084aa459c6a73b2f7958bc7a04a615b4f22bf5140b7",
+      "ir": "sha256:4a8adaeebc7addb405172d400c683815d9002381e6d7571664bf869f6bea90b9",
+      "plan": "sha256:4ed263eb73e620f72e9a2b51172b0433cabc4b736f395ad68cde4ba802cf3355",
+      "result": "sha256:b8fb264572c7ff99a247cebee2413580d0eb161ee03b5381760a248c3ab23152"
+    },
+    "pure-stage": {
+      "source": "sha256:0fbd42125d4aafcea0a2672fa0f35b6a5ed2cfbc0ad295de8d2fef0979719ce5",
+      "context": "sha256:2a9fcbfcfbab0661ef2165e34467c6c195f235e37a2d94fee2a15695841bef71",
+      "ir": "sha256:5c3c2f5272e9ba54e844c9e96d6ac83b0c45990ae197ddf114953e5b9294d4f3",
+      "plan": "sha256:823b5c89362feb74233aae6e4c26af620331239601c57059b50cbf03be797e34",
+      "result": "sha256:b24a16e9814b8c5a4619c207e2569c4a05b53d254e372dc6624e7751381d3861"
+    },
+    "payload-fields": {
+      "source": "sha256:86aeef532122ac3c7aa4a5a1f07704b0e094a8bc6527101762dcaea280a833a8",
+      "context": "sha256:7f5b9aa935d605678b60a4645bab236182f7794fce2acf79dca8253b2ce18dec",
+      "ir": "sha256:947fcd2cae790b5519561d2445bbff2486115920bd484b57f9a0ea5b8163beb5",
+      "plan": "sha256:2e44ae3f834ff02499e3578c720e03b5ec4e16ff00736a6d57994199ca82292c",
+      "result": "sha256:766121767cb6bceed654c3b816982cec7d75c90907468f42020d378ca08b2d24"
+    },
+    "syntax-failure": {
+      "source": "sha256:ea5706cb064f9478039804184a40038967f43b363678b41938ba29728c6bb60a",
+      "context": "sha256:69e5e068b025e6ae00c59d8560a1a0e1e9a5266ec015c0843116c7ea26e995db",
+      "ir": "sha256:1395a49402b093213102bf4a157fbd6271968d5af3ab78ebe175c418143c7b88",
+      "plan": null,
+      "result": null
+    },
+    "stage-failure": {
+      "source": "sha256:366e9f045dfa40f8545aa1c9495e47076f7992f5c86666d43040b99d4aa1dec2",
+      "context": "sha256:8f665a7829729c5e31083b78d2d7d3c4665644a69bae73cbea6a248af0c676b5",
+      "ir": "sha256:0f8bfaf240ab20a74137c1f1659375d221de9844b39756dd846569596ec52b89",
+      "plan": "sha256:58d004b4a712866c879df265c647060f2a68c5006bc4f4a0e6cd641081ee72b4",
+      "result": null
+    },
+    "missing-module": {
+      "source": "sha256:a6bc45d4d89d8ab2d27b73db16589124c88a56577d6824a6564b000c8e751712",
+      "context": "sha256:1fc46daade7b030683b060a12492a4d087bb155f57942d778e30e014ea4602b9",
+      "ir": "sha256:296a1f49e732b60b8f6c816233f41633f6008cf31895d319113cbf1cefbfd2b1",
+      "plan": null,
+      "result": null
+    },
+    "module-change": {
+      "source": "sha256:0fbd42125d4aafcea0a2672fa0f35b6a5ed2cfbc0ad295de8d2fef0979719ce5",
+      "context": "sha256:6b555e1f541f280c2eb32b36e787730556c9a9c6b6dd1b4f108f7341ff7ed9cd",
+      "ir": "sha256:5c3c2f5272e9ba54e844c9e96d6ac83b0c45990ae197ddf114953e5b9294d4f3",
+      "plan": "sha256:eeb06ed0ecede0db52d46183765c8c433a476148447d6b067819b88b724a5a25",
+      "result": "sha256:4176ef8ba27ef4878fe4b3a720164f4b21b27e3b46d3ef9784104a45c1f6380c"
+    },
+    "warning": {
+      "source": "sha256:c1ebe990628ba603f0c09960224d21b7d687fd6de19026efaa780ce26afed958",
+      "context": "sha256:f0cb6e231849faece5e0e8fa3f26aa5e6110e5734e71376a83cbd4d8fb8aa73f",
+      "ir": "sha256:32c1c867c51a180c3db3d687ac0f4517c143f40b73f0af2e3ce9c6d9218722e4",
+      "plan": "sha256:93a6375583f83328f29fe0646734f34d2ebe3b0df27a9c4be2cad0295c3dc102",
+      "result": "sha256:aae8ccb513acb7412d62782697d85961fa17914187110a2bf609b70ffb147164"
+    }
+  }
+}

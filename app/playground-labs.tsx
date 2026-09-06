@@ -13,6 +13,7 @@ import {
   Code2,
   Database,
   FileJson,
+  Fingerprint,
   GitBranch,
   Layers3,
   MapPin,
@@ -1303,8 +1304,20 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
           { id: "diff", label: "Strukturell diff", count: changes.length, icon: GitBranch },
           { id: "negative", label: "Negativa cases", count: report.negativeFixtures.length + 1, icon: AlertTriangle },
           { id: "report", label: "Report JSON", icon: FileJson },
+          { id: "identity", label: "Identiteter", icon: Fingerprint },
         ]}
       />
+      {tab === "identity" ? (
+        <div className="lab-scroll conformance-lab">
+          <div className="subset-notice">SHA-256 för versionssatta semantiska artefakter. Beräknade identiteter innebär inte full runtimekonformitet.</div>
+          {!result.semanticIdentity ? <div className="lab-empty">Aktivera SHA-256-identiteter och kör dokumentet.</div> : <>
+            <div className="lab-table-wrap"><table className="lab-table"><thead><tr><th>Artefakt</th><th>Identitet</th></tr></thead><tbody>
+              {(["source", "context", "ir", "plan", "result"] as const).map((key) => <tr key={key}><td>{key}</td><td><code>{result.semanticIdentity?.[key]?.id ?? "Ingen committad artefakt"}</code></td></tr>)}
+            </tbody></table></div>
+            <details><summary>Verifieringspaket · JSON</summary><pre>{json(result.semanticIdentity)}</pre></details>
+          </>}
+        </div>
+      ) : null}
       {tab === "gate" ? (
         <div className="lab-scroll conformance-lab">
           <div className="subset-notice"><ShieldCheck /> Run-bunden evidens · <code>{report.schema}</code> · ingen full profilkonformitet</div>
