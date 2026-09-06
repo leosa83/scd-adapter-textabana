@@ -1253,6 +1253,15 @@ const playgroundImplementedCapabilities = [
   "host-cache-checkpoint",
   "post-commit-metadata-stream",
   "credit-backpressure",
+  "framework-neutral-typescript-sdk",
+  "codemirror-binding",
+  "monaco-binding",
+  "python-host-client",
+  "jupyter-mime-projection",
+  "sha256-module-package",
+  "module-lock",
+  "explicit-capability-grants",
+  "manifest-before-entrypoint",
   "pre-execution-plan",
   "typed-execution-graph",
   "typed-execution-edges",
@@ -2213,7 +2222,7 @@ const conformanceCases = new Map([
 ]);
 
 const conformanceGoldenBaselines = {
-  "conformance-golden": "fnv1a-lab:199um1i",
+  "conformance-golden": "fnv1a-lab:s960f",
 };
 
 const conformanceProfileOrder = [
@@ -2581,7 +2590,7 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
     structuralSnapshot,
     structuralDigest,
     golden: {
-      baselineId: expectedStructuralDigest ? `${fixtureId}@1.4.0-lab.1` : null,
+      baselineId: expectedStructuralDigest ? `${fixtureId}@1.5.0-lab.1` : null,
       expectedStructuralDigest,
       actualStructuralDigest: structuralDigest,
       status: goldenStatus,
@@ -3670,6 +3679,83 @@ function buildResultEnvelope({ runId, runInstanceId, profile = "fresh", ok, stat
   };
 }
 
+const moduleNamespacePattern = /^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9-]*)+$/;
+const moduleVersionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+
+async function sha256Digest(source) {
+  if (!globalThis.crypto?.subtle) {
+    const error = new Error("Säkra modulpaket kräver Web Crypto SHA-256 i hosten.");
+    error.code = "TBA-MODULE-CRYPTO-LAB";
+    throw error;
+  }
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+  return `sha256:${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+
+async function verifyModulePackages(modules, options) {
+  if (!modules.some((module) => module.manifest || module.digest)) return modules;
+  if (!Array.isArray(options.moduleLock?.packages)) {
+    const error = new Error("Säkra modulpaket kräver options.moduleLock.packages."); error.code = "TBA-MODULE-LOCK-LAB"; throw error;
+  }
+  const lock = new Map(options.moduleLock.packages.map((entry) => [`${entry.namespace}@${entry.version}`, entry]));
+  const grants = new Set(Array.isArray(options.capabilityGrants) ? options.capabilityGrants.map(String) : []);
+  const seen = new Set();
+  for (const moduleFile of modules) {
+    const manifest = moduleFile.manifest;
+    if (!manifest || manifest.schema !== "textabana.module-manifest/lab-v1") {
+      const error = new Error(`Modulen ${moduleFile.path || "–"} saknar ett giltigt manifest.`); error.code = "TBA-MODULE-MANIFEST-LAB"; throw error;
+    }
+    const namespace = String(manifest.namespace || "");
+    const version = String(manifest.version || "");
+    const identity = `${namespace}@${version}`;
+    if (!moduleNamespacePattern.test(namespace) || !moduleVersionPattern.test(version)) {
+      const error = new Error(`Modulmanifestet har ogiltigt namespace eller version: ${identity}.`); error.code = "TBA-MODULE-IDENTITY-LAB"; throw error;
+    }
+    if (seen.has(identity)) { const error = new Error(`Modulpaketet ${identity} förekommer mer än en gång.`); error.code = "TBA-MODULE-DUPLICATE-LAB"; throw error; }
+    seen.add(identity);
+    if (normalizePath(String(manifest.entrypoint || "")) !== normalizePath(moduleFile.path)) {
+      const error = new Error(`Modulpaketet ${identity} har en entrypoint som inte matchar transportens path.`); error.code = "TBA-MODULE-ENTRYPOINT-LAB"; throw error;
+    }
+    const actualDigest = await sha256Digest(String(moduleFile.content || ""));
+    if (moduleFile.digest !== actualDigest || manifest.digest !== actualDigest) {
+      const error = new Error(`Modulpaketet ${identity} matchar inte sitt SHA-256-digest.`); error.code = "TBA-MODULE-DIGEST-LAB"; throw error;
+    }
+    const locked = lock.get(identity);
+    if (!locked || locked.digest !== actualDigest || normalizePath(locked.entrypoint) !== normalizePath(moduleFile.path)) {
+      const error = new Error(`Lockfilen låser inte exakt ${identity}.`); error.code = "TBA-MODULE-LOCK-LAB"; throw error;
+    }
+    const capabilities = manifest.capabilities || {};
+    if (!["required", "channels", "resources"].every((field) => Array.isArray(capabilities[field]))) {
+      const error = new Error(`Modulpaketet ${identity} måste deklarera required, channel och resource capabilities.`); error.code = "TBA-MODULE-CAPABILITIES-LAB"; throw error;
+    }
+    const required = [...capabilities.required, ...capabilities.channels.map((name) => `channel:${name}`), ...capabilities.resources.map((name) => `resource:${name}`)];
+    const denied = required.find((capability) => !grants.has(capability));
+    if (denied) { const error = new Error(`Modulpaketet ${identity} saknar explicit grant för ${denied}.`); error.code = "TBA-MODULE-GRANT-LAB"; throw error; }
+    if (!Array.isArray(manifest.functions) || manifest.functions.some((fn) => !fn?.name || !["pure", "run", "session"].includes(fn.state) || !["deterministic", "nondeterministic"].includes(fn.determinism) || !Array.isArray(fn.effects))) {
+      const error = new Error(`Modulpaketet ${identity} måste deklarera function state, determinism och effects.`); error.code = "TBA-MODULE-FUNCTION-CONTRACT-LAB"; throw error;
+    }
+  }
+  if (lock.size !== seen.size) { const error = new Error("Lockfilen innehåller paket som inte finns i transporten."); error.code = "TBA-MODULE-LOCK-LAB"; throw error; }
+  return modules;
+}
+
+function verifyLoadedModuleContracts(modules, registry) {
+  for (const moduleFile of modules.filter((item) => item.manifest)) {
+    const declared = new Map(moduleFile.manifest.functions.map((fn) => [fn.name, fn]));
+    const loaded = [...registry.values()].filter((entry) => entry.modulePath === moduleFile.path);
+    if (loaded.length !== declared.size) {
+      const error = new Error(`Modulpaketet ${moduleFile.manifest.namespace}@${moduleFile.manifest.version} exporterar inte exakt de låsta funktionerna.`); error.code = "TBA-MODULE-FUNCTION-CONTRACT-LAB"; throw error;
+    }
+    for (const entry of loaded) {
+      const expected = declared.get(entry.name);
+      const descriptor = entry.descriptor || {};
+      if (!expected || expected.state !== descriptor.state || expected.determinism !== descriptor.determinism || JSON.stringify(expected.effects) !== JSON.stringify(descriptor.effects || [])) {
+        const error = new Error(`Funktionen ${entry.name} avviker från det signerade modulmanifestet.`); error.code = "TBA-MODULE-FUNCTION-CONTRACT-LAB"; throw error;
+      }
+    }
+  }
+}
+
 async function executeRun(payload) {
   const { runId, documentSource, modules = [], documentPath = "document.md", documentId = null, options = {}, editorSnapshot = null } = payload;
   runInstanceSequence += 1;
@@ -3715,6 +3801,7 @@ async function executeRun(payload) {
   try {
     if (runPolicyError) throw runPolicyError;
     channelBus.throwIfCancelled();
+    const verifiedModules = await verifyModulePackages(modules, options);
     const parseResolution = editorSnapshot
       ? parseEditorSnapshot(editorSnapshot)
       : { parsed: parseDocument(documentSource, { documentPath, documentId }), reuse: "fresh" };
@@ -3731,7 +3818,7 @@ async function executeRun(payload) {
       throw error;
     }
     channelBus.throwIfCancelled();
-    const normalizedModules = modules.map((module) => ({ ...module, path: normalizePath(module.path) }));
+    const normalizedModules = verifiedModules.map((module) => ({ ...module, path: normalizePath(module.path) }));
     if (new Set(normalizedModules.map((module) => module.path)).size !== normalizedModules.length) {
       throw new Error("Modulmanifestet innehåller duplicerade normaliserade sökvägar.");
     }
@@ -3741,6 +3828,7 @@ async function executeRun(payload) {
     for (const directive of parsed.directives) {
       if (directive.kind === "IncludeDirective") await loadModule(directive.path, files, registry, loaded, loading);
     }
+    verifyLoadedModuleContracts(normalizedModules, registry);
     channelBus.throwIfCancelled();
     const moduleSet = [...loaded].map((path) => ({
       path,
@@ -3811,6 +3899,7 @@ async function executeRun(payload) {
     const message = {
       ...(editorSnapshot ? { type: "run-result" } : {}),
       runId,
+      requestId: payload.requestId || null,
       ok: true,
       output,
       channels,
@@ -3902,6 +3991,7 @@ async function executeRun(payload) {
     const resultMessage = {
       ...(editorSnapshot ? { type: "run-result" } : {}),
       runId,
+      requestId: payload.requestId || null,
       ok: false,
       cancelled,
       output: "",
@@ -3980,6 +4070,7 @@ function postRejectedEditorRun(payload, error, includeEditorKernel = true) {
   self.postMessage({
     ...(includeEditorKernel ? { type: "run-result" } : {}),
     runId: payload.runId,
+    requestId: payload.requestId || null,
     ok: false,
     output: "",
     error: message,

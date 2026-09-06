@@ -93,7 +93,7 @@ test("golden fixture publishes a passed machine-readable conformance gate", asyn
   assert.equal(report.suite.version, "1.4.0-lab.1");
   assert.equal(report.golden.status, "passed", JSON.stringify(report.golden));
   assert.equal(report.gate.status, "passed", JSON.stringify(report.gate));
-  assert.equal(report.golden.expectedStructuralDigest, "fnv1a-lab:199um1i");
+  assert.equal(report.golden.expectedStructuralDigest, "fnv1a-lab:s960f");
   assert.equal(report.golden.actualStructuralDigest, report.structuralDigest);
   assert.ok(report.reportId.startsWith("conformance:"));
 });

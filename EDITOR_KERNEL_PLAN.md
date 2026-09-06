@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.4.0` |
-| Status | Våg 1–3 genomförda · Våg 4 är nästa planerade våg |
+| Planversion | `1.5.0` |
+| Status | Våg 1–4 genomförda · Våg 5 är nästa planerade våg |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -206,13 +206,22 @@ Textabana Editor Kernel
 
 ### Våg 4 — Host-SDK:er och säkra modulpaket
 
-**Status:** planerad
+**Status:** genomförd 2026-09-06
 
 **Mål:** Göra kärnan lätt att bädda in och moduler möjliga att distribuera utan dold behörighet.
 
 **Leveranser:** framework-neutral TypeScript-SDK, CodeMirror- och Monaco-bindningar, Python/Jupyter-klient, modulmanifest, namespaces, lockfile, kryptografiska digests och capability grants.
 
 **Acceptans:** samma protokoll-fixtures passerar i Worker-, editor- och Python-host; moduler deklarerar pure/deterministic/effectful samt resurs- och kanalkapabiliteter före körning.
+
+**Acceptansevidens:**
+
+- `sdk/typescript` publicerar en transportneutral `TextabanaKernelClient` för samtliga kernelkommandon, korrelerade svar och credit-bundna streamchunks.
+- CodeMirror- och Monaco-bindningarna översätter värdarnas UTF-16-offsets till Textabanas Unicode-code-point-ranges och skickar revisionguardade ChangeSets.
+- `sdk/python` implementerar samma JSON-meddelandekontrakt samt en Jupyter MIME-projektion som vägrar presentera failed eller icke-committade runs som aktuell output.
+- Säkra modulpaket verifieras före entrypoint mot namespace, semver, entrypoint, SHA-256, exakt lockfile och explicita required/channel/resource-grants. Efter laddning måste varje faktisk funktions `state`, `determinism` och `effects` matcha manifestet före transform.
+- Negativa tester stoppar saknad grant, manipulerade bytes och kontraktsdrift atomiskt. TypeScript-SDK:n typecheckas och Pythonpaketet byte-kompileras i releasegrinden.
+- Releasegrinden omfattar 173 automatiska test, TypeScript-typecheck, Python byte-compilation, ESLint och Sites produktionsbygge.
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
@@ -235,6 +244,13 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.5.0 — 2026-09-06
+
+- Våg 4 genomförd med framework-neutral TypeScript-klient, CodeMirror-/Monaco-bindningar samt Python-/Jupyter-klient.
+- `textabana.module-manifest/lab-v1`, `textabana.module-lock/lab-v1`, SHA-256-verifiering och explicita capability grants införda före modulentrypoint.
+- Faktiska funktionskontrakt verifieras mot manifestet före transform; JavaScript-loadern är fortsatt uttryckligen ingen generell sandbox.
+- Nästa aktiva leverans är Våg 5 — Produktionskonformitet och ekosystem.
 
 ### 1.4.0 — 2026-09-06
 

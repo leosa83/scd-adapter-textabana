@@ -1044,32 +1044,25 @@ export function Specification() {
         </section>
 
         <section className="docs-section spec-section" id="module-manifest">
-          <SectionHeading number="16" layer="Runtime" title="Manifestet gör moduler polyglotta och förutsägbara" implementation="defined" />
+          <SectionHeading number="16" layer="Runtime" title="Manifestet gör moduler polyglotta och förutsägbara" implementation="partial" />
           <CodeExample
             title="Module Manifest"
             language="json"
             status="Normativt schemafragment"
             code={code(
               "{",
-              '  "schema": "textabana.module/v1",',
-              '  "id": "org.example.claims",',
+              '  "schema": "textabana.module-manifest/lab-v1",',
+              '  "namespace": "org.example.claims",',
               '  "version": "2.1.0",',
               '  "digest": "sha256:...",',
-              '  "runtime": { "kind": "python", "protocol": "textabana-runtime/1", "entrypoint": "claims:module" },',
-              '  "functions": {',
-              '    "extract": {',
-              '      "args": { "$ref": "schema:extract-args/v1" },',
-              '      "accepts": ["text/markdown"],',
-              '      "returns": { "kind": "text", "mediaType": "text/markdown" },',
-              '      "channels": [{ "name": "claims", "schemaRef": "schema:claim/v2" }],',
-              '      "behavior": "segment-preserving",',
-              '      "mapping": ["exact"],',
-              '      "determinism": "seeded",',
+              '  "entrypoint": "modules/claims.js",',
+              '  "functions": [{',
+              '      "name": "extract",',
+              '      "determinism": "deterministic",',
               '      "state": "run",',
               '      "effects": ["channel:claims"]',
-              "    }",
-              "  },",
-              '  "permissions": ["model:claims-v2"]',
+              "  }],",
+              '  "capabilities": { "required": ["model:claims-v2"], "channels": ["claims"], "resources": [] }',
               "}"
             )}
           />
@@ -1093,7 +1086,7 @@ export function Specification() {
           <Requirement id="MANIFEST-004"><code>behavior</code> beskriver transformationens form och FÅR INTE tolkas som purity. State, determinism och observerbara effekter MÅSTE deklareras separat; saknad deklaration betyder <code>unknown</code> och icke-cachebar.</Requirement>
           <Requirement id="MANIFEST-005">En deklaration som <code>state=pure</code>, <code>determinism=deterministic</code> och <code>effects=[]</code> gör endast funktionen till cachekandidat. En host som faktiskt återanvänder output MÅSTE dessutom upprätthålla effektgränsen eller behandla kontraktet som betrott och redovisa den trust boundaryn.</Requirement>
           <Callout title="Nuvarande loadergräns" icon={<AlertTriangle />} tone="warning">
-            Det normativa målet är manifestvalidering före entrypoint. JavaScript-labbet hämtar ännu funktionsdeskriptorer genom att initiera modulens <code>define(...)</code> efter compile gate och bygger därför grafen post-module-init men pre-transform. Det är en uttrycklig labbegränsning, inte den framtida paketeringsmodellen.
+            JavaScript-labbet verifierar namespace, semver, entrypoint, SHA-256, exakt lockfile och explicita capability grants innan entrypoint. Efter <code>define(...)</code> jämförs faktiska funktioners state, determinism och effects med manifestet före transform. Grinden begränsar paketauktoritet men gör inte godtycklig JavaScript till en sandbox.
           </Callout>
         </section>
 
@@ -1156,6 +1149,8 @@ export function Specification() {
               [<code key="change">change</code>, "baseRevision och sorterade ChangeSet-ranges", "Ny document head eller atomiskt protokollfel."],
               [<code key="analyze">analyze</code>, "documentId och valfri exakt revision", "CST, AST, partial typed IR och diagnostics; inga moduler eller stages körs."],
               [<code key="subscribe">subscribe</code>, "Exakta channel names eller *", "Snapshot-then-delta-cursor för vald leverans."],
+              [<code key="credit">credit</code>, "subscriptionId och positiv credit", "Återupptar en bounded post-commit metadataström."],
+              [<code key="cache">cache-export / cache-import</code>, "Digestbundet host-checkpoint", "Explicit cachepersistens och sessionstransport."],
               [<code key="run">run</code>, "Exakt documentRevision", "Immutable run snapshot och atomiskt Result."],
               [<code key="cancel">cancel</code>, "runId", "Kooperativ cancellation vid deklarerade gränser."],
             ]}
@@ -1664,8 +1659,8 @@ export function Specification() {
             )}
           />
           <div className="conformance-grid">
-            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Lezer-baserad full dokumentparse, lossless CST, typed IR lab-v2, Unicode source spans, fenced/escaped literals, lokal icke-körbar recovery, read-only editoranalys, includes, block, pipelines, öppna intervall, inheritance, komplett post-module-init/pre-transform-plan, typad acyklisk DAG, exakt cache-key witness, rådgivande invalidation, sessionslokal tvåobservationsverifiering, selective reuse, deterministisk bounded async branch-concurrency, planordnad commit, kooperativ deadline, stage-/event-/renderbudget, atomisk cachecommit, faktisk execution report, <code>planNodeRef</code>-bundet körspår, deklarerade JSON-kanaler, atomiskt Result, Anchors/SourceMaps, metadata-deltan, adapterisolering, data-lineage, notebook-snapshots, immutable annotationskandidater, golden snapshots, exakta negativa cases och kooperativ cancellation.</p></article>
-            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, manifest-före-entrypoint, inkrementell parser-/compilerträdsåteranvändning, persistent eller delad cache, cached event replay, multicore stage-exekvering, effectful branch-concurrency, streaming/backpressure, persistent historik, strukturell/fuzzy re-anchor, färdiga editor-/LSP-adaptrar, preemption av synkrona CPU-loopar eller aldrig settlande Promises, hårda CPU-/minneskvoter och extern side-effect rollback, full Data-dataplan med beständiga artifacts, polyglotta runtimes, resterande cross-policies, Jupyter Messaging, nbformat-roundtrip, session/attached kernel, Comms/widgets, verklig modellkörning, persistent review store, full annotationsontologi/tool-roundtrip samt W3C PROV, OpenLineage, MLflow och OTel.</p></article>
+            <article><CheckCircle2 aria-hidden="true" /><strong>Verifierat i aktuella labs</strong><p>Lossless CST, typed IR, inkrementell Lezer-/compilerreuse, typad DAG, verifierad cache, bounded concurrency, budgetar, atomiskt Result, Anchors/SourceMaps, credit-bunden metadata-streaming, host-cachecheckpoints, adapterisolering, TypeScript-/Python-hostklienter, CodeMirror-/Monaco-bindningar samt SHA-256-låsta modulpaket med explicita capability grants.</p></article>
+            <article><CircleDashed aria-hidden="true" /><strong>Återstår för full konformitet</strong><p>Kanonisk SHA-256-baserad IR/Plan/Result, full JSON Schema, transparent distribuerad cache, cached event replay, multicore stage-exekvering, effectful branch-concurrency, kontinuerlig stage-streaming, persistent dokumenthistorik, strukturell/fuzzy re-anchor, LSP-adapter, preemption, hårda CPU-/minneskvoter, extern side-effect rollback, beständiga artifacts, fulla polyglotta runtimes, Jupyter Messaging och nbformat-roundtrip samt externa observability-profiler.</p></article>
           </div>
           <Requirement id="CONF-001">En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.</Requirement>
           <Requirement id="CONF-002">Ett profilanspråk MÅSTE bindas till en versionssatt suite och verifiera source → IR → plan → result → projection. Profiler utan relevant input MÅSTE vara <code>not-run</code>, inte passerade.</Requirement>
