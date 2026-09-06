@@ -10,7 +10,9 @@ import {
   cloneParallelValue,
   createStageCacheStore,
   createStageCacheTransaction,
+  exportStageCacheCheckpoint,
   finalizeStageCacheTransaction,
+  importStageCacheCheckpoint,
   observeStageCache,
   recordStageResolution,
   resolveStageCache,
@@ -96,7 +98,35 @@ function withoutKeys(value, keys) {
 
 const editorDocuments = new Map();
 const editorSubscriptions = new Map();
+const editorParseCache = new Map();
 let editorSessionSequence = 0;
+
+function parseCacheKey(sessionId, documentVersion) {
+  return `${sessionId}\u0000${documentVersion}`;
+}
+
+function codePointToCodeUnit(source, offset) {
+  return Array.from(source).slice(0, offset).join("").length;
+}
+
+function parseEditorSnapshot(snapshot) {
+  const key = parseCacheKey(snapshot.sessionId, snapshot.documentVersion);
+  const exact = editorParseCache.get(key);
+  if (exact) return { parsed: exact.parsed, reuse: "compiled-snapshot" };
+  const change = snapshot.lastChange;
+  const previous = change?.baseDocumentVersion
+    ? editorParseCache.get(parseCacheKey(snapshot.sessionId, change.baseDocumentVersion))
+    : null;
+  const parsed = parseDocument(snapshot.source, {
+    documentPath: snapshot.path,
+    documentId: snapshot.documentId,
+    previousTree: previous?.parsed?.tree || null,
+    changes: change?.parserChanges || [],
+  });
+  editorParseCache.set(key, { parsed });
+  if (editorParseCache.size > 32) editorParseCache.delete(editorParseCache.keys().next().value);
+  return { parsed, reuse: parsed.ir.parser.incrementalReuse ? "incremental-tree" : "fresh" };
+}
 
 function editorProtocolError(code, message, details = {}) {
   const error = new Error(message);
@@ -112,12 +142,12 @@ function editorProtocolCapabilities() {
     protocol: "textabana.editor-kernel/lab-v1",
     documentTransport: "versioned-change-set",
     coordinateUnit: "unicode-code-point",
-    parseMode: "full-document",
+    parseMode: "incremental-tree-or-full-document",
     parser: "lezer-lr",
     parserSchema: "textabana.parser/lab-v1",
     irSchema: "textabana.ir/lab-v2",
     errorRecovery: "local-non-executable",
-    commands: ["open", "change", "analyze", "subscribe", "run", "cancel"],
+    commands: ["open", "change", "analyze", "subscribe", "credit", "cache-export", "cache-import", "run", "cancel"],
     planConstruction: "post-module-init-pre-transform",
     executionGraph: "textabana.execution-graph/lab-v1",
     invalidationPreview: "advisory-baseline-diff",
@@ -129,7 +159,8 @@ function editorProtocolCapabilities() {
     deltaMode: "post-commit-diff",
     reanchorMode: "stable-anchor-id-then-unique-quote-origin",
     subscriptionMode: "exact-channel-or-all",
-    persistentHistory: false,
+    streamMode: "post-commit-credit-bounded-metadata",
+    persistentHistory: "host-checkpoint",
     collaborativeMerge: false,
     parallelExecution: true,
     canonical: false,
@@ -174,6 +205,9 @@ function openEditorDocument(payload) {
   }
   for (const [subscriptionId, subscription] of editorSubscriptions) {
     if (subscription.documentId === documentId) editorSubscriptions.delete(subscriptionId);
+  }
+  if (existing) {
+    for (const key of editorParseCache.keys()) if (key.startsWith(`${existing.sessionId}\u0000`)) editorParseCache.delete(key);
   }
   editorSessionSequence += 1;
   const sessionId = `editor-session:${sourceHash(documentId)}:${editorSessionSequence}`;
@@ -251,6 +285,7 @@ function applyEditorChange(payload) {
     );
   }
   const changes = normalizeEditorChanges(document, payload.changes);
+  const previousSource = document.source;
   const codePoints = Array.from(document.source);
   const applied = changes.map((change) => ({
     from: change.from,
@@ -287,6 +322,13 @@ function applyEditorChange(payload) {
       insertDigest: `fnv1a:${sourceHash(change.insert)}`,
       removedDigest: `fnv1a:${sourceHash(change.removed)}`,
     })),
+    parserChanges: applied.map((change, index) => {
+      const priorInserted = applied.slice(0, index).reduce((sum, item) => sum + item.insert.length - item.removed.length, 0);
+      const fromA = codePointToCodeUnit(previousSource, change.from);
+      const toA = codePointToCodeUnit(previousSource, change.to);
+      const fromB = fromA + priorInserted;
+      return { fromA, toA, fromB, toB: fromB + change.insert.length };
+    }),
   };
   return {
     status: "accepted",
@@ -305,22 +347,75 @@ function subscribeEditorDocument(payload) {
     }
   }
   const subscriptionId = String(payload.subscriptionId || `subscription:${sourceHash(`${document.documentId}:${channels.join("|")}`)}`);
+  const delivery = String(payload.delivery || "snapshot-then-delta");
+  if (!["snapshot-then-delta", "stream"].includes(delivery)) throw editorProtocolError("TBA-EDITOR-DELIVERY-LAB", `Ogiltigt delivery-läge “${delivery}”.`);
+  const initialCredit = Number(payload.initialCredit ?? (delivery === "stream" ? 0 : 1));
+  if (!Number.isInteger(initialCredit) || initialCredit < 0 || initialCredit > 1024) throw editorProtocolError("TBA-EDITOR-CREDIT-LAB", "initialCredit måste vara ett heltal mellan 0 och 1024.");
   const subscription = {
     schema: "textabana.editor-subscription/lab-v1",
     subscriptionId,
     sessionId: document.sessionId,
     documentId: document.documentId,
     channels,
-    delivery: "snapshot-then-delta",
+    delivery,
+    credit: initialCredit,
+    queue: [],
     cursor: 0,
     baseline: null,
   };
   editorSubscriptions.set(subscriptionId, subscription);
   return {
     status: "subscribed",
-    subscription: withoutKeys(subscription, ["baseline"]),
+    subscription: withoutKeys(subscription, ["baseline", "queue"]),
     document: editorDocumentSnapshot(document),
   };
+}
+
+function flushEditorSubscription(subscription) {
+  let delivered = 0;
+  while (subscription.credit > 0 && subscription.queue.length) {
+    const chunk = subscription.queue.shift();
+    subscription.credit -= 1;
+    delivered += 1;
+    self.postMessage({ type: "metadata-chunk", schema: "textabana.metadata-stream/lab-v1", subscriptionId: subscription.subscriptionId, ...chunk });
+  }
+  return delivered;
+}
+
+function creditEditorSubscription(payload) {
+  const subscription = editorSubscriptions.get(String(payload.subscriptionId || ""));
+  if (!subscription) throw editorProtocolError("TBA-EDITOR-SUBSCRIPTION-NOT-FOUND-LAB", "credit refererar en okänd subscription.");
+  const credit = Number(payload.credit);
+  if (!Number.isInteger(credit) || credit <= 0 || credit > 1024) throw editorProtocolError("TBA-EDITOR-CREDIT-LAB", "credit måste vara ett heltal mellan 1 och 1024.");
+  subscription.credit = Math.min(1024, subscription.credit + credit);
+  const delivered = flushEditorSubscription(subscription);
+  return { status: "credited", delivered, pending: subscription.queue.length, subscription: withoutKeys(subscription, ["baseline", "queue"]) };
+}
+
+function enqueueEditorDelta(subscription, delta) {
+  if (subscription.delivery !== "stream") return;
+  const chunks = [];
+  for (const [collection, values] of Object.entries(delta.collections)) {
+    values.forEach((value) => chunks.push({ cursor: delta.cursor, collection, value }));
+  }
+  chunks.forEach((chunk, index) => subscription.queue.push({ ...chunk, sequence: index + 1, total: chunks.length, done: index + 1 === chunks.length }));
+  flushEditorSubscription(subscription);
+}
+
+function exportEditorCache(payload) {
+  const document = readEditorDocument(payload.documentId);
+  return { status: "exported", document: editorDocumentSnapshot(document), checkpoint: exportStageCacheCheckpoint(document.stageCache) };
+}
+
+function importEditorCache(payload) {
+  const document = readEditorDocument(payload.documentId);
+  if (activeRuns.size || queuedRuns.size) throw editorProtocolError("TBA-EDITOR-CACHE-BUSY-LAB", "Cachecheckpoint kan bara importeras när inga körningar är aktiva eller köade.");
+  try {
+    document.stageCache = importStageCacheCheckpoint(payload.checkpoint, document.sessionId);
+  } catch (error) {
+    throw editorProtocolError("TBA-EDITOR-CACHE-CHECKPOINT-LAB", error instanceof Error ? error.message : String(error));
+  }
+  return { status: "imported", document: editorDocumentSnapshot(document), cacheVersion: document.stageCache.version };
 }
 
 function captureEditorRun(payload) {
@@ -360,9 +455,14 @@ function analyzeEditorDocument(payload) {
       { expectedRevision: document.revision, receivedRevision },
     );
   }
-  const parsed = parseDocument(document.source, {
-    documentPath: document.path,
+  const { parsed, reuse } = parseEditorSnapshot({
+    sessionId: document.sessionId,
     documentId: document.documentId,
+    path: document.path,
+    source: document.source,
+    documentRevision: document.revision,
+    documentVersion: document.sourceVersion,
+    lastChange: document.lastChange,
   });
   return {
     status: parsed.executable ? "valid" : "recovered",
@@ -374,6 +474,7 @@ function analyzeEditorDocument(payload) {
       executable: parsed.executable,
       inspection: parsed.ir,
       diagnostics: parsed.diagnostics,
+      reuse,
     },
   };
 }
@@ -706,7 +807,7 @@ function completeEditorRun(snapshot, result, cacheTransaction = null) {
     if (!subscription || subscription.sessionId !== snapshot.sessionId) continue;
     if (!published) {
       deliveries.push({
-        subscription: withoutKeys(subscription, ["baseline"]),
+        subscription: withoutKeys(subscription, ["baseline", "queue"]),
         delta: emptyEditorDelta(
           snapshot,
           subscription,
@@ -741,7 +842,8 @@ function completeEditorRun(snapshot, result, cacheTransaction = null) {
     });
     nextSubscription.baseline = current;
     subscriptionUpdates.push([subscriptionId, nextSubscription]);
-    deliveries.push({ subscription: withoutKeys(nextSubscription, ["baseline"]), delta });
+    enqueueEditorDelta(nextSubscription, delta);
+    deliveries.push({ subscription: withoutKeys(nextSubscription, ["baseline", "queue"]), delta });
   }
 
   const nextStageCache = cacheTransaction
@@ -812,10 +914,10 @@ function completeEditorRun(snapshot, result, cacheTransaction = null) {
     trace,
     capabilities: editorProtocolCapabilities(),
     limitations: [
-      "Full document parse, module initialization and graph construction for every accepted run; only independent trusted effects-free branches may overlap asynchronously.",
-      "Two equal observations verify only the session-local lab cache under a trusted module declaration; arbitrary JavaScript purity is not proven.",
+      "Parser/compiler snapshots may be reused within an editor session; module initialization and graph construction still run for every accepted execution.",
+      "Two equal observations verify only the lab cache under a trusted module declaration; explicit host checkpoint transfer does not prove arbitrary JavaScript purity.",
       "In-memory single-worker document history and async overlap only; no multicore execution or synchronous preemption.",
-      "No OT, CRDT, persistent recovery, streaming, backpressure, hard CPU/memory quota, LSP conversion or external side-effect rollback.",
+      "No OT, CRDT, persistent document recovery, hard CPU/memory quota, LSP conversion or external side-effect rollback; metadata streaming is post-commit and credit-bounded.",
       "Unique quote + origin re-link is a conservative lab heuristic, not canonical structural re-anchoring.",
       "FNV-1a lab identities are non-cryptographic and non-canonical.",
     ],
@@ -1146,6 +1248,11 @@ const playgroundImplementedCapabilities = [
   "post-commit-metadata-delta",
   "anchor-continuity",
   "editor-analysis",
+  "incremental-parser-tree-reuse",
+  "compiled-revision-reuse",
+  "host-cache-checkpoint",
+  "post-commit-metadata-stream",
+  "credit-backpressure",
   "pre-execution-plan",
   "typed-execution-graph",
   "typed-execution-edges",
@@ -2036,10 +2143,6 @@ function buildCapabilities(inspection) {
     implemented: playgroundImplementedCapabilities,
     unsupported: [...new Set([
       ...(inspection?.unsupported || []),
-      "incremental-parser",
-      "parser-tree-reuse",
-      "persistent-stage-cache",
-      "shared-stage-cache",
       "cached-event-replay",
       "streaming-execution",
       "persistent-document-history",
@@ -2053,7 +2156,6 @@ function buildCapabilities(inspection) {
       "preemptive-synchronous-timeout",
       "hard-cpu-quota",
       "hard-memory-quota",
-      "backpressure",
       "external-side-effect-rollback",
       "artifacts",
       "adapter-dependency-graph",
@@ -2111,7 +2213,7 @@ const conformanceCases = new Map([
 ]);
 
 const conformanceGoldenBaselines = {
-  "conformance-golden": "fnv1a-lab:3nvbw7",
+  "conformance-golden": "fnv1a-lab:199um1i",
 };
 
 const conformanceProfileOrder = [
@@ -3613,7 +3715,10 @@ async function executeRun(payload) {
   try {
     if (runPolicyError) throw runPolicyError;
     channelBus.throwIfCancelled();
-    const parsed = parseDocument(documentSource, { documentPath, documentId });
+    const parseResolution = editorSnapshot
+      ? parseEditorSnapshot(editorSnapshot)
+      : { parsed: parseDocument(documentSource, { documentPath, documentId }), reuse: "fresh" };
+    const parsed = parseResolution.parsed;
     inspection = parsed.ir;
     diagnostics.push(...parsed.diagnostics);
     if (!parsed.executable) {
@@ -3945,6 +4050,21 @@ self.onmessage = (event) => {
   if (payload.type === "subscribe") {
     try { self.postEditorProtocolResponse(payload, "subscribe", subscribeEditorDocument(payload)); }
     catch (error) { postEditorProtocolError(payload, "subscribe", error); }
+    return Promise.resolve();
+  }
+  if (payload.type === "credit") {
+    try { self.postEditorProtocolResponse(payload, "credit", creditEditorSubscription(payload)); }
+    catch (error) { postEditorProtocolError(payload, "credit", error); }
+    return Promise.resolve();
+  }
+  if (payload.type === "cache-export") {
+    try { self.postEditorProtocolResponse(payload, "cache-export", exportEditorCache(payload)); }
+    catch (error) { postEditorProtocolError(payload, "cache-export", error); }
+    return Promise.resolve();
+  }
+  if (payload.type === "cache-import") {
+    try { self.postEditorProtocolResponse(payload, "cache-import", importEditorCache(payload)); }
+    catch (error) { postEditorProtocolError(payload, "cache-import", error); }
     return Promise.resolve();
   }
   const editorRun = payload.type === "run";

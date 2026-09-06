@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.3.1` |
-| Status | Pågår · Våg 1–2 och sprint 3.1–3.3 genomförda · Våg 3 aktiv |
+| Planversion | `1.4.0` |
+| Status | Våg 1–3 genomförda · Våg 4 är nästa planerade våg |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -187,6 +187,23 @@ Textabana Editor Kernel
 - Language & Scope Lab visar faktisk scheduler- och resursrapport utan en ny top-level-playground. Specifikation, README och parserkontrakt markerar single-worker async overlap, ingen CPU-parallellism, ingen synkron preemption och ingen streaming/backpressure.
 - Releasegrind: 166 automatiska test passerar, inklusive omvänd settlementordning, pending effektbarriär, eftersettlement-mutation, portabel outputdomän, `maxParallelism=1`, cache hit + fresh sibling, branchfel, terminalprioritet, editor-cancellation, köad deadline och samtliga budgetfel. ESLint och Sites produktionsbygge passerar; normalized golden är stabil över upprepade körningar. Den befintliga chunkstorleksvarningen är fortsatt icke-blockerande.
 
+#### Sprint 3.4 — Closure: incremental reuse, cache checkpoints & flow control
+
+**Status:** genomförd 2026-09-06
+
+**Leverans:** stäng Våg 3 med inkrementell återanvändning av Lezer-träd efter revisionguardade ChangeSets, återbruk av en redan analyserad och kompilerad revisionssnapshot, hostmedierad export/import av cachecheckpoint samt post-commit metadata-streaming med explicit credit-baserad backpressure.
+
+**Acceptans:** en oförändrad revision återanvänder exakt samma kompilerade parseprodukt; en efterföljande edit återanvänder giltiga Lezer-fragment utan att ändra AST/IR-semantiken. Cachecheckpoint binds till hela payloaden med digest, valideras för typdomän, evidens och hostbudget före import och kan explicit flyttas till en ny session. En stream-subscription levererar aldrig tentative output, sänder högst beviljad credit och återupptas endast genom ett explicit `credit`-kommando.
+
+**Avgränsning:** cachepersistens och delning ägs av hosten genom explicit checkpointtransport; kärnan innehåller ingen databas eller implicit global cache. Streaming gäller committade metadata-deltan, inte kontinuerlig stageoutput, och ger därför ingen rollback av externa sidoeffekter eller preemption av synkron kod. Dessa större distributions- och transportfrågor hör till Host-SDK-vågen.
+
+**Acceptansevidens:**
+
+- `analyze` rapporterar `fresh`, därefter `compiled-snapshot` för samma revision och `incremental-tree` efter en revisionguardad ändring; parser-IR redovisar antal återanvända fragment.
+- Cachecheckpoint har ett versionssatt schema, full-payload-digest, storleksgränser och lossless validering av varje output. Manipulerad payload avvisas atomiskt och import rebinds explicit till mål-sessionen.
+- `stream`-subscriptions startar med hostvald credit. Varje `metadata-chunk` skapas först efter lyckad core commit och köas när credit är slut; `credit` återupptar leveransen deterministiskt till `done`.
+- Closure-regressionerna ingår i en full releasegrind med 169 passerade test, ESLint och Sites produktionsbygge tillsammans med befintliga parser-, editor-, cache-, scheduler- och conformance-test.
+
 ### Våg 4 — Host-SDK:er och säkra modulpaket
 
 **Status:** planerad
@@ -218,6 +235,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.4.0 — 2026-09-06
+
+- Sprint 3.4 genomförd och Våg 3 stängd med inkrementell Lezer-reuse, kompilerad revisionsreuse, portabla host-checkpoints och credit-bunden post-commit metadata-streaming.
+- Capability- och begränsningsspråket skiljer uttryckligen dessa verifierade subsets från transparent distribuerad cache, kontinuerlig stage-streaming och extern side-effect-rollback.
+- Nästa aktiva leverans är Våg 4 — Host-SDK:er och säkra modulpaket.
 
 ### 1.3.1 — 2026-09-06
 

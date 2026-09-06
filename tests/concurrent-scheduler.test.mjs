@@ -480,10 +480,10 @@ test("a queued run starts its deadline when execution begins rather than while w
   quick: { state: "pure", determinism: "deterministic", effects: [], async transform(input, _args, context) { await context.checkpoint(); return input; } }
 });`,
   };
-  const slow = `>>>>! include "./modules/queue-deadline.js"\n>>>> wait delay=60\nslow\n<<<< wait`;
+  const slow = `>>>>! include "./modules/queue-deadline.js"\n>>>> wait delay=200\nslow\n<<<< wait`;
   const quick = `>>>>! include "./modules/queue-deadline.js"\n>>>> quick\nquick\n<<<< quick`;
   harness.sendWithoutWaiting({ runId: 45, documentSource: slow, modules: [moduleFile], options: {} });
-  harness.sendWithoutWaiting({ runId: 46, documentSource: quick, modules: [moduleFile], options: { runtimeLimits: { deadlineMs: 40 } } });
+  harness.sendWithoutWaiting({ runId: 46, documentSource: quick, modules: [moduleFile], options: { runtimeLimits: { deadlineMs: 100 } } });
   while (harness.messages.filter((message) => Object.hasOwn(message, "ok")).length < 2) {
     await new Promise((resolve) => setTimeout(resolve, 5));
   }
@@ -491,7 +491,7 @@ test("a queued run starts its deadline when execution begins rather than while w
 
   assert.equal(result.ok, true, result.error);
   assert.equal(result.executionReport.resources.status, "within-limits");
-  assert.equal(result.executionReport.resources.effective.deadlineMs, 40);
+  assert.equal(result.executionReport.resources.effective.deadlineMs, 100);
 });
 
 test("stage, event and render budgets fail before durable commit with exact diagnostics", async () => {

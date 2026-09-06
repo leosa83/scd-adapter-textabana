@@ -209,6 +209,52 @@ export function snapshotStageCacheStore(store) {
   };
 }
 
+export function exportStageCacheCheckpoint(store) {
+  const payload = {
+    schema: "textabana.stage-cache-checkpoint/lab-v1",
+    sourceSessionId: store.sessionId,
+    sourceVersion: store.version,
+    entries: [...store.entries].map(([key, entry]) => [key, {
+      ...entry,
+      output: entry.output ? { ...entry.output } : null,
+      observations: (entry.observations || []).map((observation) => ({ ...observation })),
+    }]),
+    quarantined: [...store.quarantined].map(([key, entry]) => [key, { ...entry }]),
+  };
+  const wire = JSON.stringify(payload);
+  return { ...payload, digest: `fnv1a-lab:${hashSource(wire)}`, bytes: new TextEncoder().encode(wire).byteLength };
+}
+
+export function importStageCacheCheckpoint(checkpoint, sessionId) {
+  if (!checkpoint || checkpoint.schema !== "textabana.stage-cache-checkpoint/lab-v1") throw new Error("Cachecheckpoint har fel eller saknat schema.");
+  const digest = checkpoint.digest;
+  const payload = { ...checkpoint };
+  delete payload.digest;
+  delete payload.bytes;
+  const wire = JSON.stringify(payload);
+  if (digest !== `fnv1a-lab:${hashSource(wire)}`) throw new Error("Cachecheckpointets digest matchar inte payloaden.");
+  if (!Array.isArray(payload.entries) || !Array.isArray(payload.quarantined)) throw new Error("Cachecheckpoint saknar giltiga samlingar.");
+  const store = createStageCacheStore(sessionId);
+  for (const pair of payload.entries) {
+    if (!Array.isArray(pair) || pair.length !== 2 || typeof pair[0] !== "string") throw new Error("Cachecheckpoint innehåller en ogiltig entry.");
+    const entry = pair[1];
+    if (!entry || typeof entry !== "object" || typeof entry.witness !== "string" || !entry.output) throw new Error("Cachecheckpoint innehåller en ofullständig entry.");
+    cloneCacheValue(entry.output);
+    const observations = Array.isArray(entry.observations) ? entry.observations.map((item) => ({ ...item })) : [];
+    if (Boolean(entry.verified) !== (observations.length >= 2)) throw new Error("Cachecheckpointets verifieringsstatus saknar tillräcklig evidens.");
+    store.entries.set(pair[0], { ...entry, output: { ...entry.output }, observations });
+  }
+  for (const pair of payload.quarantined) {
+    if (!Array.isArray(pair) || pair.length !== 2 || typeof pair[0] !== "string" || !pair[1] || typeof pair[1] !== "object") throw new Error("Cachecheckpoint innehåller en ogiltig quarantine-entry.");
+    store.quarantined.set(pair[0], { ...pair[1] });
+  }
+  if (store.entries.size > MAX_ENTRIES || store.quarantined.size > MAX_QUARANTINES) throw new Error("Cachecheckpoint överskrider hostens gränser.");
+  const totalBytes = [...store.entries.values()].reduce((sum, entry) => sum + Number(entry.output?.bytes || 0), 0);
+  if (totalBytes > MAX_TOTAL_VALUE_BYTES) throw new Error("Cachecheckpoint överskrider hostens värdebudget.");
+  store.version = Number.isInteger(payload.sourceVersion) ? payload.sourceVersion : 0;
+  return store;
+}
+
 export function createStageCacheTransaction({
   enabled,
   store,
@@ -632,15 +678,15 @@ export function stageCacheExecutionReport(transaction, runtimeReport = {}) {
     }),
     stats: { ...transaction.stats },
     limits: {
-      scope: "single-editor-session-memory",
+      scope: "host-checkpoint-portable-session-cache",
       maxEntries: MAX_ENTRIES,
       maxValueBytes: MAX_ENTRY_BYTES,
       maxTotalValueBytes: MAX_TOTAL_VALUE_BYTES,
       maxWitnessBytes: MAX_WITNESS_BYTES,
       maxQuarantines: MAX_QUARANTINES,
       maxQuarantineBytes: MAX_QUARANTINES * MAX_WITNESS_BYTES,
-      persistent: false,
-      shared: false,
+      persistent: "host-export-import",
+      shared: "explicit-checkpoint-transfer",
     },
     ...(runtimeReport.scheduling ? { scheduling: runtimeReport.scheduling } : {}),
     ...(runtimeReport.resources ? { resources: runtimeReport.resources } : {}),

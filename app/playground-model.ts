@@ -330,6 +330,7 @@ export type RuntimeInspection = {
     engine: string;
     grammarVersion: string;
     parseMode: string;
+    compilerReuse?: "fresh" | "compiled-snapshot" | "incremental-tree" | string;
     coordinateUnit: string;
     recovery: string;
     incrementalReuse: boolean;
@@ -835,7 +836,8 @@ export type EditorKernelRun = {
     deltaMode: string;
     reanchorMode: string;
     subscriptionMode: string;
-    persistentHistory: boolean;
+    persistentHistory: boolean | string;
+    streamMode?: string;
     collaborativeMerge: boolean;
     parallelExecution: boolean;
     canonical: boolean;

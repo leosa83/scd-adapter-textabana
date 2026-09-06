@@ -1,3 +1,4 @@
+import { TreeFragment } from "@lezer/common";
 import { parser as structuralParser } from "./generated/textabana-parser.js";
 
 const NAME_PATTERN = /^@?[A-Za-z_][\w.-]*$/;
@@ -282,10 +283,25 @@ function publicStage(stage) {
   };
 }
 
-export function parseDocument(source, { documentPath = "document.md", documentId = null } = {}) {
+export function parseDocument(source, {
+  documentPath = "document.md",
+  documentId = null,
+  previousTree = null,
+  changes = [],
+} = {}) {
   const index = createSourceIndex(source);
   const sourceVersion = `fnv1a:${hashSource(source)}`;
-  const tree = structuralParser.parse(source);
+  let fragments = [];
+  let incrementalReuse = false;
+  if (previousTree && Array.isArray(changes) && changes.length) {
+    try {
+      fragments = TreeFragment.applyChanges(TreeFragment.addTree(previousTree), changes, 0);
+      incrementalReuse = fragments.length > 0;
+    } catch {
+      fragments = [];
+    }
+  }
+  const tree = structuralParser.parse(source, fragments);
   const lexicalByStart = new Map();
   const cstNodes = [];
   let cstSequence = 0;
@@ -1126,10 +1142,11 @@ export function parseDocument(source, { documentPath = "document.md", documentId
       schema: "textabana.parser/lab-v1",
       engine: "lezer-lr",
       grammarVersion: "0.4",
-      parseMode: "full-document",
+      parseMode: incrementalReuse ? "incremental-tree-reuse" : "full-document",
       coordinateUnit: "unicode-code-point",
       recovery: "local-non-executable",
-      incrementalReuse: false,
+      incrementalReuse,
+      reusedFragmentCount: fragments.length,
     },
     sourceRef: { documentId: documentId || `doc:${documentPath}`, version: sourceVersion },
     sourceSpan: index.span(0, source.length),
@@ -1148,7 +1165,7 @@ export function parseDocument(source, { documentPath = "document.md", documentId
     diagnostics,
     sourceLines: sourceLines.filter(Boolean),
     unsupported: [
-      "incremental-parser",
+      ...(incrementalReuse ? [] : ["incremental-parser"]),
       "cross:split",
       "cross:promote",
       "cross:truncate",
@@ -1157,5 +1174,5 @@ export function parseDocument(source, { documentPath = "document.md", documentId
     ],
   };
 
-  return { cst, ast, ir, program: root, directives, diagnostics, executable, sourceIndex: index };
+  return { cst, ast, ir, program: root, directives, diagnostics, executable, sourceIndex: index, tree };
 }

@@ -229,7 +229,7 @@ test("open, Unicode change and revision guards form one atomic document protocol
   assert.equal(run.ok, true, run.error);
   assert.equal(run.output, "A😀C");
   assert.equal(run.editorKernel.evaluatedSnapshot.documentRevision, 2);
-  assert.equal(run.editorKernel.capabilities.parseMode, "full-document");
+  assert.equal(run.editorKernel.capabilities.parseMode, "incremental-tree-or-full-document");
   assert.equal(run.editorKernel.capabilities.executionMode, "selective-concurrent-safe-branches");
   assert.equal(run.editorKernel.capabilities.parallelMode, "single-worker-async-overlap");
   assert.equal(run.editorKernel.capabilities.concurrentBranchScheduling, true);

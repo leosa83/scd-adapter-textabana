@@ -133,9 +133,9 @@ test("the Interop 0.7 specification preserves its foundational contracts", () =>
   assert.match(source, /två.*observationer.*skilda committed revisioner/is);
   assert.match(source, /analyze.*partial.*IR.*inga moduler eller stages/s);
   assert.match(source, /korrelerade.*open.*change.*Optimistiskt antagen revision\/version/s);
-  assert.match(source, /inkrementell input.*Implementerat.*inkrementell stage-exekvering.*Avgränsad lab-subset.*Parser-\/compilerreuse.*Ej implementerat.*inkrementell leverans.*Implementerat/is);
+  assert.match(source, /inkrementell input.*Implementerat.*inkrementell stage-exekvering.*Avgränsad lab-subset.*Parser-\/compilerreuse.*Avgränsad lab-subset.*inkrementell leverans.*Implementerat/is);
   assert.match(source, /run-lokala.*eventId.*sequence/s);
   assert.match(source, /Flera giltiga kandidater.*ambiguous.*ingen giltig kandidat.*orphaned/s);
-  assert.match(source, /full dokumentparse.*snapshotbara effects-free stages.*Parser-\/compilerträdsreuse.*persistent\/delad cache/s);
+  assert.match(source, /compiler-snapshot.*Lezer-fragment.*digestbundet host-checkpoint.*credit-baserad backpressure/s);
   assert.match(source, /Recovery.*executable=false/s);
 });
