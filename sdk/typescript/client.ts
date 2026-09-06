@@ -2,11 +2,18 @@ import type { KernelCommand, KernelTransport, ModuleLock, ModulePackage, TextCha
 
 type Pending = { resolve(value: unknown): void; reject(reason: Error): void };
 
+export class KernelCommandError extends Error {
+  constructor(readonly response: Record<string, unknown>) {
+    super(typeof response.error === "string" ? response.error : String((response.error as { message?: string })?.message || "Kernel command failed."));
+  }
+}
+
 export class TextabanaKernelClient {
   readonly transport: KernelTransport;
   readonly pending = new Map<string, Pending>();
   readonly streams = new Map<string, Set<(chunk: unknown) => void>>();
   #sequence = 0;
+  #disposed = false;
 
   constructor(transport: KernelTransport) {
     this.transport = transport;
@@ -14,6 +21,7 @@ export class TextabanaKernelClient {
   }
 
   dispose() {
+    this.#disposed = true;
     this.transport.removeEventListener("message", this.#onMessage);
     for (const request of this.pending.values()) request.reject(new Error("Textabana client disposed."));
     this.pending.clear();
@@ -22,6 +30,12 @@ export class TextabanaKernelClient {
 
   #onMessage = (event: MessageEvent) => {
     const message = event.data as Record<string, unknown>;
+    if (message?.type === "transport-error" && !message.requestId) {
+      for (const request of this.pending.values()) request.reject(new KernelCommandError(message));
+      this.pending.clear();
+      this.dispose();
+      return;
+    }
     if (message?.type === "metadata-chunk" && typeof message.subscriptionId === "string") {
       this.streams.get(message.subscriptionId)?.forEach((listener) => listener(message));
       return;
@@ -31,15 +45,18 @@ export class TextabanaKernelClient {
     const pending = this.pending.get(requestId);
     if (!pending) return;
     this.pending.delete(requestId);
-    if (message.ok === false) pending.reject(new Error(String((message.error as { message?: string })?.message || "Kernel command failed.")));
+    if (message.ok === false) pending.reject(new KernelCommandError(message));
     else pending.resolve(message);
   };
 
   command<T = unknown>(command: KernelCommand, payload: Record<string, unknown> = {}): Promise<T> {
+    if (this.#disposed) return Promise.reject(new Error("Textabana client disposed."));
     const requestId = String(payload.requestId || `sdk:${command}:${++this.#sequence}`);
+    if (this.pending.has(requestId)) return Promise.reject(new Error("Duplicate in-flight requestId."));
     return new Promise<T>((resolve, reject) => {
       this.pending.set(requestId, { resolve: resolve as (value: unknown) => void, reject });
-      this.transport.postMessage({ ...payload, type: command, requestId });
+      try { this.transport.postMessage({ ...payload, type: command, requestId }); }
+      catch (error) { this.pending.delete(requestId); reject(error); }
     });
   }
 

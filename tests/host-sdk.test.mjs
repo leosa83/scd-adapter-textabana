@@ -67,6 +67,16 @@ test("TypeScript host SDK type-checks and Python/Jupyter client compiles", () =>
   assert.equal(python.status, 0, python.stderr || python.stdout);
 });
 
+test("an explicit module lock cannot be bypassed by stripping manifests or duplicate entries", async () => {
+  const h = harness(); const secured = securePackage();
+  const source = `>>>>! include "./modules/secure.js"\n>>>> secure_upper\nHej\n<<<< secure_upper`;
+  const options = { moduleLock: secured.lock, capabilityGrants: ["text:transform"] };
+  const stripped = await h.send({ runId: 710, documentSource: source, modules: [{ path: secured.module.path, content: secured.module.content }], options });
+  assert.equal(stripped.ok, false); assert.equal(stripped.diagnostics[0].code, "TBA-MODULE-MANIFEST-LAB");
+  const duplicate = await h.send({ runId: 711, documentSource: source, modules: [secured.module], options: { ...options, moduleLock: { ...secured.lock, packages: [...secured.lock.packages, ...secured.lock.packages] } } });
+  assert.equal(duplicate.ok, false); assert.equal(duplicate.diagnostics[0].code, "TBA-MODULE-LOCK-LAB");
+});
+
 test("editor bindings preserve Unicode code-point coordinates", async () => {
   const codeMirror = await readFile(new URL("../sdk/typescript/codemirror.ts", import.meta.url), "utf8");
   const monaco = await readFile(new URL("../sdk/typescript/monaco.ts", import.meta.url), "utf8");

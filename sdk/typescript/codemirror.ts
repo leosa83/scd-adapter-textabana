@@ -10,11 +10,14 @@ export interface CodeMirrorUpdateLike {
 function codeUnitsToCodePoints(source: string, offset: number) { return Array.from(source.slice(0, offset)).length; }
 
 export function codeMirrorTextabanaBinding(client: TextabanaKernelClient, documentId: string, revision: () => number, accepted: (response: unknown) => void) {
-  return async (update: CodeMirrorUpdateLike) => {
+  let queue: Promise<void> = Promise.resolve();
+  return (update: CodeMirrorUpdateLike) => {
     if (!update.docChanged) return;
     const source = update.startState.doc.toString();
     const changes: TextChange[] = [];
     update.changes.iterChanges((fromA, toA, _fromB, _toB, inserted) => changes.push({ range: { from: codeUnitsToCodePoints(source, fromA), to: codeUnitsToCodePoints(source, toA) }, insert: inserted.toString() }));
-    accepted(await client.change(documentId, revision(), changes));
+    // Keep later edits blocked after a rejection: the host must resync and rebind.
+    queue = queue.then(async () => { accepted(await client.change(documentId, revision(), changes)); });
+    return queue;
   };
 }

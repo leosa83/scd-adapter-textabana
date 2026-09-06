@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.5.0` |
-| Status | Våg 1–4 genomförda · Våg 5 är nästa planerade våg |
+| Planversion | `1.6.0` |
+| Status | Våg 5 aktiv · sprint 5.1 genomförd |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -115,7 +115,7 @@ Textabana Editor Kernel
 
 ### Våg 3 — Inkrementell planering och exekveringsgraf
 
-**Status:** aktiv · sprint 3.1–3.3 genomförda
+**Status:** genomförd · sprint 3.1–3.4 levererade som dokumenterade labbdelmängder
 
 **Mål:** Göra ändringsmängder beräkningsmässigt värdefulla genom att ogiltigförklara och köra om endast beroende delgraf.
 
@@ -225,13 +225,29 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** planerad
+**Status:** aktiv · sprint 5.1 genomförd 2026-09-06
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
 **Leveranser:** CLI, canonical JSON + SHA-256, profil-fixtures, property/fuzz testing, cross-runtime-suite, signerade rapporter och adapter-/modulpaketregister.
 
 **Acceptans:** ett profilanspråk kan reproduceras utanför Playground; lab-hash eller generisk JSON kan aldrig uppgraderas till canonical claim utan passerad extern suite.
+
+#### Sprint 5.1 — Reproducerbar värdsuite och verifieringsverktyg
+
+**Status:** genomförd 2026-09-06
+
+**Leveranser och evidens:**
+
+- CLI för run, analyze, JSONL-transport, strikt kanonisering, SHA-256, extern konformitetsrapport, Ed25519-signering/verifiering och lokalt paketregister.
+- Åtta versionssatta protokollfall körs genom fem faktiska värdvägar (40 utfall): direkt Worker, TypeScript, CodeMirror, Monaco och Python. Unicode, två revisioner, stale guards, atomiskt run-resultat och cancel-ack jämförs med explicita förväntningar. Python kontrollerar också Jupyter MIME-projektion.
+- Verklig värdkörning kompletterar Våg 4:s tidigare kompileringstester. Monaco använder händelsernas UTF-16-offsets; CodeMirror köar snabba ändringar; SDK bevarar feldata och avvisar duplicerade requestId:n och anrop efter dispose.
+- 250 seedade JSON-värden och 160 på varandra följande parserändringar kontrollerar stabil kanonisering respektive fresh/inkrementell semantisk paritet. Ogiltig JSON, förfalskade rapporter och ändrade paketmanifest avvisas.
+- Rapporten binder kanoniskt serialiserad suite och exakta kernelbytes med SHA-256. Signaturverifiering kräver verifierarens betrodda Ed25519-nyckel och skiljer autenticitet från testutfall. Ingen release-signeringsidentitet antas.
+
+**Avgränsning:** profilen `textabana.host-protocol/lab-v1` verifierar värdar runt samma JavaScript-kärna, inte oberoende språkimplementationer. RFC 8785 gäller JSON-serialisering; semantiska IR/Plan/Result-identiteter förblir labb-FNV. Paketregistret är en lokal integritetskontrollerad katalog. Publicerad rapport är osignerad tills en release-signeringsidentitet finns.
+
+**Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga fixtures, kanonisk semantisk IR/Plan/Result-identitet, jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår; denna sprint uppgraderar inga sådana anspråk.
 
 ## Beroenden och ordning
 
@@ -244,6 +260,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.6.0 — 2026-09-06
+
+- Våg 5 aktiverad; sprint 5.1 levererad med extern CLI-värdsuite, JCS/SHA-256, reproducerbara genererade testfall, rapportsignering och lokalt paketregister.
+- Våg 4:s editorbindningar och request-livscykel rättade och verifierade genom körning. Lockfil kan inte kringgås genom att strippa modulmanifest; duplicerade lockposter avvisas.
+- Full produktionskonformitet, oberoende runtimes, release-signeringsidentitet och registertjänst kvarstår uttryckligen.
 
 ### 1.5.0 — 2026-09-06
 

@@ -11,16 +11,30 @@ class TextabanaClient:
     sequence: int = 0
     pending: Dict[str, Callable[[Mapping[str, Any]], None]] = field(default_factory=dict)
     streams: Dict[str, list[Callable[[Mapping[str, Any]], None]]] = field(default_factory=dict)
+    disposed: bool = False
 
     def command(self, command: str, payload: Mapping[str, Any] | None = None, callback: Callable[[Mapping[str, Any]], None] | None = None) -> str:
+        if self.disposed:
+            raise RuntimeError("Textabana client disposed")
         self.sequence += 1
         request_id = f"python:{command}:{self.sequence}"
         message = dict(payload or {})
         message.update(type=command, requestId=request_id)
         if callback:
             self.pending[request_id] = callback
-        self.send_message(message)
+        try:
+            self.send_message(message)
+        except Exception:
+            self.pending.pop(request_id, None)
+            raise
         return request_id
+
+    def dispose(self) -> None:
+        self.disposed = True
+        pending, self.pending = self.pending, {}
+        self.streams.clear()
+        for request_id, callback in pending.items():
+            callback({"ok": False, "requestId": request_id, "error": {"code": "HOST-CLOSED", "message": "Client disposed"}})
 
     def receive(self, message: Mapping[str, Any]) -> None:
         if message.get("type") == "metadata-chunk":

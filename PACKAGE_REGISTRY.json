@@ -1,0 +1,57 @@
+{
+  "schema": "textabana.package-registry/v1",
+  "packages": [
+    {
+      "kind": "module",
+      "namespace": "org.textabana.uppercase",
+      "version": "1.0.0",
+      "manifest": {
+        "schema": "textabana.registry-package/v1",
+        "entrypoint": "examples/packages/upper.txt",
+        "profile": "textabana.module-manifest/lab-v1",
+        "capabilities": {
+          "required": [
+            "text:transform"
+          ],
+          "channels": [],
+          "resources": []
+        }
+      },
+      "manifestDigest": "sha256:e1a5c12cf972270c6f21c0fbddafc84e900ffd6b376ce3bafd1fe16cf8846296",
+      "files": [
+        {
+          "path": "examples/packages/upper.txt",
+          "digest": "sha256:17606e1764fadbe37a4d4728ea4f712ee7f6e84db7d1ded4acf485a55fbc39a3"
+        }
+      ],
+      "digest": "sha256:c94f36c54a58a1f2914e6084b385c6501bab5a46ca91fd42796d9d452385a85d"
+    },
+    {
+      "kind": "adapter",
+      "namespace": "org.textabana.python",
+      "version": "1.0.0",
+      "manifest": {
+        "schema": "textabana.registry-package/v1",
+        "entrypoint": "sdk/python/textabana_client.py",
+        "profile": "textabana.host-protocol/lab-v1",
+        "capabilities": {
+          "required": [],
+          "channels": [],
+          "resources": []
+        }
+      },
+      "manifestDigest": "sha256:58b5854ada95302f199be186dc33a4d8d01bc6b7e19887ce512260225376fb8b",
+      "files": [
+        {
+          "path": "sdk/python/textabana_client.py",
+          "digest": "sha256:74f0890d2fa7900a6173bd35edee9d1b5f5b4512a8c3ffe03123c68f289c7d2f"
+        },
+        {
+          "path": "sdk/python/__init__.py",
+          "digest": "sha256:184ced4684240eb73acc1f137769b59eb3d1cf04bcc0b9fbe04d94fd4e5a063a"
+        }
+      ],
+      "digest": "sha256:fe26ea492fd68dd59316e9126ce119cca37319f2508950f313b1e35da3c7ed1b"
+    }
+  ]
+}

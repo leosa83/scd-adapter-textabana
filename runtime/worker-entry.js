@@ -3693,11 +3693,12 @@ async function sha256Digest(source) {
 }
 
 async function verifyModulePackages(modules, options) {
-  if (!modules.some((module) => module.manifest || module.digest)) return modules;
-  if (!Array.isArray(options.moduleLock?.packages)) {
+  if (!options.moduleLock && !modules.some((module) => module.manifest || module.digest)) return modules;
+  if (options.moduleLock?.schema !== "textabana.module-lock/lab-v1" || !Array.isArray(options.moduleLock?.packages)) {
     const error = new Error("Säkra modulpaket kräver options.moduleLock.packages."); error.code = "TBA-MODULE-LOCK-LAB"; throw error;
   }
   const lock = new Map(options.moduleLock.packages.map((entry) => [`${entry.namespace}@${entry.version}`, entry]));
+  if (lock.size !== options.moduleLock.packages.length) { const error = new Error("Lockfilen innehåller duplicerade paket."); error.code = "TBA-MODULE-LOCK-LAB"; throw error; }
   const grants = new Set(Array.isArray(options.capabilityGrants) ? options.capabilityGrants.map(String) : []);
   const seen = new Set();
   for (const moduleFile of modules) {
@@ -3750,7 +3751,7 @@ function verifyLoadedModuleContracts(modules, registry) {
       const expected = declared.get(entry.name);
       const descriptor = entry.descriptor || {};
       if (!expected || expected.state !== descriptor.state || expected.determinism !== descriptor.determinism || JSON.stringify(expected.effects) !== JSON.stringify(descriptor.effects || [])) {
-        const error = new Error(`Funktionen ${entry.name} avviker från det signerade modulmanifestet.`); error.code = "TBA-MODULE-FUNCTION-CONTRACT-LAB"; throw error;
+        const error = new Error(`Funktionen ${entry.name} avviker från det deklarerade modulmanifestet.`); error.code = "TBA-MODULE-FUNCTION-CONTRACT-LAB"; throw error;
       }
     }
   }
@@ -4120,7 +4121,9 @@ self.onmessage = (event) => {
   const payload = event.data || {};
   if (payload.type === "cancel") {
     const runId = payload.runId;
-    if (activeRuns.has(runId) || queuedRuns.has(runId)) cancelledRuns.add(runId);
+    const accepted = activeRuns.has(runId) || queuedRuns.has(runId);
+    if (accepted) cancelledRuns.add(runId);
+    if (payload.requestId) self.postEditorProtocolResponse(payload, "cancel", { runId, accepted });
     return Promise.resolve();
   }
   if (payload.type === "open") {

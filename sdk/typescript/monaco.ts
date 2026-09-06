@@ -1,8 +1,8 @@
 import type { TextChange } from "./protocol";
 import { TextabanaKernelClient } from "./client";
 
-export interface MonacoModelLike { getOffsetAt(position: unknown): number; getValue(): string }
-export interface MonacoChangeLike { range: { getStartPosition(): unknown; getEndPosition(): unknown }; text: string }
+export interface MonacoModelLike { getValue(): string }
+export interface MonacoChangeLike { rangeOffset: number; rangeLength: number; text: string }
 
 function codeUnitsToCodePoints(source: string, offset: number) { return Array.from(source.slice(0, offset)).length; }
 
@@ -10,8 +10,8 @@ export async function applyMonacoChanges(client: TextabanaKernelClient, document
   const source = modelBefore.getValue();
   const patches: TextChange[] = changes.map((change) => ({
     range: {
-      from: codeUnitsToCodePoints(source, modelBefore.getOffsetAt(change.range.getStartPosition())),
-      to: codeUnitsToCodePoints(source, modelBefore.getOffsetAt(change.range.getEndPosition())),
+      from: codeUnitsToCodePoints(source, change.rangeOffset),
+      to: codeUnitsToCodePoints(source, change.rangeOffset + change.rangeLength),
     },
     insert: change.text,
   })).sort((a, b) => a.range.from - b.range.from);

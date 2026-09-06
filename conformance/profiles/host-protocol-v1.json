@@ -1,0 +1,16 @@
+{
+  "schema": "textabana.external-suite/v1",
+  "profile": "textabana.host-protocol/lab-v1",
+  "version": "1.0.0",
+  "scope": "Host transports driving the same JavaScript kernel; not independent language implementations",
+  "cases": [
+    { "id": "unicode-open", "command": "open", "payload": { "document": { "documentId": "fixture", "path": "fixture.md", "source": "A😀B\n", "documentRevision": 1 } }, "expect": { "ok": true, "revision": 1, "characters": 4 } },
+    { "id": "analyze", "command": "analyze", "payload": { "documentId": "fixture", "documentRevision": 1 }, "expect": { "ok": true, "executable": true } },
+    { "id": "unicode-change", "command": "change", "before": "A😀B\n", "payload": { "documentId": "fixture", "baseRevision": 1, "coordinateUnit": "unicode-code-point", "changes": [{ "range": { "from": 1, "to": 2 }, "insert": "🌍é" }] }, "expect": { "ok": true, "revision": 2, "characters": 5 } },
+    { "id": "second-change", "command": "change", "before": "A🌍éB\n", "payload": { "documentId": "fixture", "baseRevision": 2, "coordinateUnit": "unicode-code-point", "changes": [{ "range": { "from": 3, "to": 4 }, "insert": "C" }] }, "expect": { "ok": true, "revision": 3, "characters": 5 } },
+    { "id": "stale-change", "command": "change", "payload": { "documentId": "fixture", "baseRevision": 1, "changes": [{ "range": { "from": 0, "to": 1 }, "insert": "wrong" }] }, "expect": { "ok": false, "errorCode": "TBA-EDITOR-STALE-REVISION-LAB" } },
+    { "id": "committed-run", "command": "run", "payload": { "documentId": "fixture", "documentRevision": 3, "runId": 1, "modules": [] }, "expect": { "ok": true, "output": "A🌍éC\n", "committed": true } },
+    { "id": "stale-run", "command": "run", "payload": { "documentId": "fixture", "documentRevision": 1, "runId": 2, "modules": [] }, "expect": { "ok": false, "committed": false, "output": "", "errorCode": "TBA-EDITOR-RUN-REVISION-LAB" } },
+    { "id": "cancel-ack", "command": "cancel", "payload": { "runId": 999 }, "expect": { "ok": true, "accepted": false } }
+  ]
+}

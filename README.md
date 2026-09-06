@@ -52,6 +52,8 @@ Varje stage publicerar ett cache-recept med stage-lokala source- och IR-digests,
 
 ## Conformance-grind
 
+Våg 5 är aktiv. Sprint 5.1 tillför en [fristående CLI och extern värdsuite](./conformance/README.md): kör samma dokumentflöde genom Worker, TypeScript, CodeMirror, Monaco och Python, kanonisera strikt JSON med JCS/SHA-256, signera/verifiera rapporter med egna Ed25519-nycklar och verifiera det lokala [paketregistret](./PACKAGE_REGISTRY.json). Värdsuiten använder samma JavaScript-kärna och är inte full produktionskonformitet. Kanoniska JSON-bytes ändrar inte kärnans labbidentiteter.
+
 Varje worker-run producerar en separat `textabana.conformance-report/lab-v1`. Rapporten binder evidens till samma semantiska `TextabanaResult`, skiljer deklarerad support från observerat kravutfall och gör endast en tillämplig playground-subset `claimable` när samtliga krav passerar. Domänprofiler utan relevanta kanaler är `not-run`; `ml-lineage/1` förblir `contract-only` och kan aldrig bli claimable.
 
 `conformance-golden` jämför source, moduldigests, IR, plan, Result, Anchor/SourceMap, capabilities och adapterprojektioner mot ett incheckat structural digest. Transport-id:n och mätt duration exkluderas genom en publicerad normaliseringspolicy. Digesten är uttryckligen icke-kryptografisk `fnv1a-lab` och snapshoten är `canonical=false`.
