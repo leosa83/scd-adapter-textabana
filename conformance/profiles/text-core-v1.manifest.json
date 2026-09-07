@@ -1,0 +1,8 @@
+{
+  "schema": "textabana.text-core-manifest/v1",
+  "profile": "textabana.text-core/v1",
+  "version": "1.0.0",
+  "suiteDigest": "sha256:47bc84ffd0eef73439faf5fc8eec61555cfb71f883d6beb693cf992a41945630",
+  "specificationDigest": "sha256:adf0a3e093e8ea0e9cbf4b3cc2f45c88ae4504ac6c77ff414486fb82a807ca6e",
+  "caseCount": 70
+}

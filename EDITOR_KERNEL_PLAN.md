@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.8.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.3 genomförda |
+| Planversion | `1.9.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.4 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.3 genomförda, senast 2026-09-07
+**Status:** aktiv · sprint 5.1–5.4 genomförda, senast 2026-09-07
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -277,7 +277,23 @@ Textabana Editor Kernel
 
 **Kontrakt och gräns:** [SEMANTIC_CONTRACT.md](./SEMANTIC_CONTRACT.md). Kontraktkontroll bevisar paketets avgränsade struktur och interna samband. Den bevisar inte att en modul producerade resultatet, komplett språksemantik, oberoende runtimekonformitet eller publicerarens identitet. Fullständiga produktionsprofiler är fortfarande öppna.
 
-**Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga scheman/fixtures, jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår.
+#### Sprint 5.4 — Oberoende referensruntime för en avgränsad textprofil
+
+**Status:** genomförd 2026-09-07
+
+**Uppfylld acceptans:** en fristående Python-parser och evaluator utan Node-/Worker-anrop; versionssatt profil för text, literal-fences, escapes, nästlade block och pipelines med definierade rena textfunktioner; frysta positiva, negativa och profilgränsfall körs genom båda implementationerna och jämförs med explicita förväntningar. Rapporten binder suite, profildokument och implementationernas bytes. Ingen gemensam parser-/evaluatorkod används. CLI och sajt exponerar resultat och avgränsning.
+
+**Leveranser och evidens:**
+
+- Profilen `textabana.text-core/v1` kör 70 frysta testfall genom både Python och den faktiska JavaScript-kärnan: 140 utfall. Båda måste matcha explicit förväntad render, felklass och commit-projektion.
+- Python-referensen körs även ensam, kopierad till en tom katalog med tom PATH. Den tidigare Python-värdadaptern fortsätter vara separat; den är inte referensruntime.
+- Kontroll av nästling, pipelineordning, citerade argument, Unicode, literal-markörer och kodstaket samt syntaxfel, stagefel, rollback, profilgränser och resurstak. UTF-8 bevaras även över processbuffertgränser. Expanderande textutbyten storlekskontrolleras före allokering.
+- Manifestet låser hela testkorpusen och profildokumentet. Rapporten binder Python, JS-adapter, runner, parser, Worker, bryggor och dependency-lockfil. Saknad Python eller försvagade fixtures avvisas; felaktig delcommit får inte döljas av ett förväntat budgetfel.
+- CLI, körbart exempel och nedladdningsbar rapport finns i specifikationen och Conformance-labbet.
+
+**Kontrakt och gräns:** [TEXT_CORE_PROFILE.md](./TEXT_CORE_PROFILE.md). Oberoendet gäller separat parser-/evaluatorkod för denna avgränsade profil. Fullständigt språk, modulexekvering, intervall, kanaler/proveniens, cache och likvärdiga semantiska artefakter återstår. Rapporten är osignerad.
+
+**Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga scheman/fixtures, bredare jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår.
 
 ## Beroenden och ordning
 
@@ -290,6 +306,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.9.0 — 2026-09-07
+
+- Sprint 5.4 levererad: fristående Python-runtime, definierad textprofil och 70 manifestbundna jämförelsefall mot JavaScript-kärnan.
+- Separat CLI-/sajtrapport med begränsat anspråk på oberoende implementationer; isolerad Python-körning, profilgrindar och resursfel verifieras.
+- Våg 5 förblir aktiv för fullständiga produktionsprofiler, bredare runtimejämförelse, release-signering och registertjänst.
 
 ### 1.8.0 — 2026-09-07
 

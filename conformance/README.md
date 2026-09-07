@@ -8,6 +8,8 @@ npm run conformance:external > report.log
 node cli/textabana.mjs conformance > report.json
 node cli/textabana.mjs conformance-semantic > semantic-report.json
 node cli/textabana.mjs conformance-contract > contract-report.json
+node cli/textabana.mjs conformance-text-core > text-core-report.json
+python3 reference/text_core.py run examples/text-core.md
 node cli/textabana.mjs analyze examples/document.md
 node cli/textabana.mjs run examples/document.md
 node cli/textabana.mjs registry-check PACKAGE_REGISTRY.json
@@ -27,13 +29,19 @@ The report checks expected Unicode character counts, two document changes, analy
 
 `canonical <json>` implements [RFC 8785 JCS](https://www.rfc-editor.org/rfc/rfc8785): recursive UTF-16 key sorting, ECMAScript finite-number encoding, unchanged Unicode, and no insignificant whitespace. The trailing CLI newline is a record separator and is excluded from the digest. The strict JSON reader rejects duplicate keys (including escaped aliases), lone surrogates, nonfinite numbers and nesting beyond 128 levels. The value API rejects unsupported, sparse, decorated or cyclic values instead of losing data.
 
-`digest <json>` hashes UTF-8 canonical bytes with SHA-256. It does not identify Textabana execution. Sprint 5.2 adds separate [semantic artifact identities](../SEMANTIC_IDENTITY.md) through `identify`, `verify-identity` and `conformance-semantic`. Legacy IR/Plan/Result carrier IDs remain available; no conversion command upgrades them. Reports explicitly keep `canonicalRuntime`, `independentImplementations` and `fullProfileConformance` false.
+`digest <json>` hashes UTF-8 canonical bytes with SHA-256. It does not identify Textabana execution. Sprint 5.2 adds separate [semantic artifact identities](../SEMANTIC_IDENTITY.md) through `identify`, `verify-identity` and `conformance-semantic`. Legacy IR/Plan/Result carrier IDs remain available; no conversion command upgrades them. These artifact reports explicitly keep `canonicalRuntime`, `independentImplementations` and `fullProfileConformance` false.
 
 ## Executable artifact contract
 
 Sprint 5.3 adds [JSON Schema and internal-reference verification](../SEMANTIC_CONTRACT.md) to `verify-identity`. `conformance-contract` runs 80 frozen cases over static bundles: 14 acceptances and 66 expected rejections. Negative cases normally rehash their artifacts and downstream chain, so they exercise structure and references rather than only stale digests. A separate manifest pins the full suite, expected outcomes and schema; the suite pins its baseline corpus. Removed cases or changed expectations cannot retain the same profile claim.
 
 The report binds the schema, manifest, suite, baseline and verifier/runner source bytes. It can claim the fixed `textabana.semantic-contract/v1` verifier profile only. These checks do not run modules or certify rendering correctness. The 28-case semantic execution suite remains separate and retains all prior golden identities. Downloadable reports describe the checked source snapshot, not ongoing CI status.
+
+## Independent text runtime
+
+Sprint 5.4 adds [textabana.text-core/v1](../TEXT_CORE_PROFILE.md): an independently written Python parser/evaluator and a bridge to the actual JavaScript Worker. The Python file runs by itself with only the standard library; it is separate from the earlier Python host SDK that calls Node. Both implementations evaluate 70 frozen cases against explicit expected text, error class and commit projection (140 runtime outcomes). Cases include nested blocks, same-line pipelines, JSON string arguments, literal fences/escapes, Unicode, syntax/stage failures, unsupported features and bounded resource failures. Replacement output size is checked before allocation.
+
+The separate manifest pins the full suite and specification. The report fingerprints both implementations and bridge dependencies. Only the passing fixed text profile claims independent implementations; full language/runtime and semantic artifact equivalence remain false. The test suite copies the Python file outside the repository and runs it with an empty PATH, and checks that missing Python or a weakened fixture suite cannot produce a claim. The downloadable report is a source-snapshot result, not a live verification of the current Playground document.
 
 ## Signing and verification
 
@@ -50,4 +58,4 @@ Keys must be Ed25519 PEM keys supplied by the caller. The CLI does not generate,
 
 ## Remaining Wave 5 work
 
-Sprints 5.1–5.3 provide reproducible verification tooling, source-bound semantic identities and an executable artifact contract. Full production language/runtime profile schemas and fixtures, independently implemented runtime comparison, configured release signer and published registry service remain open. Wave 5 stays active.
+Sprints 5.1–5.4 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract and a first independent text-runtime comparison. Full production language/runtime profiles, broader independent runtime coverage (modules, intervals, channels, provenance and caches), configured release signer and published registry service remain open. Wave 5 stays active.
