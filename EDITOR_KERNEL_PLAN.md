@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.9.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.4 genomförda |
+| Planversion | `1.10.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.5 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.4 genomförda, senast 2026-09-07
+**Status:** aktiv · sprint 5.1–5.5 genomförda, senast 2026-09-07
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -293,6 +293,22 @@ Textabana Editor Kernel
 
 **Kontrakt och gräns:** [TEXT_CORE_PROFILE.md](./TEXT_CORE_PROFILE.md). Oberoendet gäller separat parser-/evaluatorkod för denna avgränsade profil. Fullständigt språk, modulexekvering, intervall, kanaler/proveniens, cache och likvärdiga semantiska artefakter återstår. Rapporten är osignerad.
 
+#### Sprint 5.5 — Oberoende intervallsemantik och blockarv
+
+**Status:** genomförd 2026-09-07
+
+**Uppfylld acceptans:** ny fryst profil för öppna intervall, matchning via namn/id, ordning, blockens standardarv och explicit avstängt arv. Python och JavaScript reproducerar oberoende exakt render och committade invocationer samt avvisar ogiltiga scope-/blockgränser utan delcommit. Tidigare textprofil består. Avgränsningen och en reproducerbar jämförelserapport med bundna implementationer och förväntningar är dokumenterade.
+
+**Leveranser och evidens:**
+
+- `textabana.scoped-text/v1` jämför 80 nya frysta fall i två oberoende implementationer: 160 runtimeutfall. Hela den ordnade listan av committade funktioner, argument, modalitet och scope-alias jämförs mot explicita förväntningar, utöver render och felklass.
+- Python sänker block/intervall till ett eget begränsat uttrycksträd före exekvering. Den använder tidigare rena textfunktioner men anropar ingen JavaScript-parser eller Node-runtime. De två Python-filerna kör även isolerat från repot.
+- Överlappande intervall, senaste matchande namn/alias, global deklarationsräknare, återanvända id:n, numerisk ordning med stabila lika värden, stigande/fallande global config och blockarv verifieras. Ett block med avstängt arv behåller sina lokala intervall.
+- 32 aktiva intervall samt 128 expanderade anrop begränsas. Expanderingsgränsen kontrolleras före första transform; ett tidigt stagefel får inte maskera en för stor plan. Långa numeriska argument avvisas före talomvandling. Scope-/blockkorsningar och andra misslyckade körningar ger ingen delcommit.
+- Manifestet låser suite, förväntade anropslistor och båda normativa profildokumenten. Saknad Python eller ändrade förväntningar kan inte ge ett passerat anspråk. CLI, exempel och nedladdningsbar rapport finns på sajten.
+
+**Kontrakt och gräns:** [SCOPED_TEXT_PROFILE.md](./SCOPED_TEXT_PROFILE.md). Oberoendet gäller denna text-/intervallprofil. Godtyckliga moduler, kanaler/proveniens, ytterligare scope-policyer, cache, semantisk artefaktekvivalens och full produktionskonformitet återstår. Rapporten är osignerad.
+
 **Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga scheman/fixtures, bredare jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår.
 
 ## Beroenden och ordning
@@ -306,6 +322,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.10.0 — 2026-09-07
+
+- Sprint 5.5 levererad: oberoende intervallsemantik och blockarv med 80 frysta jämförelsefall och ordnade committade anropslistor.
+- Global/numerisk ordning, aliasmatchning, överlapp, arv och atomiska budget-/gränsfel verifieras; tidigare textprofil består.
+- Våg 5 förblir aktiv för bredare produktionskonformitet, release-signering och registertjänst.
 
 ### 1.9.0 — 2026-09-07
 

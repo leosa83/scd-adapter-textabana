@@ -1300,6 +1300,7 @@ function SemanticIdentityPanel({ bundle }: { bundle: RuntimeResult["semanticIden
     <div className="subset-notice">SHA-256 för versionssatta semantiska artefakter. Kontrollen gäller paketets struktur, innehåll och interna samband; full runtimekonformitet kräver ytterligare profiltester.</div>
     <p><a href="/contracts/semantic-bundle-v1.schema.json" download>Hämta JSON Schema</a> · <a href="/conformance/contract-report.json" download>Hämta kontraktets testresultat</a></p>
     <p>Referensprofilen för text jämför 70 fasta testfall mellan JavaScript-kärnan och en fristående Python-runtime. Den täcker text, nästlade block och rena textfunktioner. <a href="/conformance/text-core-report.json" download>Hämta jämförelsen mellan runtimes</a>. Denna separata rapport verifierar inte det aktuella dokumentet eller dess artefaktidentiteter.</p>
+    <p>Intervallprofilen jämför ytterligare 80 fall: öppna intervall, ordning, namngivna avslut och blockarv. Även den exakta ordningen på committade funktionsanrop jämförs. <a href="/conformance/scoped-text-report.json" download>Hämta intervalljämförelsen</a>.</p>
     {!bundle ? <div className="lab-empty">Aktivera SHA-256-identiteter och kör dokumentet.</div> : <>
       <div className="lab-table-wrap"><table className="lab-table"><thead><tr><th>Artefakt</th><th>Identitet</th></tr></thead><tbody>
         {(["source", "context", "ir", "plan", "result"] as const).map((key) => <tr key={key}><td>{key}</td><td><code>{bundle[key]?.id ?? "Ingen artefakt i denna körning"}</code></td></tr>)}

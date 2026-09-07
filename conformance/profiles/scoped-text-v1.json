@@ -1,0 +1,2605 @@
+{
+  "schema": "textabana.scoped-text-suite/v1",
+  "profile": "textabana.scoped-text/v1",
+  "version": "1.0.0",
+  "cases": [
+    {
+      "id": "empty",
+      "source": "",
+      "expect": {
+        "ok": true,
+        "output": "",
+        "error": null,
+        "committed": true,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "plain-unicode",
+      "source": "Hej 😀 é\n",
+      "expect": {
+        "ok": true,
+        "output": "Hej 😀 é\n",
+        "error": null,
+        "committed": true,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "single-interval",
+      "source": ">>>>+ asciiUpper\nx\ny\n<<<<+ asciiUpper",
+      "expect": {
+        "ok": true,
+        "output": "X\nY\n",
+        "error": null,
+        "committed": true,
+        "committedStages": 1,
+        "stages": [
+          {
+            "function": "asciiUpper",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "asciiUpper-1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-interval",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "",
+        "error": null,
+        "committed": true,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "unused-unknown-interval",
+      "source": ">>>>+ absent\n<<<<+ absent",
+      "expect": {
+        "ok": true,
+        "output": "",
+        "error": null,
+        "committed": true,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "unused-failing-interval",
+      "source": ">>>>+ fail\n<<<<+ fail",
+      "expect": {
+        "ok": true,
+        "output": "",
+        "error": null,
+        "committed": true,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "blank-interval",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 1,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "two-intervals",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\"\nx\n<<<<+ @id=B\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "B(A(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          }
+        ]
+      }
+    },
+    {
+      "id": "text-buffer-boundaries",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\"\ny\n<<<<+ @id=B\nz\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(x\n)B(A(y\n))A(z\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 4,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "non-lifo-close",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\"\nx\n<<<<+ @id=A\ny\n<<<<+ @id=B\n",
+      "expect": {
+        "ok": true,
+        "output": "B(A(x\n))B(y\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 3,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          }
+        ]
+      }
+    },
+    {
+      "id": "last-function-name-close",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\"\nx\n<<<<+ wrap\ny\n<<<<+ wrap",
+      "expect": {
+        "ok": true,
+        "output": "B(A(x\n))A(y\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 3,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "alias-shorthand",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx\n<<<<+ @A",
+      "expect": {
+        "ok": true,
+        "output": "A(x\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 1,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "reused-id",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx\n<<<<+ @id=A\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\ny\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(x\n)A(y\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "id-name-ambiguity",
+      "source": ">>>>+ wrap @id=\"asciiUpper\" prefix=\"a\"\n>>>>+ asciiUpper @id=\"b\"\nx\n<<<<+ @id=asciiUpper\ny\n<<<<+ @id=asciiUpper",
+      "expect": {
+        "ok": true,
+        "output": "AX\nay\n",
+        "error": null,
+        "committed": true,
+        "committedStages": 3,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "a"
+            },
+            "modality": "interval",
+            "scopeId": "asciiUpper"
+          },
+          {
+            "function": "asciiUpper",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "b"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "a"
+            },
+            "modality": "interval",
+            "scopeId": "asciiUpper"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dotted-alias",
+      "source": ">>>>+ identity @id=\"a.b-1\"\nx\n<<<<+ @id=a.b-1",
+      "expect": {
+        "ok": true,
+        "output": "x\n",
+        "error": null,
+        "committed": true,
+        "committedStages": 1,
+        "stages": [
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "a.b-1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "numeric-order",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\" @order=20\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\" @order=10\nx\n<<<<+ @id=B\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "negative-order",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\" @order=0\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\" @order=-1\nx\n<<<<+ @id=B\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "equal-order",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\" @order=4\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\" @order=4\nx\n<<<<+ @id=B\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "B(A(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          }
+        ]
+      }
+    },
+    {
+      "id": "descending-order",
+      "source": ">>>>! config scope-order=\"declaration:desc\"\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\"\nx\n<<<<+ @id=B\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "descending-numeric",
+      "source": ">>>>! config scope-order=\"declaration:desc\"\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\" @order=20\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\" @order=10\nx\n<<<<+ @id=B\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "B(A(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          }
+        ]
+      }
+    },
+    {
+      "id": "descending-tie",
+      "source": ">>>>! config scope-order=\"declaration:desc\"\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\" @order=4\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\" @order=4\nx\n<<<<+ @id=B\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "B(A(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          }
+        ]
+      }
+    },
+    {
+      "id": "config-last-wins",
+      "source": ">>>>! config scope-order=\"declaration:desc\"\n>>>>! config scope-order=\"declaration:asc\"\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\"\nx\n<<<<+ @id=B\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "B(A(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          }
+        ]
+      }
+    },
+    {
+      "id": "config-applies-globally",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\"\nx\n<<<<+ @id=B\n<<<<+ @id=A\n>>>>! config scope-order=\"declaration:desc\"\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "config-flushes-buffer",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx\n>>>>! config scope-order=\"declaration:desc\"\ny\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(x\n)A(y\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-inherited-block",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> identity\n<<<< identity\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A()",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "block-inherits-output",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"B(\" suffix=\")\"\nx\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nested-block-inheritance",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"B(\" suffix=\")\"\n>>>> wrap prefix=\"C(\" suffix=\")\"\nx\n<<<< wrap\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(C(x\n)))",
+        "error": null,
+        "committed": true,
+        "committedStages": 3,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "C(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "inherit-none",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"B(\" suffix=\")\" @inherit=\"none\"\nx\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "B(x\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 1,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "inherit-default-explicit",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"B(\" suffix=\")\" @inherit=\"default\"\nx\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "inherit-none-keeps-local",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"B(\" suffix=\")\" @inherit=\"none\"\n>>>>+ wrap @id=\"C\" prefix=\"C(\" suffix=\")\"\nx\n<<<<+ @id=C\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "B(C(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "C(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "C"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "local-plus-ambient",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"B(\" suffix=\")\"\n>>>>+ wrap @id=\"C\" prefix=\"C(\" suffix=\")\"\nx\n<<<<+ @id=C\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(C(x\n)))",
+        "error": null,
+        "committed": true,
+        "committedStages": 3,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "C(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "C"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "block-pipeline-before-inherit",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> asciiUpper | wrap prefix=\"B(\" suffix=\")\"\nx\n<<<< asciiUpper\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(X\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 3,
+        "stages": [
+          {
+            "function": "asciiUpper",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "multiple-blocks",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"B(\" suffix=\")\"\nx\n<<<< wrap\n>>>> wrap prefix=\"C(\" suffix=\")\"\ny\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(B(x\n))A(C(y\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 4,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "C(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "global-declaration-counter",
+      "source": ">>>> wrap prefix=\"X(\" suffix=\")\"\n>>>>+ wrap @id=\"Z\" prefix=\"Z(\" suffix=\")\"\nz\n<<<<+ @id=Z\n<<<< wrap\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>>+ wrap @id=\"B\" prefix=\"B(\" suffix=\")\" @order=1\nx\n<<<<+ @id=A\n<<<<+ @id=B\n",
+      "expect": {
+        "ok": true,
+        "output": "X(Z(z\n))A(B(x\n))",
+        "error": null,
+        "committed": true,
+        "committedStages": 4,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "Z(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "Z"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "X(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "B(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "B"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "generated-id-counter",
+      "source": ">>>> wrap prefix=\"X(\" suffix=\")\"\n>>>>+ identity\nx\n<<<<+ identity\n<<<< wrap\n>>>>+ identity\ny\n<<<<+ identity",
+      "expect": {
+        "ok": true,
+        "output": "X(x\n)y\n",
+        "error": null,
+        "committed": true,
+        "committedStages": 3,
+        "stages": [
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "identity-1"
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "X(",
+              "suffix": ")"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "identity-2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "escaped-scope-markers",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n\\>>>>+ fail {.literal}\n\\<<<<+ fail\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(>>>>+ fail {.literal}\n<<<<+ fail\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 1,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fenced-scope-markers",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n```\n>>>>+ fail\n{literal}\n```\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(```\n>>>>+ fail\n{literal}\n```\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 1,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "generated-control-stays-text",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\">>>>+ fail\\n\"\nx\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": true,
+        "output": "A(>>>>+ fail\nx\n)",
+        "error": null,
+        "committed": true,
+        "committedStages": 2,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": ">>>>+ fail\n"
+            },
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "A(",
+              "suffix": ")"
+            },
+            "modality": "interval",
+            "scopeId": "A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "unicode-interval",
+      "source": ">>>>+ replaceLiteral @id=\"u\" old=\"😀\" new=\"ö\"\n😀😀\n<<<<+ u",
+      "expect": {
+        "ok": true,
+        "output": "öö\n",
+        "error": null,
+        "committed": true,
+        "committedStages": 1,
+        "stages": [
+          {
+            "function": "replaceLiteral",
+            "args": {
+              "old": "😀",
+              "new": "ö"
+            },
+            "modality": "interval",
+            "scopeId": "u"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quoted-pipe-in-interval",
+      "source": ">>>>+ wrap @id=\"a\" prefix=\"x|y\"\nx\n<<<<+ a",
+      "expect": {
+        "ok": true,
+        "output": "x|yx\n",
+        "error": null,
+        "committed": true,
+        "committedStages": 1,
+        "stages": [
+          {
+            "function": "wrap",
+            "args": {
+              "prefix": "x|y"
+            },
+            "modality": "interval",
+            "scopeId": "a"
+          }
+        ]
+      }
+    },
+    {
+      "id": "unclosed-interval",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "orphan-interval-close",
+      "source": "<<<<+ @id=A\n",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "wrong-interval-close",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx\n<<<<+ @id=B\n",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "duplicate-active-id",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "duplicate-id-across-block",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"B(\" suffix=\")\"\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx\n<<<<+ @id=A\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "close-outer-inside-block",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"B(\" suffix=\")\"\nx\n<<<<+ @id=A\n<<<< wrap",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "local-interval-left-open",
+      "source": ">>>> wrap prefix=\"B(\" suffix=\")\"\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx\n<<<< wrap\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "close-local-from-nested-block",
+      "source": ">>>> wrap prefix=\"B(\" suffix=\")\"\n>>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\n>>>> wrap prefix=\"C(\" suffix=\")\"\nx\n<<<<+ @id=A\n<<<< wrap\n<<<< wrap",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "interval-pipeline",
+      "source": ">>>>+ identity | asciiUpper\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "invalid-alias",
+      "source": ">>>>+ identity @id=\"has space\"\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "duplicate-control",
+      "source": ">>>>+ identity @id=\"a\" @id=\"b\"\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "unknown-used-interval",
+      "source": ">>>>+ absent\nx\n<<<<+ absent",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "stage",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "failed-inherited-interval",
+      "source": ">>>>+ fail\n>>>> identity\nx\n<<<< identity\n<<<<+ fail",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "stage",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "failed-local-interval",
+      "source": ">>>> wrap prefix=\"B(\" suffix=\")\"\n>>>>+ fail\nx\n<<<<+ fail\n<<<< wrap",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "stage",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "atomic-failure-after-output",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx\n<<<<+ @id=A\n>>>> fail\ny\n<<<< fail",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "stage",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "unsupported-cross",
+      "source": ">>>> wrap prefix=\"B(\" suffix=\")\" @cross=\"error\"\nx\n<<<< wrap",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "unsupported-injection",
+      "source": ">>>> identity | @intervals\nx\n<<<< identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "unsupported-inherit-selection",
+      "source": ">>>> wrap prefix=\"B(\" suffix=\")\" @inherit=\"only\"\nx\n<<<< wrap",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "inherit-on-second-stage",
+      "source": ">>>> identity | wrap @inherit=\"none\"\nx\n<<<< identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "inherit-on-interval",
+      "source": ">>>>+ identity @inherit=\"none\"\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "order-on-block",
+      "source": ">>>> identity @order=1\nx\n<<<< identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "fractional-order",
+      "source": ">>>>+ identity @order=1.5\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "exponent-order",
+      "source": ">>>>+ identity @order=1e2\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "string-order",
+      "source": ">>>>+ identity @order=\"1\"\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "order-range",
+      "source": ">>>>+ identity @order=1000001\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "unquoted-alias",
+      "source": ">>>>+ identity @id=a\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "nested-config",
+      "source": ">>>> wrap prefix=\"B(\" suffix=\")\"\n>>>>! config scope-order=\"declaration:desc\"\nx\n<<<< wrap",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "include",
+      "source": ">>>>! include \"./x.js\"\nx",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "property",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx {.a}\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "multiline-pipeline",
+      "source": ">>>> identity\n  | asciiUpper\nx\n<<<< identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "crlf",
+      "source": ">>>>+ wrap @id=\"A\" prefix=\"A(\" suffix=\")\"\nx\r\n<<<<+ @id=A\n",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "expanded-limit-boundary",
+      "source": ">>>>+ identity @id=\"s\"\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n<<<<+ s",
+      "expect": {
+        "ok": true,
+        "output": "",
+        "error": null,
+        "committed": true,
+        "committedStages": 128,
+        "stages": [
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "block",
+            "scopeId": null
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s"
+          }
+        ]
+      }
+    },
+    {
+      "id": "expanded-limit",
+      "source": ">>>>+ identity @id=\"s\"\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n<<<<+ s",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "limit",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "preflight-before-failure",
+      "source": ">>>>+ fail @id=\"s\"\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n>>>> identity\n<<<< identity\n<<<<+ s",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "limit",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "active-scope-limit",
+      "source": ">>>>+ identity @id=\"s0\"\n>>>>+ identity @id=\"s1\"\n>>>>+ identity @id=\"s2\"\n>>>>+ identity @id=\"s3\"\n>>>>+ identity @id=\"s4\"\n>>>>+ identity @id=\"s5\"\n>>>>+ identity @id=\"s6\"\n>>>>+ identity @id=\"s7\"\n>>>>+ identity @id=\"s8\"\n>>>>+ identity @id=\"s9\"\n>>>>+ identity @id=\"s10\"\n>>>>+ identity @id=\"s11\"\n>>>>+ identity @id=\"s12\"\n>>>>+ identity @id=\"s13\"\n>>>>+ identity @id=\"s14\"\n>>>>+ identity @id=\"s15\"\n>>>>+ identity @id=\"s16\"\n>>>>+ identity @id=\"s17\"\n>>>>+ identity @id=\"s18\"\n>>>>+ identity @id=\"s19\"\n>>>>+ identity @id=\"s20\"\n>>>>+ identity @id=\"s21\"\n>>>>+ identity @id=\"s22\"\n>>>>+ identity @id=\"s23\"\n>>>>+ identity @id=\"s24\"\n>>>>+ identity @id=\"s25\"\n>>>>+ identity @id=\"s26\"\n>>>>+ identity @id=\"s27\"\n>>>>+ identity @id=\"s28\"\n>>>>+ identity @id=\"s29\"\n>>>>+ identity @id=\"s30\"\n>>>>+ identity @id=\"s31\"\n>>>>+ identity @id=\"s32\"\n<<<<+ s32\n<<<<+ s31\n<<<<+ s30\n<<<<+ s29\n<<<<+ s28\n<<<<+ s27\n<<<<+ s26\n<<<<+ s25\n<<<<+ s24\n<<<<+ s23\n<<<<+ s22\n<<<<+ s21\n<<<<+ s20\n<<<<+ s19\n<<<<+ s18\n<<<<+ s17\n<<<<+ s16\n<<<<+ s15\n<<<<+ s14\n<<<<+ s13\n<<<<+ s12\n<<<<+ s11\n<<<<+ s10\n<<<<+ s9\n<<<<+ s8\n<<<<+ s7\n<<<<+ s6\n<<<<+ s5\n<<<<+ s4\n<<<<+ s3\n<<<<+ s2\n<<<<+ s1\n<<<<+ s0\n",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "limit",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "active-scope-boundary",
+      "source": ">>>>+ identity @id=\"s0\"\n>>>>+ identity @id=\"s1\"\n>>>>+ identity @id=\"s2\"\n>>>>+ identity @id=\"s3\"\n>>>>+ identity @id=\"s4\"\n>>>>+ identity @id=\"s5\"\n>>>>+ identity @id=\"s6\"\n>>>>+ identity @id=\"s7\"\n>>>>+ identity @id=\"s8\"\n>>>>+ identity @id=\"s9\"\n>>>>+ identity @id=\"s10\"\n>>>>+ identity @id=\"s11\"\n>>>>+ identity @id=\"s12\"\n>>>>+ identity @id=\"s13\"\n>>>>+ identity @id=\"s14\"\n>>>>+ identity @id=\"s15\"\n>>>>+ identity @id=\"s16\"\n>>>>+ identity @id=\"s17\"\n>>>>+ identity @id=\"s18\"\n>>>>+ identity @id=\"s19\"\n>>>>+ identity @id=\"s20\"\n>>>>+ identity @id=\"s21\"\n>>>>+ identity @id=\"s22\"\n>>>>+ identity @id=\"s23\"\n>>>>+ identity @id=\"s24\"\n>>>>+ identity @id=\"s25\"\n>>>>+ identity @id=\"s26\"\n>>>>+ identity @id=\"s27\"\n>>>>+ identity @id=\"s28\"\n>>>>+ identity @id=\"s29\"\n>>>>+ identity @id=\"s30\"\n>>>>+ identity @id=\"s31\"\nx\n<<<<+ s31\n<<<<+ s30\n<<<<+ s29\n<<<<+ s28\n<<<<+ s27\n<<<<+ s26\n<<<<+ s25\n<<<<+ s24\n<<<<+ s23\n<<<<+ s22\n<<<<+ s21\n<<<<+ s20\n<<<<+ s19\n<<<<+ s18\n<<<<+ s17\n<<<<+ s16\n<<<<+ s15\n<<<<+ s14\n<<<<+ s13\n<<<<+ s12\n<<<<+ s11\n<<<<+ s10\n<<<<+ s9\n<<<<+ s8\n<<<<+ s7\n<<<<+ s6\n<<<<+ s5\n<<<<+ s4\n<<<<+ s3\n<<<<+ s2\n<<<<+ s1\n<<<<+ s0\n",
+      "expect": {
+        "ok": true,
+        "output": "x\n",
+        "error": null,
+        "committed": true,
+        "committedStages": 32,
+        "stages": [
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s0"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s1"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s2"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s3"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s4"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s5"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s6"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s7"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s8"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s9"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s10"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s11"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s12"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s13"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s14"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s15"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s16"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s17"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s18"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s19"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s20"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s21"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s22"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s23"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s24"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s25"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s26"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s27"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s28"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s29"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s30"
+          },
+          {
+            "function": "identity",
+            "args": {},
+            "modality": "interval",
+            "scopeId": "s31"
+          }
+        ]
+      }
+    },
+    {
+      "id": "interval-render-limit",
+      "source": ">>>>+ replaceLiteral old=\"a\" new=\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n<<<<+ replaceLiteral",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "limit",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "oversized-order-digits",
+      "source": ">>>>+ identity @order=99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999\nx\n<<<<+ identity",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "unsupported",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "missing-argument-separator",
+      "source": ">>>>+ wrap @id=\"x\"suffix=\"y\"\nx\n<<<<+ x",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    },
+    {
+      "id": "quoted-argument-without-key",
+      "source": ">>>>+ wrap @id=\"x\" \"suffix\"\nx\n<<<<+ x",
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "syntax",
+        "committed": false,
+        "committedStages": 0,
+        "stages": []
+      }
+    }
+  ]
+}

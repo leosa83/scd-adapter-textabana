@@ -1,0 +1,9 @@
+{
+  "schema": "textabana.scoped-text-manifest/v1",
+  "profile": "textabana.scoped-text/v1",
+  "version": "1.0.0",
+  "suiteDigest": "sha256:b6b9faebee01fb7aa2309373002b66b160c8cd26421117d7bd10f4adb730c4ed",
+  "specificationDigest": "sha256:a715b7e2668fa9ba5bed240a9646372040260c9f6567f4ff2c3695f548eeeb86",
+  "baseSpecificationDigest": "sha256:adf0a3e093e8ea0e9cbf4b3cc2f45c88ae4504ac6c77ff414486fb82a807ca6e",
+  "caseCount": 80
+}

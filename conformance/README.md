@@ -10,6 +10,8 @@ node cli/textabana.mjs conformance-semantic > semantic-report.json
 node cli/textabana.mjs conformance-contract > contract-report.json
 node cli/textabana.mjs conformance-text-core > text-core-report.json
 python3 reference/text_core.py run examples/text-core.md
+node cli/textabana.mjs conformance-scoped-text > scoped-text-report.json
+python3 reference/scoped_text.py run examples/scoped-text.md
 node cli/textabana.mjs analyze examples/document.md
 node cli/textabana.mjs run examples/document.md
 node cli/textabana.mjs registry-check PACKAGE_REGISTRY.json
@@ -43,6 +45,12 @@ Sprint 5.4 adds [textabana.text-core/v1](../TEXT_CORE_PROFILE.md): an independen
 
 The separate manifest pins the full suite and specification. The report fingerprints both implementations and bridge dependencies. Only the passing fixed text profile claims independent implementations; full language/runtime and semantic artifact equivalence remain false. The test suite copies the Python file outside the repository and runs it with an empty PATH, and checks that missing Python or a weakened fixture suite cannot produce a claim. The downloadable report is a source-snapshot result, not a live verification of the current Playground document.
 
+## Independent interval semantics
+
+Sprint 5.5 adds [textabana.scoped-text/v1](../SCOPED_TEXT_PROFILE.md), preserving the original text-core suite. Eighty new fixtures (160 runtime outcomes) cover open/overlapping intervals, latest alias-or-name close matching, numeric ordering and stable ties, root-level ascending/descending config, default block inheritance and `@inherit="none"`. Comparisons include each committed invocation's function, domain arguments, modality and scope alias in order, as well as exact render and commit status.
+
+The Python reference builds a bounded expression tree before evaluating. Both implementations reject more than 128 expanded invocations before any transform, including an early failing stage; authored stage count is a separate bound. Cross-container closure, duplicate active IDs and unclosed scopes fail without a committed result. A separate manifest binds all expected outcomes and both normative specifications. The report fingerprints the two Python files, trusted JS module and actual bridge/kernel code. Neither profile claims channels, arbitrary module execution, semantic artifact equivalence or full production conformance.
+
 ## Signing and verification
 
 ```bash
@@ -58,4 +66,4 @@ Keys must be Ed25519 PEM keys supplied by the caller. The CLI does not generate,
 
 ## Remaining Wave 5 work
 
-Sprints 5.1–5.4 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract and a first independent text-runtime comparison. Full production language/runtime profiles, broader independent runtime coverage (modules, intervals, channels, provenance and caches), configured release signer and published registry service remain open. Wave 5 stays active.
+Sprints 5.1–5.5 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract and independent text/interval runtime comparisons. Full production language/runtime profiles, broader independent runtime coverage (modules, channels, provenance, caches and additional scope policies), configured release signer and published registry service remain open. Wave 5 stays active.
