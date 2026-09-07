@@ -1,0 +1,1682 @@
+{
+  "schema": "textabana.contract-suite/v1",
+  "profile": "textabana.semantic-contract/v1",
+  "version": "1.0.0",
+  "baselineDigest": "sha256:1fd2c47513fd91591239b3cf71454c4dd71115cb25bd7e4aa69f0b78b1b54358",
+  "cases": [
+    {
+      "id": "valid-unicode",
+      "base": "unicode",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-empty",
+      "base": "empty",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-pure-stage",
+      "base": "pure-stage",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-payload-fields",
+      "base": "payload-fields",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-syntax-failure",
+      "base": "syntax-failure",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-stage-failure",
+      "base": "stage-failure",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-missing-module",
+      "base": "missing-module",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-module-change",
+      "base": "module-change",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-warning",
+      "base": "warning",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-unresolved-stage",
+      "base": "unresolved-stage",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-inputs-only",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir"
+          ],
+          "value": null
+        },
+        {
+          "op": "replace",
+          "path": [
+            "plan"
+          ],
+          "value": null
+        },
+        {
+          "op": "replace",
+          "path": [
+            "result"
+          ],
+          "value": null
+        }
+      ],
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-payload-identifiers",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "payload"
+          ],
+          "value": {
+            "id": "anchor:unknown",
+            "runId": "node:999999",
+            "revision": 123,
+            "duration": 3,
+            "__proto__": {
+              "review": "authored"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "valid-rehashed-render-not-execution-proof",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "render",
+            "data"
+          ],
+          "value": "Different render; verifier does not execute modules."
+        }
+      ],
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "missing-source",
+      "base": "payload-fields",
+      "rehash": false,
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "source"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "missing-result-slot",
+      "base": "payload-fields",
+      "rehash": false,
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "result"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "unknown-bundle-field",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "add",
+          "path": [
+            "unexpected"
+          ],
+          "value": "value"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "empty-document-id",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "source",
+            "artifact",
+            "documentId"
+          ],
+          "value": ""
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "wrong-digest-algorithm",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "source",
+            "artifact",
+            "contentDigest"
+          ],
+          "value": "fnv1a:abc"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "negative-parallelism",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "context",
+            "artifact",
+            "limits",
+            "maxParallelism"
+          ],
+          "value": -1
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "exceeded-parallelism",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "context",
+            "artifact",
+            "limits",
+            "maxParallelism"
+          ],
+          "value": 9
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "missing-policy",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "context",
+            "artifact",
+            "limits"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "duplicate-module",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "add",
+          "path": [
+            "context",
+            "artifact",
+            "modules",
+            "1"
+          ],
+          "copyFrom": [
+            "context",
+            "artifact",
+            "modules",
+            "0"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "unnormalized-module",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "context",
+            "artifact",
+            "modules",
+            "0",
+            "path"
+          ],
+          "value": "./m.js"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "unsorted-grants",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "context",
+            "artifact",
+            "capabilityGrants"
+          ],
+          "value": [
+            "z",
+            "a"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "duplicate-grants",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "context",
+            "artifact",
+            "capabilityGrants"
+          ],
+          "value": [
+            "a",
+            "a"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "missing-ir-body",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "ir",
+            "artifact",
+            "body"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "cst-source-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "syntax",
+            "cst",
+            "nodes",
+            "0",
+            "lexeme"
+          ],
+          "value": "different source"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "cst-span-gap",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "syntax",
+            "cst",
+            "nodes",
+            "0",
+            "sourceSpan",
+            "start"
+          ],
+          "value": 1
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "ast-ir-disagreement",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "syntax",
+            "ast",
+            "children",
+            "1",
+            "name"
+          ],
+          "value": "another"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "invalid-ir-summary",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "validity",
+            "diagnosticCount"
+          ],
+          "value": 5
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "duplicate-plan-node",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "1",
+            "nodeId"
+          ],
+          "value": "node:000001"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "dangling-edge-node",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "edges",
+            "0",
+            "from",
+            "nodeId"
+          ],
+          "value": "node:999999"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "dangling-edge-port",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "edges",
+            "0",
+            "from",
+            "port"
+          ],
+          "value": "missing"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "noncanonical-node-order",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "0",
+            "orderKey",
+            "0"
+          ],
+          "value": 7
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "wrong-plan-entry",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "entryNodeIds"
+          ],
+          "value": [
+            "node:000003"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "wrong-terminal",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "terminalNodeId"
+          ],
+          "value": "node:000003"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "plan-source-digest-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "0",
+            "value",
+            "data"
+          ],
+          "value": "different lowered text"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "plan-module-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "2",
+            "moduleDigest"
+          ],
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "duplicate-initialized-module",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "add",
+          "path": [
+            "plan",
+            "artifact",
+            "initializedModules",
+            "1"
+          ],
+          "copyFrom": [
+            "plan",
+            "artifact",
+            "initializedModules",
+            "0"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "unknown-initialized-module",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "initializedModules",
+            "0",
+            "path"
+          ],
+          "value": "unknown.js"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "unknown-syntax-stage",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "2",
+            "syntaxStageRef"
+          ],
+          "value": "stage:missing"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "plan-args-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "2",
+            "args"
+          ],
+          "value": {
+            "added": 1
+          }
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "committed-unresolved-stage",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "2",
+            "module"
+          ],
+          "value": null
+        },
+        {
+          "op": "remove",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "2",
+            "moduleDigest"
+          ]
+        },
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "2",
+            "contract",
+            "state"
+          ],
+          "value": "unknown"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "missing-render",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "remove",
+          "path": [
+            "result",
+            "artifact",
+            "render"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "not-committed",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "committed"
+          ],
+          "value": false
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "transient-snapshot",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "descriptor",
+            "persistence"
+          ],
+          "value": "transient"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "descriptor-channel-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "descriptor",
+            "name"
+          ],
+          "value": "other"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "tentative-event",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "state"
+          ],
+          "value": "tentative"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "event-source-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "sourceId"
+          ],
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "dangling-anchor",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "target",
+            "anchorRef"
+          ],
+          "value": "anchor:999"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "dangling-provenance",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "provenanceRef"
+          ],
+          "value": "node:999999"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "source-as-provenance",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "provenanceRef"
+          ],
+          "value": "node:000001"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "event-projection-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "target",
+            "rowId"
+          ],
+          "value": "different"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "anchor-version-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "anchors",
+            "0",
+            "target",
+            "version"
+          ],
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "anchor-resource-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "anchors",
+            "0",
+            "target",
+            "resourceId"
+          ],
+          "value": "another-document"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "negative-selector",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "anchors",
+            "0",
+            "selectors",
+            "0",
+            "start"
+          ],
+          "value": -1
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "schema"
+      }
+    },
+    {
+      "id": "out-of-source-selector",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "anchors",
+            "0",
+            "selectors",
+            "0",
+            "end"
+          ],
+          "value": 999999
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "quote-position-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "anchors",
+            "0",
+            "selectors",
+            "1",
+            "exact"
+          ],
+          "value": "different"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "dangling-map-output",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "sourceMaps",
+            "0",
+            "outputRef"
+          ],
+          "value": "event:missing:1"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "dangling-map-input",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "sourceMaps",
+            "0",
+            "inputAnchorRefs"
+          ],
+          "value": [
+            "anchor:999"
+          ]
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "map-provenance-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "sourceMaps",
+            "0",
+            "generatingActivity"
+          ],
+          "value": "node:000001"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "missing-event-map",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "sourceMaps"
+          ],
+          "value": []
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "render-over-bound-limit",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "context",
+            "artifact",
+            "limits",
+            "maxRenderBytes"
+          ],
+          "value": 1
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "stale-digest",
+      "base": "payload-fields",
+      "rehash": false,
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "render",
+            "data"
+          ],
+          "value": "stale"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "digest"
+      }
+    },
+    {
+      "id": "broken-top-chain",
+      "base": "payload-fields",
+      "rehash": "artifacts",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "context",
+            "artifact",
+            "sourceId"
+          ],
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "chain"
+      }
+    },
+    {
+      "id": "promoted-claim",
+      "base": "payload-fields",
+      "rehash": false,
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "claims",
+            "fullRuntimeConformance"
+          ],
+          "value": true
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "claims"
+      }
+    },
+    {
+      "id": "duplicate-json-key",
+      "json": "{\"schema\":1,\"schema\":2}",
+      "expect": {
+        "accepted": false,
+        "phase": "json"
+      }
+    },
+    {
+      "id": "lone-surrogate",
+      "json": "\"\\ud800\"",
+      "expect": {
+        "accepted": false,
+        "phase": "json"
+      }
+    },
+    {
+      "id": "non-finite-number",
+      "json": "1e400",
+      "expect": {
+        "accepted": false,
+        "phase": "json"
+      }
+    },
+    {
+      "id": "valid-interval",
+      "base": "interval",
+      "expect": {
+        "accepted": true,
+        "phase": null
+      }
+    },
+    {
+      "id": "block-self-parent",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "blocks",
+            "0",
+            "parentBlockId"
+          ],
+          "value": "block:001"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "block-open-span-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "blocks",
+            "0",
+            "openSpan",
+            "start"
+          ],
+          "value": 99999
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "source-line-number-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "sourceLines",
+            "0",
+            "line"
+          ],
+          "value": 99999
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "dangling-interval-open-scope",
+      "base": "interval",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "nodes",
+            "1",
+            "scopeId"
+          ],
+          "value": "scope:missing"
+        },
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "syntax",
+            "ast",
+            "children",
+            "1",
+            "scopeId"
+          ],
+          "value": "scope:missing"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "dangling-interval-close-scope",
+      "base": "interval",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "nodes",
+            "3",
+            "scopeId"
+          ],
+          "value": "scope:missing"
+        },
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "syntax",
+            "ast",
+            "children",
+            "3",
+            "scopeId"
+          ],
+          "value": "scope:missing"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "dangling-scope-block",
+      "base": "interval",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "ir",
+            "artifact",
+            "body",
+            "scopes",
+            "0",
+            "blockId"
+          ],
+          "value": "block:missing"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "event-origin-scope-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "add",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "origin",
+            "scopeId"
+          ],
+          "value": "missing"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "event-origin-modality-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "origin",
+            "modality"
+          ],
+          "value": "interval"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "event-origin-stage-line-mismatch",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "result",
+            "artifact",
+            "channelSnapshots",
+            "system.out",
+            "events",
+            "0",
+            "origin",
+            "stageLine"
+          ],
+          "value": 1
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    },
+    {
+      "id": "contradictory-cache-eligibility",
+      "base": "payload-fields",
+      "rehash": "chain",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": [
+            "plan",
+            "artifact",
+            "graph",
+            "nodes",
+            "2",
+            "contract",
+            "cacheEligibility"
+          ],
+          "value": "candidate"
+        }
+      ],
+      "expect": {
+        "accepted": false,
+        "phase": "references"
+      }
+    }
+  ]
+}

@@ -146,21 +146,15 @@ export async function identifyResult(bundle, result, plan, observations = { chan
   });
 }
 
-export async function verifySemanticBundle(bundle) {
-  if (bundle.schema !== "textabana.semantic-bundle/v1" || bundle.profile !== SEMANTIC_PROFILE || bundle.serialization !== "RFC8785") fail("Unsupported semantic bundle.");
-  for (const kind of ["source", "context", "ir", "plan", "result"]) {
-    const item = bundle[kind];
-    if (!item) { if (["source", "context"].includes(kind)) fail(`Missing ${kind} identity.`); continue; }
-    if (item.artifact?.schema !== `textabana.semantic-${kind}/v1` || await canonicalDigest(item.artifact) !== item.id) fail(`Invalid ${kind} digest.`);
+export async function verifySemanticBundle(input) {
+  // Snapshot before loading the verifier or yielding to Web Crypto.
+  let bundle;
+  try { bundle = parseStrictJson(canonicalize(input)); }
+  catch (cause) {
+    const error = new Error(`Semantic JSON: ${cause.message}`);
+    error.code = "TBA-IDENTITY-PROFILE"; error.phase = "identity"; error.validationPhase = "json";
+    throw error;
   }
-  const sha = (value) => typeof value === "string" && /^sha256:[a-f0-9]{64}$/.test(value);
-  if (!sha(bundle.source.artifact.contentDigest) || typeof bundle.source.artifact.path !== "string" || typeof bundle.source.artifact.documentId !== "string"
-    || !Array.isArray(bundle.context.artifact.modules) || bundle.context.artifact.modules.some((module) => typeof module.path !== "string" || !sha(module.contentDigest))) fail("Source and module content require SHA-256 bindings.");
-  if (bundle.context.artifact.sourceId !== bundle.source.id || (bundle.ir && bundle.ir.artifact.sourceId !== bundle.source.id)
-    || (bundle.plan && (!bundle.ir || bundle.plan.artifact.irId !== bundle.ir.id || bundle.plan.artifact.contextId !== bundle.context.id))
-    || (bundle.result && (!bundle.plan || bundle.result.artifact.planId !== bundle.plan.id || bundle.result.artifact.irId !== bundle.ir.id || bundle.result.artifact.contextId !== bundle.context.id || bundle.result.artifact.sourceId !== bundle.source.id || !bundle.result.artifact.committed || bundle.result.artifact.status !== "succeeded"))) fail("Broken semantic identity chain.");
-  if (canonicalize(bundle.claims) !== canonicalize({ artifactIdentity: "computed", profileConformance: "not-evaluated", fullRuntimeConformance: false })) fail("Integrity verification cannot promote conformance claims.");
-  return { schema: "textabana.semantic-verification/v1", integrity: "verified", profile: SEMANTIC_PROFILE,
-    identities: Object.fromEntries(["source", "context", "ir", "plan", "result"].map((key) => [key, bundle[key]?.id ?? null])),
-    profileConformance: "not-evaluated", fullRuntimeConformance: false };
+  const { verifyDetachedSemanticBundle } = await import("./semantic-verification.js");
+  return verifyDetachedSemanticBundle(bundle);
 }

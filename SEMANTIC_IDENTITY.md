@@ -10,6 +10,7 @@ Enable **SHA-256-identiteter** in Playground and open **Conformance → Identite
 node cli/textabana.mjs identify examples/document.md > identity.json
 node cli/textabana.mjs verify-identity identity.json
 node cli/textabana.mjs conformance-semantic > semantic-report.json
+node cli/textabana.mjs conformance-contract > contract-report.json
 ```
 
 `identify` accepts an optional JSON configuration file with `modules` and `options`, like `run`. Modules execute as trusted JavaScript. Content identity does not prove that a module is pure or that undeclared external inputs have been captured. SDK clients enable the same behavior with `options.semanticIdentity: true`. Legacy requests continue to work without cryptographic identification. SHA-256 requires Web Crypto.
@@ -44,10 +45,14 @@ The profile accepts lossless JSON values and source anchors in the current carri
 
 ## Verification and claims
 
-`verify-identity` validates artifact digests and the identity chain. It does not possess original source/module files, rerun the document or authenticate a publisher: it verifies consistency of the supplied bundle. Its response always says `profileConformance: not-evaluated` and `fullRuntimeConformance: false`. Rehashing arbitrary edited data does not establish runtime correctness.
+`verify-identity` validates the [executable artifact contract](SEMANTIC_CONTRACT.md), artifact digests, the identity chain, available source bytes and internal references. The Playground **Verifiera paket** button uses the same verifier; **Ladda ner paket** exports its input. Verification takes a detached snapshot before any asynchronous work and returns its `bundleDigest`. A caller changing its original object during verification cannot change the verified snapshot.
+
+The verifier does not possess original module files, rerun the document or authenticate a publisher. It checks consistency of the supplied bundle; the source text present in CST can be checked against Source. Its response includes `contract`, `structure: valid`, `references: verified` and always says `profileConformance: not-evaluated` and `fullRuntimeConformance: false`. Rehashing an arbitrary changed render can still produce a structurally valid package; this does not establish runtime correctness. Malformed or internally inconsistent rehashed packages are rejected.
 
 `conformance-semantic` executes nine fixed source/module cases in direct, editor and genuinely incremental parser paths, plus a proven stage-cache reuse run: 28 outcomes. It checks expected output/error/commit behavior, recomputes bundle integrity and compares all identities with checked-in golden identities bound to the canonical suite digest. The golden is a reviewed regression baseline generated with this implementation, not evidence of an independently implemented language runtime. Missing/changed fixtures, changed golden bindings, unexpected content or failed integrity checks prevent the profile claim and produce exit code 1. Reports bind the generated kernel, suite and golden with SHA-256.
 
 Additional regression tests cover changed module bytes with unchanged render, effective option normalization, exact payload preservation, source-map changes, mixed artifact chains, mutation during hashing, cancellation and cache/fresh equality.
 
 Only the external runner can report a passed claim for this narrow artifact profile. Identity computation and integrity verification never promote lab Result IDs or generic JSON to full runtime conformance. Full language/runtime profile schemas and fixtures, independent implementations, release-signing identity and a hosted registry remain later Wave 5 work.
+
+Sprint 5.3 adds a separate `textabana.semantic-contract/v1` verifier profile with 80 frozen contract cases, without changing the earlier artifact identities or the 28-case execution profile. See [SEMANTIC_CONTRACT.md](SEMANTIC_CONTRACT.md) for the exact validation boundary and frozen suite manifest.

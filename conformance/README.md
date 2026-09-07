@@ -6,6 +6,8 @@ Run from the repository root with Node >=22.13 and Python 3.10+:
 npm ci
 npm run conformance:external > report.log
 node cli/textabana.mjs conformance > report.json
+node cli/textabana.mjs conformance-semantic > semantic-report.json
+node cli/textabana.mjs conformance-contract > contract-report.json
 node cli/textabana.mjs analyze examples/document.md
 node cli/textabana.mjs run examples/document.md
 node cli/textabana.mjs registry-check PACKAGE_REGISTRY.json
@@ -27,6 +29,12 @@ The report checks expected Unicode character counts, two document changes, analy
 
 `digest <json>` hashes UTF-8 canonical bytes with SHA-256. It does not identify Textabana execution. Sprint 5.2 adds separate [semantic artifact identities](../SEMANTIC_IDENTITY.md) through `identify`, `verify-identity` and `conformance-semantic`. Legacy IR/Plan/Result carrier IDs remain available; no conversion command upgrades them. Reports explicitly keep `canonicalRuntime`, `independentImplementations` and `fullProfileConformance` false.
 
+## Executable artifact contract
+
+Sprint 5.3 adds [JSON Schema and internal-reference verification](../SEMANTIC_CONTRACT.md) to `verify-identity`. `conformance-contract` runs 80 frozen cases over static bundles: 14 acceptances and 66 expected rejections. Negative cases normally rehash their artifacts and downstream chain, so they exercise structure and references rather than only stale digests. A separate manifest pins the full suite, expected outcomes and schema; the suite pins its baseline corpus. Removed cases or changed expectations cannot retain the same profile claim.
+
+The report binds the schema, manifest, suite, baseline and verifier/runner source bytes. It can claim the fixed `textabana.semantic-contract/v1` verifier profile only. These checks do not run modules or certify rendering correctness. The 28-case semantic execution suite remains separate and retains all prior golden identities. Downloadable reports describe the checked source snapshot, not ongoing CI status.
+
 ## Signing and verification
 
 ```bash
@@ -42,4 +50,4 @@ Keys must be Ed25519 PEM keys supplied by the caller. The CLI does not generate,
 
 ## Remaining Wave 5 work
 
-Sprints 5.1–5.2 provide reproducible verification tooling and the source-bound semantic artifact profile. Full production language/runtime profile schemas and fixtures, independently implemented runtime comparison, configured release signer and published registry service remain open. Wave 5 stays active.
+Sprints 5.1–5.3 provide reproducible verification tooling, source-bound semantic identities and an executable artifact contract. Full production language/runtime profile schemas and fixtures, independently implemented runtime comparison, configured release signer and published registry service remain open. Wave 5 stays active.

@@ -1,0 +1,8 @@
+{
+  "schema": "textabana.contract-manifest/v1",
+  "profile": "textabana.semantic-contract/v1",
+  "version": "1.0.0",
+  "suiteDigest": "sha256:a71b295451520e376e0cc4ac03de82c87d9168ae2f3d13262b4d3ee80c0e1cf4",
+  "schemaDigest": "sha256:0d0bbf9ae5464797f0ad6136d79c27412eb66c9d5e1c9ed1e22e6c25313b0c74",
+  "caseCount": 80
+}

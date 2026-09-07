@@ -1,0 +1,2286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:textabana:semantic-bundle:v1",
+  "title": "Textabana semantic bundle v1 — structural contract",
+  "description": "Structure only. Digest, identity-chain, source-byte and internal-reference checks are additional required steps. Carrier detail bags, payload, args, manifests and extensions remain JSON; language execution is not certified.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "textabana.semantic-bundle/v1"
+    },
+    "profile": {
+      "const": "textabana.semantic-artifacts/v1"
+    },
+    "serialization": {
+      "const": "RFC8785"
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "artifact": {
+          "$ref": "#/$defs/source"
+        }
+      },
+      "required": [
+        "id",
+        "artifact"
+      ],
+      "additionalProperties": false
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "artifact": {
+          "$ref": "#/$defs/context"
+        }
+      },
+      "required": [
+        "id",
+        "artifact"
+      ],
+      "additionalProperties": false
+    },
+    "ir": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "artifact": {
+              "$ref": "#/$defs/ir"
+            }
+          },
+          "required": [
+            "id",
+            "artifact"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "plan": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "artifact": {
+              "$ref": "#/$defs/plan"
+            }
+          },
+          "required": [
+            "id",
+            "artifact"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "artifact": {
+              "$ref": "#/$defs/result"
+            }
+          },
+          "required": [
+            "id",
+            "artifact"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "claims": {
+      "type": "object",
+      "properties": {
+        "artifactIdentity": {
+          "const": "computed"
+        },
+        "profileConformance": {
+          "const": "not-evaluated"
+        },
+        "fullRuntimeConformance": {
+          "const": false
+        }
+      },
+      "required": [
+        "artifactIdentity",
+        "profileConformance",
+        "fullRuntimeConformance"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "profile",
+    "serialization",
+    "source",
+    "context",
+    "ir",
+    "plan",
+    "result",
+    "claims"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "sha": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "orderKey": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "span": {
+      "type": "object",
+      "properties": {
+        "unit": {
+          "const": "unicode-code-point"
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "startColumn": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "endColumn": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "synthetic": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "unit",
+        "start",
+        "end",
+        "startLine",
+        "endLine",
+        "startColumn",
+        "endColumn"
+      ],
+      "additionalProperties": false
+    },
+    "sourceLocation": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "path",
+        "startLine",
+        "endLine"
+      ],
+      "additionalProperties": false
+    },
+    "port": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valueKind": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name",
+        "valueKind"
+      ],
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "phase": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSpan": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/span"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "additionalProperties": true
+    },
+    "argument": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {},
+        "sourceSpan": {
+          "$ref": "#/$defs/span"
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "sourceSpan"
+      ],
+      "additionalProperties": true
+    },
+    "stage": {
+      "type": "object",
+      "properties": {
+        "stageId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "FunctionStage",
+            "IntervalInjectionStage"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/argument"
+          }
+        },
+        "controls": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sourceSpan": {
+          "$ref": "#/$defs/span"
+        },
+        "executable": {
+          "type": "boolean"
+        },
+        "stage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "stageId",
+        "kind",
+        "name",
+        "args",
+        "arguments",
+        "controls",
+        "line",
+        "sourceSpan",
+        "executable"
+      ],
+      "additionalProperties": false
+    },
+    "irNode": {
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "Text",
+            "Blank",
+            "Literal",
+            "Property",
+            "Block",
+            "IntervalOpen",
+            "IntervalClose",
+            "IncludeDirective",
+            "ConfigDirective",
+            "Recovery"
+          ]
+        },
+        "sourceSpan": {
+          "$ref": "#/$defs/span"
+        },
+        "executable": {
+          "type": "boolean"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/irNode"
+          }
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/irNode"
+          }
+        },
+        "pipeline": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stage"
+          }
+        },
+        "stage": {
+          "$ref": "#/$defs/stage"
+        },
+        "openSpan": {
+          "$ref": "#/$defs/span"
+        },
+        "closeSpan": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/span"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scopeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "activeScopeIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "activeBlockIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "nodeId",
+        "kind",
+        "sourceSpan",
+        "executable"
+      ],
+      "additionalProperties": true
+    },
+    "block": {
+      "type": "object",
+      "properties": {
+        "blockId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSpan": {
+          "$ref": "#/$defs/span"
+        },
+        "openSpan": {
+          "$ref": "#/$defs/span"
+        },
+        "closeSpan": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/span"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parentBlockId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "activeScopeIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "executable": {
+          "type": "boolean"
+        },
+        "pipeline": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stage"
+          }
+        }
+      },
+      "required": [
+        "blockId",
+        "nodeId",
+        "sourceSpan",
+        "openSpan",
+        "closeSpan",
+        "parentBlockId",
+        "activeScopeIds",
+        "complete",
+        "executable",
+        "pipeline"
+      ],
+      "additionalProperties": true
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "scopeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blockId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceSpan": {
+          "$ref": "#/$defs/span"
+        },
+        "openSpan": {
+          "$ref": "#/$defs/span"
+        },
+        "closeSpan": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/span"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "openLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "closeLine": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "executable": {
+          "type": "boolean"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "startLine": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "endLine": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "sourceSpan": {
+                "$ref": "#/$defs/span"
+              }
+            },
+            "required": [
+              "startLine",
+              "endLine",
+              "sourceSpan"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "scopeId",
+        "id",
+        "name",
+        "blockId",
+        "sourceSpan",
+        "openSpan",
+        "closeSpan",
+        "openLine",
+        "closeLine",
+        "complete",
+        "executable",
+        "segments"
+      ],
+      "additionalProperties": true
+    },
+    "cstNode": {
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lexeme": {
+          "type": "string"
+        },
+        "sourceSpan": {
+          "$ref": "#/$defs/span"
+        }
+      },
+      "required": [
+        "nodeId",
+        "kind",
+        "lexeme",
+        "sourceSpan"
+      ],
+      "additionalProperties": false
+    },
+    "sourceLine": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "text": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSpan": {
+          "$ref": "#/$defs/span"
+        },
+        "activeScopeIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "activeBlockIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "detail": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "line",
+        "text",
+        "kind",
+        "sourceSpan",
+        "activeScopeIds",
+        "activeBlockIds",
+        "detail"
+      ],
+      "additionalProperties": false
+    },
+    "irBody": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "textabana.ir/lab-v2"
+        },
+        "languageVersion": {
+          "const": "0.4-playground-subset"
+        },
+        "parser": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "textabana.parser/lab-v1"
+            },
+            "engine": {
+              "const": "lezer-lr"
+            },
+            "grammarVersion": {
+              "const": "0.4"
+            },
+            "coordinateUnit": {
+              "const": "unicode-code-point"
+            },
+            "recovery": {
+              "const": "local-non-executable"
+            }
+          },
+          "required": [
+            "schema",
+            "engine",
+            "grammarVersion",
+            "coordinateUnit",
+            "recovery"
+          ],
+          "additionalProperties": false
+        },
+        "sourceSpan": {
+          "$ref": "#/$defs/span"
+        },
+        "validity": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "valid",
+                "recovered"
+              ]
+            },
+            "executable": {
+              "type": "boolean"
+            },
+            "diagnosticCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "recoveryCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "status",
+            "executable",
+            "diagnosticCount",
+            "recoveryCount"
+          ],
+          "additionalProperties": false
+        },
+        "configuration": {
+          "type": "object",
+          "properties": {
+            "scopeOrder": {
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            },
+            "crossPolicy": {
+              "const": "error"
+            }
+          },
+          "required": [
+            "scopeOrder",
+            "crossPolicy"
+          ],
+          "additionalProperties": false
+        },
+        "syntax": {
+          "type": "object",
+          "properties": {
+            "cst": {
+              "type": "object",
+              "properties": {
+                "schema": {
+                  "const": "textabana.cst/lab-v1"
+                },
+                "grammarVersion": {
+                  "const": "0.4"
+                },
+                "sourceSpan": {
+                  "$ref": "#/$defs/span"
+                },
+                "nodes": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/cstNode"
+                  }
+                },
+                "lossless": {
+                  "const": true
+                }
+              },
+              "required": [
+                "schema",
+                "grammarVersion",
+                "sourceSpan",
+                "nodes",
+                "lossless"
+              ],
+              "additionalProperties": false
+            },
+            "ast": {
+              "type": "object",
+              "properties": {
+                "schema": {
+                  "const": "textabana.ast/lab-v1"
+                },
+                "grammarVersion": {
+                  "const": "0.4"
+                },
+                "nodeId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "const": "Document"
+                },
+                "sourceSpan": {
+                  "$ref": "#/$defs/span"
+                },
+                "executable": {
+                  "type": "boolean"
+                },
+                "children": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/irNode"
+                  }
+                }
+              },
+              "required": [
+                "schema",
+                "grammarVersion",
+                "nodeId",
+                "kind",
+                "sourceSpan",
+                "executable",
+                "children"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "cst",
+            "ast"
+          ],
+          "additionalProperties": false
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/irNode"
+          }
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scope"
+          }
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "directives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/irNode"
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/diagnostic"
+          }
+        },
+        "sourceLines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceLine"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "languageVersion",
+        "parser",
+        "sourceSpan",
+        "validity",
+        "configuration",
+        "syntax",
+        "nodes",
+        "scopes",
+        "blocks",
+        "directives",
+        "diagnostics",
+        "sourceLines"
+      ],
+      "additionalProperties": false
+    },
+    "executionContract": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "textabana.function-execution-contract/lab-v2"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "behavior": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "enum": [
+            "pure",
+            "run",
+            "session",
+            "external",
+            "unknown"
+          ]
+        },
+        "determinism": {
+          "enum": [
+            "deterministic",
+            "seeded",
+            "nondeterministic",
+            "external",
+            "unknown"
+          ]
+        },
+        "effectsDeclared": {
+          "type": "boolean"
+        },
+        "observableEffects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "cacheEligibility": {
+          "enum": [
+            "candidate",
+            "ineligible"
+          ]
+        },
+        "cacheBlockers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "parallelEligibility": {
+          "enum": [
+            "candidate",
+            "ineligible"
+          ]
+        },
+        "parallelBlockers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "version",
+        "behavior",
+        "state",
+        "determinism",
+        "effectsDeclared",
+        "observableEffects",
+        "cacheEligibility",
+        "cacheBlockers",
+        "parallelEligibility",
+        "parallelBlockers"
+      ],
+      "additionalProperties": false
+    },
+    "graphNode": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "source"
+            },
+            "orderKey": {
+              "$ref": "#/$defs/orderKey"
+            },
+            "outputPort": {
+              "$ref": "#/$defs/port"
+            },
+            "source": {
+              "$ref": "#/$defs/sourceLocation"
+            },
+            "sourceSpan": {
+              "$ref": "#/$defs/span"
+            },
+            "valueKind": {
+              "const": "text"
+            },
+            "value": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "text"
+                },
+                "data": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "data"
+              ],
+              "additionalProperties": false
+            },
+            "contentDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "nodeId",
+            "kind",
+            "orderKey",
+            "outputPort",
+            "source",
+            "sourceSpan",
+            "valueKind",
+            "value",
+            "contentDigest"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "stage"
+            },
+            "orderKey": {
+              "$ref": "#/$defs/orderKey"
+            },
+            "outputPort": {
+              "$ref": "#/$defs/port"
+            },
+            "function": {
+              "type": "string",
+              "minLength": 1
+            },
+            "module": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "moduleDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "modality": {
+              "enum": [
+                "block",
+                "interval"
+              ]
+            },
+            "args": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "scopeId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "syntaxStageRef": {
+              "type": "string",
+              "minLength": 1
+            },
+            "syntaxSpan": {
+              "$ref": "#/$defs/span"
+            },
+            "source": {
+              "$ref": "#/$defs/sourceLocation"
+            },
+            "inputPort": {
+              "$ref": "#/$defs/port"
+            },
+            "contract": {
+              "$ref": "#/$defs/executionContract"
+            }
+          },
+          "required": [
+            "nodeId",
+            "kind",
+            "orderKey",
+            "outputPort",
+            "function",
+            "module",
+            "modality",
+            "args",
+            "scopeId",
+            "syntaxStageRef",
+            "syntaxSpan",
+            "source",
+            "inputPort",
+            "contract"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "merge"
+            },
+            "orderKey": {
+              "$ref": "#/$defs/orderKey"
+            },
+            "outputPort": {
+              "$ref": "#/$defs/port"
+            },
+            "sourceSpan": {
+              "$ref": "#/$defs/span"
+            },
+            "strategy": {
+              "const": "ordered-stringify-concatenate"
+            },
+            "deterministic": {
+              "const": true
+            },
+            "inputPorts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/port"
+              }
+            }
+          },
+          "required": [
+            "nodeId",
+            "kind",
+            "orderKey",
+            "outputPort",
+            "sourceSpan",
+            "strategy",
+            "deterministic",
+            "inputPorts"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "render"
+            },
+            "orderKey": {
+              "$ref": "#/$defs/orderKey"
+            },
+            "outputPort": {
+              "$ref": "#/$defs/port"
+            },
+            "mediaType": {
+              "const": "text/markdown"
+            },
+            "inputPort": {
+              "$ref": "#/$defs/port"
+            }
+          },
+          "required": [
+            "nodeId",
+            "kind",
+            "orderKey",
+            "outputPort",
+            "mediaType",
+            "inputPort"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "properties": {
+        "edgeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "pipeline",
+            "interval",
+            "interval-injection",
+            "inheritance",
+            "merge",
+            "render"
+          ]
+        },
+        "from": {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "port": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "nodeId",
+            "port"
+          ],
+          "additionalProperties": false
+        },
+        "to": {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "port": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "nodeId",
+            "port"
+          ],
+          "additionalProperties": false
+        },
+        "orderKey": {
+          "$ref": "#/$defs/orderKey"
+        }
+      },
+      "required": [
+        "edgeId",
+        "kind",
+        "from",
+        "to",
+        "orderKey"
+      ],
+      "additionalProperties": false
+    },
+    "graph": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "textabana.execution-graph/lab-v1"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/graphNode"
+          },
+          "minItems": 1
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        },
+        "entryNodeIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "terminalNodeId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schema",
+        "nodes",
+        "edges",
+        "entryNodeIds",
+        "terminalNodeId"
+      ],
+      "additionalProperties": false
+    },
+    "origin": {
+      "type": "object",
+      "properties": {
+        "function": {
+          "type": "string",
+          "minLength": 1
+        },
+        "module": {
+          "type": "string",
+          "minLength": 1
+        },
+        "modality": {
+          "enum": [
+            "block",
+            "interval"
+          ]
+        },
+        "stageLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "scopeId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "function",
+        "module"
+      ],
+      "additionalProperties": false
+    },
+    "anchorTarget": {
+      "type": "object",
+      "properties": {
+        "resourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "view": {
+          "const": "source"
+        },
+        "cellId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "notebookId": {
+          "type": "string"
+        },
+        "setId": {
+          "type": "string"
+        },
+        "annotationId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "resourceId",
+        "version",
+        "view",
+        "cellId"
+      ],
+      "additionalProperties": false
+    },
+    "selector": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "TextPositionSelector"
+            },
+            "start": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "unit": {
+              "const": "unicode-code-point"
+            }
+          },
+          "required": [
+            "type",
+            "start",
+            "end",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "TextQuoteSelector"
+            },
+            "exact": {
+              "type": "string"
+            },
+            "prefix": {
+              "type": "string"
+            },
+            "suffix": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "exact",
+            "prefix",
+            "suffix"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "anchor": {
+      "type": "object",
+      "properties": {
+        "anchorId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "$ref": "#/$defs/anchorTarget"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/selector"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "projections": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "origin": {
+          "$ref": "#/$defs/origin"
+        }
+      },
+      "required": [
+        "anchorId",
+        "target",
+        "selectors",
+        "projections",
+        "origin"
+      ],
+      "additionalProperties": false
+    },
+    "eventTarget": {
+      "type": "object",
+      "properties": {
+        "anchorRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "enum": [
+            "line",
+            "row"
+          ]
+        },
+        "rowSet": {
+          "type": "string"
+        },
+        "rowId": {
+          "type": "string"
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "datasetId": {
+          "type": "string"
+        },
+        "recordId": {
+          "type": "string"
+        },
+        "notebookId": {
+          "type": "string"
+        },
+        "cellId": {
+          "type": "string"
+        },
+        "setId": {
+          "type": "string"
+        },
+        "annotationId": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "columnName": {
+          "type": "string"
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "anchorRef",
+        "mode",
+        "rowSet",
+        "rowId",
+        "row",
+        "line"
+      ],
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "textabana.event/v1"
+        },
+        "channel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "eventId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "phase": {
+          "const": "run"
+        },
+        "target": {
+          "$ref": "#/$defs/eventTarget"
+        },
+        "type": {
+          "enum": [
+            "row",
+            "line"
+          ]
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "rowId": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "payload": {},
+        "source": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "startLine": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "endLine": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "mapping": {
+              "enum": [
+                "exact",
+                "derived",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "path",
+            "startLine",
+            "endLine",
+            "mapping"
+          ],
+          "additionalProperties": false
+        },
+        "origin": {
+          "$ref": "#/$defs/origin"
+        },
+        "provenanceRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "const": "committed"
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "schema",
+        "channel",
+        "eventId",
+        "sourceId",
+        "sequence",
+        "kind",
+        "phase",
+        "target",
+        "type",
+        "row",
+        "rowId",
+        "line",
+        "payload",
+        "source",
+        "origin",
+        "provenanceRef",
+        "state",
+        "extensions"
+      ],
+      "additionalProperties": false
+    },
+    "descriptor": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payloadKind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mediaType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schemaRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "delivery": {
+          "const": "snapshot"
+        },
+        "persistence": {
+          "const": "durable"
+        },
+        "ordering": {
+          "type": "string",
+          "minLength": 1
+        },
+        "key": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "sensitivity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "declared": {
+          "type": "boolean"
+        },
+        "schema": {}
+      },
+      "required": [
+        "name",
+        "payloadKind",
+        "mediaType",
+        "schemaRef",
+        "delivery",
+        "persistence",
+        "ordering",
+        "key",
+        "required",
+        "sensitivity",
+        "declared"
+      ],
+      "additionalProperties": true
+    },
+    "snapshot": {
+      "type": "object",
+      "properties": {
+        "descriptor": {
+          "$ref": "#/$defs/descriptor"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        }
+      },
+      "required": [
+        "descriptor",
+        "events"
+      ],
+      "additionalProperties": false
+    },
+    "sourceMap": {
+      "type": "object",
+      "properties": {
+        "mappingId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outputRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputAnchorRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "mapping": {
+          "enum": [
+            "exact",
+            "derived",
+            "unknown"
+          ]
+        },
+        "generatingActivity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outputSelector": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "inputSelectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "mappingId",
+        "outputRef",
+        "inputAnchorRefs",
+        "mapping",
+        "generatingActivity"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "textabana.semantic-source/v1"
+        },
+        "documentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "schema",
+        "documentId",
+        "path",
+        "contentDigest"
+      ],
+      "additionalProperties": false
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "textabana.semantic-context/v1"
+        },
+        "sourceId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "contentDigest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "manifest": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "path",
+              "contentDigest",
+              "manifest"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moduleLock": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capabilityGrants": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "profile": {
+          "const": "fresh"
+        },
+        "strictChannels": {
+          "type": "boolean"
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "deadlineMs": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 60000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maxChannelEvents": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2048
+            },
+            "maxParallelism": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            },
+            "maxRenderBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            },
+            "maxStageResolutions": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 512
+            }
+          },
+          "required": [
+            "deadlineMs",
+            "maxChannelEvents",
+            "maxParallelism",
+            "maxRenderBytes",
+            "maxStageResolutions"
+          ],
+          "additionalProperties": false
+        },
+        "language": {
+          "const": "textabana/0.4"
+        },
+        "runtimeSemantics": {
+          "const": "textabana/interop-0.7"
+        }
+      },
+      "required": [
+        "schema",
+        "sourceId",
+        "modules",
+        "moduleLock",
+        "capabilityGrants",
+        "profile",
+        "strictChannels",
+        "limits",
+        "language",
+        "runtimeSemantics"
+      ],
+      "additionalProperties": false
+    },
+    "ir": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "textabana.semantic-ir/v1"
+        },
+        "sourceId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "body": {
+          "$ref": "#/$defs/irBody"
+        }
+      },
+      "required": [
+        "schema",
+        "sourceId",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    "plan": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "textabana.semantic-plan/v1"
+        },
+        "irId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "contextId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "initializedModules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "path",
+              "digest"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "languageVersion": {
+          "const": "0.4-playground-subset"
+        },
+        "constructionPhase": {
+          "const": "post-module-init-pre-transform"
+        },
+        "deterministic": {
+          "const": true
+        },
+        "runtimePolicy": {
+          "type": "object",
+          "properties": {
+            "profile": {
+              "const": "fresh"
+            },
+            "scheduler": {
+              "const": "bounded-deterministic-ready-set"
+            },
+            "parallel": {
+              "const": true
+            },
+            "parallelMode": {
+              "const": "single-worker-async-overlap"
+            },
+            "parallelEligibility": {
+              "const": "pure-deterministic-effects-free-render-only"
+            },
+            "serialBarriers": {
+              "const": [
+                "unknown-stage",
+                "stateful-stage",
+                "effectful-stage",
+                "merge",
+                "render"
+              ]
+            },
+            "commitOrder": {
+              "const": "plan-order"
+            }
+          },
+          "required": [
+            "profile",
+            "scheduler",
+            "parallel",
+            "parallelMode",
+            "parallelEligibility",
+            "serialBarriers",
+            "commitOrder"
+          ],
+          "additionalProperties": false
+        },
+        "graph": {
+          "$ref": "#/$defs/graph"
+        }
+      },
+      "required": [
+        "schema",
+        "irId",
+        "contextId",
+        "initializedModules",
+        "languageVersion",
+        "constructionPhase",
+        "deterministic",
+        "runtimePolicy",
+        "graph"
+      ],
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "textabana.semantic-result/v1"
+        },
+        "sourceId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "contextId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "irId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "planId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "status": {
+          "const": "succeeded"
+        },
+        "committed": {
+          "const": true
+        },
+        "render": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "mediaType": {
+              "const": "text/markdown"
+            },
+            "data": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "mediaType",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        "channelSnapshots": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/snapshot"
+          }
+        },
+        "anchors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/anchor"
+          }
+        },
+        "sourceMaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceMap"
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/diagnostic"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "sourceId",
+        "contextId",
+        "irId",
+        "planId",
+        "status",
+        "committed",
+        "render",
+        "channelSnapshots",
+        "anchors",
+        "sourceMaps",
+        "artifacts",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

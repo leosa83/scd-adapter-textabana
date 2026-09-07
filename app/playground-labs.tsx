@@ -1277,6 +1277,44 @@ function ConformanceStatusMark({ status }: { status: "passed" | "failed" | "not-
   );
 }
 
+function SemanticIdentityPanel({ bundle }: { bundle: RuntimeResult["semanticIdentity"] }) {
+  const [verification, setVerification] = useState<{ bundle: typeof bundle; status: "checking" | "passed" | "failed"; message: string; details?: unknown } | null>(null);
+  const current = verification?.bundle === bundle ? verification : null;
+  const verify = async () => {
+    const snapshot = bundle;
+    setVerification({ bundle: snapshot, status: "checking", message: "Kontrollerar paketet…" });
+    try {
+      const { verifySemanticBundle } = await import("../runtime/semantic-identity.js");
+      const details = await verifySemanticBundle(snapshot);
+      setVerification({ bundle: snapshot, status: "passed", message: "Struktur, referenser och kontrollsummor verifierade.", details });
+    } catch (error) {
+      setVerification({ bundle: snapshot, status: "failed", message: error instanceof Error ? error.message : "Paketet kunde inte verifieras." });
+    }
+  };
+  const download = () => {
+    const url = URL.createObjectURL(new Blob([json(bundle)], { type: "application/json" }));
+    const link = document.createElement("a"); link.href = url; link.download = "textabana-identity.json"; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  return <div className="lab-scroll conformance-lab">
+    <div className="subset-notice">SHA-256 för versionssatta semantiska artefakter. Kontrollen gäller paketets struktur, innehåll och interna samband; full runtimekonformitet kräver ytterligare profiltester.</div>
+    <p><a href="/contracts/semantic-bundle-v1.schema.json" download>Hämta JSON Schema</a> · <a href="/conformance/contract-report.json" download>Hämta kontraktets testresultat</a></p>
+    {!bundle ? <div className="lab-empty">Aktivera SHA-256-identiteter och kör dokumentet.</div> : <>
+      <div className="lab-table-wrap"><table className="lab-table"><thead><tr><th>Artefakt</th><th>Identitet</th></tr></thead><tbody>
+        {(["source", "context", "ir", "plan", "result"] as const).map((key) => <tr key={key}><td>{key}</td><td><code>{bundle[key]?.id ?? "Ingen artefakt i denna körning"}</code></td></tr>)}
+      </tbody></table></div>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={verify} disabled={current?.status === "checking"}><ShieldCheck aria-hidden="true" />{current?.status === "checking" ? "Verifierar…" : "Verifiera paket"}</Button>
+        <Button variant="outline" onClick={download}><FileJson aria-hidden="true" />Ladda ner paket</Button>
+      </div>
+      {current ? <div role="status" aria-live="polite"><p>{current.status === "passed" ? "✓ " : current.status === "failed" ? "Ogiltigt paket: " : ""}{current.message}</p>
+        {current.details ? <details><summary>Verifieringsresultat · JSON</summary><pre>{json(current.details)}</pre></details> : null}
+      </div> : null}
+      <details><summary>Verifieringspaket · JSON</summary><pre>{json(bundle)}</pre></details>
+    </>}
+  </div>;
+}
+
 function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<PlaygroundOutputProps, "result" | "previousResult" | "onSelectFixture">) {
   const [tab, setTab] = useState("gate");
   const report = result.conformanceReport;
@@ -1307,17 +1345,7 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
           { id: "identity", label: "Identiteter", icon: Fingerprint },
         ]}
       />
-      {tab === "identity" ? (
-        <div className="lab-scroll conformance-lab">
-          <div className="subset-notice">SHA-256 för versionssatta semantiska artefakter. Beräknade identiteter innebär inte full runtimekonformitet.</div>
-          {!result.semanticIdentity ? <div className="lab-empty">Aktivera SHA-256-identiteter och kör dokumentet.</div> : <>
-            <div className="lab-table-wrap"><table className="lab-table"><thead><tr><th>Artefakt</th><th>Identitet</th></tr></thead><tbody>
-              {(["source", "context", "ir", "plan", "result"] as const).map((key) => <tr key={key}><td>{key}</td><td><code>{result.semanticIdentity?.[key]?.id ?? "Ingen committad artefakt"}</code></td></tr>)}
-            </tbody></table></div>
-            <details><summary>Verifieringspaket · JSON</summary><pre>{json(result.semanticIdentity)}</pre></details>
-          </>}
-        </div>
-      ) : null}
+      {tab === "identity" ? <SemanticIdentityPanel bundle={result.semanticIdentity} /> : null}
       {tab === "gate" ? (
         <div className="lab-scroll conformance-lab">
           <div className="subset-notice"><ShieldCheck /> Run-bunden evidens · <code>{report.schema}</code> · ingen full profilkonformitet</div>
