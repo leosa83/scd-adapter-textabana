@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.10.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.5 genomförda |
+| Planversion | `1.11.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.6 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.5 genomförda, senast 2026-09-07
+**Status:** aktiv · sprint 5.1–5.6 genomförda, senast 2026-09-08
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -309,6 +309,22 @@ Textabana Editor Kernel
 
 **Kontrakt och gräns:** [SCOPED_TEXT_PROFILE.md](./SCOPED_TEXT_PROFILE.md). Oberoendet gäller denna text-/intervallprofil. Godtyckliga moduler, kanaler/proveniens, ytterligare scope-policyer, cache, semantisk artefaktekvivalens och full produktionskonformitet återstår. Rapporten är osignerad.
 
+#### Sprint 5.6 — Oberoende kanalresultat och atomiska händelser
+
+**Status:** genomförd 2026-09-08
+
+**Uppfylld acceptans:** en ny versionssatt profil jämför fasta kanalfunktioner i Python och JavaScript med identisk render, anropslista, global händelseordning, payload och durable snapshots. Tillfälliga händelser räknas i ordningen men sparas inte som durable kanalresultat. Krävda tomma kanaler, payloadkopiering, schema-/kanalfel och överskridna händelsebudgetar verifieras utan delcommit. Tidigare profiler består. Källpositioner och full proveniensekvivalens ligger uttryckligen utanför denna profil.
+
+**Leveranser och evidens:**
+
+- `textabana.channel-core/v1` jämför 80 nya frysta fall mot explicita förväntningar i två oberoende implementationer: 160 runtimeutfall. Render, anropsordning, globala sekvenser, hela payloads, radmål och durable snapshots jämförs.
+- Tre Python-filer körs fristående utan Node. Den faktiska JavaScript-kärnan kör samma fasta katalog i strict channel mode. Gemensam JS-admission bevarar den tidigare intervallprofilen, vars rapport har återskapats med uppdaterade kodfingeravtryck.
+- Tillfälliga händelser behåller globala sekvensnummer, obligatoriska tomma kanaler sparas och upprepade row-id:n dedupliceras inte. Payloadkopiering verifieras även för nästlade fält och användardata med namn som `runId` och `stageId`.
+- 64 händelser och exakt 16 384 UTF-8-byte payload godtas; överskridande, schema-/serialiseringsfel och senare stagefel återställer hela resultatet. Projektionen avvisar råresultat med felaktigt render, brutna event-/anropslänkar, felaktig persistence eller delcommit.
+- Manifestet låser 80 fall och tre normativa profildokument. CLI, exempel, dokumentation och nedladdningsbar rapport är publicerbara tillsammans. Bygget och samtliga 209 automatiska tester passerar.
+
+**Kontrakt och gräns:** [CHANNEL_CORE_PROFILE.md](./CHANNEL_CORE_PROFILE.md). Fulla descriptors jämförs för durable snapshots; tillfälliga kanaler jämförs genom sina händelser och att de inte sparas. Källpositioner och full proveniensekvivalens ingår inte i jämförelsen mellan runtimes. Godtyckliga moduler, bredare kanalpolicyer, cache, semantisk artefaktekvivalens och full produktionskonformitet återstår. Rapporten är osignerad.
+
 **Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga scheman/fixtures, bredare jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår.
 
 ## Beroenden och ordning
@@ -322,6 +338,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.11.0 — 2026-09-08
+
+- Sprint 5.6 levererad: oberoende kanalresultat med 80 frysta fall, exakta payloads, global ordning och durable snapshots.
+- Krävda tomma kanaler, tillfälliga händelser, payloadkopiering och atomiska fel-/budgetgränser verifieras; tidigare profiler består.
+- Våg 5 förblir aktiv för bredare produktionskonformitet, release-signering och registertjänst.
 
 ### 1.10.0 — 2026-09-07
 

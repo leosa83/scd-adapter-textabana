@@ -1,0 +1,12 @@
+{
+  "schema": "textabana.channel-core-manifest/v1",
+  "profile": "textabana.channel-core/v1",
+  "version": "1.0.0",
+  "caseCount": 80,
+  "suiteDigest": "sha256:f7c43becba7b2bd7ef6b7af77d1a33eb496f69dbbd484873a1ef6b0e939c9633",
+  "specificationDigest": "sha256:8a964a63dc7c43cb542d8cdc8f4fa7bbac7e1b4ddd3c502ba28c3d8422ec8d43",
+  "baseSpecificationDigests": {
+    "TEXT_CORE_PROFILE.md": "sha256:adf0a3e093e8ea0e9cbf4b3cc2f45c88ae4504ac6c77ff414486fb82a807ca6e",
+    "SCOPED_TEXT_PROFILE.md": "sha256:a715b7e2668fa9ba5bed240a9646372040260c9f6567f4ff2c3695f548eeeb86"
+  }
+}

@@ -12,6 +12,8 @@ node cli/textabana.mjs conformance-text-core > text-core-report.json
 python3 reference/text_core.py run examples/text-core.md
 node cli/textabana.mjs conformance-scoped-text > scoped-text-report.json
 python3 reference/scoped_text.py run examples/scoped-text.md
+node cli/textabana.mjs conformance-channel-core > channel-core-report.json
+python3 reference/channel_core.py run examples/channel-core.md
 node cli/textabana.mjs analyze examples/document.md
 node cli/textabana.mjs run examples/document.md
 node cli/textabana.mjs registry-check PACKAGE_REGISTRY.json
@@ -51,6 +53,10 @@ Sprint 5.5 adds [textabana.scoped-text/v1](../SCOPED_TEXT_PROFILE.md), preservin
 
 The Python reference builds a bounded expression tree before evaluating. Both implementations reject more than 128 expanded invocations before any transform, including an early failing stage; authored stage count is a separate bound. Cross-container closure, duplicate active IDs and unclosed scopes fail without a committed result. A separate manifest binds all expected outcomes and both normative specifications. The report fingerprints the two Python files, trusted JS module and actual bridge/kernel code. Neither profile claims channels, arbitrary module execution, semantic artifact equivalence or full production conformance.
 
+## Independent channel results
+
+Sprint 5.6 adds [textabana.channel-core/v1](../CHANNEL_CORE_PROFILE.md): 80 frozen cases and 160 runtime outcomes compare exact payloads, global event sequence, targets, invocation order and durable snapshots. Transient events consume sequence numbers but are excluded from durable snapshots. Required empty channels, deep copying at emission, repeated row IDs, strict schema/channel rejection and whole-run rollback are covered, including 64/65-event and exact payload-byte boundaries. Three standalone Python files run without Node. The bridge checks actual host render, snapshot contents and event-to-invocation/anchor/map references before projection; source positions and full provenance equivalence are not compared between implementations. The manifest pins all three normative specifications and every expected outcome.
+
 ## Signing and verification
 
 ```bash
@@ -66,4 +72,4 @@ Keys must be Ed25519 PEM keys supplied by the caller. The CLI does not generate,
 
 ## Remaining Wave 5 work
 
-Sprints 5.1–5.5 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract and independent text/interval runtime comparisons. Full production language/runtime profiles, broader independent runtime coverage (modules, channels, provenance, caches and additional scope policies), configured release signer and published registry service remain open. Wave 5 stays active.
+Sprints 5.1–5.6 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract and independent text/interval/channel runtime comparisons. Full production language/runtime profiles, broader independent runtime coverage (arbitrary modules, broader channel policies, exact provenance, caches and additional scope policies), configured release signer and published registry service remain open. Wave 5 stays active.

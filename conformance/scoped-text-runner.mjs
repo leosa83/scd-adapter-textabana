@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { parseDocument } from "../runtime/parser.js";
+import { admitScopedText } from "./scoped-admission.mjs";
 import { canonicalize, canonicalDigest, parseStrictJson } from "../runtime/canonical-json.js";
 import { NodeKernelTransport } from "../sdk/node/transport.mjs";
 import { rawClient } from "./host-runner.mjs";
@@ -14,61 +14,8 @@ const moduleUrl = new URL("../reference/text-core-module.js", import.meta.url);
 const pythonUrl = new URL("../reference/scoped_text.py", import.meta.url);
 const digest = (bytes) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 const rejected = (error) => ({ ok: false, output: "", error, committed: false, committedStages: 0, stages: [] });
-const namePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const configPattern = /^[ \t]*>>>>![ \t]+config[ \t]+scope-order="declaration:(asc|desc)"[ \t]*$/;
-
-// The JS compiler supplies its own admission product; no Python parsing result is consulted.
-function admit(source) {
-  if (typeof source !== "string" || !source.isWellFormed() || /[\r\uFEFF]/.test(source)) return "unsupported";
-  if (Buffer.byteLength(source) > 65536) return "limit";
-  const parsed = parseDocument(source), points = Array.from(source);
-  if (parsed.ir.directives.some((node) => node.kind !== "ConfigDirective")) return "unsupported";
-  for (const line of parsed.ir.sourceLines) {
-    if (line.activeScopeIds.length > 32) return "limit";
-    if (line.kind.startsWith("fence-") || line.detail?.literal || /^[ \t]*\\(?:>>>>|<<<<)/.test(line.text)) continue;
-    if (/^[ \t]*>>>>!/.test(line.text) && (!configPattern.test(line.text) || line.activeBlockIds.length)) return "unsupported";
-    if (/^[ \t]+\|/.test(line.text)) return "unsupported";
-    if (/^[ \t]*>>>>/.test(line.text) && /[^\x20-\x7e\t]/.test(line.text.replace(/"(?:[^"\\]|\\[\s\S])*"/g, '""'))) return "unsupported";
-    if (!/^[ \t]*>>>>/.test(line.text) && line.text.includes("{")) return "unsupported";
-    if (/^[ \t]*<<<<(?!\+)/.test(line.text)) {
-      if (/[.-]/.test(line.text)) return "unsupported";
-      if (!/^[ \t]*<<<<[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/.test(line.text)) return "syntax";
-    }
-    if (/^[ \t]*<<<<\+/.test(line.text) && !/^[ \t]*<<<<\+[ \t]*(?:@id=)?@?[A-Za-z_][A-Za-z0-9_.-]*[ \t]*$/.test(line.text)) return "syntax";
-  }
-  const stages = [];
-  for (const block of parsed.ir.blocks) {
-    let depth = 1, parent = block.parentBlockId;
-    while (parent) { depth++; parent = parsed.ir.blocks.find((item) => item.blockId === parent)?.parentBlockId; }
-    if (depth > 32) return "limit";
-    stages.push(...block.pipeline.map((stage, index) => ({ stage, allowed: index === 0 ? ["@inherit"] : [] })));
-  }
-  stages.push(...parsed.ir.nodes.filter((node) => node.kind === "IntervalOpen").map((node) => ({ stage: node.stage, allowed: ["@id", "@order"] })));
-  if (stages.length > 128) return "limit";
-  for (const { stage, allowed } of stages) {
-    if (!namePattern.test(stage.name)) return "unsupported";
-    for (const argument of stage.arguments) {
-      const key = argument.name, raw = points.slice(argument.sourceSpan.start, argument.sourceSpan.end).join("");
-      if (key.startsWith("@") ? !allowed.includes(key) : !namePattern.test(key)) return "unsupported";
-      if (!raw.startsWith(`${key}=`)) return "unsupported";
-      const serialized = raw.slice(key.length + 1);
-      if (key === "@order") {
-        if (!/^-?(0|[1-9][0-9]*)$/.test(serialized) || Math.abs(Number(serialized)) > 1000000) return "unsupported";
-      } else {
-        if (!serialized.startsWith('"')) return "unsupported";
-        try {
-          const value = JSON.parse(serialized);
-          if (typeof value !== "string" || !value.isWellFormed()) return "unsupported";
-          if (key === "@inherit" && !["default", "none"].includes(value)) return "unsupported";
-        } catch { return "syntax"; }
-      }
-    }
-  }
-  return parsed.executable ? null : "syntax";
-}
-
 export async function runJavaScriptScopedText(source) {
-  const admission = admit(source);
+  const admission = admitScopedText(source);
   if (admission) return rejected(admission);
   const transport = new NodeKernelTransport(); const client = rawClient(transport);
   try {
@@ -100,7 +47,7 @@ export async function runScopedTextSuite({ suiteUrl = scopedTextSuiteUrl } = {})
   const baseSpecificationDigest = digest(await readFile(new URL("../TEXT_CORE_PROFILE.md", import.meta.url)));
   if (manifest.baseSpecificationDigest !== baseSpecificationDigest) throw new Error("Scoped text base specification mismatch.");
   if (manifest.schema !== "textabana.scoped-text-manifest/v1" || manifest.profile !== SCOPED_TEXT_PROFILE || manifest.version !== "1.0.0" || manifest.suiteDigest !== suiteDigest || manifest.specificationDigest !== specificationDigest || manifest.caseCount !== suite.cases?.length || suite.schema !== "textabana.scoped-text-suite/v1" || suite.profile !== SCOPED_TEXT_PROFILE || suite.version !== "1.0.0" || !suite.cases?.length || new Set(suite.cases.map((item) => item.id)).size !== suite.cases.length) throw new Error("Scoped text profile manifest mismatch.");
-  const paths = ["reference/scoped_text.py", "reference/text_core.py", "reference/text-core-module.js", "conformance/scoped-text-runner.mjs", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/canonical-json.js", "public/runtime-worker.js", "sdk/node/transport.mjs", "sdk/node/worker-bridge.mjs", "conformance/host-runner.mjs", "package-lock.json"];
+  const paths = ["reference/scoped_text.py", "reference/text_core.py", "reference/text-core-module.js", "conformance/scoped-text-runner.mjs", "conformance/scoped-admission.mjs", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/canonical-json.js", "public/runtime-worker.js", "sdk/node/transport.mjs", "sdk/node/worker-bridge.mjs", "conformance/host-runner.mjs", "package-lock.json"];
   const sourceDigests = async () => Object.fromEntries(await Promise.all(paths.map(async (path) => [path, digest(await readFile(new URL(`../${path}`, import.meta.url)))])));
   const implementations = await sourceDigests();
   const python = await runPythonScopedText(suite.cases.map((fixture) => fixture.source));
