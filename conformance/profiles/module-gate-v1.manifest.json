@@ -1,0 +1,8 @@
+{
+  "schema": "textabana.module-gate-manifest/lab-v1",
+  "profile": "textabana.module-gate/lab-v1",
+  "version": "1.0.0",
+  "caseCount": 54,
+  "suiteDigest": "sha256:1555610b3770d001c59498064e2ad108a10e1ef445f07ddb32315c56ac7eccff",
+  "specificationDigest": "sha256:ba60f0e21929a62b1fef87bf9729675fd0ef652e47a0e756df392ec6b65b24dc"
+}

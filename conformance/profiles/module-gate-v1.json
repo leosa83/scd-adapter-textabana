@@ -1,0 +1,3186 @@
+{
+  "schema": "textabana.module-gate-suite/lab-v1",
+  "profile": "textabana.module-gate/lab-v1",
+  "version": "1.0.0",
+  "cases": [
+    {
+      "id": "valid",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": true,
+        "output": "HELLO\n",
+        "error": null,
+        "committed": true,
+        "entrypoints": 1,
+        "invocations": 1
+      }
+    },
+    {
+      "id": "normalized-entrypoint",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/../modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": true,
+        "output": "HELLO\n",
+        "error": null,
+        "committed": true,
+        "entrypoints": 1,
+        "invocations": 1
+      }
+    },
+    {
+      "id": "granted-channel-resource",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [
+                  "audit"
+                ],
+                "resources": [
+                  "data"
+                ]
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform",
+            "channel:audit",
+            "resource:data"
+          ]
+        }
+      },
+      "expect": {
+        "ok": true,
+        "output": "HELLO\n",
+        "error": null,
+        "committed": true,
+        "entrypoints": 1,
+        "invocations": 1
+      }
+    },
+    {
+      "id": "legacy-version-grammar",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "01.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "01.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": true,
+        "output": "HELLO\n",
+        "error": null,
+        "committed": true,
+        "entrypoints": 1,
+        "invocations": 1
+      }
+    },
+    {
+      "id": "missing-lock",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "bad-lock-schema",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "wrong",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "bad-packages",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": null
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "null-lock-entry",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              null
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-lock-identity",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": [
+                  "org.textabana.secure-upper"
+                ],
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "missing-lock-digest",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "duplicate-lock",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              },
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "extra-lock-package",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              },
+              {
+                "namespace": "org.other",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "missing-manifest",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-MANIFEST-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "bad-manifest-schema",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "wrong",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-MANIFEST-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "array-manifest",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": []
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-MANIFEST-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-namespace",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": [
+                "org.textabana.secure-upper"
+              ],
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-IDENTITY-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "invalid-namespace",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "Invalid",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-IDENTITY-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-version",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": [
+                "1.0.0"
+              ],
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-IDENTITY-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "invalid-version",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "one",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-IDENTITY-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-entrypoint",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": [
+                "modules/secure.js"
+              ],
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-ENTRYPOINT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "empty-entrypoint",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-ENTRYPOINT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "different-entrypoint",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "other.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-ENTRYPOINT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "transport-digest",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-DIGEST-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "manifest-digest",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-DIGEST-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "changed-source",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });\n// altered bytes",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-DIGEST-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "lock-digest",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "lock-entrypoint",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "other.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-LOCK-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "missing-capabilities",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ]
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-CAPABILITIES-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-required",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": "text:transform",
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-CAPABILITIES-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-channel",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [
+                  42
+                ],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-CAPABILITIES-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-resource",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": [
+                  null
+                ]
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-CAPABILITIES-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "blank-capability",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  " "
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-CAPABILITIES-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "denied-required",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": []
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-GRANT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "denied-channel",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [
+                  "audit"
+                ],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-GRANT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "denied-resource",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": [
+                  "data"
+                ]
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-GRANT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "missing-functions",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "null-function",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                null
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-function-name",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": 42,
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "blank-function-name",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": " ",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "invalid-state",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "global",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "invalid-determinism",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "maybe",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-effects",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": {}
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "typed-effect-item",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": [
+                    false
+                  ]
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "blank-effect",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": [
+                    ""
+                  ]
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "duplicate-function",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                },
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "conflicting-function",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                },
+                {
+                  "name": "secure_upper",
+                  "state": "run",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "duplicate-package",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          },
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-DUPLICATE-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "loaded-state-drift",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "session",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 1,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "loaded-effects-drift",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": [
+                    "text:transform"
+                  ]
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 1,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "undeclared-export",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 1,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "missing-export",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                },
+                {
+                  "name": "absent",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 1,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "case-sensitive-export",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\ndefine({ secure_upper: { state: \"pure\", determinism: \"deterministic\", effects: [], transform(input) { return String(input).toUpperCase(); } } });",
+            "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817",
+              "functions": [
+                {
+                  "name": "SECURE_UPPER",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:48c7c3dcd5a7fd4b78a7b37f1ab0ebc7c560c3e9fcfe963910a56e9390152817"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 1,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "entrypoint-throws",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\nthrow new Error(\"module gate entrypoint probe\");",
+            "digest": "sha256:30a29460d5ffbfe3d80254073ba3b24a26441e8bbc12260e285120c6b54bc061",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:30a29460d5ffbfe3d80254073ba3b24a26441e8bbc12260e285120c6b54bc061",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:30a29460d5ffbfe3d80254073ba3b24a26441e8bbc12260e285120c6b54bc061"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-RUN-LAB",
+        "committed": false,
+        "entrypoints": 1,
+        "invocations": 0
+      }
+    },
+    {
+      "id": "duplicate-before-throwing-entrypoint",
+      "input": {
+        "documentSource": ">>>>! include \"./modules/secure.js\"\n>>>> secure_upper\nhello\n<<<< secure_upper",
+        "modules": [
+          {
+            "path": "modules/secure.js",
+            "content": "globalThis.__moduleGateEntries++;\nthrow new Error(\"module gate entrypoint probe\");",
+            "digest": "sha256:30a29460d5ffbfe3d80254073ba3b24a26441e8bbc12260e285120c6b54bc061",
+            "manifest": {
+              "schema": "textabana.module-manifest/lab-v1",
+              "namespace": "org.textabana.secure-upper",
+              "version": "1.0.0",
+              "entrypoint": "modules/secure.js",
+              "digest": "sha256:30a29460d5ffbfe3d80254073ba3b24a26441e8bbc12260e285120c6b54bc061",
+              "functions": [
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                },
+                {
+                  "name": "secure_upper",
+                  "state": "pure",
+                  "determinism": "deterministic",
+                  "effects": []
+                }
+              ],
+              "capabilities": {
+                "required": [
+                  "text:transform"
+                ],
+                "channels": [],
+                "resources": []
+              }
+            }
+          }
+        ],
+        "options": {
+          "moduleLock": {
+            "schema": "textabana.module-lock/lab-v1",
+            "packages": [
+              {
+                "namespace": "org.textabana.secure-upper",
+                "version": "1.0.0",
+                "entrypoint": "modules/secure.js",
+                "digest": "sha256:30a29460d5ffbfe3d80254073ba3b24a26441e8bbc12260e285120c6b54bc061"
+              }
+            ]
+          },
+          "capabilityGrants": [
+            "text:transform"
+          ]
+        }
+      },
+      "expect": {
+        "ok": false,
+        "output": "",
+        "error": "TBA-MODULE-FUNCTION-CONTRACT-LAB",
+        "committed": false,
+        "entrypoints": 0,
+        "invocations": 0
+      }
+    }
+  ]
+}

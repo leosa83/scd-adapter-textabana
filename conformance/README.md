@@ -63,6 +63,12 @@ Sprint 5.6 adds [textabana.channel-core/v1](../CHANNEL_CORE_PROFILE.md): 80 froz
 
 Sprint 5.7 adds [textabana.source-map-core/v1](../SOURCE_MAP_CORE_PROFILE.md): 70 frozen checks (140 runtime outcomes) extend the channel comparison with declaration lines, execution source ranges, exact code-point positions and quote selectors, final anchor state and event/anchor/invocation links. Coordinates refer to authored source, excluding the trusted bridge include. Four Python files run independently without Node. Raw selectors are compared, including literal escapes, 48-code-point Unicode boundaries, empty blocks and anchors updated by later events. A collision guard prevents distinct row IDs sharing a lab hash from silently overwriting one another. Prior profile cases remain unchanged and their reports are regenerated against the corrected Worker. Full provenance graphs, cross-document identities and editor revision history remain outside this profile.
 
+## Module package gate
+
+Sprint 5.8 adds [textabana.module-gate/lab-v1](../MODULE_GATE_PROFILE.md), reproduced with `node cli/textabana.mjs conformance-module-gate`. Its 54 frozen inputs check package digests, lock entries, explicit grants and typed, unambiguous function declarations through the actual Worker. An observed start-code counter distinguishes rejection before loading from export-contract rejection after loading but before transforms. Duplicate names and malformed declaration/lock fields now fail before module start code. Failed Results are checked for complete rollback.
+
+This is a single-runtime lab gate, not an independent module evaluator, strict SemVer validator or JavaScript sandbox. Start-code side effects cannot be undone merely by rolling back the Result. Existing runtime profiles retain their separate claims; all reports are regenerated against the hardened kernel.
+
 ## Signing and verification
 
 ```bash
@@ -78,4 +84,4 @@ Keys must be Ed25519 PEM keys supplied by the caller. The CLI does not generate,
 
 ## Remaining Wave 5 work
 
-Sprints 5.1–5.7 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract and independent text/interval/channel/source-position runtime comparisons. Full production language/runtime profiles, broader independent runtime coverage (arbitrary modules, broader channel policies, exact provenance, caches and additional scope policies), configured release signer and published registry service remain open. Wave 5 stays active.
+Sprints 5.1–5.8 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract, independent text/interval/channel/source-position runtime comparisons and a single-implementation module gate. Full production language/runtime profiles, broader independent runtime coverage (arbitrary modules, broader channel policies, exact provenance, caches and additional scope policies), configured release signer and published registry service remain open. Wave 5 stays active.

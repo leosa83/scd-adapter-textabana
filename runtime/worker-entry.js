@@ -3703,8 +3703,11 @@ async function sha256Digest(source) {
 }
 
 async function verifyModulePackages(modules, options) {
+  const record = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+  const nonemptyString = (value) => typeof value === "string" && value.trim().length > 0;
+  const stringList = (value) => Array.isArray(value) && value.every(nonemptyString);
   if (!options.moduleLock && !modules.some((module) => module.manifest || module.digest)) return modules;
-  if (options.moduleLock?.schema !== "textabana.module-lock/lab-v1" || !Array.isArray(options.moduleLock?.packages)) {
+  if (options.moduleLock?.schema !== "textabana.module-lock/lab-v1" || !Array.isArray(options.moduleLock?.packages) || options.moduleLock.packages.some((entry) => !record(entry) || !["namespace", "version", "entrypoint", "digest"].every((key) => nonemptyString(entry[key])))) {
     const error = new Error("Säkra modulpaket kräver options.moduleLock.packages."); error.code = "TBA-MODULE-LOCK-LAB"; throw error;
   }
   const lock = new Map(options.moduleLock.packages.map((entry) => [`${entry.namespace}@${entry.version}`, entry]));
@@ -3713,18 +3716,18 @@ async function verifyModulePackages(modules, options) {
   const seen = new Set();
   for (const moduleFile of modules) {
     const manifest = moduleFile.manifest;
-    if (!manifest || manifest.schema !== "textabana.module-manifest/lab-v1") {
+    if (!record(manifest) || manifest.schema !== "textabana.module-manifest/lab-v1") {
       const error = new Error(`Modulen ${moduleFile.path || "–"} saknar ett giltigt manifest.`); error.code = "TBA-MODULE-MANIFEST-LAB"; throw error;
     }
     const namespace = String(manifest.namespace || "");
     const version = String(manifest.version || "");
     const identity = `${namespace}@${version}`;
-    if (!moduleNamespacePattern.test(namespace) || !moduleVersionPattern.test(version)) {
+    if (typeof manifest.namespace !== "string" || typeof manifest.version !== "string" || !moduleNamespacePattern.test(namespace) || !moduleVersionPattern.test(version)) {
       const error = new Error(`Modulmanifestet har ogiltigt namespace eller version: ${identity}.`); error.code = "TBA-MODULE-IDENTITY-LAB"; throw error;
     }
     if (seen.has(identity)) { const error = new Error(`Modulpaketet ${identity} förekommer mer än en gång.`); error.code = "TBA-MODULE-DUPLICATE-LAB"; throw error; }
     seen.add(identity);
-    if (normalizePath(String(manifest.entrypoint || "")) !== normalizePath(moduleFile.path)) {
+    if (!nonemptyString(manifest.entrypoint) || normalizePath(manifest.entrypoint) !== normalizePath(moduleFile.path)) {
       const error = new Error(`Modulpaketet ${identity} har en entrypoint som inte matchar transportens path.`); error.code = "TBA-MODULE-ENTRYPOINT-LAB"; throw error;
     }
     const actualDigest = await sha256Digest(String(moduleFile.content || ""));
@@ -3736,13 +3739,13 @@ async function verifyModulePackages(modules, options) {
       const error = new Error(`Lockfilen låser inte exakt ${identity}.`); error.code = "TBA-MODULE-LOCK-LAB"; throw error;
     }
     const capabilities = manifest.capabilities || {};
-    if (!["required", "channels", "resources"].every((field) => Array.isArray(capabilities[field]))) {
+    if (!record(capabilities) || !["required", "channels", "resources"].every((field) => stringList(capabilities[field]))) {
       const error = new Error(`Modulpaketet ${identity} måste deklarera required, channel och resource capabilities.`); error.code = "TBA-MODULE-CAPABILITIES-LAB"; throw error;
     }
     const required = [...capabilities.required, ...capabilities.channels.map((name) => `channel:${name}`), ...capabilities.resources.map((name) => `resource:${name}`)];
     const denied = required.find((capability) => !grants.has(capability));
     if (denied) { const error = new Error(`Modulpaketet ${identity} saknar explicit grant för ${denied}.`); error.code = "TBA-MODULE-GRANT-LAB"; throw error; }
-    if (!Array.isArray(manifest.functions) || manifest.functions.some((fn) => !fn?.name || !["pure", "run", "session"].includes(fn.state) || !["deterministic", "nondeterministic"].includes(fn.determinism) || !Array.isArray(fn.effects))) {
+    if (!Array.isArray(manifest.functions) || manifest.functions.some((fn) => !record(fn) || !nonemptyString(fn.name) || !["pure", "run", "session"].includes(fn.state) || !["deterministic", "nondeterministic"].includes(fn.determinism) || !stringList(fn.effects)) || new Set(manifest.functions.map((fn) => fn.name)).size !== manifest.functions.length) {
       const error = new Error(`Modulpaketet ${identity} måste deklarera function state, determinism och effects.`); error.code = "TBA-MODULE-FUNCTION-CONTRACT-LAB"; throw error;
     }
   }

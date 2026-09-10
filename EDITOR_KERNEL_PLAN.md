@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.12.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.7 genomförda |
+| Planversion | `1.13.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.8 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.7 genomförda, senast 2026-09-10
+**Status:** aktiv · sprint 5.1–5.8 genomförda, senast 2026-09-10
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -342,6 +342,16 @@ Textabana Editor Kernel
 
 **Kontrakt och gräns:** [SOURCE_MAP_CORE_PROFILE.md](./SOURCE_MAP_CORE_PROFILE.md). Anspråket gäller positions-/ankarkoppling för den fasta katalogen inom en körning. Full proveniensgraf, godtyckliga selectors/moduler, editorhistorik, cache, semantisk artefaktekvivalens och full produktionskonformitet återstår. Rapporten är osignerad.
 
+#### Sprint 5.8 — Förhandskontroll av modulkontrakt
+
+**Status:** genomförd 2026-09-10
+
+**Acceptans:** tvetydiga funktionsdeklarationer, feltypade kontraktsfält och ogiltiga låsposter ska avvisas före modulens startkod. En separat fryst extern modulgrind ska verifiera digest, låsning, grants och exportkontrakt genom den faktiska kärnan, med explicit observation av startkod och atomisk rollback. Tidigare profiler ska bestå. Grinden är inte en oberoende modulevaluator, strikt SemVer-validerare eller JavaScript-sandbox.
+
+**Evidens:** 54 frysta modulfall passerar genom den faktiska JavaScript-kärnan. Observerade startkods- och transformräknare skiljer förhandsavvisning från exportfel efter laddning. Samtliga 216 tester och åtta externa rapporter passerar. Den nya modulgrinden gör inget anspråk på en oberoende implementation eller generell sandbox.
+
+**Releasekontroll:** Sites produktionsbygge passerar. Full lint är inte grön: den rapporterar ett befintligt `no-assign-module-variable`-fel i oförändrade `runtime/semantic-identity.js` samt fyra befintliga varningar i tidigare referenslöpare.
+
 **Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga scheman/fixtures, bredare jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår.
 
 ## Beroenden och ordning
@@ -355,6 +365,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.13.0 — 2026-09-10
+
+- Sprint 5.8 levererad: typade modulkontrakt och unika funktionsdeklarationer verifieras före modulens startkod.
+- 54 frysta modulfall observerar startkod, exportkontroll och atomiska felresultat; 216 tester och åtta rapporter passerar.
+- Modulgrinden avser en JavaScript-implementation. Våg 5 förblir aktiv för bredare produktionskonformitet, release-signering och registertjänst.
 
 ### 1.12.0 — 2026-09-10
 
