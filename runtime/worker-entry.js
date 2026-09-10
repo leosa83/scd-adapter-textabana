@@ -2748,6 +2748,14 @@ function createChannelBus({ runId, runInstanceId, documentVersion, documentPath,
         ? `row:${sourceHash(anchorDocumentKey)}:${sourceHash(String(rowId))}`
       : `line:${documentId ? `${sourceHash(documentId)}:` : ""}${documentVersion}:${line}:${column || 1}`;
     const anchorId = `anchor:${stablePart}`;
+    if (!annotationId && !cellId && mode === "row" && rowId) {
+      const previous = anchors.get(anchorId);
+      if (previous && previous.projections.rowId !== String(rowId)) {
+        const error = new Error("Distinct row IDs collide in source anchor identity.");
+        error.code = "TBA-ANCHOR-COLLISION-LAB";
+        throw error;
+      }
+    }
     const previousLine = documentLines[Math.max(0, line - 2)] || "";
     const nextLine = documentLines[line] || "";
     const anchor = {
@@ -2771,8 +2779,8 @@ function createChannelBus({ runId, runInstanceId, documentVersion, documentPath,
         {
           type: "TextQuoteSelector",
           exact: position.exact,
-          prefix: previousLine.slice(-48),
-          suffix: nextLine.slice(0, 48),
+          prefix: Array.from(previousLine).slice(-48).join(""),
+          suffix: Array.from(nextLine).slice(0, 48).join(""),
         },
       ],
       projections: {

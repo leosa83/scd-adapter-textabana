@@ -11,6 +11,14 @@ ALIAS = r"[A-Za-z_][A-Za-z0-9_.-]*"
 JS_SPACE = " \t\v\f\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000"
 
 
+class LocatedText(str):
+    """Rendered literal plus its original physical line, including escaped markers."""
+    def __new__(cls, value, line):
+        text = super().__new__(cls, value)
+        text.line = line
+        return text
+
+
 def pipeline(header, context):
     stages, at = [], 0
     decoder = json.JSONDecoder()
@@ -93,18 +101,18 @@ def parse(source):
         text = line + ("\n" if index < len(lines) - 1 else "")
         marker = re.match(r"^ {0,3}(`{3,}|~{3,})([^\n\u2028\u2029]*)$", line)
         if fence:
-            stack[-1]["children"].append(text)
+            stack[-1]["children"].append(LocatedText(text, index + 1))
             if marker and marker[1][0] == fence[0] and len(marker[1]) >= len(fence) and not marker[2].strip(JS_SPACE):
                 fence = None
             continue
         if marker:
             fence = marker[1]
-            stack[-1]["children"].append(text)
+            stack[-1]["children"].append(LocatedText(text, index + 1))
             continue
         escaped = re.match(r"^([ \t]*)\\(>>>>|<<<<)", line)
         if escaped:
             at = len(escaped[1])
-            stack[-1]["children"].append(text[:at] + text[at + 1:])
+            stack[-1]["children"].append(LocatedText(text[:at] + text[at + 1:], index + 1))
             continue
         clean = line.lstrip(" \t")
         if re.match(r"^[ \t]+\|", line):
@@ -117,6 +125,7 @@ def parse(source):
             stack[-1]["children"].append({"kind": "config"})
         elif clean.startswith(">>>>+"):
             stage = pipeline(clean[5:].strip(" \t"), "interval")[0]
+            stage["line"] = index + 1
             authored += 1
             sequence += 1
             alias = stage["controls"].get("@id", stage["name"] + "-" + str(sequence))
@@ -139,11 +148,13 @@ def parse(source):
             stack[-1]["children"].append({"kind": "close", "scope": scope})
         elif clean.startswith(">>>>"):
             stages = pipeline(clean[4:].strip(" \t"), "block")
+            for stage in stages:
+                stage["line"] = index + 1
             authored += len(stages)
             if len(stack) > MAX_DEPTH:
                 reject("limit")
             block_id += 1
-            block = {"kind": "block", "id": block_id, "children": [], "pipeline": stages}
+            block = {"kind": "block", "id": block_id, "children": [], "pipeline": stages, "line": index + 1}
             stack[-1]["children"].append(block)
             stack.append(block)
         elif clean.startswith("<<<<"):
@@ -152,13 +163,13 @@ def parse(source):
                 reject("syntax")
             if any(s["owner"] == stack[-1]["id"] for s in active):
                 reject("syntax")
-            stack.pop()
+            stack.pop()["close_line"] = index + 1
         elif clean.startswith((">>>", "<<<")):
             reject("syntax")
         elif "{" in line:
             reject("unsupported")
         else:
-            stack[-1]["children"].append(text)
+            stack[-1]["children"].append(LocatedText(text, index + 1))
         if authored > MAX_STAGES:
             reject("limit")
     if len(stack) != 1 or active:
@@ -170,17 +181,17 @@ def lower(root, direction):
     """Build bounded expressions before invoking any transform, including failing stages."""
     planned = 0
 
-    def apply(value, stage, scope=None):
+    def apply(value, stage, source, scope=None):
         nonlocal planned
         planned += 1
         if planned > MAX_STAGES:
             reject("limit")
-        return {"kind": "apply", "input": value, "stage": stage, "scope": scope}
+        return {"kind": "apply", "input": value, "stage": stage, "scope": scope, "source": source}
 
-    def intervals(value, scopes):
+    def intervals(value, scopes, source):
         # Python's stable sort retains declaration order for equal numeric order in both directions.
         for scope in sorted(scopes, key=lambda s: s["order"], reverse=direction == "desc"):
-            value = apply(value, scope["stage"], scope["id"])
+            value = apply(value, scope["stage"], source, scope["id"])
         return value
 
     def sequence(nodes):
@@ -188,7 +199,7 @@ def lower(root, direction):
 
         def flush():
             if buffer:
-                outputs.append(intervals("".join(buffer), scopes))
+                outputs.append(intervals("".join(buffer), scopes, {"startLine": buffer[0].line, "endLine": buffer[-1].line}))
                 buffer.clear()
 
         for node in nodes:
@@ -202,10 +213,11 @@ def lower(root, direction):
                 scopes.remove(node["scope"])
             elif node["kind"] == "block":
                 value = sequence(node["children"])
+                source = {"startLine": node["line"] + 1, "endLine": max(node["line"] + 1, node["close_line"] - 1)}
                 for stage in node["pipeline"]:
-                    value = apply(value, stage)
+                    value = apply(value, stage, source)
                 if node["pipeline"][0]["controls"].get("@inherit", "default") != "none":
-                    value = intervals(value, scopes)
+                    value = intervals(value, scopes, source)
                 outputs.append(value)
         flush()
         return {"kind": "merge", "items": outputs}

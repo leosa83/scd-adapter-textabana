@@ -31,16 +31,32 @@ def payload(input, args):
     return {"text": input, "label": args.get("label", ""), "meta": {"id": args.get("id", "user-id"), "runId": args.get("runId", "user-run"), "duration": args.get("duration", "user-duration"), "nested": {"stageId": args.get("stageId", "user-stage")}}}
 
 
-def run(source):
+def row_hash(row_id):
+    """Existing lab anchor identity uses FNV-1a over UTF-16 code units."""
+    encoded, value = row_id.encode("utf-16-le"), 2166136261
+    for index in range(0, len(encoded), 2):
+        value = ((value ^ (encoded[index] | encoded[index + 1] << 8)) * 16777619) & 0xffffffff
+    return value
+
+
+def run(source, source_maps=False):
     try:
         root, direction = parse(source)
         expression = lower(root, direction)
         stages, events = [], []
+        anchors, mappings = {}, []
+        row_identities = {}
+        lines = source.split("\n")
+        starts, offset = [], 0
+        for line in lines:
+            starts.append(offset)
+            offset += len(line) + 1
+
         descriptors = {"system.out": {"name": "system.out", "payloadKind": "object", "mediaType": "application/json", "schemaRef": "textabana.system.out/v2", "delivery": "snapshot", "persistence": "durable", "ordering": "global-sequence", "key": ["target.anchorRef"], "required": False, "sensitivity": "internal", "declared": True}}
 
         descriptors["diagnostics"] = {**descriptors["system.out"], "name": "diagnostics", "schemaRef": "textabana.diagnostic/v1", "persistence": "transient", "key": []}
 
-        def emit(channel, value, args, stage, mode):
+        def emit(channel, value, args, stage, mode, context):
             if len(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")) > 16384:
                 reject("limit")
             channel = channel.strip(JS_WHITESPACE)
@@ -49,7 +65,27 @@ def run(source):
             if len(events) >= 64:
                 reject("limit")
             target = {"mode": mode, "rowId": args.get("rowId", "row"), "row": integer(args.get("row", "1"), 1000000), "rowSet": args.get("rowSet") or "profile"}
+            if mode == "row" and target["rowId"]:
+                identity = row_hash(target["rowId"])
+                if identity in row_identities and row_identities[identity] != target["rowId"]:
+                    reject("stage")
+                row_identities[identity] = target["rowId"]
             events.append({"sequence": len(events) + 1, "channel": channel, "kind": args.get("kind") or ("diagnostic" if channel == "diagnostics" else "annotation" if channel == "system.out" else "event"), "phase": "run", "state": "committed", "payload": copy.deepcopy(value), "target": target, "stage": stage})
+            if source_maps:
+                event = events[-1]
+                line = context["source"]["startLine"]
+                key = ("row", target["rowId"]) if mode == "row" and target["rowId"] else ("line", line)
+                anchor = anchors[key]["anchor"] if key in anchors else len(anchors) + 1
+                anchors[key] = {
+                    "anchor": anchor,
+                    "position": {"start": starts[line - 1], "end": starts[line - 1] + len(lines[line - 1]), "unit": "unicode-code-point"},
+                    "quote": {"exact": lines[line - 1], "prefix": lines[line - 2][-48:] if line > 1 else "", "suffix": lines[line][:48] if line < len(lines) else ""},
+                    "row": target["row"], "rowId": target["rowId"], "line": line,
+                    "stage": stage, "function": context["stage"]["name"],
+                }
+                event["source"] = {**context["source"], "mapping": "derived"}
+                event["target"].update({"line": line, "anchor": anchor})
+                mappings.append({"event": event["sequence"], "anchor": anchor, "mapping": "derived", "stage": stage})
 
         def evaluate(node):
             if isinstance(node, str):
@@ -78,20 +114,23 @@ def run(source):
                         reject("stage")
                     if function == "fanout":
                         for name in ("records", "progress", "audit", "system.out"):
-                            emit(name, value, args, ordinal, mode)
+                            emit(name, value, args, ordinal, mode, node)
                     elif function == "burst":
                         for _ in range(integer(args.get("count", "1"), 128, zero=True)):
-                            emit(channel, value, args, ordinal, mode)
+                            emit(channel, value, args, ordinal, mode, node)
                     else:
-                        emit(channel, value, args, ordinal, mode)
+                        emit(channel, value, args, ordinal, mode, node)
                         if function == "publishMutable":
                             value["label"] = "changed"
                             value["meta"]["nested"]["stageId"] = "changed-stage"
-                            emit(channel, value, args, ordinal, mode)
+                            emit(channel, value, args, ordinal, mode, node)
                         if function == "publishThenFail":
                             reject("stage")
                 output = input
             stages.append({"function": function, "args": args, "modality": "block" if node["scope"] is None else "interval", "scopeId": node["scope"]})
+            if source_maps:
+                stages[-1].update({"declarationLine": node["stage"]["line"], "source": node["source"]})
+
             return output
 
         output = evaluate(expression)
@@ -102,9 +141,9 @@ def run(source):
             sequences = [event["sequence"] for event in events if event["channel"] == name]
             if desc["persistence"] != "transient" and (sequences or desc["required"]):
                 snapshots[name] = {"descriptor": desc, "events": sequences}
-        return {"ok": True, "output": output, "error": None, "committed": True, "committedStages": len(stages), "stages": stages, "events": events, "snapshots": snapshots}
+        return {"ok": True, "output": output, "error": None, "committed": True, "committedStages": len(stages), "stages": stages, "events": events, "snapshots": snapshots, **({"anchors": list(anchors.values()), "sourceMaps": mappings} if source_maps else {})}
     except Rejected as error:
-        return {"ok": False, "output": "", "error": error.phase, "committed": False, "committedStages": 0, "stages": [], "events": [], "snapshots": {}}
+        return {"ok": False, "output": "", "error": error.phase, "committed": False, "committedStages": 0, "stages": [], "events": [], "snapshots": {}, **({"anchors": [], "sourceMaps": []} if source_maps else {})}
 
 
 def main():

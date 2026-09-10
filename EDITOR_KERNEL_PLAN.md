@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.11.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.6 genomförda |
+| Planversion | `1.12.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.7 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.6 genomförda, senast 2026-09-08
+**Status:** aktiv · sprint 5.1–5.7 genomförda, senast 2026-09-10
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -325,6 +325,23 @@ Textabana Editor Kernel
 
 **Kontrakt och gräns:** [CHANNEL_CORE_PROFILE.md](./CHANNEL_CORE_PROFILE.md). Fulla descriptors jämförs för durable snapshots; tillfälliga kanaler jämförs genom sina händelser och att de inte sparas. Källpositioner och full proveniensekvivalens ingår inte i jämförelsen mellan runtimes. Godtyckliga moduler, bredare kanalpolicyer, cache, semantisk artefaktekvivalens och full produktionskonformitet återstår. Rapporten är osignerad.
 
+#### Sprint 5.7 — Oberoende positionskoppling och Unicode-ankare
+
+**Status:** genomförd 2026-09-10
+
+**Uppfylld acceptans:** en ny avgränsad profil jämför kanalhändelsernas koppling till författad källtext mellan Python och JavaScript: deklarationsrader, exekverade källintervall, händelsers mål, position-/citatselectors och mapparnas event-/ankare-/anropsrelationer. Unicode-positioner och citatkontext bevarar hela kodpunkter. Återanvända radankare, intervall, blockarv, tomma block och atomiska fel har explicita förväntningar. Tidigare profiler består; full proveniensgraf, editorhistorik och semantisk artefaktekvivalens ligger utanför anspråket.
+
+**Leveranser och evidens:**
+
+- `textabana.source-map-core/v1` jämför 70 frysta fall i två oberoende implementationer: 140 runtimeutfall. Vissa återanvänder tidigare kanalscenarier med tillagda explicita koordinatförväntningar. Render, kanaldata och anropsordning jämförs tillsammans med numeriska positioner, exakta citat och ankarlänkar.
+- Fyra Python-filer kör utan Node. Den egna parsern behåller författade fysiska rader genom lowering; källtextens koordinater hålls skilda från transformerad render. JavaScript-projektionen kontrollerar de faktiska länkarna innan transportens include-förskjutning tas bort.
+- Tomma block, nästlade källintervall, escapade markörer, kodstaket, blockarv, buffertgränser och återanvända scope-/rad-id:n verifieras. Återanvända ankare behåller första skapelseordningen men sista emissionens position/origin; äldre händelser behåller sina ursprungliga mål.
+- Ett bekräftat Unicode-fel är rättat: citatkontext använder 48 hela kodpunkter i stället för att kunna dela ett UTF-16-surrogatpar. Ett andra fel är stängt: olika rad-id:n som kolliderar i den befintliga labbhashen avvisas atomiskt i stället för att skriva över varandras ankare. Giltiga befintliga ID-strängar bevaras.
+- Manifestet binder 70 fall och fyra normativa profildokument. Saknad Python, ändrade positionsförväntningar, brutna käll-/ankarlänkar och partiell rollback avvisas. Samtliga sju rapporter är återskapade mot samma kärna; tidigare semantiska golden-identiteter och samtliga 213 automatiska tester passerar.
+- CLI, körbart exempel, profildokumentation och nedladdningsbar positionsrapport finns i specifikationen och Conformance-labbet.
+
+**Kontrakt och gräns:** [SOURCE_MAP_CORE_PROFILE.md](./SOURCE_MAP_CORE_PROFILE.md). Anspråket gäller positions-/ankarkoppling för den fasta katalogen inom en körning. Full proveniensgraf, godtyckliga selectors/moduler, editorhistorik, cache, semantisk artefaktekvivalens och full produktionskonformitet återstår. Rapporten är osignerad.
+
 **Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga scheman/fixtures, bredare jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår.
 
 ## Beroenden och ordning
@@ -338,6 +355,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.12.0 — 2026-09-10
+
+- Sprint 5.7 levererad: oberoende positionskoppling med 70 frysta fall för källrader, Unicode-positioner, citat och event-/ankare-/anropsrelationer.
+- Unicode-citat och kolliderande radankare rättade; tidigare profiler och semantiska golden-identiteter består. Sju rapporter binder den aktuella kärnan.
+- Våg 5 förblir aktiv för bredare produktionskonformitet, release-signering och registertjänst.
 
 ### 1.11.0 — 2026-09-08
 

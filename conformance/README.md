@@ -14,6 +14,8 @@ node cli/textabana.mjs conformance-scoped-text > scoped-text-report.json
 python3 reference/scoped_text.py run examples/scoped-text.md
 node cli/textabana.mjs conformance-channel-core > channel-core-report.json
 python3 reference/channel_core.py run examples/channel-core.md
+node cli/textabana.mjs conformance-source-map-core > source-map-core-report.json
+python3 reference/source_map_core.py run examples/source-map-core.md
 node cli/textabana.mjs analyze examples/document.md
 node cli/textabana.mjs run examples/document.md
 node cli/textabana.mjs registry-check PACKAGE_REGISTRY.json
@@ -57,6 +59,10 @@ The Python reference builds a bounded expression tree before evaluating. Both im
 
 Sprint 5.6 adds [textabana.channel-core/v1](../CHANNEL_CORE_PROFILE.md): 80 frozen cases and 160 runtime outcomes compare exact payloads, global event sequence, targets, invocation order and durable snapshots. Transient events consume sequence numbers but are excluded from durable snapshots. Required empty channels, deep copying at emission, repeated row IDs, strict schema/channel rejection and whole-run rollback are covered, including 64/65-event and exact payload-byte boundaries. Three standalone Python files run without Node. The bridge checks actual host render, snapshot contents and event-to-invocation/anchor/map references before projection; source positions and full provenance equivalence are not compared between implementations. The manifest pins all three normative specifications and every expected outcome.
 
+## Independent source positions
+
+Sprint 5.7 adds [textabana.source-map-core/v1](../SOURCE_MAP_CORE_PROFILE.md): 70 frozen checks (140 runtime outcomes) extend the channel comparison with declaration lines, execution source ranges, exact code-point positions and quote selectors, final anchor state and event/anchor/invocation links. Coordinates refer to authored source, excluding the trusted bridge include. Four Python files run independently without Node. Raw selectors are compared, including literal escapes, 48-code-point Unicode boundaries, empty blocks and anchors updated by later events. A collision guard prevents distinct row IDs sharing a lab hash from silently overwriting one another. Prior profile cases remain unchanged and their reports are regenerated against the corrected Worker. Full provenance graphs, cross-document identities and editor revision history remain outside this profile.
+
 ## Signing and verification
 
 ```bash
@@ -72,4 +78,4 @@ Keys must be Ed25519 PEM keys supplied by the caller. The CLI does not generate,
 
 ## Remaining Wave 5 work
 
-Sprints 5.1–5.6 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract and independent text/interval/channel runtime comparisons. Full production language/runtime profiles, broader independent runtime coverage (arbitrary modules, broader channel policies, exact provenance, caches and additional scope policies), configured release signer and published registry service remain open. Wave 5 stays active.
+Sprints 5.1–5.7 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract and independent text/interval/channel/source-position runtime comparisons. Full production language/runtime profiles, broader independent runtime coverage (arbitrary modules, broader channel policies, exact provenance, caches and additional scope policies), configured release signer and published registry service remain open. Wave 5 stays active.

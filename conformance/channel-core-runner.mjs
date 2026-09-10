@@ -8,6 +8,7 @@ import { canonicalize, canonicalDigest, parseStrictJson } from "../runtime/canon
 import { NodeKernelTransport } from "../sdk/node/transport.mjs";
 import { rawClient } from "./host-runner.mjs";
 
+export const CHANNEL_CORE_INCLUDE = '>>>>! include "./channel-core.js"\n';
 export const CHANNEL_CORE_PROFILE = "textabana.channel-core/v1";
 export const channelCoreSuiteUrl = new URL("./profiles/channel-core-v1.json", import.meta.url);
 export const channelCoreManifestUrl = new URL("./profiles/channel-core-v1.manifest.json", import.meta.url);
@@ -27,7 +28,7 @@ export function projectChannelResponse(response) {
     const diagnostic = response.diagnostics.find((item) => item.severity === "error");
     if (!diagnostic) throw new Error("Kernel failure without a diagnostic.");
     if (/LIMIT|BUDGET/.test(diagnostic.code) || /(?:text-core render|channel-core payload) limit/.test(diagnostic.message)) return rejected("limit");
-    if (!["TBA-RUN-LAB", "TBA-TYPE-CHANNEL-LAB"].includes(diagnostic.code)) throw new Error(`Unexpected kernel failure: ${diagnostic.code}`);
+    if (!["TBA-RUN-LAB", "TBA-TYPE-CHANNEL-LAB", "TBA-ANCHOR-COLLISION-LAB"].includes(diagnostic.code)) throw new Error(`Unexpected kernel failure: ${diagnostic.code}`);
     return rejected("stage");
   }
   assert.equal(envelope.run.committed, true);
@@ -78,15 +79,20 @@ export function projectChannelResponse(response) {
 export async function runJavaScriptChannelCore(source) {
   const admission = admitScopedText(source);
   if (admission) return rejected(admission);
+  return projectChannelResponse(await runChannelWorker(source));
+}
+
+// Shared host transport; each profile owns admission and its comparison projection.
+export async function runChannelWorker(source) {
   const transport = new NodeKernelTransport(), client = rawClient(transport);
   try {
     const content = (await Promise.all(["text-core-module.js", "channel-core-module.js"].map((file) => readFile(new URL(`../reference/${file}`, import.meta.url), "utf8")))).join("\n");
-    return projectChannelResponse(await client.command(undefined, {
+    return await client.command(undefined, {
       documentId: "channel-core-fixture", documentPath: "fixture.md", runId: 1,
-      documentSource: `>>>>! include "./channel-core.js"\n${source}`,
+      documentSource: CHANNEL_CORE_INCLUDE + source,
       modules: [{ path: "channel-core.js", content }],
       options: { strictChannels: true, runtimeLimits: { maxParallelism: 1, maxStageResolutions: 128, maxRenderBytes: 262144, maxChannelEvents: 64 } },
-    }));
+    });
   } finally { client.dispose(); await transport.close(); }
 }
 
