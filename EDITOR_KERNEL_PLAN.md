@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.15.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.10 genomförda |
+| Planversion | `1.16.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.11 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.10 genomförda, senast 2026-09-20
+**Status:** aktiv · sprint 5.1–5.11 genomförda, senast 2026-09-20
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -383,6 +383,16 @@ Textabana Editor Kernel
 
 **Evidens:** se dokumentationsplanens verifieringsprotokoll. Kravregistret är källspårning och får inte räknas som 144 passerade konformitetskrav. Våg 5 förblir aktiv.
 
+#### Sprint 5.11 — Open-source consolidation and English migration
+
+**Status:** implemented 2026-09-20 under [TA-OSS-CONSOLIDATION-001](./CONSOLIDATION_PLAN.md).
+
+**Delivery:** independent headless and application test commands, a read-only CI workflow, contributor/developer guides and an architecture map. All 34 Specification sections are now authored in Markdown, with generated application/index projections. The first English increment covers entry-point documentation, integration/standards guides, application controls and specification navigation/introduction. Remaining translation work is explicit in the [migration register](./docs/english-migration.md).
+
+**Evidence:** a fresh dependency installation and clean source checkout pass 219 headless tests, 6 application tests, documentation freshness and lint. The structural migration preserves 144 normative requirements and 43 code examples against the frozen previous version. All nine profile reports pass; source fingerprint changes are limited to the workspace lockfile metadata. Repository-wide TypeScript checking still reports three missing hosting declarations, tracked for sprint 5.13.
+
+**Boundary:** no runtime semantics or independent conformance claims changed. English translation, module separation, SDK types, channel schema validation and release licensing continue in sprints 5.12–5.15. Wave 5 remains active. See the consolidation plan for local verification and the workflow for hosted CI status.
+
 ## Beroenden och ordning
 
 | Våg | Kräver | Låser upp |
@@ -394,6 +404,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.16.0 — 2026-09-20
+
+- Sprint 5.11 establishes reproducible development, authored Markdown specification sources and the first English migration increment.
+- The separate consolidation plan defines sprints 5.12–5.15 and records verification, remaining type-checking debt and release decisions.
+- Existing normative wording, multilingual regression inputs and all profile semantics remain unchanged.
 
 ### 1.15.0 — 2026-09-20
 

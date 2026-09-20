@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Plan | `TA-OSS-CONSOLIDATION-001` |
-| Version | `1.0.0` |
-| Status | Active; sprint 5.11 in progress |
+| Version | `1.0.1` |
+| Status | Active; sprint 5.11 implemented, sprint 5.12 next |
 | Baseline | Sprint 5.10, GitHub `a0ec88761b904602e28522a6334bc90c5ae0f5e3` |
 | Accepted | 2026-09-20 |
 | Goal | A repository that external developers can understand, run, test and maintain without conversation history or a Sites account |
@@ -21,7 +21,7 @@ English is the primary language for the entire application and codebase. New pub
 |---|---|---|
 | 5.11 | Reproducible development, document sources, first English surfaces | Standalone headless test command; checked-in CI; contributor/developer guides; readable specification documents rendered by the app; all 144 requirement IDs and existing anchors preserved; English README, app shell and new guidance; remaining translation work recorded. |
 | 5.12 | English reference, lab panels and API documentation | Specification, lab explanations and SDK documentation in English, with a reviewed glossary and requirement-level translation checks; no accidental changes to examples or runtime behavior. |
-| 5.13 | Engine boundaries and public types | Extract document lifecycle, module admission, channel handling and adapter/conformance logic in small behavior-preserving changes; complete public response types and document ownership, errors and invariants. |
+| 5.13 | Engine boundaries and public types | Extract document lifecycle, module admission, channel handling and adapter/conformance logic in small behavior-preserving changes; complete public response types, supply hosting environment types, add a clean type-check gate and document ownership, errors and invariants. |
 | 5.14 | Contract gaps and remaining code translation | Established channel schema validation or a strictly enforced documented dialect; targeted positive/negative tests; English diagnostics/comments with compatibility changes declared; version-bound profiles migrated deliberately. |
 | 5.15 | External release | Chosen project license and dependency notices; version/release policy; packaged CLI/SDK installed into an external consumer project; documented contribution/security contact; clean checkout and release verification. |
 
@@ -50,4 +50,20 @@ The owner has requested open-source preparation but has not selected a project l
 
 ## Validation record
 
-To be completed from observed sprint results. Local validation does not imply that a hosted GitHub Actions run has passed.
+Observed on Linux with Node 24.19.0 and Python 3.12.14:
+
+| Check | Result |
+|---|---|
+| Clean detached source checkout | Installed 809 packages with `npm ci --prefer-offline`, using the existing download cache and a fresh `node_modules`. No dependency versions changed. |
+| Headless development | `npm run docs:check`, `npm run lint` and all 219 headless tests passed in the clean checkout. `dist/` was absent both before and after `npm test`. |
+| Application | `npm run test:app` built the application and passed all 6 rendering/component tests in the clean checkout. The Sites build helper also passed in the deployment checkout. |
+| Specification extraction | 34 Markdown sections preserve all 144 normative requirements, stable section/requirement anchors and all 43 code examples against the independent sprint 5.10 baseline. The rendered component preserves their anchors, examples and evidence disclosures. |
+| Standards assessment | All 11 rows are generated from one source into both the guide and specification. No new standards-conformance claim or runtime behavior was introduced. |
+| External reports | All nine CLI suites passed. Six checked-in reports changed only their `package-lock.json` source fingerprint after the workspace name change; the other three reports remained byte-identical. Frozen profile expectations were unchanged. |
+| Generated sources | Regeneration and both test suites left the clean checkout's tracked files unchanged. |
+| Type checking | `tsc --noEmit` reports three hosting declaration errors, documented in the development guide and scheduled for sprint 5.13. It is not a passing gate. |
+| GitHub Actions | The workflow defines headless jobs for Node 22/24 and an application job for Node 22. Hosted execution is separate from these observed local results; consult [Actions](https://github.com/leosa83/scd-adapter-textabana/actions/workflows/ci.yml) for the status of the published commit. |
+
+The first English increment covers repository entry points, contribution/development/architecture guidance, integration and standards guides, application controls, fixture summaries and specification navigation/introduction. The [migration register](docs/english-migration.md) records remaining specification prose, lab panels, API comments, diagnostics and version-bound profiles. Sprint 5.12 begins with an agreed glossary and the English reference/lab/API documentation; structural engine work follows in 5.13.
+
+Publication uses matching Git trees in GitHub and Sites. Deployment status is verified separately through the hosting service; a local build alone is not a publication claim.
