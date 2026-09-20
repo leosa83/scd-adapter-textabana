@@ -1,0 +1,8 @@
+{
+  "schema": "textabana.module-admission-manifest/lab-v1",
+  "profile": "textabana.module-admission/lab-v1",
+  "version": "1.0.0",
+  "caseCount": 72,
+  "suiteDigest": "sha256:a5dfc1bc201450ac292a276c3bc56323f170cbbc0a312577f7202579670e5c34",
+  "specificationDigest": "sha256:b24f7866fdc033c90bb631fc7670b3c1fb8f2b00ae6067e83f368c1e5286c742"
+}

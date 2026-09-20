@@ -12,6 +12,7 @@ import { runContractSuite } from "../conformance/contract-runner.mjs";
 import { runTextCoreSuite } from "../conformance/text-core-runner.mjs";
 import { runSourceMapCoreSuite } from "../conformance/source-map-core-runner.mjs";
 import { runModuleGateSuite } from "../conformance/module-gate-runner.mjs";
+import { runModuleAdmissionSuite } from "../conformance/module-admission-runner.mjs";
 import { runChannelCoreSuite } from "../conformance/channel-core-runner.mjs";
 import { runScopedTextSuite } from "../conformance/scoped-text-runner.mjs";
 
@@ -80,6 +81,9 @@ async function main() {
   if (command === "conformance-module-gate") {
     const report = await runModuleGateSuite(); output(report); if (report.status !== "passed") process.exitCode = 1; return;
   }
+  if (command === "conformance-module-admission") {
+    const report = await runModuleAdmissionSuite(); output(report); if (report.status !== "passed") process.exitCode = 1; return;
+  }
   if (command === "sign") return output(await signReport(await json(filename), await readFile(keyfile, "utf8")));
   if (command === "verify") return output(await verifyReport(await json(filename), await readFile(keyfile, "utf8")));
   if (command === "registry-check") return output(await verifyRegistry(filename));
@@ -96,6 +100,6 @@ async function main() {
     return;
   }
   if (command && command !== "help" && command !== "--help") throw new Error(`Unknown command: ${command}`);
-process.stdout.write("Textabana CLI\n  run <document.md> [modules-and-options.json]\n  analyze <document.md>\n  identify <document.md> [modules-and-options.json]\n  verify-identity <bundle.json>\n  serve  (JSONL kernel transport)\n  canonical <input.json>\n  digest <input.json>\n  conformance\n  conformance-semantic\n  conformance-contract\n  conformance-text-core\n  conformance-scoped-text\n  conformance-channel-core\n  conformance-source-map-core\n  conformance-module-gate\n  sign <report.json> <ed25519-private.pem>\n  verify <signed-report.json> <trusted-public.pem>\n  registry-check <registry.json>\n");
+  process.stdout.write("Textabana CLI\n  run <document.md> [modules-and-options.json]\n  analyze <document.md>\n  identify <document.md> [modules-and-options.json]\n  verify-identity <bundle.json>\n  serve  (JSONL kernel transport)\n  canonical <input.json>\n  digest <input.json>\n  conformance\n  conformance-semantic\n  conformance-contract\n  conformance-text-core\n  conformance-scoped-text\n  conformance-channel-core\n  conformance-source-map-core\n  conformance-module-gate\n  conformance-module-admission\n  sign <report.json> <ed25519-private.pem>\n  verify <signed-report.json> <trusted-public.pem>\n  registry-check <registry.json>\n");
 }
 main().catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });

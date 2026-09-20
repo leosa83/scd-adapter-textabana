@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.13.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.8 genomförda |
+| Planversion | `1.14.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.9 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.8 genomförda, senast 2026-09-10
+**Status:** aktiv · sprint 5.1–5.9 genomförda, senast 2026-09-20
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -352,6 +352,23 @@ Textabana Editor Kernel
 
 **Releasekontroll:** Sites produktionsbygge passerar. Full lint är inte grön: den rapporterar ett befintligt `no-assign-module-variable`-fel i oförändrade `runtime/semantic-identity.js` samt fyra befintliga varningar i tidigare referenslöpare.
 
+#### Sprint 5.9 — Oberoende verifiering av modulpaket
+
+**Status:** genomförd 2026-09-20
+
+**Acceptans:** en fristående Python-implementation verifierar paketens metadata, exakta UTF-8-digests, låsposter och explicita grants utan att anropa JavaScript eller köra modulernas källkod. Frysta fall jämför dess beslut med observerad förhandskontroll i den faktiska JavaScript-kärnan. Godkänd förhandskontroll ska hållas skild från senare exportkontroll och transformresultat. Även en ogiltig senare paketpost ska stoppas före någon startkod. Tidigare profiler och semantiska identiteter ska bestå; känd lintavvikelse åtgärdas.
+
+**Avgränsning:** oberoendet gäller paketens förhandskontroll, inte modulexekvering, loader/ABI, generell sandbox eller full produktionskonformitet.
+
+**Leveranser och evidens:**
+
+- Profilen [textabana.module-admission/lab-v1](./MODULE_ADMISSION_PROFILE.md) jämför 72 frysta fall, 144 oberoende beslut, mellan den faktiska JavaScript-kärnan och en fristående Python-fil. Alla exakta beslut och separata Worker-observationer matchar förväntningarna.
+- Python verifierar bytes, manifest, låsposter, sökvägar, grants och funktionsdeklarationer utan att köra modulernas kod. Hela korpusen passerar även med bara Python-filen i en separat katalog med tom PATH.
+- Exportfel och avsiktliga startkodsfel redovisas efter godkänd förhandskontroll. Ett felaktigt senare paket stoppar startkoden även i ett tidigare paket som annars skulle kasta ett undantag.
+- Unicode-digests, ECMAScript-whitespace, grantkonvertering och tvetydiga låsnycklar har explicita förväntningar. Manifestet binder hela korpusen och specifikationen; saknad Python eller försvagade förväntningar avvisas.
+- CLI, specifikation och Conformance-labb exponerar den nya rapporten och dess avgränsning. Nio verifieringsrapporter passerar och binder aktuella implementationer. Tidigare semantiska golden-identiteter består.
+- Återställningen efter avbrottet har verifierats på nytt: samtliga 220 tester passerar med `--test-concurrency=2`, liksom lint och Sites produktionsbygge. Det tidigare lintfelet och fyra varningar är rättade utan ändrad semantik. Rapporter och byggfiler är återskapade från den återställda källkoden.
+
 **Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga scheman/fixtures, bredare jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår.
 
 ## Beroenden och ordning
@@ -365,6 +382,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.14.0 — 2026-09-20
+
+- Sprint 5.9 levererad: oberoende paketkontroll i Python jämförs med faktisk Worker-förhandskontroll i 72 frysta fall.
+- Förhandsbeslut hålls skilda från laddning och körning; senare ogiltiga paket verifieras före någon startkod. Nio rapporter, 220 tester, lint och produktionsbygge passerar efter återställning.
+- Tidigare profiler behåller sina anspråk. Våg 5 förblir aktiv för bredare modulexekvering/produktionskonformitet, release-signering och registertjänst.
 
 ### 1.13.0 — 2026-09-10
 

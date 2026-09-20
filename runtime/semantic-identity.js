@@ -30,10 +30,10 @@ export async function createIdentityContext({ documentSource, documentPath, docu
   const source = await identified("source", { documentId: documentId || `doc:${documentPath}`, path: documentPath, contentDigest: await bytesDigest(documentSource) });
   const paths = new Set();
   const moduleArtifacts = [];
-  for (const module of modules) {
-    if (paths.has(module.path)) fail("Semantic identity rejects duplicate module paths.");
-    paths.add(module.path);
-    moduleArtifacts.push({ path: module.path, contentDigest: await bytesDigest(module.content), manifest: module.manifest ?? null });
+  for (const moduleFile of modules) {
+    if (paths.has(moduleFile.path)) fail("Semantic identity rejects duplicate module paths.");
+    paths.add(moduleFile.path);
+    moduleArtifacts.push({ path: moduleFile.path, contentDigest: await bytesDigest(moduleFile.content), manifest: moduleFile.manifest ?? null });
   }
   moduleArtifacts.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
   const context = await identified("context", {

@@ -122,7 +122,7 @@ export async function runPythonChannelCore(sources, { executable = "python3", en
     const child = spawn(executable, [fileURLToPath(pythonUrl), "batch"], { env, stdio: ["pipe", "pipe", "pipe"] });
     child.stdout.setEncoding("utf8"); child.stderr.setEncoding("utf8");
     let stdout = "", stderr = "", settled = false;
-    const finish = (error, value) => { if (settled) return; settled = true; clearTimeout(timer); error ? reject(error) : resolve(value); };
+    const finish = (error, value) => { if (settled) return; settled = true; clearTimeout(timer); if (error) reject(error); else resolve(value); };
     const timer = setTimeout(() => { child.kill(); finish(new Error("Python reference timed out.")); }, 30000);
     child.on("error", (error) => finish(error)); child.stdin.on("error", (error) => finish(error));
     child.stdout.on("data", (chunk) => { stdout += chunk; if (stdout.length > 16 * 1024 * 1024) { child.kill(); finish(new Error("Oversized Python response.")); } });

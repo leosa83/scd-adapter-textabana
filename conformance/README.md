@@ -69,6 +69,12 @@ Sprint 5.8 adds [textabana.module-gate/lab-v1](../MODULE_GATE_PROFILE.md), repro
 
 This is a single-runtime lab gate, not an independent module evaluator, strict SemVer validator or JavaScript sandbox. Start-code side effects cannot be undone merely by rolling back the Result. Existing runtime profiles retain their separate claims; all reports are regenerated against the hardened kernel.
 
+## Independent module admission
+
+Sprint 5.9 adds [textabana.module-admission/lab-v1](../MODULE_ADMISSION_PROFILE.md): 72 frozen cases compare exact preflight decisions between the actual Worker and one standalone Python file. Run `node cli/textabana.mjs conformance-module-admission` to reproduce the report. Python independently checks metadata, lock identities, path normalization, UTF-8 SHA-256 and grants; it never runs JavaScript source. The entire corpus also runs with only the Python file in an isolated directory and an empty PATH.
+
+The report separates the shared admission decision from frozen full Worker observations. Export mismatches and intentional entrypoint exceptions may follow admitted packages. Invalid later packages must reject before any entrypoint. Numeric/boolean/null grant conversion, ECMAScript whitespace and Unicode source bytes have explicit expectations. Missing Python or altered decisions/probe expectations fail closed. `independentImplementations` applies only to package preflight; `independentModuleExecution` and sandbox claims remain false. The previous module-gate claim stays unchanged.
+
 ## Signing and verification
 
 ```bash
@@ -84,4 +90,4 @@ Keys must be Ed25519 PEM keys supplied by the caller. The CLI does not generate,
 
 ## Remaining Wave 5 work
 
-Sprints 5.1–5.8 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract, independent text/interval/channel/source-position runtime comparisons and a single-implementation module gate. Full production language/runtime profiles, broader independent runtime coverage (arbitrary modules, broader channel policies, exact provenance, caches and additional scope policies), configured release signer and published registry service remain open. Wave 5 stays active.
+Sprints 5.1–5.9 provide reproducible verification tooling, source-bound semantic identities, an executable artifact contract, independent text/interval/channel/source-position runtime comparisons, a single-implementation module gate and independent package admission. Full production language/runtime profiles, broader independent runtime coverage (arbitrary module execution, broader channel policies, exact provenance, caches and additional scope policies), configured release signer and published registry service remain open. Wave 5 stays active.
