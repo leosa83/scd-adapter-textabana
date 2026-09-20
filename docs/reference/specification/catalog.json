@@ -1,0 +1,413 @@
+{
+  "schema": "textabana.specification-catalog/v1",
+  "revision": "2026-09-20",
+  "sourceBaseline": "a0ec88761b904602e28522a6334bc90c5ae0f5e3",
+  "groups": [
+    {
+      "label": "Overview",
+      "ids": [
+        "definition",
+        "status",
+        "direction",
+        "html",
+        "architecture",
+        "contract"
+      ]
+    },
+    {
+      "label": "Language",
+      "ids": [
+        "source-value",
+        "syntax",
+        "blocks-intervals",
+        "inheritance",
+        "properties-modules",
+        "processing"
+      ]
+    },
+    {
+      "label": "Canonical contracts",
+      "ids": [
+        "ir-plan",
+        "anchors",
+        "result",
+        "channels",
+        "system-out",
+        "artifacts"
+      ]
+    },
+    {
+      "label": "Runtime",
+      "ids": [
+        "module-manifest",
+        "runtime-protocol",
+        "editor-kernel",
+        "integration",
+        "runs",
+        "security"
+      ]
+    },
+    {
+      "label": "Interoperability",
+      "ids": [
+        "adapter-contract",
+        "notebooks",
+        "data-ai",
+        "annotation-observability"
+      ]
+    },
+    {
+      "label": "Conformance",
+      "ids": [
+        "use-cases",
+        "conformance",
+        "documentation-sources",
+        "errors",
+        "playgrounds",
+        "glossary"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "definition",
+      "file": "definition.md",
+      "label": "Definition",
+      "language": "en",
+      "number": "",
+      "layer": "Overview",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "status",
+      "file": "status.md",
+      "label": "Status and norms",
+      "language": "sv",
+      "number": "00",
+      "layer": "Overview",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "direction",
+      "file": "direction.md",
+      "label": "Direction and standards",
+      "language": "sv",
+      "number": "00a",
+      "layer": "Architecture direction",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "html",
+      "file": "html.md",
+      "label": "Textabana and HTML",
+      "language": "sv",
+      "number": "01",
+      "layer": "Core boundary",
+      "normative": true,
+      "implementation": "defined"
+    },
+    {
+      "id": "architecture",
+      "file": "architecture.md",
+      "label": "Architecture",
+      "language": "sv",
+      "number": "02",
+      "layer": "Overview",
+      "normative": false,
+      "implementation": "defined"
+    },
+    {
+      "id": "contract",
+      "file": "contract.md",
+      "label": "Semantic contract",
+      "language": "sv",
+      "number": "03",
+      "layer": "Overview",
+      "normative": true,
+      "implementation": "defined"
+    },
+    {
+      "id": "source-value",
+      "file": "source-value.md",
+      "label": "Source and values",
+      "language": "sv",
+      "number": "04",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "defined"
+    },
+    {
+      "id": "syntax",
+      "file": "syntax.md",
+      "label": "Parser, syntax and recovery",
+      "language": "sv",
+      "number": "05",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "blocks-intervals",
+      "file": "blocks-intervals.md",
+      "label": "Blocks and intervals",
+      "language": "sv",
+      "number": "06",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "implemented"
+    },
+    {
+      "id": "inheritance",
+      "file": "inheritance.md",
+      "label": "Inheritance",
+      "language": "sv",
+      "number": "07",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "implemented"
+    },
+    {
+      "id": "properties-modules",
+      "file": "properties-modules.md",
+      "label": "Properties and includes",
+      "language": "sv",
+      "number": "08",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "processing",
+      "file": "processing.md",
+      "label": "Processing model",
+      "language": "sv",
+      "number": "09",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "ir-plan",
+      "file": "ir-plan.md",
+      "label": "IR, graph, plan and trace",
+      "language": "sv",
+      "number": "10",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "anchors",
+      "file": "anchors.md",
+      "label": "Anchors and source maps",
+      "language": "sv",
+      "number": "11",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "result",
+      "file": "result.md",
+      "label": "TextabanaResult",
+      "language": "sv",
+      "number": "12",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "channels",
+      "file": "channels.md",
+      "label": "Typed channels",
+      "language": "sv",
+      "number": "13",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "system-out",
+      "file": "system-out.md",
+      "label": "system.out",
+      "language": "sv",
+      "number": "14",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "artifacts",
+      "file": "artifacts.md",
+      "label": "Artifacts and sinks",
+      "language": "sv",
+      "number": "15",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "defined"
+    },
+    {
+      "id": "module-manifest",
+      "file": "module-manifest.md",
+      "label": "Manifests and functions",
+      "language": "sv",
+      "number": "16",
+      "layer": "Runtime",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "runtime-protocol",
+      "file": "runtime-protocol.md",
+      "label": "Runtime protocol",
+      "language": "sv",
+      "number": "17",
+      "layer": "Runtime",
+      "normative": true,
+      "implementation": "defined"
+    },
+    {
+      "id": "editor-kernel",
+      "file": "editor-kernel.md",
+      "label": "Editor Kernel",
+      "language": "sv",
+      "number": "18",
+      "layer": "Editor control plane",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "integration",
+      "file": "integration.md",
+      "label": "Integrate the kernel",
+      "language": "sv",
+      "number": "18a",
+      "layer": "Runtime",
+      "normative": false,
+      "implementation": "implemented"
+    },
+    {
+      "id": "runs",
+      "file": "runs.md",
+      "label": "Runs and transactions",
+      "language": "sv",
+      "number": "19",
+      "layer": "Runtime",
+      "normative": true,
+      "implementation": "defined"
+    },
+    {
+      "id": "security",
+      "file": "security.md",
+      "label": "Security",
+      "language": "sv",
+      "number": "20",
+      "layer": "Runtime",
+      "normative": true,
+      "implementation": "defined"
+    },
+    {
+      "id": "adapter-contract",
+      "file": "adapter-contract.md",
+      "label": "Adapter contract",
+      "language": "sv",
+      "number": "21",
+      "layer": "Adapter contract",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "notebooks",
+      "file": "notebooks.md",
+      "label": "Jupyter and notebooks",
+      "language": "sv",
+      "number": "22",
+      "layer": "Adapter profile",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "data-ai",
+      "file": "data-ai.md",
+      "label": "Data, AI and ML",
+      "language": "sv",
+      "number": "23",
+      "layer": "Adapter profile",
+      "normative": false,
+      "implementation": "partial"
+    },
+    {
+      "id": "annotation-observability",
+      "file": "annotation-observability.md",
+      "label": "Annotation and observability",
+      "language": "sv",
+      "number": "24",
+      "layer": "Annotation profile",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "use-cases",
+      "file": "use-cases.md",
+      "label": "Use cases",
+      "language": "sv",
+      "number": "25",
+      "layer": "Value",
+      "normative": false,
+      "implementation": "defined"
+    },
+    {
+      "id": "conformance",
+      "file": "conformance.md",
+      "label": "Profiles and versions",
+      "language": "sv",
+      "number": "26",
+      "layer": "Conformance",
+      "normative": true,
+      "implementation": "partial"
+    },
+    {
+      "id": "documentation-sources",
+      "file": "documentation-sources.md",
+      "label": "Contract sources and requirements",
+      "language": "sv",
+      "number": "26a",
+      "layer": "Conformance",
+      "normative": false,
+      "implementation": "implemented"
+    },
+    {
+      "id": "errors",
+      "file": "errors.md",
+      "label": "Error model",
+      "language": "sv",
+      "number": "27",
+      "layer": "Conformance",
+      "normative": true,
+      "implementation": "defined"
+    },
+    {
+      "id": "playgrounds",
+      "file": "playgrounds.md",
+      "label": "Playground Labs",
+      "language": "sv",
+      "number": "28",
+      "layer": "Interactive implementation",
+      "normative": false,
+      "implementation": "partial"
+    },
+    {
+      "id": "glossary",
+      "file": "glossary.md",
+      "label": "Glossary",
+      "language": "sv",
+      "number": "29",
+      "layer": "Referens",
+      "normative": false,
+      "implementation": "defined"
+    }
+  ]
+}

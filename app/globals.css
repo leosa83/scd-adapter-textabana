@@ -2510,6 +2510,24 @@ a {
   font-size: inherit;
 }
 
+.spec-language-note {
+  border-left: 2px solid #6988d0;
+  padding: 12px 16px;
+  color: #aeb8c4;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.spec-source-link {
+  margin: 12px 0 24px;
+  font-size: 13px;
+}
+
+.requirement > code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 #direction .spec-table,
 #integration .spec-table,
 #documentation-sources .spec-table {

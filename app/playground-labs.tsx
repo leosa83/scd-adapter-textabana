@@ -70,21 +70,21 @@ function ResultShell({
 }: Pick<PlaygroundOutputProps, "lab" | "result" | "running"> & { children: React.ReactNode }) {
   const Icon = labCopy[lab].icon;
   return (
-    <section className="preview-shell lab-result-shell" aria-label={`${labCopy[lab].title} resultat`}>
-      <div className="panel-bar">
+    <section className="preview-shell lab-result-shell" lang="sv" aria-label={`${labCopy[lab].title} result`}>
+      <div className="panel-bar" lang="en">
         <div className="panel-title"><Icon aria-hidden="true" />{labCopy[lab].title}</div>
         <span className={`runtime-state ${result.ok ? "is-ok" : "is-error"}`} aria-live="polite">
           <span />
-          {running ? "Kompilerar" : result.ok ? `Run ${result.runId ?? "–"} · committed` : result.cancelled ? "Run cancelled" : "Run failed"}
+          {running ? "Compiling" : result.ok ? `Run ${result.runId ?? "–"} · committed` : result.cancelled ? "Run cancelled" : "Run failed"}
         </span>
       </div>
       {!result.ok ? (
-        <div className="error-state lab-error-banner" role="alert">
+        <div className="error-state lab-error-banner" role="alert" lang="en">
           <div className="error-icon"><AlertTriangle aria-hidden="true" /></div>
           <div>
-            <p className="error-kicker">{result.cancelled ? "Körningen avbröts atomiskt" : "Körningen publicerade inget domänresultat"}</p>
+            <p className="error-kicker">{result.cancelled ? "Run cancelled atomically" : "The run committed no domain result"}</p>
             <h3>{result.error}</h3>
-            <p>{result.diagnostics[0]?.code ?? "TBA-RUN-LAB"} · committed render och channels är tomma.</p>
+            <p>{result.diagnostics[0]?.code ?? "TBA-RUN-LAB"} · committed render and channels are empty.</p>
           </div>
         </div>
       ) : null}
@@ -103,7 +103,7 @@ function LabTabs({
   items: Array<{ id: string; label: string; count?: number; icon?: typeof Braces }>;
 }) {
   return (
-    <div className="output-tabs lab-tabs" role="tablist" aria-label="Inspektionsvy">
+    <div className="output-tabs lab-tabs" role="tablist" aria-label="Inspection view">
       {items.map((item) => {
         const Icon = item.icon;
         return (

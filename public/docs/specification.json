@@ -1,0 +1,1414 @@
+{
+  "schema": "textabana.specification-projection/v1",
+  "revision": "2026-09-20",
+  "groups": [
+    {
+      "label": "Overview",
+      "ids": [
+        "definition",
+        "status",
+        "direction",
+        "html",
+        "architecture",
+        "contract"
+      ]
+    },
+    {
+      "label": "Language",
+      "ids": [
+        "source-value",
+        "syntax",
+        "blocks-intervals",
+        "inheritance",
+        "properties-modules",
+        "processing"
+      ]
+    },
+    {
+      "label": "Canonical contracts",
+      "ids": [
+        "ir-plan",
+        "anchors",
+        "result",
+        "channels",
+        "system-out",
+        "artifacts"
+      ]
+    },
+    {
+      "label": "Runtime",
+      "ids": [
+        "module-manifest",
+        "runtime-protocol",
+        "editor-kernel",
+        "integration",
+        "runs",
+        "security"
+      ]
+    },
+    {
+      "label": "Interoperability",
+      "ids": [
+        "adapter-contract",
+        "notebooks",
+        "data-ai",
+        "annotation-observability"
+      ]
+    },
+    {
+      "label": "Conformance",
+      "ids": [
+        "use-cases",
+        "conformance",
+        "documentation-sources",
+        "errors",
+        "playgrounds",
+        "glossary"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "definition",
+      "source": "docs/reference/specification/definition.md",
+      "label": "Definition",
+      "language": "en",
+      "number": "",
+      "layer": "Overview",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Readable text as an executable, position-aware semantic source",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Textabana turns readable text into an executable source with multiple output channels, independently of how a host presents the result. It compiles the source into an explicit plan and produces a primary rendered value together with typed outputs.\n\n**Canonical source.** People work in readable text. Control syntax directs execution and is removed from the rendered output.\n\n**Explicit parser chain.** A lossless CST becomes an AST, typed IR and a deterministic execution plan, or locally recovered editor structure that cannot execute.\n\n**Multiple outputs.** `return` builds the primary rendered value. `emit` produces typed channel events without hidden feedback into the pipeline.\n\n**Traceable identity.** Anchors and source maps link results, annotations and data back to versioned source.\n\nTextabana defines the semantic relationships between these parts. Notebook formats, Python kernels, table formats, annotation models and experiment trackers remain external hosts, formats or adapters.\n\nThis reference distinguishes target contracts from implemented lab subsets. English translation is in progress; sections marked Swedish preserve their existing normative wording. See the [English migration register](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/english-migration.md)."
+        }
+      ]
+    },
+    {
+      "id": "status",
+      "source": "docs/reference/specification/status.md",
+      "label": "Status and norms",
+      "language": "sv",
+      "number": "00",
+      "layer": "Overview",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Status and norms",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Detta dokument skiljer på språkets målkontrakt och den implementerade labbdelmängden. Semantik får inte härledas ur en enskild UI-implementation. Öppna Underlag vid ett krav för dess implementationsgräns och källor. Normativt betyder en regel för det angivna kontraktet, inte att hela regeln är implementerad eller verifierad.\n\nInterop draft 0.7, Language 0.4, labbschemana och implementationsplanens version är olika versionsaxlar. Denna dokumentationsrevision harmoniserar beskrivningen till sprint 5.9 och inför inga nya runtimeförmågor. Se [kontraktskällor och kravregister](./documentation-sources.md).\n\n### Dokumentets två statusdimensioner\n\n| Dimension | Värden | Betydelse |\n| --- | --- | --- |\n| `Kravstatus` | Normativt · Informativt | Anger om texten definierar konformt beteende eller beskriver en adapter/rekommendation. |\n| `Implementation` | Körbar language 0.4-subset · Interaktiv subset · Definierat i draft 0.7 · Contract-only | Anger vad webbplaygrounden faktiskt kör, vad den endast visualiserar delvis och vad som fortfarande är ett kontrakt för kommande implementation. |\n\n**MÅSTE**\n\nAbsolut krav för den profil som gör anspråk på konformitet.\n\n**BÖR**\n\nRekommenderat krav som endast får frångås av dokumenterat skäl.\n\n**FÅR**\n\nTillåtet val som inte får ändra övrig normativ semantik."
+        },
+        {
+          "type": "requirement",
+          "id": "STATUS-001",
+          "markdown": "En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer."
+        },
+        {
+          "type": "requirement",
+          "id": "STATUS-002",
+          "markdown": "Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil."
+        },
+        {
+          "type": "requirement",
+          "id": "STATUS-003",
+          "markdown": "Nuvarande Playground implementerar åtta avgränsade vyer: Language & Scope med separata Parser-, Graf- och Körspår-flikar, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Grafvyn visar en pre-transform `textabana.execution-plan/lab-v2`, en typad `textabana.execution-graph/lab-v1`, rådgivande invalidation och en faktisk `textabana.execution-report/lab-v1` med scheduler- och resursrapport. Editor-sessioner kan återanvända en verifierad pure/deterministic/effects-free stageoutput efter två lika observationer i skilda committed revisioner. Oberoende, snapshotbara stages med samma betrodda kontrakt kan överlappa asynkront i en Worker; completionordning påverkar aldrig planordnad trace, cachejournal eller merge. Resultatvyerna läser samma valda run; Editor Kernel visar dessutom revisionskedjan runt den. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. `editor-kernel/1` och `annotation/1` är playground-subsets; verklig modellkörning och `ml-lineage/1` är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet."
+        }
+      ]
+    },
+    {
+      "id": "direction",
+      "source": "docs/reference/specification/direction.md",
+      "label": "Direction and standards",
+      "language": "sv",
+      "number": "00a",
+      "layer": "Architecture direction",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Direction and standards",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Arkitekturen följer riktningen; standardåteranvändningen är delvis genomförd och flera adapterlöften återstår.\n\nBedömt 2026-09-20 mot sprint 5.9. Tabellen skiljer faktisk formatanvändning, avgränsad projektion och planerat stöd. Ett internt test eller ett välkänt fältnamn bevisar inte extern interoperabilitet.\n\n### Etablerade standarder: faktisk användning och gräns\n\n<!-- standards:start -->\n| Standard | Status | Actual use | Boundary |\n|---|---|---|---|\n| [Markdown / GFM](https://github.github.com/gfm/) | Used for presentation | Rendered text uses react-markdown and remark-gfm. Textabana adds its own control lines around readable text. | Textabana has its own grammar. Full CommonMark/GFM conformance for an entire Textabana source document has not been verified. |\n| [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) | Partially implemented | The artifact bundle schema is compiled with Ajv2020 and used by the same verifier in the CLI and application. | Channel payloads use handwritten checks for type, required and one level of properties. Constraints such as $ref, enum, minimum and nested rules are not enforced. schemaRef is not an automatic resolver. |\n| [Apache Arrow / IPC](https://arrow.apache.org/docs/format/Columnar.html) | Planned | The data lab uses JSON records with stable keys and separate lineage. | There is no Arrow encoding, schema translation or IPC round trip. JSON records do not constitute Arrow support. |\n| [Apache Parquet](https://parquet.apache.org/docs/overview/) | Planned | The data adapter produces a host-neutral table projection. | No Parquet files or persistent ArtifactRefs are created. JSON provenance is not Parquet interoperability. |\n| [MIME / Jupyter](https://nbformat.readthedocs.io/en/latest/format_description.html) | Executable subset | text/plain, text/markdown and application/vnd.textabana.result+json present the same committed value. The Python client creates a MIME bundle. | Textabana has its own notebook snapshot contract; no nbformat import/export, Jupyter Messaging or external kernel round trip. Custom media type names do not establish IANA registration. |\n| [W3C Web Annotation](https://www.w3.org/TR/annotation-model/) | Export subset | The annotation adapter produces AnnotationPage, Annotation, body, target and selectors, with namespaced Textabana fields. | Local tests verify projection and references. Full JSON-LD semantics, an external consumer and import/export round trips are unverified; custom selectors need an explicit mapping. |\n| [W3C PROV](https://www.w3.org/TR/prov-dm/) | Related conceptual model | Internal provenance uses entities, activities and generating/input relationships for the semantic chain. | Similar concepts do not establish PROV conformance. No PROV-O/RDF export, complete relation mapping or standards validation is implemented. |\n| [LSP](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/) | Planned | The editor protocol and CodeMirror/Monaco bindings handle revisions and Unicode offsets. | Editor bindings are not an LSP server. No LSP transport, capability negotiation or standard diagnostic export exists. |\n| [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/) | Planned | The kernel has internal execution traces and resource reports. | There is no OTel SDK, OTLP export or collector integration. Operational traces do not replace semantic provenance. |\n| [OpenLineage](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.md) | Planned | The data lab tracks internal dataset, record and input relationships. | Standard RunEvent objects, Job/Dataset identities, facets and OpenLineage transport are not implemented. |\n| [MLflow](https://mlflow.org/docs/latest/ml/tracking/) | Planned | Model and prompt metadata exists in the annotation lab contracts. | No MLflow tracking client/server, model execution or experiment round trip is implemented. |\n<!-- standards:end -->\n\n**Prioriterad implementationsskuld: kanalernas schemavalidering**\n\nArtefaktpaketet använder Ajv2020. Kanalpayloads använder fortfarande en egen begränsad kontroll; exempelvis `minimum`, `enum` och `$ref` verkställs inte. Nästa schemaarbete behöver använda en standardvalidator eller avvisa regler utanför en uttrycklig dialekt. Den här dokumentationsrevisionen ändrar inte valideringsbeteendet.\n\nEgna IR-, Result- och revisionskontrakt behövs för att binda källa, plan, events och projektion till samma betydelse. Vid formatgränser ska etablerade representationer användas. Läs [hela riktningsbedömningen med källor och prioriteringar](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/STANDARDS_DIRECTION.md)."
+        },
+        {
+          "type": "requirement",
+          "id": "DIRECTION-001",
+          "markdown": "Ett nytt Textabana-format MÅSTE ange vilket semantiskt samband det tillför, vilken etablerad standard som övervägts och hur utbyte ska ske utan dold betydelseförändring."
+        },
+        {
+          "type": "requirement",
+          "id": "DIRECTION-002",
+          "markdown": "Standardstöd MÅSTE beskriva version, riktning för import/export, implementerad delmängd och verifierad gräns. Ett schema-ID, en dependency eller en planerad adapter får inte ensam räknas som stöd."
+        },
+        {
+          "type": "requirement",
+          "id": "DIRECTION-003",
+          "markdown": "En adapter MÅSTE redovisa mapping och förluster vid standardgränsen. Intern konformitet och verifiering mot en oberoende extern konsument MÅSTE rapporteras separat."
+        }
+      ]
+    },
+    {
+      "id": "html",
+      "source": "docs/reference/specification/html.md",
+      "label": "Textabana and HTML",
+      "language": "sv",
+      "number": "01",
+      "layer": "Core boundary",
+      "normative": true,
+      "implementation": "defined",
+      "title": "Textabana and HTML",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "HTML kan tillsammans med JavaScript bygga avancerade metadataapplikationer. Skillnaden är inte vad som över huvud taget går att programmera, utan vilken semantik som standardiseras och vilken artefakt som förblir den kanoniska källan.\n\n**Den avgörande skillnaden**\n\nHTML beskriver ett dokumentträd som en webbläsare kan presentera. Textabana beskriver vilka semantiska processer som gäller över vilka delar av en text, i vilken ordning, och vilka spårbara resultat de producerar.\n\n### HTML jämfört med Textabana\n\n| Dimension | HTML | Textabana |\n| --- | --- | --- |\n| Primär artefakt | Ett märkt elementträd för webben. | Läsbar, versionerad text som kan leva utanför webben. |\n| Grundstruktur | En strikt nästlad DOM. | Ett blockträd plus öppna intervall som får överlappa och korsa. |\n| Beteende | Definieras normalt av separat, applikationsspecifik JavaScript. | Deklarerade funktioner, pipelines, scope-ordning och inheritance ingår i språkmodellen. |\n| Primär output | DOM och browserrendering. | TextabanaResult med render, typade channels, artifacts, diagnostics och provenance. |\n| Metadata | Attribut och data-* på element; betydelsen bestäms av applikationen. | Schema-kontrollerade events som binds till källan via Anchor och SourceMap. |\n| Position | DOM-noder, selectors och offsets i den renderade strukturen. | Versionerad källidentitet; row, line och DOM-position är utbytbara projektioner. |\n| Ordning | Bestäms av den aktuella applikationens event- och JavaScriptkod. | Är normativ genom pipeline, @order, aktiva scopes och inheritance-policy. |\n| Host | Webbläsar- och DOM-orienterad. | Host-neutral: editor, notebook, Python/R/Julia, server, datapipeline eller webb. |\n| Korsande intervall | Kan inte uttryckas som ett enda giltigt nästlat elementträd utan fragmentering. | Är ett förstaklassbegrepp med explicit cross-policy och bevarade scope-id:n. |\n\n### HTML lagrar ett färdigt påstående\n\n### Metadata i ett DOM-element\n\nIllustrativt · html\n\n```html\n<p data-kind=\"claim\" data-confidence=\"0.94\">\n  Textabana kan användas för metadataeditorer.\n</p>\n```\n\nElementet bär metadata, men HTML definierar inte vilken process som skapade den, hur den validerades eller hur den ska följa med tillbaka till en redigerad källtext.\n\n### Textabana deklarerar processen\n\n### Semantiska funktioner över källtext\n\nIllustrativt · textabana\n\n```textabana\n>>>>+ normalize @id=clean @order=10\n>>>>+ claims.extract @id=claims @order=20\n\nTextabana kan användas för metadataeditorer.\n\n<<<<+ @id=clean\n<<<<+ @id=claims\n```\n\nSamma run kan producera en ren render, ett typat claim-event, en editorannotation, ett Anchor och proveniens utan att bädda in allt i den synliga texten.\n\n**Textabana source** — kanonisk semantik\n\n**TextabanaResult** — render · channels · anchors\n\n**HTML-adapter** — projection policy\n\n**DOM** — en möjlig presentation"
+        },
+        {
+          "type": "requirement",
+          "id": "HTML-ADAPTER-001",
+          "markdown": "HTML FÅR vara renderformat och editorhost, men DOM-noder eller DOM-offsets får inte ersätta Textabanas kanoniska Anchor-identitet."
+        },
+        {
+          "type": "requirement",
+          "id": "HTML-ADAPTER-002",
+          "markdown": "När korsande intervall projiceras till HTML MÅSTE adaptern fragmentera presentationen utan att förlora scope-id, SourceMap eller exekveringssemantik."
+        },
+        {
+          "type": "requirement",
+          "id": "HTML-ADAPTER-003",
+          "markdown": "En HTML-adapter får presentera eller sanera resultatet men får inte göra browserordning, DOM-nästling eller eventtiming till ny språksemantik."
+        }
+      ]
+    },
+    {
+      "id": "architecture",
+      "source": "docs/reference/specification/architecture.md",
+      "label": "Architecture",
+      "language": "sv",
+      "number": "02",
+      "layer": "Overview",
+      "normative": false,
+      "implementation": "defined",
+      "title": "Architecture",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Textabana placerar integrationsgränsen efter en tydlig, portabel resultatmodell. Värdar får presentera och transportera semantiken, men inte skriva om den.\n\n**Source** — .tba · .md · notebook · API\n\n**Parser + compiler** — CST · AST · IR · Plan/DAG\n\n**Runtime** — block · intervall · pipeline\n\n**Result** — render · channels · provenance\n\n**Adapters** — Jupyter · Arrow · LSP · MLflow\n\n### Abstrakt maskin\n\nNormativ modell · contract\n\n```contract\nParse(SourceDocument)\n  -> { CST, AST, TypedIR, Diagnostics }\n\nCompile(TypedIR, ModuleLock, HostCapabilities)\n  -> { SourceMap, ExecutionPlan, ExecutionGraph, Diagnostics }\n\nExecute(ExecutionPlan, Inputs, RunProfile)\n  -> { ExecutionTrace, TextabanaResult }\n\nTextabanaResult\n  = Render + ChannelSnapshots + Artifacts + Provenance + Diagnostics\n```"
+        },
+        {
+          "type": "requirement",
+          "id": "ARCH-001",
+          "markdown": "En host-adapter FÅR projicera ett resultat till sin egen UI- eller transportmodell men FÅR INTE ändra eventets mening, identitet, anchor eller proveniens."
+        },
+        {
+          "type": "requirement",
+          "id": "ARCH-002",
+          "markdown": "Kompilering och exekvering MÅSTE kunna beskrivas utan beroende till JavaScript, Python, Jupyter eller en specifik editor."
+        }
+      ]
+    },
+    {
+      "id": "contract",
+      "source": "docs/reference/specification/contract.md",
+      "label": "Semantic contract",
+      "language": "sv",
+      "number": "03",
+      "layer": "Overview",
+      "normative": true,
+      "implementation": "defined",
+      "title": "Semantic contract",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Följande invariants är ryggraden i språket. En optimering, adapter eller framtida syntax får inte bryta dem.\n\n1. 01Källsnapshoten är immutable och versionerad.\n2. 02Kontrollsyntax syns inte i renderingen, utom när den uttryckligen escapats som literal text.\n3. 03Block är balanserade träd; intervall är ordnade aktiva scope-mängder och inte ett falskt träd.\n4. 04Samma deterministiska inputs och plan ger samma värde, eventinnehåll och eventordning.\n5. 05Default är `block output → ambient interval input`, exakt en gång vid blockgränsen.\n6. 06Ett explicit `@intervals`-steg innebär att ingen implicit intervallinjektion sker.\n7. 07`return` påverkar primär pipeline; `emit` påverkar endast en sidokanal.\n8. 08Inheritance omfattar hela funktionsanropet: både returvärde och emissioner.\n9. 09Kanaler är append-only inom en run och läses aldrig implicit av samma pipeline.\n10. 10Global `sequence` är unik, monoton och härledd ur planen — aldrig ur väggklockan.\n11. 11Commit är atomisk. `tentative` är inte samma sak som durable output.\n12. 12Beständiga positioner binds till dokumentversion och Anchor; row och line är projektioner.\n13. 13`mapping=exact` kräver verifierbar output–input-relation.\n14. 14Manifest, digest och kapabiliteter löses före modulkod exekveras.\n15. 15Stora eller binära resultat refereras som artifacts i stället för att bäddas in i kontrollplanet.\n16. 16Hemligheter serialiseras aldrig i source, IR, events, resultat eller loggar.\n17. 17Hela source snapshot parsas före modulinitiering. Recovery är synlig för editorn men aldrig körbar."
+        }
+      ]
+    },
+    {
+      "id": "source-value",
+      "source": "docs/reference/specification/source-value.md",
+      "label": "Source and values",
+      "language": "sv",
+      "number": "04",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "defined",
+      "title": "Source and values",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Källan är textorienterad, men runtimevärdet är inte begränsat till en sträng. Ett explicit värdekuvert gör pipelines typbara över språkgränser.\n\n### SourceDocument — minsta kanoniska fält\n\n| Fält | Typ | Semantik |\n| --- | --- | --- |\n| `documentId` | URI eller logiskt ID | Stabil identitet över revisioner. |\n| `documentVersion` | SHA-256 | Digest av normaliserad UTF-8-källa. CRLF och CR blir LF; ingen Unicode-normalisering görs. |\n| `baseUri` | URI | Bas för include-resolution och relativa artifactreferenser. |\n| `source` | UTF-8 text | Den exakta immutable snapshot som kompileringen är bunden till. |\n\n### TextabanaValue — core kinds\n\n| kind | Avsikt | Dataplan |\n| --- | --- | --- |\n| `text` | Text med mediaType, normalt text/plain eller text/markdown. | Inline |\n| `document` | Strukturerat dokumentvärde. | Inline eller ArtifactRef |\n| `scalar` | Boolean, tal, sträng eller null. | Inline JSON |\n| `object` | Schema-kontrollerat objekt. | Inline JSON |\n| `table` | Tabell med schema och record identity. | Arrow eller ArtifactRef |\n| `tensor` | N-dimensionellt värde med dtype och shape. | DLPack, Arrow eller ArtifactRef |\n| `graph` | Noder och relationer. | Schema-kontrollerat objekt/artifact |\n| `mime-bundle` | Flera representationer av samma logiska värde. | MIME-map |\n| `artifact-ref` | Referens till stor eller binär data. | Opaque handle + digest |"
+        },
+        {
+          "type": "requirement",
+          "id": "VALUE-001",
+          "markdown": "Kanoniska offsets MÅSTE vara nollbaserade Unicode-code-point-offsets och använda halvöppna intervall `[start, end)`."
+        },
+        {
+          "type": "requirement",
+          "id": "VALUE-002",
+          "markdown": "En sträng FÅR vara shorthand för `kind=text`. Ingen annan tyst typkonvertering är tillåten."
+        },
+        {
+          "type": "requirement",
+          "id": "VALUE-003",
+          "markdown": "Pipelinekanter MÅSTE typkontrolleras mot funktionens `accepts` och `returns` när schema är känt."
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "source": "docs/reference/specification/syntax.md",
+      "label": "Parser, syntax and recovery",
+      "language": "sv",
+      "number": "05",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Parser, syntax and recovery",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Modaliteten är synlig direkt i texten. En versionssatt Lezer-parser producerar först en förlustfri CST; Textabana sänker den därefter till AST och typed IR. Samma parseprodukt styr include-resolution, inspektion och exekvering.\n\n### Markörfamiljer\n\n| Markör | Roll | Krav |\n| --- | --- | --- |\n| `>>>>!` | Direktiv | Påverkar compilation; producerar inget värde. |\n| `>>>>` | Öppna block | MÅSTE stängas strukturellt. |\n| `<<<<` | Stäng block | MÅSTE matcha öppningens första funktionsnamn. |\n| `>>>>+` | Aktivera intervall | Lägger till en identifierbar scope-instans. |\n| `<<<<+` | Avaktivera intervall | Stänger exakt @id eller senast öppnade aktiva instans med namnet. |\n| `\\|` | Pipeline | Kör steg vänster till höger. |\n| `{ ... }` | Properties | Fäster metadata på en Markdown-AST-enhet. |\n| `\\>>>>` | Escapad markör | Blir literal text; exakt escape-backslash tas bort. |\n| ``````` / ~~~```` | Literal fence | Kontrollmarkörer inuti Markdown-fence tolkas aldrig. |\n\n### Alla syntaktiska ytor\n\nNormativ syntax · textabana\n\n```textabana\n>>>>! include \"./modules/core.js\"\n>>>>! config scope-order=\"declaration:asc\"\n\n>>>>+ normalize @id=clean @order=10\n\n>>>> summarize sentences=2\n  | tag class=\"abstract\"\n\nText {.claim priority=10}\n<<<< summarize\n\n<<<<+ @id=clean\n```\n\n### Körbar EBNF · förenklat kärnfragment\n\nParser lab-v1 · ebnf\n\n```ebnf\nDocument      ::= Item*\nItem          ::= Fence | EscapedMarker | Directive | Block | IntervalOpen | IntervalClose | Property | Text\nBlock         ::= BlockHeader Item* BlockClose\nBlockHeader   ::= '>>>>' Pipeline Continuation*\nIntervalOpen  ::= '>>>>+' Stage\nIntervalClose ::= '<<<<+' ('@id=' Identifier | Name)\nPipeline      ::= Stage ('|' Stage)*\nContinuation  ::= Indent '|' Stage ('|' Stage)*\nStage         ::= Name Argument*\nArgument      ::= ArgName ('=' Value)?\n```\n\n**Funktionsargument**\n\n`sentences=2` och andra vanliga argument typas av parsern och skickas till funktionen. Validering mot funktionens fulla JSON Schema är definierad men ännu inte körbar i labbet.\n\n**Engine controls**\n\n`@id`, `@order`, `@inherit` och `@cross` styr motorn och skickas inte som funktionsargument. Parsern kräver identifierarsträng, ändligt tal respektive uttryckliga policysträngar utan JavaScript-koercion.\n\n**Literal syntax**\n\nMarkörer känns endast igen vid logisk radstart utanför fenced code. U+005C före markören gör raden literal; genererad output parsas aldrig om.\n\n**Kommentarer**\n\nSpråket definierar ingen fristående `//`-kommentar. Prosa eller en framtida explicit directive ska användas.\n\n**Recovery är editorstruktur, inte tolererad exekvering**\n\nOfullständig syntax ger lokala `Recovery`-noder med stabil kod och exakt span. Giltiga syskon finns kvar i CST/AST/IR, men varje error-level recovery blockerar modulinitiering, Plan och domänexekvering för hela snapshoten.\n\n**Varför Lezer — och varför ingen Worker-migrering**\n\nLezer är JavaScript-native, editororienterat och byggt för syntaxträd under pågående fel. Tree-sitters webbväg hade krävt separat runtime-Wasm, grammar-Wasm och asynkron assetladdning. Parsern genereras därför offline och buntas i samma klassiska `/runtime-worker.js`; Lezer-trädet förblir intern CST och blir aldrig publikt IR-schema."
+        },
+        {
+          "type": "requirement",
+          "id": "SYNTAX-001",
+          "markdown": "Kontrollrader, stängningsrader och fristående propertyrader MÅSTE avlägsnas från primär render."
+        },
+        {
+          "type": "requirement",
+          "id": "SYNTAX-002",
+          "markdown": "Okända engine controls MÅSTE ge kompileringsdiagnostik; de får inte tyst skickas vidare till funktionen."
+        },
+        {
+          "type": "requirement",
+          "id": "PARSE-001",
+          "markdown": "Samma source snapshot och grammar version MÅSTE deterministiskt ge samma CST, diagnostikkoder och recovery kinds."
+        },
+        {
+          "type": "requirement",
+          "id": "PARSE-002",
+          "markdown": "Recovery MÅSTE behålla exakt authored span eller en explicit zero-width missing-token-position. Den får aldrig fabricera en körbar opener, close eller stage."
+        },
+        {
+          "type": "requirement",
+          "id": "PARSE-003",
+          "markdown": "Varje error-level recovery MÅSTE blockera modulinitiering och domänexekvering men partial CST, AST, IR och diagnostik MÅSTE fortfarande kunna levereras till editorn."
+        }
+      ]
+    },
+    {
+      "id": "blocks-intervals",
+      "source": "docs/reference/specification/blocks-intervals.md",
+      "label": "Blocks and intervals",
+      "language": "sv",
+      "number": "06",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "implemented",
+      "title": "Blocks and intervals",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "**Block**\n\nStrikt balanserade. Ett inre block ersätts av sitt resultat innan omgivande block körs.\n\n`outer(inner(text))`\n\n**Intervall**\n\nBehöver inte stängas LIFO. Varje maximalt segment med samma aktiva scope-set körs som en enhet.\n\n`ordered(activeScopes)`\n\n### Nästad intervallinvers\n\nKonformitetsfixture · textabana\n\n```textabana\n>>>>+ base64encode @id=encoder\n\n>>>>+ base64decode @id=decoder\n\n<base64decode><base64encode> Textabana kan transformera den här texten </base64encode></base64decode>\n\n<<<<+ @id=encoder\n<<<<+ @id=decoder\n```\n\nMed deklarationsordning stigande körs `base64encode` före `base64decode`. Resultatet blir därför ursprungstexten. Exemplet visar att exekveringsordningen bestäms av scope-ordningen — inte av stängningsordningen.\n\n### Sortering av samtidiga intervall\n\n### Total ordning för aktiva intervall\n\n| Del | Regel | Tie-break |\n| --- | --- | --- |\n| `explicit @order` | Ett ändligt numeriskt värde har företräde. | Declaration sequence. |\n| `utan @order` | Declaration sequence används som ordervärde. | Declaration sequence. |\n| `riktning` | Stigande är default; fallande måste anges i config. | Dokumentomfattande konfiguration. |"
+        },
+        {
+          "type": "requirement",
+          "id": "SCOPE-001",
+          "markdown": "Ett intervall FÅR anropas flera gånger under sin livstid när förändringar i andra aktiva scopes skapar flera maximala segment."
+        },
+        {
+          "type": "requirement",
+          "id": "SCOPE-002",
+          "markdown": "Ett explicit `@id` BÖR användas för beständig adressering. Ett genererat id är endast stabilt inom samma dokumentversion."
+        },
+        {
+          "type": "requirement",
+          "id": "SCOPE-003",
+          "markdown": "Block MÅSTE vara strikt nästlade. Intervall FÅR överlappa och korsa varandra eftersom de representeras separat från blockträdet."
+        }
+      ]
+    },
+    {
+      "id": "inheritance",
+      "source": "docs/reference/specification/inheritance.md",
+      "label": "Inheritance",
+      "language": "sv",
+      "number": "07",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "implemented",
+      "title": "Inheritance",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "När ett block ligger i aktiva intervall körs dess kompletta blockpipeline först. Blockets output blir därefter input till de ambienta intervallen i scope-ordning. Det är språkets naturliga default.\n\nKälltextBlockpipelineAmbient intervalsOutput\n\n### Inheritance policies\n\n| Policy | Urval | Placering |\n| --- | --- | --- |\n| `@inherit=default` | Alla ambienta intervall. | Implicit efter hela blockpipelinen. |\n| `@inherit=none` | Inga intervall. | Blocket är en isolerad ö. |\n| `@inherit=only` | Endast angivna namn eller id:n. | Implicit efter blockpipelinen. |\n| `@inherit=except` | Alla utom angivna namn eller id:n. | Implicit efter blockpipelinen. |\n| `@inherit=explicit` | Endast explicit valda intervall. | Där varje virtuellt @intervals-steg står. |\n\n### Explicit intervallplacering\n\nNormativ syntax · textabana\n\n```textabana\n>>>> extract @inherit=explicit\n  | @intervals only=[clean,redaction]\n  | summarize sentences=3\n  | @intervals only=[translation,provenance]\n  | bullet\n\nText\n<<<< extract\n```"
+        },
+        {
+          "type": "requirement",
+          "id": "INHERIT-001",
+          "markdown": "Förekomsten av minst ett `@intervals`-steg MÅSTE stänga av all implicit intervallinjektion för blocket."
+        },
+        {
+          "type": "requirement",
+          "id": "INHERIT-002",
+          "markdown": "Urval med funktionsnamn matchar alla aktiva instanser med namnet; urval med `@id` matchar exakt en instans."
+        },
+        {
+          "type": "requirement",
+          "id": "INHERIT-003",
+          "markdown": "Inheritance styr hela intervallanropet, inklusive dess returvärde och emissioner. Redan emitterade events får aldrig pipas vidare som text."
+        },
+        {
+          "type": "markdown",
+          "markdown": "### Korsning mellan block och intervall\n\n### Cross policies\n\n| Policy | Algoritm | Status |\n| --- | --- | --- |\n| `error` | Avvisa partiell korsning före exekvering. | Default 0.3 |\n| `split` | Partitionera blocket vid scopegränser och kör blocket per segment. | Definierat 0.4 |\n| `promote` | Applicera korsande intervall på hela blockresultatet. | Definierat 0.4 |\n| `truncate` | Avsluta intervallets effekt vid blockgränsen. | Definierat 0.4 |\n| `preserve` | Kör blocket en gång och applicera scope endast på motsvarande outputsegment via verifierad segmentmap. | Definierat 0.4 |\n\n**Säker mapping**\n\n`preserve` MÅSTE nekas för reducerande eller aggregerande funktioner som inte levererar ett verifierbart mapping proof."
+        }
+      ]
+    },
+    {
+      "id": "properties-modules",
+      "source": "docs/reference/specification/properties-modules.md",
+      "label": "Properties and includes",
+      "language": "sv",
+      "number": "08",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Properties and includes",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "### Properties\n\nAttributlistor fästs på Markdown-AST-enheter, lagras i IR och försvinner ur renderingen. De exekverar ingenting av sig själva.\n\n### Lättviktig semantik\n\nIllustrativt · markdown + textabana\n\n```markdown + textabana\nDen centrala slutsatsen.\n\n{.claim .verified priority=10 confidence=0.94}\n\n## Evidens {.evidence source=\"PARES\"}\n```\n\n**Alias är språksemantik, inte playgroundsemantik**\n\nDraft 0.7 definierar `as alias`, men `textabana.parser/lab-v1` kör endast `>>>>! include \"path\"`. Exakta legacyraden `>>>> include \"path\"` stöds utan alias och har företräde framför ett block med namnet `include`.\n\n### Includes\n\nSkriptning är include-baserad. Compiler löser först en modulgraf och initierar därefter varje unik modul enligt vald run-profil.\n\n### Modulimport med alias\n\n0.4-defined · textabana\n\n```textabana\n>>>>! include \"pkg:textabana/claims@2\" as claims\n>>>>! include \"./modules/redaction.py\" as privacy\n\n>>>> claims.extract\nText\n<<<< claims.extract\n```"
+        },
+        {
+          "type": "requirement",
+          "id": "PROPERTY-001",
+          "markdown": "`@order` ordnar funktioner. En property som `priority` påverkar endast ordning om en uttrycklig funktion läser den."
+        },
+        {
+          "type": "requirement",
+          "id": "MODULE-001",
+          "markdown": "Compiler MÅSTE normalisera URI:er, bygga en DAG, upptäcka cykler och exportkollisioner samt pinna resolved URI, version och SHA-256 innan modulkod körs."
+        },
+        {
+          "type": "requirement",
+          "id": "MODULE-002",
+          "markdown": "Samma normaliserade URI och digest identifierar samma modulinstans. Modulen initieras en gång per fresh run, eller en gång per namngiven session i sessionprofilen."
+        },
+        {
+          "type": "requirement",
+          "id": "MODULE-003",
+          "markdown": "Cache FÅR inte ändra semantik. Återanvänd sessionstate, modulbyte eller nondeterministisk replay MÅSTE framgå av proveniens."
+        }
+      ]
+    },
+    {
+      "id": "processing",
+      "source": "docs/reference/specification/processing.md",
+      "label": "Processing model",
+      "language": "sv",
+      "number": "09",
+      "layer": "Language",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Processing model",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "### Sammanhängande referensdokument\n\nPlanerad golden fixture · textabana\n\n```textabana\n>>>>! include \"pkg:textabana/core@1\" as core\n>>>>! include \"pkg:textabana/claims@2\" as claims\n\n>>>>+ core.normalize @id=clean @order=10\n>>>>+ claims.annotate @id=review @order=30\n\n## Observation {.evidence source=PARES}\n\n>>>> claims.extract @inherit=explicit\n  | @intervals only=[clean]\n  | claims.rank\n  | @intervals only=[review]\n\nFartyget avgick från Göteborg den 4 maj.\n<<<< claims.extract\n\n<<<<+ @id=clean\n<<<<+ @id=review\n```\n\n1. 1**Fånga immutable snapshot**Bind documentId, revision, source version och exakta source coordinates.\n2. 2**Bygg lossless CST**Lezer bevarar varje lexem och radslut; fenced code och escapes klassificeras före kontrollsyntax.\n3. 3**Sänk till AST**Bygg blockträdet, typed stages, literalnoder, properties, directives och lokala recovery nodes.\n4. 4**Beräkna intervallgraf**Behåll open/close-events separat från blockträdet och härled maximala scope-segment.\n5. 5**Publicera typed IR**Ge varje node/stage ett verifierbart Unicode code-point-span och varje fel en stabil kod.\n6. 6**Stäng compile gate**Recovery förblir synlig för editorn, men error-level diagnostics stoppar all modulinitiering och exekvering.\n7. 7**Lös, initiera och bind moduler**Alla säkra transporterade paket måste ha passerat metadata-, digest-, lock- och grantkontroll. Includes och config läses ur samma IR. Efter modulstart jämförs faktiska exports med manifestet, före första transform.\n8. 8**Kompilera plan och graf**Bygg en komplett, typad DAG efter modulinitiering men före första `transform`. Source-, stage-, merge- och rendernoder får deterministisk ordning och explicita beroenden.\n9. 9**Resolvera deterministiska ready sets**Varje stage får antingen ett fresh transformanrop eller en verifierad cachematerialisering. Oberoende effects-free kandidater kan överlappa asynkront; effectful/unknown är seriella barriärer. Startade batcher dräneras och values, trace samt cachejournal publiceras i planordning.\n10. 10**Commit atomiskt**Publicera immutable render, kanalsnapshots, proveniens och diagnostik som ett resultat.\n\nListan visar de semantiska stegen. I den aktuella Workern görs paketförhandskontrollen före dokumentparsningen; båda grindarna måste passera före någon modulstart. Ett paketfel kan därför rapporteras före ett syntaxfel. Legacy-moduler utan säker paketsignal följer den äldre loadergränsen. Se [exakt paketkontroll och felordning](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_ADMISSION_PROFILE.md)."
+        },
+        {
+          "type": "requirement",
+          "id": "PROCESS-001",
+          "markdown": "Samtidig exekvering FÅR endast användas när beroenden, eligibility, deterministic merge och publik event-/traceordning är fullt definierade. Completion timing får inte bli semantisk ordning."
+        },
+        {
+          "type": "requirement",
+          "id": "PROCESS-002",
+          "markdown": "Ett kompileringsfel MÅSTE stoppa all domänexekvering. Ett run-fel MÅSTE hindra durable commit."
+        },
+        {
+          "type": "requirement",
+          "id": "PROCESS-003",
+          "markdown": "Modulinitiering är en effekt och FÅR INTE ske innan hela dokumentet har passerat parserns compile gate."
+        },
+        {
+          "type": "requirement",
+          "id": "PROCESS-004",
+          "markdown": "ExecutionPlan och ExecutionGraph MÅSTE vara kompletta före första stage-resolution. ExecutionTrace `textabana.execution-step/lab-v2` MÅSTE vara en separat observation där varje post refererar en planerad nod och skiljer fresh invocation från cachematerialisering. Vid fel behålls hela grafen och samtliga faktiskt startade, dränerade stageutfall publiceras i planordning; oschemalagda noder saknar tracepost."
+        }
+      ]
+    },
+    {
+      "id": "ir-plan",
+      "source": "docs/reference/specification/ir-plan.md",
+      "label": "IR, graph, plan and trace",
+      "language": "sv",
+      "number": "10",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial",
+      "title": "IR, graph, plan and trace",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "CST bevarar källformen, AST normaliserar syntaxen och typed IR beskriver dokumentets host-neutrala semantik. ExecutionPlan och dess graf bestämmer därefter vad hosten avser att resolvera. ExecutionTrace beskriver vad som faktiskt hann få ett fresh transformanrop eller en cachematerialisering; invalidation preview jämför två planer utan att påstå cacheträff eller reuse.\n\n**CST → AST → TextabanaIR**\n\nLossless source, normaliserat blockträd och därefter en JSON-serialiserbar discriminated node-union med separat intervallgraf.\n\n**ExecutionPlan + Graph**\n\nStage-instanser, `syntaxStageRef`, typade edges, order keys, runtimepolicy och statiska cache-recept före transform.\n\n**ExecutionTrace + preview**\n\nObserverade stage-resolutioner binds med `planNodeRef`; `functionInvoked` skiljer invocation från materialisering. Historikberoende invalidation är separat, rådgivande metadata.\n\n**SourceMap**\n\nMånga-till-många-relationer mellan genererade selectors och versionerade inputanchors.\n\n### Minimalt IR-fragment\n\nNormativt schemafragment · json\n\n```json\n{\n  \"schema\": \"textabana.ir/lab-v2\",\n  \"languageVersion\": \"0.4-playground-subset\",\n  \"parser\": { \"schema\": \"textabana.parser/lab-v1\", \"engine\": \"lezer-lr\", \"parseMode\": \"full-document\" },\n  \"sourceRef\": { \"documentId\": \"doc:claims\", \"version\": \"fnv1a:...\" },\n  \"validity\": { \"status\": \"valid\", \"executable\": true, \"recoveryCount\": 0 },\n  \"nodes\": [{\n    \"nodeId\": \"claim-block\",\n    \"kind\": \"Block\",\n    \"sourceSpan\": { \"start\": 128, \"end\": 304, \"unit\": \"unicode-code-point\", \"startLine\": 8, \"startColumn\": 0, \"endLine\": 15, \"endColumn\": 19 },\n    \"pipeline\": [{ \"stageId\": \"stage:syntax:004\", \"name\": \"claims.extract\", \"sourceSpan\": { \"start\": 133, \"end\": 147 } }],\n    \"activeScopeIds\": [\"clean\", \"provenance\"]\n  }],\n  \"scopes\": [],\n  \"directives\": [],\n  \"diagnostics\": [],\n  \"extensions\": {}\n}\n```\n\n### Pre-transform plan och typad graf · förkortat\n\nKörbar plan + sessionslokal cache-subset · json\n\n```json\n{\n  \"schema\": \"textabana.execution-plan/lab-v2\",\n  \"constructionPhase\": \"post-module-init-pre-transform\",\n  \"graph\": {\n    \"schema\": \"textabana.execution-graph/lab-v1\",\n    \"nodes\": [{ \"nodeId\": \"plan:stage:…\", \"kind\": \"stage\", \"orderKey\": [2, 0, 0], \"cache\": { \"mode\": \"session-verified\", \"eligibility\": \"candidate\" } }],\n    \"edges\": [{ \"kind\": \"pipeline\", \"from\": { \"nodeId\": \"plan:source:…\", \"port\": \"value\" }, \"to\": { \"nodeId\": \"plan:stage:…\", \"port\": \"input\" } }],\n    \"terminalNodeId\": \"plan:render:…\"\n  },\n  \"runtimePolicy\": { \"scheduler\": \"bounded-deterministic-ready-set\", \"execution\": \"selective-concurrent-safe-branches\", \"cache\": \"session-verified-two-observations\", \"parallelMode\": \"single-worker-async-overlap\", \"commitOrder\": \"plan-order\" }\n}\n```"
+        },
+        {
+          "type": "requirement",
+          "id": "IR-001",
+          "markdown": "Intervall MÅSTE representeras som scopes och segmentmedlemskap; de får inte pressas in i ett AST-träd som förlorar korsningar."
+        },
+        {
+          "type": "requirement",
+          "id": "IR-002",
+          "markdown": "Authored ids FÅR vara stabila mellan revisioner. Genererade node ids MÅSTE dokumenteras som revision-local."
+        },
+        {
+          "type": "requirement",
+          "id": "IR-003",
+          "markdown": "Varje IR-node, stage och recovery MÅSTE ha ett halvöppet Unicode-code-point-span inom exakt source snapshot. Syntetiska missing tokens MÅSTE vara markerade och ha zero-width-span. En source-backed Blank-node FÅR vara zero-width utan att vara syntetisk; radslutet ägs då av CST:ns separata Newline-terminal."
+        },
+        {
+          "type": "requirement",
+          "id": "IR-004",
+          "markdown": "En `Recovery`-node MÅSTE ha `executable=false` och får aldrig refereras som en körbar stage i ExecutionPlan."
+        },
+        {
+          "type": "requirement",
+          "id": "PLAN-001",
+          "markdown": "ExecutionPlan MÅSTE bära varje stages exakta funktionsversion, typkontrakt, granted capabilities och deterministiska order key."
+        },
+        {
+          "type": "requirement",
+          "id": "PLAN-002",
+          "markdown": "ExecutionGraph MÅSTE ha unika node- och edge-id:n, typade endpoints, acyklisk topologisk ordning och exakt en renderterminal. Edge-typerna `pipeline`, `interval`, `interval-injection`, `inheritance`, `merge` och `render` MÅSTE vara explicita. Samma operationstape MÅSTE vara auktoritet för både planering och exekvering."
+        },
+        {
+          "type": "requirement",
+          "id": "PLAN-003",
+          "markdown": "Statisk cache eligibility, cache candidate, cache lookup, cache hit och faktisk reuse är skilda tillstånd. Ett ofullständigt state-, determinism- eller effektkontrakt MÅSTE göra funktionen icke-cachebar. En deklarerad kandidat är en betrodd manifestuppgift, inte i sig ett verifierat puritybevis."
+        },
+        {
+          "type": "requirement",
+          "id": "PLAN-004",
+          "markdown": "Invalidation preview MÅSTE vara rådgivande och separat från grafens och Resultatets semantiska identitet. Den MÅSTE ange basis, target och maskinläsbara orsaker samt får aldrig redovisas som cache hit eller reuse."
+        },
+        {
+          "type": "requirement",
+          "id": "PLAN-005",
+          "markdown": "Parallell eligibility och cache eligibility MÅSTE vara separata fält även när kriterierna sammanfaller. Endast oberoende `pure + deterministic + effects=[]`-stages utan kanaler eller icke-render-output FÅR överlappa i den aktuella subseten. En pending unknown, stateful eller effectful stage MÅSTE fence:a planmässigt senare ready branches tills barriären har avslutats; merge/render är seriella. Outputs från faktiskt samtidiga fresh-invocations MÅSTE snapshotas och klonas förlustfritt inom den portabla TextabanaValue-domänen vid settlement; andra typer avvisas atomiskt före planordnad publicering. Execution-ID:n, trace, values och cachejournal MÅSTE publiceras i planordning."
+        },
+        {
+          "type": "markdown",
+          "markdown": "**Playgroundens Våg 3-addendum**\n\nLanguage & Scope Lab visar verklig `textabana.cst/lab-v1`, `textabana.ast/lab-v1`, `textabana.ir/lab-v2`, en komplett pre-transform-graf, rådgivande invalidation, faktisk execution report med waves/run-budget och ett separat planordnat körspår från samma Worker. Planen byggs efter modulinitiering men före första transform. Editor Kernel återanvänder en exakt compiler-snapshot eller giltiga Lezer-fragment när revisionskedjan tillåter det. Schedulern får endast överlappa betrodda effects-free grenar asynkront; den ger ingen multicore-CPU-parallellism och kan inte preemptera synkrona loopar. Cachecheckpoint och credit-bunden metadata-streaming är hostmedierade lab-subsets, inte transparent distribuerad cache eller kontinuerlig stage-streaming."
+        }
+      ]
+    },
+    {
+      "id": "anchors",
+      "source": "docs/reference/specification/anchors.md",
+      "label": "Anchors and source maps",
+      "language": "sv",
+      "number": "11",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Anchors and source maps",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Rader flyttar sig när text redigeras. En hållbar metadataapplikation behöver därför versionerad target, flera selectors och en ärlig re-anchor-algoritm.\n\n### Kanoniskt Anchor\n\nNormativt schemafragment · json\n\n```json\n{\n  \"anchorId\": \"anchor:claim-42\",\n  \"target\": {\n    \"resourceId\": \"doc:claims\",\n    \"version\": \"sha256:...\",\n    \"view\": \"source\",\n    \"cellId\": null\n  },\n  \"selectors\": [\n    { \"type\": \"TextPositionSelector\", \"start\": 128, \"end\": 171, \"unit\": \"unicode-code-point\" },\n    { \"type\": \"TextQuoteSelector\", \"exact\": \"Den centrala slutsatsen.\", \"prefix\": \"...\", \"suffix\": \"...\" },\n    { \"type\": \"NodeSelector\", \"nodeId\": \"claim-block\" }\n  ]\n}\n```\n\n### Kanoniska selectors\n\n| Selector | Identifierar | När den används |\n| --- | --- | --- |\n| `TextPositionSelector` | Halvöppet code-point-spann. | Exakt snapshot och snabb lookup. |\n| `TextQuoteSelector` | Exakt text med valfri prefix/suffix-context. | Re-anchor efter textredigering. |\n| `NodeSelector` | Semantisk IR-node. | Strukturell stabilitet över mindre ändringar. |\n| `CellSelector` | Stabilt notebook cell.id. | Notebookprofil. |\n| `DataSelector` | datasetId, recordId och valfri kolumn. | Tabell- och analyticsprofil. |\n| `Time/FragmentSelector` | Tid, bildregion eller annan coordinate space. | Namespaced extension. |\n\n### Coordinate spaces\n\n| view | Koordinat | Typiskt mål |\n| --- | --- | --- |\n| `source` | Unicode code points | Kanonisk textkälla. |\n| `generated` | Outputselector + SourceMap | Transformerat mellanvärde. |\n| `rendered` | Rendererspecifik selector | Visuell Markdown/HTML-projektion. |\n| `notebook` | cellId + source selector | Notebookcell. |\n| `table` | datasetId + recordId + column | Tabellrecord. |\n| `image / time` | Fragment eller time selector | Bild-, ljud- och videoregion. |\n\n### Re-anchor i bestämd ordning\n\n1 · Samma version → position2 · Stabil node/cell/record identity3 · Unik quote + context4 · Ambiguous/orphan + diagnostic"
+        },
+        {
+          "type": "requirement",
+          "id": "ANCHOR-001",
+          "markdown": "En durable annotation MÅSTE binda till en versionerad target och minst en selector. Position och quote BÖR lagras tillsammans."
+        },
+        {
+          "type": "requirement",
+          "id": "ANCHOR-002",
+          "markdown": "En runtime får aldrig tyst välja en av flera re-anchor-kandidater. Flera giltiga kandidater MÅSTE ge `ambiguous`; ingen giltig kandidat MÅSTE ge `orphaned`. Båda utfallen ska förbli olösta och diagnostiserbara."
+        },
+        {
+          "type": "requirement",
+          "id": "ANCHOR-003",
+          "markdown": "Human-facing line och column är ettbaserade. LSP-adaptern MÅSTE konvertera till nollbaserade UTF-16-positioner."
+        },
+        {
+          "type": "markdown",
+          "markdown": "Detta avser presentation för människor. Serialiserad `SourceSpan` använder ettbaserade rader men nollbaserade code-point-kolumner och halvöppna offsets. CodeMirror-/Monaco-bindningarna konverterar UTF-16-offsets; en LSP-adapter är ännu planerad."
+        },
+        {
+          "type": "requirement",
+          "id": "SOURCEMAP-001",
+          "markdown": "Varje mapping record MÅSTE ange `exact`, `derived` eller `synthetic` samt generating activity. Aggregat är aldrig `exact` utan verifierat mapping proof."
+        },
+        {
+          "type": "markdown",
+          "markdown": "**Editor Metadata Lab**\n\nEditor Metadata Lab producerar Anchor med position- och quote-selector och visar SourceMap-records. Editor Kernel Lab publicerar därutöver verkliga cross-revision transitions: stabilt anchor-id matchas först och unik quote + origin därefter; flera kandidater blir `ambiguous` och ingen kandidat blir `orphaned`. Persistens över worker-restart, strukturell/fuzzy matching och LSP-coordinate conversion återstår."
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "source": "docs/reference/specification/result.md",
+      "label": "TextabanaResult",
+      "language": "sv",
+      "number": "12",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial",
+      "title": "TextabanaResult",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "### Resultatkuvert · målkontrakt\n\nNormativt schemafragment · json\n\n```json\n{\n  \"schema\": \"textabana.result/v1\",\n  \"resultId\": \"sha256:...\",\n  \"run\": { \"runId\": \"run:...\", \"instanceId\": \"run-instance:...\", \"profile\": \"fresh\", \"status\": \"succeeded\" },\n  \"source\": { \"documentId\": \"doc:claims\", \"version\": \"sha256:...\" },\n  \"render\": { \"kind\": \"text\", \"mediaType\": \"text/markdown\", \"data\": \"...\" },\n  \"channelSnapshots\": {\n    \"system.out\": { \"descriptor\": {}, \"events\": [] },\n    \"claims\": { \"descriptor\": {}, \"events\": [] }\n  },\n  \"artifacts\": [],\n  \"provenance\": { \"entities\": [], \"activities\": [], \"agents\": [] },\n  \"diagnostics\": [],\n  \"hashes\": { \"ir\": \"sha256:...\", \"environment\": \"sha256:...\" }\n}\n```\n\n### Resultatets delar\n\n| Del | Ansvar | Regel |\n| --- | --- | --- |\n| `render` | Primär projektion av returpipelinen. | Är ett resultatfält, inte en emitterbar kanal. |\n| `channelSnapshots` | Noll eller fler namngivna, typade eventlistor. | Publiceras atomiskt vid success. |\n| `artifacts` | Content-addressed stora/binära outputs. | Bär inga durable credentials. |\n| `provenance` | Entity–Activity–Agent-relationer. | Binder varje durable output till hur den skapades. |\n| `diagnostics` | Compile- och run-diagnostik. | Top-level är enda kanoniska sanningskällan för körfel. |"
+        },
+        {
+          "type": "requirement",
+          "id": "RESULT-001",
+          "markdown": "Ett lyckat resultat MÅSTE vara immutable. `resultId` BÖR vara content-addressed."
+        },
+        {
+          "type": "requirement",
+          "id": "RESULT-002",
+          "markdown": "Ett failed eller cancelled resultat MÅSTE ha tom committed render och tomma committed domain channels, men FÅR bära control-plane diagnostics."
+        },
+        {
+          "type": "requirement",
+          "id": "RESULT-003",
+          "markdown": "Timestamps är transportmetadata och får inte styra semantisk hash eller eventordning."
+        },
+        {
+          "type": "markdown",
+          "markdown": "**Resultatet som playgrounden visar**\n\nDet aktuella kuvertet är `textabana.result/lab-v1`, inte produktionsschemat i fragmentet ovan. Läs `response.resultEnvelope` och kanalernas `channelSnapshots[name].events`; transportens `output` och `channels` är separata bekvämlighetsfält. Success committas atomiskt; failed och cancelled visar tom committed render och tomma domänkanaler. Separata SHA-256-artefaktidentiteter, credit-styrd metadata-streaming efter commit samt explicita stage-, event- och rendergränser finns. Återstående arbete omfattar synkron preemption, kontinuerlig stage-streaming, generell sink-backpressure, hårda CPU-/minneskvoter, extern rollback och beständiga binära artifacts före full `runtime-json/1`-konformitet."
+        }
+      ]
+    },
+    {
+      "id": "channels",
+      "source": "docs/reference/specification/channels.md",
+      "label": "Typed channels",
+      "language": "sv",
+      "number": "13",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Typed channels",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Kanaler följer logger-mönstrets öppna namnrymd, men ett kanalnamn måste lösa till en descriptor. JSON är kontrollplan; Arrow och ArtifactRef är dataplan.\n\n### ChannelDescriptor och event envelope\n\nNormativt schemafragment · json\n\n```json\n{\n  \"descriptor\": {\n    \"name\": \"claims\",\n    \"payloadKind\": \"object\",\n    \"mediaType\": \"application/json\",\n    \"schemaRef\": \"schema:claim/v2\",\n    \"delivery\": \"snapshot\",\n    \"persistence\": \"durable\",\n    \"ordering\": \"global-sequence\",\n    \"key\": [\"payload.claimId\"],\n    \"required\": false,\n    \"sensitivity\": \"internal\"\n  },\n  \"event\": {\n    \"schema\": \"textabana.event/v1\",\n    \"eventId\": \"run:42:17\",\n    \"runId\": \"run:42\",\n    \"sequence\": 17,\n    \"channel\": \"claims\",\n    \"kind\": \"candidate\",\n    \"phase\": \"run\",\n    \"target\": { \"anchorRef\": \"anchor:claim-42\" },\n    \"origin\": { \"stageId\": \"extract:1\" },\n    \"correlation\": { \"traceId\": \"trace:...\", \"spanId\": \"span:...\" },\n    \"provenanceRef\": \"activity:extract-claims\",\n    \"state\": \"committed\",\n    \"payload\": { \"label\": \"Textabana\" },\n    \"extensions\": {}\n  }\n}\n```\n\n### ChannelDescriptor — portabelt kontrakt\n\n| Fält | Tillåtna värden | Regel |\n| --- | --- | --- |\n| `name` | Öppet, namespaced namn | Måste vara unikt i resultatet; system.* är reserverat. |\n| `payloadKind / mediaType / schemaRef` | TextabanaValue + mediatyp + JSON Schema | Bestämmer validering och adapterval. |\n| `delivery` | snapshot · stream | Beskriver konsumtionssätt, inte commitstatus. |\n| `persistence` | durable · transient | Transient events ingår inte i committed snapshot. |\n| `ordering` | global-sequence eller deklarerad key | Måste ge reproducerbar iteration. |\n| `key` | Ett eller flera payloadfält | Valfri stabil domänidentitet/idempotency. |\n| `required` | boolean | Om avsaknad av event gör run invalid. |\n| `sensitivity` | Hostdefinierad klassificering | Får endast skärpas av en adapter, aldrig tyst sänkas. |\n\n`return value`**Primärt värde**\n\nBlir input till nästa steg och slutligen resultatets `render`.\n\n`context.emit(name, event)`**Sidoflöde**\n\nAppenderar ett validerat event utan att ändra pipelinevärdet.\n\n`result.channel(name)`**Mål-API för läsning**\n\nIllustrativ hjälpare. Aktuell SDK läser `resultEnvelope.channelSnapshots[name].events` efter run."
+        },
+        {
+          "type": "requirement",
+          "id": "CHANNEL-001",
+          "markdown": "Kanalnamn är obegränsade utom den reserverade namnrymden `system.*`. `render` är reserverat som resultatfält."
+        },
+        {
+          "type": "requirement",
+          "id": "CHANNEL-002",
+          "markdown": "I strict profile MÅSTE descriptor och payloadschema deklareras före emit. En permissive legacyprofil FÅR syntetisera generisk JSON-descriptor vid första emit men får inte hävda typed-channel conformance."
+        },
+        {
+          "type": "requirement",
+          "id": "CHANNEL-003",
+          "markdown": "Events är append-only inom en run. Ett schemafel, en cyklisk payload eller ett oserialiserbart värde MÅSTE avvisas — inte förlustkonverteras till text."
+        },
+        {
+          "type": "requirement",
+          "id": "CHANNEL-004",
+          "markdown": "Varje accepted emit får en order key `(planStep, invocationOrder, localEmitIndex)`. `sequence` tilldelas vid deterministic merge/commit."
+        },
+        {
+          "type": "requirement",
+          "id": "CHANNEL-005",
+          "markdown": "En funktionsmodul körs inte en gång per kanal. Ett enda funktionsanrop FÅR emittera till valfritt många kanaler."
+        },
+        {
+          "type": "markdown",
+          "markdown": "**Strict channels i playgrounden**\n\nStrict mode kräver en deklarerad descriptor och avvisar odeklarerade kanaler, reserverade namn samt cykliska eller icke-serialiserbara payloads. Egen payloadkontroll verkställer endast `type`, `required` och direkta `properties[*].type`. Exempelvis `$ref`, `enum`, `minimum` och nästlade constraints kan ignoreras; `schemaRef` löser inte automatiskt ett schema. Full JSON Schema 2020-12 för kanalpayloads återstår. Editor Kernel har credit-styrd metadata-streaming efter commit; kontinuerlig stage-streaming och generell sink-backpressure återstår."
+        }
+      ]
+    },
+    {
+      "id": "system-out",
+      "source": "docs/reference/specification/system-out.md",
+      "label": "system.out",
+      "language": "sv",
+      "number": "14",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "partial",
+      "title": "system.out",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "`system.out` är inte Python-, process- eller Jupyter-stdout. Det är en reserverad, typad kanal för positionsbunden metadata och editorupplevelser.\n\n### Kanoniska system.out kinds\n\n| kind | Avsikt | Vanlig presentation |\n| --- | --- | --- |\n| `annotation` | Domänmetadata, relation eller review candidate. | Gutter, highlight, sidopanel. |\n| `diagnostic` | Positionsbunden varning eller information efter lyckad körning. | Squiggle, Problems-panel. |\n| `metric` | Mätvärde kopplat till dokument, span eller record. | Badge, chart, status. |\n| `progress` | Transient run-status. | Progressrad; aldrig durable domänoutput. |\n| `artifact-link` | Länk mellan position och ArtifactRef. | Preview, nedladdning, detaljpanel. |\n\n### Positionsbundet editorevent\n\nNormativt 0.4-format · json\n\n```json\n{\n  \"channel\": \"system.out\",\n  \"kind\": \"annotation\",\n  \"target\": {\n    \"mode\": \"row\",\n    \"anchorRef\": \"anchor:claim-42\",\n    \"rowSet\": \"claims\",\n    \"rowId\": \"claim:42\",\n    \"row\": 2,\n    \"line\": 43\n  },\n  \"payload\": { \"label\": \"Verifiera källa\", \"status\": \"candidate\" },\n  \"origin\": { \"module\": \"claims\", \"function\": \"extract\", \"scopeId\": \"review\" }\n}\n```\n\n**rowId**\n\nDurable domänidentitet inom deklarerad `rowSet` eller dataset.\n\n**row / line**\n\nEttbaserade, lättanvända projektioner för presentation — aldrig primär identitet.\n\n**anchorRef**\n\nKanonisk länk till versionerad källa och selectors.\n\n**origin**\n\nStage, modul, funktion, modalitet, scope och proveniensrelation."
+        },
+        {
+          "type": "requirement",
+          "id": "SYSTEM-OUT-001",
+          "markdown": "Semantisk `kind` och positioneringssätt `target.mode` MÅSTE vara separata. `row` och `line` är target modes, inte eventtyper."
+        },
+        {
+          "type": "requirement",
+          "id": "SYSTEM-OUT-002",
+          "markdown": "`context.system.out.row(...)` och `.line(...)` FÅR finnas som SDK-helpers men MÅSTE normalisera till samma portabla event envelope och Anchor."
+        },
+        {
+          "type": "requirement",
+          "id": "SYSTEM-OUT-003",
+          "markdown": "Compile- och run-fel lagras i top-level diagnostics. En lyckad positionsbunden varning FÅR dessutom projiceras i `system.out` med samma diagnostic-id."
+        },
+        {
+          "type": "markdown",
+          "markdown": "**Kompatibilitet**\n\nPlaygrounden normaliserar `context.system.out.row(...)` och `.line(...)` till separata `kind`, `target.mode` och `anchorRef`, och visar Anchor samt SourceMap i Editor Metadata Lab. Editor Kernel är det separata control-plane-protokollet för dokumentlivscykeln och konsumerar `system.out` genom channel subscriptions. Legacyfälten `type`, `row` och `line` finns kvar som kompatibilitetsprojektioner. Persistenta ankare och LSP-adaptern är fortfarande unsupported."
+        }
+      ]
+    },
+    {
+      "id": "artifacts",
+      "source": "docs/reference/specification/artifacts.md",
+      "label": "Artifacts and sinks",
+      "language": "sv",
+      "number": "15",
+      "layer": "Canonical contracts",
+      "normative": true,
+      "implementation": "defined",
+      "title": "Artifacts and sinks",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Textabana skiljer payloadens semantik från vart den skickas. Fil, panel, databas, Kafka och nätverk är host-bindings — inte separata språkoutputs.\n\n### ArtifactRef\n\nNormativt schemafragment · json\n\n```json\n{\n  \"artifactId\": \"artifact:claims-table\",\n  \"uri\": \"textabana-artifact://run:42/claims.arrow\",\n  \"mediaType\": \"application/vnd.apache.arrow.file\",\n  \"schemaRef\": \"schema:claims-table/v2\",\n  \"size\": 48192,\n  \"sha256\": \"sha256:...\",\n  \"createdBy\": \"activity:extract-claims\",\n  \"retention\": \"project\",\n  \"classification\": \"internal\"\n}\n```\n\n### Payloadstrategi\n\n| Data | Rekommenderad representation | Motiv |\n| --- | --- | --- |\n| Små kontrollobjekt | JSON / JSONL | Portabel validering och enkel inspektion. |\n| Rich notebook display | MIME bundle | Flera presentationer av samma värde. |\n| Tabeller i minne/transport | Apache Arrow / Arrow IPC | Schema, kolumner och effektivt språkbyte. |\n| Beständiga analytics-snapshots | Parquet | Kolumnär lagring och bred verktygskompatibilitet. |\n| Tensorer/embeddings | DLPack eller standardiserad Arrow-representation | Device- och zero-copy-aware överföring. |\n| Modeller, bilder och stora filer | ArtifactRef | Ingen stor base64 i JSON eller notebook. |"
+        },
+        {
+          "type": "requirement",
+          "id": "ARTIFACT-001",
+          "markdown": "Artifact digest MÅSTE verifieras. Signed URLs och credentials får inte serialiseras som durable URI; använd opaque handle och en host-resolver."
+        },
+        {
+          "type": "requirement",
+          "id": "SINK-001",
+          "markdown": "En icke-transaktionell sink MÅSTE buffra durable leverans till commit. Extern leverans BÖR använda `(runId, sequence)` som idempotency key."
+        },
+        {
+          "type": "requirement",
+          "id": "SINK-002",
+          "markdown": "Textabana får inte lova exactly-once över godtyckliga externa system. Adapterprofilen ska deklarera leveransgaranti, normalt at-least-once."
+        }
+      ]
+    },
+    {
+      "id": "module-manifest",
+      "source": "docs/reference/specification/module-manifest.md",
+      "label": "Manifests and functions",
+      "language": "sv",
+      "number": "16",
+      "layer": "Runtime",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Manifests and functions",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "### Module Manifest\n\nNormativt schemafragment · json\n\n```json\n{\n  \"schema\": \"textabana.module-manifest/lab-v1\",\n  \"namespace\": \"org.example.claims\",\n  \"version\": \"2.1.0\",\n  \"digest\": \"sha256:...\",\n  \"entrypoint\": \"modules/claims.js\",\n  \"functions\": [{\n      \"name\": \"extract\",\n      \"determinism\": \"deterministic\",\n      \"state\": \"run\",\n      \"effects\": [\"channel:claims\"]\n  }],\n  \"capabilities\": { \"required\": [\"model:claims-v2\"], \"channels\": [\"claims\"], \"resources\": [] }\n}\n```\n\n### Funktionskontrakt · målmodell\n\n| Fält | Exempel | Konsekvens |\n| --- | --- | --- |\n| `args` | JSON Schema | Validering före invocation. |\n| `accepts / returns` | TextabanaValue constraints | Typed Plan edges. |\n| `channels` | Descriptors eller namnpattern | Validerade emissions. |\n| `behavior` | segment-preserving · reordering · expanding · reducing · aggregating · generative | Mapping och värdeflöde; aldrig purity-signal. |\n| `determinism` | deterministic · seeded · nondeterministic · external | Replay och cachepolicy. |\n| `state` | pure · run · session · external | Livslängd och reproducerbarhet. |\n| `effects` | channel:* · artifact:* · network · filesystem · model · external | Observerbara effekter och cachegräns. |\n| `permissions` | network · filesystem · process · model · secrets | Host grant före init. |\n\nSäkra labbmanifest accepterar `state` som `pure | run | session` och `determinism` som `deterministic | nondeterministic`. Tabellens övriga alternativ och generella args-schemavalidering är målkontrakt. Följ paketprofilen för dagens exakta fält och typer."
+        },
+        {
+          "type": "requirement",
+          "id": "MANIFEST-001",
+          "markdown": "Compiler MÅSTE kunna läsa och validera manifestet utan att exekvera modulens entrypoint."
+        },
+        {
+          "type": "requirement",
+          "id": "MANIFEST-002",
+          "markdown": "Dubbla exports utan namespace eller alias MÅSTE vara compile error."
+        },
+        {
+          "type": "requirement",
+          "id": "MANIFEST-003",
+          "markdown": "State och determinism är separata dimensioner. En stateful funktion kan vara deterministisk, och en stateless funktion kan vara nondeterministisk."
+        },
+        {
+          "type": "requirement",
+          "id": "MANIFEST-004",
+          "markdown": "`behavior` beskriver transformationens form och FÅR INTE tolkas som purity. State, determinism och observerbara effekter MÅSTE deklareras separat; saknad deklaration betyder `unknown` och icke-cachebar."
+        },
+        {
+          "type": "requirement",
+          "id": "MANIFEST-005",
+          "markdown": "En deklaration som `state=pure`, `determinism=deterministic` och `effects=[]` gör endast funktionen till cachekandidat. En host som faktiskt återanvänder output MÅSTE dessutom upprätthålla effektgränsen eller behandla kontraktet som betrott och redovisa den trust boundaryn."
+        },
+        {
+          "type": "markdown",
+          "markdown": "**Nuvarande loadergräns**\n\nJavaScript-labbet verifierar namespace, labbets versionsgrammatik, entrypoint, SHA-256, exakt lockfile, explicita capability grants och entydiga funktionsdeklarationer för alla säkra transporterade paket innan någon entrypoint körs. Versionsgrammatiken är inte full SemVer. Efter `define(...)` jämförs faktiska funktioners state, determinism och effects med manifestet före transform. Grinden begränsar paketauktoritet men gör inte godtycklig JavaScript till en sandbox. Fullt paketexempel och exakta typer finns i [integrationsguiden](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/INTEGRATION_GUIDE.md) och [paketprofilen](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_ADMISSION_PROFILE.md)."
+        }
+      ]
+    },
+    {
+      "id": "runtime-protocol",
+      "source": "docs/reference/specification/runtime-protocol.md",
+      "label": "Runtime protocol",
+      "language": "sv",
+      "number": "17",
+      "layer": "Runtime",
+      "normative": true,
+      "implementation": "defined",
+      "title": "Runtime protocol",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Detta är målprotokollet för polyglotta runtimes. Den körbara hostgränsen i dag är Editor Kernels meddelanden nedan; `initialize` och `execute` är inte metoder i dagens TypeScript-klient. Börja med [integrationsguiden](./integration.md) för fungerande anrop.\n\n### Runtime-metoder\n\n| Metod | Krav | Ansvar |\n| --- | --- | --- |\n| `initialize` | MÅSTE | Förhandla version, miljö och granted capabilities. |\n| `capabilities` | MÅSTE | Deklarera värdets runtimes, value kinds, limits och adapterprofiler. |\n| `execute` | MÅSTE | Kör en stage med typed input, args, anchors och run context. |\n| `cancel` | MÅSTE | Propagera avbrott till pågående invocation. |\n| `inspect` | BÖR | Beskriv symbol, schema eller runtimevärde för editor. |\n| `complete` | FÅR | Ge completions för funktioner, args och channels. |\n| `shutdown` | BÖR | Frigör session och externa resurser. |\n\n### ExecuteRequest — logisk form\n\nNormativt schemafragment · json\n\n```json\n{\n  \"runId\": \"run:42\",\n  \"stageId\": \"extract:1\",\n  \"functionRef\": \"org.example.claims/extract@2.1.0\",\n  \"input\": { \"kind\": \"text\", \"mediaType\": \"text/markdown\", \"data\": \"...\" },\n  \"args\": { \"model\": \"claims-v2\" },\n  \"sourceAnchors\": [\"anchor:claim-input\"],\n  \"grantedCapabilities\": [\"model:claims-v2\"],\n  \"deadline\": \"host-monotonic-deadline\",\n  \"cancelToken\": \"cancel:42:1\"\n}\n```\n\nsource snapshotanchor builderrun / stage / profileemitsystem.outartifacts.putcancellationgranted capabilitiesdiagnostics"
+        },
+        {
+          "type": "requirement",
+          "id": "RUNTIME-001",
+          "markdown": "`emit` är logiskt acknowledged. Modulens completion MÅSTE flush:a alla accepted events innan stage avslutas."
+        },
+        {
+          "type": "requirement",
+          "id": "RUNTIME-002",
+          "markdown": "Funktioner får inte implicit läsa channels. En kanal som input kräver en explicit Plan-edge eller adapterstage."
+        },
+        {
+          "type": "requirement",
+          "id": "RUNTIME-003",
+          "markdown": "JavaScript, TypeScript, Python, R, Julia, SQL, WASM och externa tjänster FÅR implementera samma protokoll utan språksemantisk särbehandling."
+        }
+      ]
+    },
+    {
+      "id": "editor-kernel",
+      "source": "docs/reference/specification/editor-kernel.md",
+      "label": "Editor Kernel",
+      "language": "sv",
+      "number": "18",
+      "layer": "Editor control plane",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Editor Kernel",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Editor Kernel är ett host-neutralt control plane runt parser, compiler och runtime. Den körbara workern använder `textabana.editor-kernel/lab-v1`. En editor kan analysera en ofullständig revision utan exekvering, välja exakt giltig revision att köra och prenumerera på committade metadataförändringar.\n\n**Host** — CodeMirror · notebook · pipeline\n\n**Editor Kernel** — open · change · analyze · subscribe · run · cancel\n\n**Atomic delivery** — Result · metadata delta · anchor continuity\n\n### Editor Kernel-kommandon\n\n| Kommando | Inputgrind | Observerbart utfall |\n| --- | --- | --- |\n| `open` | documentId, path och source | Immutable snapshot på documentRevision 1. |\n| `change` | baseRevision och sorterade ChangeSet-ranges | Ny document head eller atomiskt protokollfel. |\n| `analyze` | documentId och valfri exakt revision | CST, AST, partial typed IR och diagnostics; inga moduler eller stages körs. |\n| `subscribe` | Exakta channel names eller * | Snapshot-then-delta-cursor för vald leverans. |\n| `credit` | subscriptionId och positiv credit | Återupptar en bounded post-commit metadataström. |\n| `cache-export / cache-import` | Digestbundet host-checkpoint | Explicit cachepersistens och sessionstransport. |\n| `run` | Exakt documentRevision | Immutable run snapshot och atomiskt Result. |\n| `cancel` | runId | Kooperativ cancellation vid deklarerade gränser. |\n\nEn vanlig idempotent `open` får returnera sessions aktuella revision när dokument-id, path och source redan matchar. En avsiktlig reset använder playground-flaggans `replaceSession: true`, skapar en ny session på revision 1 och gör sena svar från den äldre sessionen inaktuella.\n\n### ChangeSet — playground-envelope\n\nKörbar lab-subset · json\n\n```json\n{\n  \"type\": \"change\",\n  \"schema\": \"textabana.change-set/lab-v1\",\n  \"requestId\": \"request:17\",\n  \"documentId\": \"doc:claims\",\n  \"changeSetId\": \"change:client:42\",\n  \"baseRevision\": 11,\n  \"coordinateUnit\": \"unicode-code-point\",\n  \"changes\": [{ \"range\": { \"from\": 128, \"to\": 131 }, \"insert\": \"ny\" }]\n}\n```\n\n01**Document version**\n\nInnehållsidentitet. Undo kan återge samma version på en senare monoton documentRevision.\n\n02**Document revision**\n\nSessionslokal editgeneration. Den påverkar inte semantisk Result-identitet.\n\n03**Published revision**\n\nSenaste head-revision med en lyckad atomisk run; failed och cancelled flyttar den inte.\n\n04**Metadata cursor**\n\nMonoton leveransposition per subscription, separat från event sequence inom en run."
+        },
+        {
+          "type": "requirement",
+          "id": "EDITOR-KERNEL-001",
+          "markdown": "Editor Kernel MÅSTE vara ett control plane runt språk och runtime. Det får inte kunna anropas som en dokumentfunktion eller införa dold pipelineordning."
+        },
+        {
+          "type": "requirement",
+          "id": "EDITOR-KERNEL-002",
+          "markdown": "Varje accepterad run MÅSTE fånga ett immutable snapshot med exakt `documentId`, `documentRevision` och `documentVersion`. Senare changes får inte ändra detta snapshot."
+        },
+        {
+          "type": "requirement",
+          "id": "EDITOR-KERNEL-003",
+          "markdown": "`system.out` och andra channels är semantisk output som kan prenumereras på. De får inte bära `open`, `change` eller annan document lifecycle-semantik."
+        },
+        {
+          "type": "requirement",
+          "id": "DOCUMENT-001",
+          "markdown": "Snapshot och monoton revision är separata begrepp. En no-op ChangeSet får returnera `unchanged` utan att skapa en revision."
+        },
+        {
+          "type": "requirement",
+          "id": "DOCUMENT-002",
+          "markdown": "Failed eller cancelled run MÅSTE lämna senast committade metadata-baslinje orörd. Ett historiskt resultat får visas som stale men aldrig som aktuellt för en nyare head."
+        },
+        {
+          "type": "requirement",
+          "id": "DOCUMENT-003",
+          "markdown": "En host MÅSTE avancera sin protokoll-head från kärnans korrelerade `open`- eller `change`-svar. Optimistiskt antagen revision/version får inte användas som grund för nästa change eller run."
+        },
+        {
+          "type": "requirement",
+          "id": "ANALYZE-001",
+          "markdown": "`analyze` MÅSTE vara read-only, revisionsbundet och fritt från modulinitiering och stage-effekter. Det FÅR returnera partial IR med recovery även när samma snapshot inte kan köras."
+        },
+        {
+          "type": "requirement",
+          "id": "CHANGE-001",
+          "markdown": "Alla ranges i en ChangeSet MÅSTE avse samma base snapshot, vara nollbaserade, halvöppna, sorterade och icke-överlappande samt tillämpas atomiskt."
+        },
+        {
+          "type": "requirement",
+          "id": "CHANGE-002",
+          "markdown": "Canonical change offsets räknas i Unicode code points. UTF-16-, line/column- eller editor-native-koordinater MÅSTE konverteras av en hostadapter före protokollgränsen; en främmande deklarerad `coordinateUnit` MÅSTE avvisas före mutation."
+        },
+        {
+          "type": "requirement",
+          "id": "CHANGE-003",
+          "markdown": "Stale revision eller version, ogiltig range och överlappning MÅSTE ge strukturerat protokollfel utan sourcemutation eller semantisk run."
+        },
+        {
+          "type": "requirement",
+          "id": "SUBSCRIPTION-001",
+          "markdown": "Ett channelfilter begränsar endast leverans. Det får aldrig ändra core-resultatets channels, exekvering eller adapterfan-out."
+        },
+        {
+          "type": "requirement",
+          "id": "SUBSCRIPTION-002",
+          "markdown": "Varje delta MÅSTE ange basis, target och cursor. En konsument med annan basis måste resynkronisera i stället för att applicera deltat."
+        },
+        {
+          "type": "requirement",
+          "id": "DELTA-001",
+          "markdown": "Metadata-delta är en deterministisk post-commit-jämförelse mellan immutable snapshots; det muterar aldrig föregående `TextabanaResult`."
+        },
+        {
+          "type": "requirement",
+          "id": "DELTA-002",
+          "markdown": "Cross-run matching MÅSTE använda deklarerad channel key eller explicit domänidentitet, aldrig run-lokala `eventId` eller `sequence`. Ounik identitet får inte ge ett falskt `moved` eller `changed`."
+        },
+        {
+          "type": "requirement",
+          "id": "DELTA-003",
+          "markdown": "`changed` betyder samma stabila identitet med ändrad semantik eller payload; `moved` betyder semantiskt ekvivalent payload med ny fysisk target. Payloadändring har företräde."
+        },
+        {
+          "type": "requirement",
+          "id": "DELTA-004",
+          "markdown": "Endast succeeded commit får publicera durable `added`, `removed`, `changed` eller `moved`. Failed och cancelled publicerar ett tomt `not-committed`-delta och behåller baslinjen."
+        },
+        {
+          "type": "requirement",
+          "id": "REANCHOR-001",
+          "markdown": "Anchor-records är immutable och versionsbundna. Cross-revision continuity MÅSTE publiceras som en separat transition med metod och utfall; `ambiguous` och `orphaned` förblir olösta."
+        },
+        {
+          "type": "markdown",
+          "markdown": "### Tre oberoende former av inkrementalitet\n\n| Förmåga | Betydelse | Playground |\n| --- | --- | --- |\n| Inkrementell input | Hosten skickar ChangeSets i stället för att ersätta hela dokumentet. | Implementerat |\n| Invalidation preview | Två pre-transform-grafer jämförs till direct, transitive, unchanged, added och removed utan att återanvända output. | Rådgivande lab-subset |\n| Inkrementell stage-exekvering | Editor-sessionen kan återanvända verifierad pure-stageoutput och överlappa oberoende säkra async-grenar. | Avgränsad lab-subset |\n| Parser-/compilerreuse | Giltiga Lezer-fragment återanvänds efter ChangeSets och en exakt analyserad revision återanvänder sin compiler-snapshot; grafen byggs fortfarande per run. | Avgränsad lab-subset |\n| Inkrementell leverans | Hosten får semantiska deltan och kan välja credit-bunden post-commit-streaming. | Implementerat |\n\n**Exakt gräns för den körbara subseten**\n\nWorkern håller en in-memory documentsession, applicerar versionguardade Unicode-patchar och erbjuder read-only `analyze` med formell parser och lokal recovery. En exakt analyserad revision återanvänder sin compiler-snapshot; nästa ChangeSet kan återanvända giltiga Lezer-fragment. En deterministisk ready-set-scheduler får överlappa oberoende, snapshotbara effects-free stages asynkront i samma Worker. Cachen kan flyttas explicit som ett digestbundet host-checkpoint och committade metadatadeltan kan streamas med credit-baserad backpressure. Multicore-exekvering, kontinuerlig stage-streaming, OT/CRDT, generell strukturell re-anchor, fullständiga editorintegrationer och LSP-adapter, synkron preemption och hård CPU-/minnessandbox är inte implementerade."
+        }
+      ]
+    },
+    {
+      "id": "integration",
+      "source": "docs/reference/specification/integration.md",
+      "label": "Integrate the kernel",
+      "language": "sv",
+      "number": "18a",
+      "layer": "Runtime",
+      "normative": false,
+      "implementation": "implemented",
+      "title": "Integrate the kernel",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Ett komplett modulpaket och två körbara värdar visar dokumentets hela livscykel. Exemplen använder repots TypeScript- och Python-klienter mot samma JavaScript-kärna.\n\n### Kör integrationsmaterialet från repots rot\n\nAutomatiskt verifierade exempel · bash\n\n```bash\nnpm run runtime:build\nnode examples/integration/editor-loop.mjs\npython3 examples/integration/python-host.py\nnode --test tests/documentation.test.mjs\n```\n\nNode-exemplet öppnar, analyserar, prenumererar, kör, ger credit, ändrar och kör igen. Det kontrollerar resultatet `HALLÅ 🌊` på revision 2, stale revision, saknad grant och artefaktintegritet. Python-exemplet kör via JSONL och skapar tre MIME-alternativ.\n\n### Värdens ansvar\n\n| Gräns | Aktuellt beteende |\n| --- | --- |\n| Revisioner och positioner | Vänta på accepterad revision före nästa change/run. Ranges är halvöppna Unicode-code-point-offsets; editorbindningar konverterar UTF-16. |\n| Fel och avbrott | Hantera protokollfel och run-diagnostik. Avbrott är kooperativa; värden ansvarar för timeout och återhämtning. |\n| Prenumeration och credit | Metadata levereras efter commit. Credit räknar fragment och begränsar leveranstakten; producentens kö saknar generell minneskvot. |\n| Livscykel | dispose avregistrerar klienten. Värden stänger transporten separat. Unsubscribe och close-document finns ännu inte. |\n\n[Läs hela integrationsguiden](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/INTEGRATION_GUIDE.md) för metoder, komplett modul/manifest/låsfil, CLI, CodeMirror, Monaco, Python och felhantering. [Öppna det körbara editorexemplet](https://github.com/leosa83/scd-adapter-textabana/blob/main/examples/integration/editor-loop.mjs). Sidans övriga schemafragment beskriver form och mål; fragment med `...` är inte kompletta körbara paket."
+        }
+      ]
+    },
+    {
+      "id": "runs",
+      "source": "docs/reference/specification/runs.md",
+      "label": "Runs and transactions",
+      "language": "sv",
+      "number": "19",
+      "layer": "Runtime",
+      "normative": true,
+      "implementation": "defined",
+      "title": "Runs and transactions",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "### Execution profiles\n\n| Profil | State | Reproducerbarhet |\n| --- | --- | --- |\n| `fresh` | Ny isolerad modulinstans per run. | Default och högst reproducerbarhet. |\n| `session` | Namngivet state återanvänds; före/efter-digest registreras. | Kontrollerad interaktivitet. |\n| `attached` | Kör i befintlig kernel/process; host identity och state registreras. | Lägst reproducerbarhet, hög integration. |\n\nqueued*→*compiling*→*ready*→*running*→*committing*→***succeeded**Terminaler: failed · cancelled\n\n**tentative**\n\nProgress, logg och livepreview får streamas medan run pågår. Konsumenter måste kunna dra tillbaka dem.\n\n**committed**\n\nEndast en lyckad commit gör render och durable channel snapshots till aktuell revision."
+        },
+        {
+          "type": "requirement",
+          "id": "RUN-001",
+          "markdown": "Failed eller cancelled MÅSTE revokera tentative domänoutput. En extern side effect som inte kan rullas tillbaka måste deklareras och redovisas ärligt i proveniens."
+        },
+        {
+          "type": "requirement",
+          "id": "RUN-002",
+          "markdown": "Semantic cache key MÅSTE inkludera stage-lokala source- och IR-beroendedigests samt resolved module identity, hela den ordnade faktiskt initierade modulclosure, funktion-, context-, contract-, exakt typad input-, authored-args-, config-, profile- och environment-digests. Edge-topologi, ordnad merge och observerbar argumentordning MÅSTE påverka den rekursiva beroendeidentiteten. Playgroundens labdigest får inte ensam auktorisera en träff; full key witness MÅSTE också vara exakt lika."
+        },
+        {
+          "type": "requirement",
+          "id": "RUN-003",
+          "markdown": "Nondeterministiska och externa funktioner får inte cacheas utan explicit replay artifact eller dokumenterad policy."
+        },
+        {
+          "type": "requirement",
+          "id": "RUN-004",
+          "markdown": "Backpressure, timeout och cancellation MÅSTE propageras genom runtime och sinks; tyst eventförlust är inte tillåten."
+        },
+        {
+          "type": "requirement",
+          "id": "RUN-005",
+          "markdown": "Cache candidate, cache eligible, lookup, hit och reused MÅSTE rapporteras som skilda tillstånd. En invalidation preview eller matchande statisk nyckel får aldrig ensam redovisas som en träff. Den aktuella Editor Kernel-subseten kräver två exakt lika fresh observationer i skilda committed revisioner före reuse; samma revision främjar inte observationsunderlaget."
+        },
+        {
+          "type": "requirement",
+          "id": "RUN-006",
+          "markdown": "Cacheobservationer och verifieringar MÅSTE skrivas i ett run-lokalt journal och blir synliga atomiskt först när core-resultat, immutable post-commit-projektioner, conformance-gate och aktuell editor-head har accepterats. `observations`/`writes` avser endast committad evidens; försök redovisas separat. Failed, cancelled, stale, gate-rejected eller ersatt session MÅSTE kasta journalen."
+        },
+        {
+          "type": "requirement",
+          "id": "RUN-007",
+          "markdown": "Återanvända stages MÅSTE skapa ny run-kvalificerad provenance och `execution-step/lab-v2` med `functionInvoked=false`; tidigare event-, stage-, invocation- eller activity-id:n får aldrig återspelas. Materialiseringen MÅSTE peka på aktuell cachepost och exakt två unika, resolverbara observationsposter med samma `planNodeRef` och output-digest. Cachetelemetri får inte ändra semantiskt Result-ID eller normalized conformance-golden."
+        },
+        {
+          "type": "requirement",
+          "id": "RUN-008",
+          "markdown": "En concurrent ready-set-batch MÅSTE startas deterministiskt, dräneras med alla terminalutfall och publiceras i planordning. Ett branchfel stoppar ny scheduling. Efter drain har en aktiv terminal control-signal företräde: user cancellation ger `cancelled` och deadline ger `failed`; bland övriga branchfel blir det tidigaste planordnade felet primärdiagnostik."
+        },
+        {
+          "type": "requirement",
+          "id": "RUN-009",
+          "markdown": "Den aktuella runtime-subseten MÅSTE avvisa icke-numeriska policyfält och rapportera requested/effective hosttak, wave/peak concurrency, planerade och resolverade stages, kanalhändelser samt final renderstorlek. Deadline är kooperativ vid runtimegränser. Stage-, event- och renderbrott MÅSTE inträffa före durable commit och får inte beskrivas som generell CPU-/minnesisolering eller synkron preemption."
+        },
+        {
+          "type": "requirement",
+          "id": "RUNTIME-CACHE-PROVENANCE",
+          "markdown": "Conformance-grinden MÅSTE avvisa en cachematerialisering om cacheposten eller någon av dess två observationsentiteter saknas, dupliceras eller avviker i `planNodeRef` eller output-digest."
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "source": "docs/reference/specification/security.md",
+      "label": "Security",
+      "language": "sv",
+      "number": "20",
+      "layer": "Runtime",
+      "normative": true,
+      "implementation": "defined",
+      "title": "Security",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Att en modul kör i Worker, kernel eller container gör den inte automatiskt säker. Textabana skiljer deklarerat behov från värdens uttryckliga grant.\n\n**Före init**\n\nVerifiera digest/signatur, lock, runtime, capability subset, quotas och URI-policy.\n\n**Under run**\n\nIsolera otillförlitlig kod, begränsa CPU/minne/output, propagera cancel och kontrollera nätverk/filsystem.\n\n**Efter run**\n\nSanera aktiv MIME, klassificera kanaler/artifacts och tillämpa retention innan leverans."
+        },
+        {
+          "type": "requirement",
+          "id": "SECURITY-001",
+          "markdown": "Ingen modul har implicit rätt till filesystem, network, process, model eller secrets. Host får endast ge en deklarerad subset."
+        },
+        {
+          "type": "requirement",
+          "id": "SECURITY-002",
+          "markdown": "Secrets MÅSTE injiceras som opaque handles och får aldrig förekomma i source, metadata, IR, Result, event, artifact-URI eller logg."
+        },
+        {
+          "type": "requirement",
+          "id": "SECURITY-003",
+          "markdown": "HTML, SVG, widgets och annan aktiv MIME MÅSTE följa hostens sanitization- och trustmodell."
+        },
+        {
+          "type": "requirement",
+          "id": "SECURITY-004",
+          "markdown": "Kanal- och artifactdescriptors BÖR ange classification, retention och åtkomstpolicy. Adaptrar får inte sänka skyddsnivån tyst."
+        }
+      ]
+    },
+    {
+      "id": "adapter-contract",
+      "source": "docs/reference/specification/adapter-contract.md",
+      "label": "Adapter contract",
+      "language": "sv",
+      "number": "21",
+      "layer": "Adapter contract",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Adapter contract",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "En adapter är en explicit, versionssatt post-commit-projektion av ett redan producerat `TextabanaResult`. Den får välja representation för en värd eller standard, men den får inte mutera källan, kärnresultatet eller dess semantiska identiteter.\n\n**Immutable Result** — exakt committad input\n\n**Adapter fan-out** — manifest · negotiation · pure projection\n\n**Projection envelopes** — separata · versionssatta · source-bound\n\n### AdapterManifest — kontrakt före körning\n\n| Fält | Semantik | Sprint 1 |\n| --- | --- | --- |\n| `adapterId / version / profile` | Oberoende adapteridentitet och profilanspråk. | Obligatoriskt och digestbundet. |\n| `accepts` | Tillåtna Result-scheman, profiler, channels och artifact kinds. | Förhandlas före projektion. |\n| `produces` | Projection kind, value kind, mediaType och schemaRef. | Exakt en output för referensadaptern. |\n| `capabilities` | Required och optional host-/runtimeförmågor. | Saknad required capability ger unsupported. |\n| `support` | playground-subset · contract-only · unsupported. | Contract-only får aldrig producera låtsasoutput. |\n| `fidelity` | lossless · selective · lossy samt omittedPaths. | Selektiv output måste behålla sourceResultRef. |\n\n### AdapterManifest\n\nKörbar lab-envelope · json\n\n```json\n{\n  \"schema\": \"textabana.adapter-manifest/lab-v1\",\n  \"adapterId\": \"org.textabana.result-summary\",\n  \"version\": \"1.0.0-lab.1\",\n  \"contract\": \"adapter-contract/1\",\n  \"profile\": \"adapter-contract/1\",\n  \"support\": \"playground-subset\",\n  \"phase\": \"post-commit\",\n  \"execution\": \"pure\",\n  \"accepts\": { \"resultSchemas\": [\"textabana.result/lab-v1\"], \"profiles\": [\"runtime-json/1\"], \"channels\": [], \"artifactKinds\": [] },\n  \"produces\": [{ \"projectionKind\": \"result-summary\", \"valueKind\": \"object\", \"mediaType\": \"application/json\", \"schemaRef\": \"textabana.result-summary/lab-v1\" }],\n  \"capabilities\": { \"required\": [\"atomic-success-result\"], \"optional\": [\"anchors\"] },\n  \"deterministic\": true,\n  \"fidelity\": { \"mode\": \"selective\", \"requiresSourceResult\": true, \"omittedPaths\": [\"render.data\"] }\n}\n```\n\n### AdapterProjection\n\nKörbar lab-envelope · json\n\n```json\n{\n  \"schema\": \"textabana.adapter-projection/lab-v1\",\n  \"projectionId\": \"projection:...\",\n  \"adapterRef\": { \"adapterId\": \"org.textabana.result-summary\", \"version\": \"1.0.0-lab.1\", \"manifestDigest\": \"fnv1a:...\" },\n  \"sourceResultRef\": { \"resultId\": \"lab:...\", \"resultSchema\": \"textabana.result/lab-v1\", \"sourceVersion\": \"fnv1a:...\" },\n  \"status\": \"succeeded\",\n  \"output\": { \"projectionKind\": \"result-summary\", \"mediaType\": \"application/json\", \"schemaRef\": \"textabana.result-summary/lab-v1\", \"data\": {} },\n  \"mapping\": \"derived\",\n  \"fidelity\": { \"mode\": \"selective\", \"requiresSourceResult\": true, \"omittedPaths\": [\"render.data\"] },\n  \"references\": { \"eventRefs\": [], \"anchorRefs\": [], \"sourceMapRefs\": [], \"provenanceRefs\": [] },\n  \"diagnostics\": []\n}\n```"
+        },
+        {
+          "type": "requirement",
+          "id": "ADAPTER-001",
+          "markdown": "En adapter MÅSTE deklarera id, version, profil, accepterade resultatscheman, producerade representationer, kapabilitetsbehov och fidelity-policy innan den körs."
+        },
+        {
+          "type": "requirement",
+          "id": "ADAPTER-002",
+          "markdown": "Varje projektion MÅSTE referera till exakt `source resultId` och manifestdigest. Samma deterministiska input, manifestversion och konfiguration MÅSTE ge samma `projectionId`."
+        },
+        {
+          "type": "requirement",
+          "id": "ADAPTER-003",
+          "markdown": "Adaptrar läser samma immutable Result som oberoende fan-out. Adapter-till-adapter-dataflöde kräver en explicit, acyklisk dependency edge; list- eller UI-ordning är aldrig semantik."
+        },
+        {
+          "type": "requirement",
+          "id": "ADAPTER-004",
+          "markdown": "Event identity, Anchor, SourceMap, artifact och provenance MÅSTE bevaras genom referens eller redovisas individuellt som förlust. Ett tomt loss-fält är ett verifierbart påstående."
+        },
+        {
+          "type": "requirement",
+          "id": "ADAPTER-005",
+          "markdown": "Ett adapterfel FÅR inte ändra core run status eller mutera ett committat Result. Felet returneras som adapterdiagnostik i adapterkörningen."
+        },
+        {
+          "type": "requirement",
+          "id": "ADAPTER-006",
+          "markdown": "En contract-only-deskriptor får förhandlas och inspekteras men får inte producera simulerad output eller användas som stöd för profilkonformitet."
+        },
+        {
+          "type": "markdown",
+          "markdown": "**Adaptergrunden i playgrounden**\n\n`org.textabana.result-summary`, data-, notebook- och annotationadaptrarna körs efter commit som oberoende, rena projektioner. Adapterfliken visar manifest, source-result-bindning, stabil projektionidentitet, fidelity och resolverbara referenser. `org.textabana.ml-lineage` är fortsatt contract-only och producerar ingen simulerad modell- eller observabilityoutput."
+        }
+      ]
+    },
+    {
+      "id": "notebooks",
+      "source": "docs/reference/specification/notebooks.md",
+      "label": "Jupyter and notebooks",
+      "language": "sv",
+      "number": "22",
+      "layer": "Adapter profile",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Jupyter and notebooks",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Textabana modellerar notebookinteroperabilitet som en komplett, versionerad snapshot med stabila cellidentiteter. Kärnan producerar kanoniska events; en ren post-commit-adapter skapar en host-neutral JSON-vy. Jupyter, nbformat och kernels är separata transport- och hostlager.\n\n**Körbar Notebook Interop-subset**\n\n`notebook/1` kör whole-snapshot, explicita cell-id:n, tre verkliga MIME-representationer, source digests, stale-jämförelse samt profilerna `fresh`, `session` och `attached`. Endast `fresh` har körbar strukturell projektion. Jupyter Messaging, nbformat-roundtrip, session/attached kernelkörning och Comms/widgets är uttryckligen unsupported.\n\n### Exakt exekverad notebookmodell i playgrounden\n\n| Kanal | Payload | Semantik |\n| --- | --- | --- |\n| `notebook.snapshot` | notebookId, snapshotId, profile, wholeSnapshot, cellIds | Exakt en komplett snapshot; cellistan följer författad presentationsordning. |\n| `notebook.cells` | cellId, title, source, sourceDigest, metadata | En post per stabil cell med CellSelector, Anchor och bevarad författad metadata. |\n| `notebook.outputs` | outputDigest, sourceDigest, status, mimeBundle | Output binds till samma cells källa och provenanceaktivitet; aktuell output är fresh. |\n| `notebook.state` | requestedProfile, executionSupport, kernelState, limitations | Gör profil och faktisk support explicit utan att fabricera kernelstate. |\n\n### Whole snapshot med lätta cellmarkörer\n\nKörbar fixture · notebook-snapshot · textabana\n\n```textabana\n>>>>! include \"./modules/notebook.js\"\n\n>>>> notebook_snapshot profile=\"fresh\" notebook_id=\"voyage-analysis\"\n## Cell: Source overview {#cell-source owner=\"research\"}\nAurora lämnade Göteborg den 4 maj.\n\n## Cell: Route summary {#cell-route audience=\"operations\"}\n**Sista kända rutt:** Göteborg → Guayaquil.\n\n## Cell: Confidence {#cell-confidence kind=\"metric\"}\n{\"confidence\": 0.82, \"status\": \"candidate\"}\n<<<< notebook_snapshot\n```\n\n### Host-neutral notebookprojektion\n\nKörbar lab-envelope · application/json · json\n\n```json\n{\n  \"schema\": \"textabana.notebook-projection/lab-v1\",\n  \"notebook\": { \"notebookId\": \"voyage-analysis\", \"snapshotId\": \"snapshot:...\", \"stateProfile\": \"fresh\", \"wholeSnapshot\": true },\n  \"cells\": [{\n    \"cellId\": \"cell-source\",\n    \"sourceDigest\": \"fnv1a:...\",\n    \"mimeBundle\": { \"text/plain\": \"...\", \"text/markdown\": \"...\", \"application/vnd.textabana.result+json\": {} },\n    \"output\": { \"outputSourceDigest\": \"fnv1a:...\", \"stale\": false, \"sourceMapRef\": \"mapping:...\" }\n  }]\n}\n```\n\n**fresh**\n\nNy strukturell snapshot och projektion utan dold eller beständig kernelstate.\n\n**session**\n\nProfilnamnet kan förhandlas, men exekvering mot en extern session är contract-only.\n\n**attached**\n\nEn host får deklarera extern kernel, men playgrounden verifierar eller kör den inte.\n\n**Framtida Jupyter-host**\n\nMessaging, nbformat, Comms och widgets kräver egna verifierade adaptrar."
+        },
+        {
+          "type": "requirement",
+          "id": "JUPYTER-001",
+          "markdown": "Standard `execute_request` innehåller kod men inte cell-id eller hela notebooken. Cross-cell-semantik kräver därför att hosten skickar en hel, versionerad notebook snapshot med stabila `cell.id`. Playgrounden avvisar partial snapshots."
+        },
+        {
+          "type": "requirement",
+          "id": "JUPYTER-002",
+          "markdown": "MIME-alternativen `text/plain`, `text/markdown` och `application/vnd.textabana.result+json` representerar samma logiska cellvärde. Separata Textabanakanaler får inte modelleras som MIME-alternativ."
+        },
+        {
+          "type": "requirement",
+          "id": "JUPYTER-003",
+          "markdown": "Jupyter streams och displays ska mappas till namespaced adapterkanaler som `host.jupyter.stdout`, `host.jupyter.stderr` och `host.jupyter.display` — aldrig till `system.out` som process-stdout."
+        },
+        {
+          "type": "requirement",
+          "id": "JUPYTER-004",
+          "markdown": "En notebookadapter MÅSTE bevara okänd författad metadata, reservera `metadata.textabana` för adapterfält och märka varje output med cells source digest."
+        },
+        {
+          "type": "requirement",
+          "id": "JUPYTER-005",
+          "markdown": "Cellordning är presentationsordning och FÅR inte bli implicit exekverings- eller kernelstate. Notebookens begärda stateprofil är skild från kärnans `Result.run.profile`."
+        },
+        {
+          "type": "requirement",
+          "id": "JUPYTER-006",
+          "markdown": "En äldre output är stale exakt när `previousOutput.sourceDigest !== currentCell.sourceDigest`. En stale output FÅR visas som revisionsmetadata men aldrig som aktuell output."
+        },
+        {
+          "type": "requirement",
+          "id": "JUPYTER-007",
+          "markdown": "Varje cell MÅSTE ha explicit, unik identitet. Saknat eller duplicerat cell-id stoppar körningen atomiskt före channel commit."
+        }
+      ]
+    },
+    {
+      "id": "data-ai",
+      "source": "docs/reference/specification/data-ai.md",
+      "label": "Data, AI and ML",
+      "language": "sv",
+      "number": "23",
+      "layer": "Adapter profile",
+      "normative": false,
+      "implementation": "partial",
+      "title": "Data, AI and ML",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Bindings ska vara externa och typed. DataFrames, modeller och dataset serialiseras inte in i källtexten; de binds som inputs eller ArtifactRefs och spåras i run-proveniens.\n\n**Körbar Data & Lineage-subset**\n\n`data/1` körs som en avgränsad playground-subset: typade JSON-records, dataset/schema-events, stabila `recordId`, deterministisk inner join, kolumnbundna `DataSelector`, derived aggregation och multi-input-lineage via SourceMaps som förenar båda inputankarna. Arrow IPC, Parquet, DuckDB, beständiga ArtifactRefs, OpenLineage-export och full `data/1`-konformitet är fortfarande unsupported.\n\n### Exakt exekverad datamodell i playgrounden\n\n| Lager | Körbar representation | Identitet och mapping |\n| --- | --- | --- |\n| Författad input | Två vanliga GFM Markdown-tabeller i ett relational_join-block. | Deklarerade datasetnamn och join key; ingen dold tabellsyntax. |\n| Canonical Result | data.datasets, data.input.records, data.output.records, data.lineage och data.aggregates. | Dataset-ID, naturlig key och innehållsbaserat recordId; aldrig fysisk radposition. |\n| Join | Deterministisk inner equijoin med vänster inputordning och explicit fel för tomma eller duplicerade keys. | Varje outputrecord har en derived SourceMap med vänster och höger inputanchor. |\n| Cell-lineage | Ett lineage-event per outputcell med DataSelector för output- och inputkolumn. | Join key pekar på båda key-cellerna; övriga celler pekar på sin vänster- eller högerkälla. |\n| Aggregation | Count över join-output i data.aggregates. | Alltid derived och kopplad till de records som räknades. |\n| Adapterprojektion | application/json med schema, rows, record-/cell-lineage och explicit fidelity report. | Source-bound post-commit-projektion; artifactRefs är tom tills verkliga bytes finns. |\n\n### Derived SourceMap för en join-record\n\nKörbar lab-envelope · json\n\n```json\n{\n  \"outputRef\": \"event:...\",\n  \"outputSelector\": { \"type\": \"DataSelector\", \"datasetId\": \"voyage_cargo\", \"recordId\": \"record:...\" },\n  \"inputAnchorRefs\": [\"anchor:row:ships:...\", \"anchor:row:manifests:...\"],\n  \"inputSelectors\": [\n    { \"type\": \"DataSelector\", \"datasetId\": \"ships\", \"recordId\": \"record:ships:...\" },\n    { \"type\": \"DataSelector\", \"datasetId\": \"manifests\", \"recordId\": \"record:manifests:...\" }\n  ],\n  \"mapping\": \"derived\",\n  \"generatingActivity\": \"activity:invocation:...\"\n}\n```\n\n**Cell betyder semantisk kolumn i denna subset**\n\nCell-lineage använder en kolumnbunden `DataSelector` ovanpå ett stabilt row-anchor. Playgrounden räknar inte ut exakta teckenpositioner för varje Markdown-cell; sådan textpositionsprecision kräver separata cellankare och är ännu unsupported.\n\n### Data- och analyticsprofil\n\n| Behov | Primär standard | Textabanaregel |\n| --- | --- | --- |\n| Tabeller mellan processer | Apache Arrow / Arrow IPC | Schema + stabil record identity + anchor refs. |\n| Beständig tabell | Parquet | Proveniens måste överleva export som fysiska kolumner/relationer. |\n| Pandas / Polars | Arrow PyCapsule, Arrow IPC, därefter dataframe interchange | Adapterkonvertering; inte nytt core-value. |\n| Lokal SQL | DuckDB över Arrow | SQL-stage i ExecutionPlan med typed in/out. |\n| Tensor/embedding | DLPack eller Arrow FixedSizeList/standard extension | Shape, dtype, device och mapping deklareras. |\n| Experiment tracking | MLflow adapter | Run params, metrics, models och artifacts projiceras från TextabanaResult. |\n\n### Provenienskolumner som överlever pipelines\n\nInformativ adapterprofil · arrow schema\n\n```arrow schema\nclaim_id: utf8 not null\nclaim_text: utf8 not null\nconfidence: float32\n_textabana_record_id: utf8 not null\n_textabana_anchor_refs: list<utf8> not null\n_textabana_activity_id: utf8 not null\n```\n\n**AI invocation provenance**\n\nProvider, model-id/revision, prompt-template digest eller skyddad artifactref, input/output-digests, samplingparametrar, seed när relevant, tool/retrieval refs, tokenanvändning/kostnad, schema, timing och reviewer state."
+        },
+        {
+          "type": "requirement",
+          "id": "DATA-001",
+          "markdown": "Dataset row identity MÅSTE använda stabilt `recordId` eller deklarerad key — aldrig fysisk row index efter filter, join eller sortering."
+        },
+        {
+          "type": "requirement",
+          "id": "DATA-002",
+          "markdown": "Filter bevarar lineage; join förenar inputanchors; aggregation producerar `derived` mapping och en explicit provenance relation."
+        },
+        {
+          "type": "requirement",
+          "id": "DATA-003",
+          "markdown": "Kritisk proveniens får inte endast ligga i Arrow- eller Parquet-schema metadata om den ska överleva tredjepartsverktyg."
+        },
+        {
+          "type": "requirement",
+          "id": "DATA-004",
+          "markdown": "Arrow IPC Stream delar ett schema. En inkompatibel schemaändring MÅSTE skapa en ny stream eller schemaversion."
+        },
+        {
+          "type": "requirement",
+          "id": "DATA-005",
+          "markdown": "In-process Arrow- eller DLPack-handles får aldrig serialiseras i TextabanaResult; resultatet använder transportformat eller ArtifactRef."
+        },
+        {
+          "type": "requirement",
+          "id": "AI-001",
+          "markdown": "Confidence är ett modellmått, inte sanning. Candidate, accepted, rejected och superseded är separata review states."
+        },
+        {
+          "type": "requirement",
+          "id": "AI-002",
+          "markdown": "MCP FÅR exponera manifestfunktioner som tools och docs/resultat som resources, men är en adapter och får inte bli kärnans runtime- eller proveniensmodell."
+        }
+      ]
+    },
+    {
+      "id": "annotation-observability",
+      "source": "docs/reference/specification/annotation-observability.md",
+      "label": "Annotation and observability",
+      "language": "sv",
+      "number": "24",
+      "layer": "Annotation profile",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Annotation and observability",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Textabana skiljer modellens förslag från människans beslut. Kärnan lagrar kandidat, review och revision som separata events med samma stabila annotation-identitet. En post-commit-adapter projicerar kedjan till externa standarder utan att göra deras format till ny kärnsemantik.\n\n**Körbar Annotation & AI Review-subset**\n\n`annotation/1` kör whole snapshots, stabila annotation-id:n, modell-/prompt-/inputdigests, explicit confidence method, accept/reject/supersede och resolverbara W3C- samt Label Studio-projektioner. Digests är märkta `fnv1a-lab`; verklig modellkörning, persistent review store och `ml-lineage/1` är inte simulerade.\n\n### Exakt exekverad annotationsmodell i playgrounden\n\n| Kanal | Payload | Semantik |\n| --- | --- | --- |\n| `annotation.set` | setId, wholeSnapshot, authoredOrder, candidateIds, currentIds, counts, setDigest | Exakt en komplett snapshot som låser eventmängd, ordning och current view. |\n| `annotation.candidates` | annotationId, revision 0, body, model, prompt, inputDigest, confidence | Immutable modellfakta. Payloaden innehåller aldrig decision, reviewer eller supersededBy. |\n| `annotation.reviews` | reviewId, candidateEventRef, revision 1, decision, reviewer, reviewDigest | Append-only mänsklig handling. accept, reject och supersede är de enda besluten i lab-subseten. |\n| `annotation.revisions` | revisionId, state, basedOnEventRef, reviewEventRef, supersedes/supersededBy | Materialiserat reviewutfall plus eventuell explicit mänsklig ersättare. |\n\n### Lättviktig reviewkälla\n\nKörbar fixture · annotation-review · textabana\n\n```textabana\n>>>>! include \"./modules/annotation.js\"\n\n>>>> annotation_review set_id=\"voyage-review\" reviewer=\"leo\"\n## Annotation: Route {#ann-route origin=\"ai\" model=\"extractor\" model_version=\"1.0\" prompt_id=\"route-v1\" confidence=0.82 confidence_method=\"model-reported\" decision=\"accept\"}\nAurora lämnade Göteborg den 4 maj.\n\n## Annotation: Status candidate {#ann-status origin=\"ai\" model=\"extractor\" model_version=\"1.0\" prompt_id=\"status-v1\" confidence=0.73 confidence_method=\"model-reported\" decision=\"supersede\" superseded_by=\"ann-status-reviewed\"}\nPositionen är en granskningskandidat.\n\n## Annotation: Status reviewed {#ann-status-reviewed origin=\"human\" supersedes=\"ann-status\"}\nPositionen kräver extern verifiering.\n<<<< annotation_review\n```\n\n**Review är källstyrd i denna fresh-runtime**\n\nPlaygrounden visar inga knappar som låtsas spara beslut. Ändra `decision` i källan och kör igen: kandidatens fakta förblir separata, medan ett nytt review-event och revision 1 materialiserar beslutet i den nya snapshoten.\n\n### Interopmappning\n\n| Teknik | Roll | Textabana mapping |\n| --- | --- | --- |\n| W3C Web Annotation | Portabel annotationsexport | Körbar AnnotationPage; target kopierar versionerad Anchor med position/quote selectors och anchorRef. |\n| W3C PROV | Semantisk proveniens | Source/result/event/artifact = Entity; stage/run = Activity; människa/runtime/modul/model = Agent. |\n| LSP | Transient editorprojection | Diagnostics, semantic tokens, inlay hints och code actions; aldrig canonical storage. |\n| OpenLineage | Data pipeline lineage | Job, Run och Dataset från Plan, Run och Artifact/Data outputs. |\n| OpenTelemetry | Operativ observability | Trace, logs och metrics med traceId/spanId; inte semantisk sanning. |\n| CloudEvents | Distribuerad eventtransport | Export av event envelope med idempotent event identity. |\n| MLflow | Experiment och modellartifacts | Parametrar, metrics, models och artifacts från run/proveniens. |\n| Label Studio | Annoteringsverktyg | Körbar task/import-subset med choices-resultat och Textabana-referenser i meta; ingen API-/projektroundtrip. |\n| doccano / Prodigy / brat | Ytterligare annoteringsverktyg | Planerade adapterprofiler via Anchor + Annotation + review relations. |\n\n### Immutable modellkandidat\n\nKanoniskt eventpayload · annotation.candidates · json\n\n```json\n{\n  \"annotationId\": \"ann-route\",\n  \"revision\": 0,\n  \"status\": \"candidate\",\n  \"body\": \"Aurora lämnade Göteborg den 4 maj.\",\n  \"model\": { \"id\": \"extractor\", \"version\": \"1.0\", \"digest\": \"fnv1a:...\" },\n  \"prompt\": { \"id\": \"route-v1\", \"digest\": \"fnv1a:...\" },\n  \"inputDigest\": \"fnv1a:...\",\n  \"confidence\": { \"score\": 0.82, \"method\": \"model-reported\" }\n}\n```\n\n### W3C target återanvänder Anchor\n\nKörbar adapterprojektion · json\n\n```json\n\"target\": {\n  \"source\": \"doc:document.md\",\n  \"selector\": [\n    { \"type\": \"TextPositionSelector\", \"start\": 184, \"end\": 223 },\n    { \"type\": \"TextQuoteSelector\", \"exact\": \"Aurora lämnade Göteborg den 4 maj.\" }\n  ],\n  \"textabana:anchorRef\": \"anchor:annotation:...\"\n}\n```\n\n### Label Studio task/import-subset\n\nKörbar adapterprojektion · json\n\n```json\n{ \"id\": \"ann-route\",\n  \"data\": { \"text\": \"Aurora lämnade Göteborg den 4 maj.\" },\n  \"annotations\": [{ \"id\": \"review:ann-route:1\", \"result\": [{\n    \"type\": \"choices\", \"value\": { \"choices\": [\"accept\"] }\n  }] }],\n  \"meta\": { \"textabana\": { \"anchorRef\": \"anchor:annotation:...\" } } }\n```"
+        },
+        {
+          "type": "requirement",
+          "id": "ANNOTATION-001",
+          "markdown": "Intern annotation MÅSTE stödja span, document classification, relation och review state. W3C Web Annotation är en import/exportprofil, inte hela kärnmodellen."
+        },
+        {
+          "type": "requirement",
+          "id": "ANNOTATION-002",
+          "markdown": "Human-in-the-loop MÅSTE skapa ett separat review-event och en ny reviewed revision. Modellkandidatens ursprungliga fakta får inte muteras. Endast `supersede` kräver en explicit ersättare med ömsesidiga `supersededBy`/`supersedes`-relationer."
+        },
+        {
+          "type": "requirement",
+          "id": "ANNOTATION-003",
+          "markdown": "En AI-kandidat MÅSTE ange stabilt annotationId, modell-id/version/digest, prompt-id/digest, inputdigest samt confidence score och metod. Confidence är evidensmetadata, inte sanningssannolikhet."
+        },
+        {
+          "type": "requirement",
+          "id": "ANNOTATION-004",
+          "markdown": "Varje durable candidate, review och revision MÅSTE lösas genom Event, AnnotationSelector, Anchor, SourceMap och generating Activity. En exporterad target får inte uppfinna fristående offsets."
+        },
+        {
+          "type": "requirement",
+          "id": "ANNOTATION-005",
+          "markdown": "W3C Web Annotation och annoteringsverktygsformat är adapterprojektioner. De får inte skriva tillbaka extern formatsemantik till kandidat- eller revieweventen utan en explicit importerad ny revision."
+        },
+        {
+          "type": "requirement",
+          "id": "ANNOTATION-006",
+          "markdown": "En whole annotation snapshot MÅSTE validera unika id:n, counts, länkar, beslut, current view och acyklisk supersede-kedja före commit. Den aktuella lab-subseten begränsar varje target till en icke-tom textrad."
+        },
+        {
+          "type": "requirement",
+          "id": "PROV-001",
+          "markdown": "Varje durable output MÅSTE länka till generating Activity och använda inputanchors/entities. Operativa traces FÅR länkas men ersätter inte semantic provenance."
+        },
+        {
+          "type": "requirement",
+          "id": "EXT-001",
+          "markdown": "Okända namespaced extensionfält MÅSTE round-trippas av adaptrar som inte förstår dem."
+        },
+        {
+          "type": "markdown",
+          "markdown": "### Standardreferenser\n\n[**Lezer** — Editorparser, CST, recovery och inkrementell återanvändning](https://lezer.codemirror.net/docs/guide/)[**JSON Schema 2020-12** — Validering av portabla JSON-kontrakt](https://json-schema.org/draft/2020-12)[**W3C Web Annotation** — Annotationsexport](https://www.w3.org/TR/2017/REC-annotation-model-20170223/)[**W3C PROV-O** — Proveniensexport](https://www.w3.org/TR/2013/REC-prov-o-20130430/)[**Jupyter Messaging** — Kerneltransport](https://jupyter-client.readthedocs.io/en/stable/messaging.html)[**nbformat** — Notebookprojection och cell ids](https://nbformat.readthedocs.io/en/latest/format_description.html)[**Apache Arrow** — Tabulärt dataplan](https://arrow.apache.org/docs/format/Columnar.html)[**CloudEvents** — Distribuerad eventexport](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md)"
+        }
+      ]
+    },
+    {
+      "id": "use-cases",
+      "source": "docs/reference/specification/use-cases.md",
+      "label": "Use cases",
+      "language": "sv",
+      "number": "25",
+      "layer": "Value",
+      "normative": false,
+      "implementation": "defined",
+      "title": "Use cases",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Kärnans första mål är att göra editorprogram för metadata betydligt enklare. Samma mekanik skalar sedan till data- och AI-arbetsflöden.\n\n**Metadataeditorer utan ny parser**\n\nÅteranvänd syntaxanalys, source mapping, modulkörning, eventmodell och synk mellan text och sidopanel.\n\n**Text och metadata driver inte isär**\n\nAnnotationer, claims och diagnostik skapas från samma versionerade källa och pekar tillbaka via Anchor.\n\n**Diagnostik där felet finns**\n\nSquiggles, badges, hoverinfo och fixes visas på rätt span utan att hamna i renderingen.\n\n**Ett dokument ger flera produkter**\n\nSamma run kan ge Markdown, sökindex, Arrow-tabell, graf, GIS, validering och audit.\n\n**Granskbar AI-extraktion**\n\nModellkandidaten bevaras immutable med inputankare, modellversion, promptdigest och confidence method; människans beslut blir en separat revisionskedja.\n\n**Notebook utan notebook-lock-in**\n\nAnalytikern använder Python, R eller Julia medan .tba-källan och resultatkontraktet förblir portabla.\n\n**Reproducerbara datapipelines**\n\nDataset, schema, run, artifacts och lineage binds samman utan att gömma semantiken i cellordning.\n\n**Billiga domänspecifika verktyg**\n\nJuridik, forskning, krav, publicering och arkiv delar kärna men får egna moduler, channels och vyer.\n\n**PARES/RWMT: dokument → GIS och graf**\n\nArkivtext kan samtidigt producera skepp, resor, platser, sannolikhetsrutter, evidens och grafrelationer med spårbarhet till originalkällan."
+        }
+      ]
+    },
+    {
+      "id": "conformance",
+      "source": "docs/reference/specification/conformance.md",
+      "label": "Profiles and versions",
+      "language": "sv",
+      "number": "26",
+      "layer": "Conformance",
+      "normative": true,
+      "implementation": "partial",
+      "title": "Profiles and versions",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Conformance Lab utvärderar ett valt, versionssatt case efter core run och adapter fan-out. Rapporten skiljer deklarerad support från observerat testutfall: endast en tillämplig playground-subset vars samtliga krav passerar blir `claimable` för den aktuella körningen.\n\n### Konformitetsprofiler\n\n| Profil | Måste täcka | Web runtime idag |\n| --- | --- | --- |\n| `language-core/0.4` | Formell parser, lossless CST, typed IR, recovery, block, intervall, property, pipeline, inheritance och cross=error. | Playground subset |\n| `runtime-json/1` | IR, Plan, Run, Result, JSON channels och atomisk commit. | Playground subset |\n| `editor/1` | Anchor, SourceMap, system.out och LSP-projektion. | Playground subset |\n| `editor-kernel/1` | Document lifecycle, revision fencing, channel subscriptions, metadata-delta och anchor continuity. | Interaktiv subset · separat evidens |\n| `adapter-contract/1` | Manifest, negotiation, immutable fan-out, fidelity, referenser och failure isolation. | Playground subset |\n| `notebook/1` | Whole snapshot, stabila cell-id:n, MIME bundle, stateprofiler, stale detection och host-neutral JSON-projektion; full profil omfattar även verifierad Jupytertransport. | Playground subset |\n| `data/1` | Dataset/schema-events, record identity, JSON table projection och multi-input lineage; full profil omfattar även dataplan och artifacts. | Playground subset |\n| `annotation/1` | Immutable kandidater, review-revisioner, supersede-kedjor, resolverbara targets samt W3C- och Label Studio-projektion. | Playground subset |\n| `ml-lineage/1` | AI invocation, PROV, OpenLineage, MLflow och OTel correlation. | Contract-only · ej claimable |\n\n### Maskinläsbar ConformanceReport\n\n| Fält | Betydelse | Nuvarande lab-semantik |\n| --- | --- | --- |\n| `schema / reportId` | Versionssatt rapporttyp och deterministisk rapportidentitet. | `textabana.conformance-report/lab-v1` |\n| `sourceResultRef` | Binder evidensen till exakt semantiskt Result. | Transport-run-id ingår inte i strukturdigesten. |\n| `suite / case` | Suiteversion, fixture, förväntat och faktiskt terminalutfall. | Negativa cases kräver både exakt status och diagnostikkod. |\n| `profiles` | Deklarerad support, tillämplighet, kravutfall, härledd support och claimable. | Ej emitterade domänprofiler blir not-run; contract-only blir aldrig claimable. |\n| `stages` | Source → IR → Plan → Result → Projection med evidensreferenser. | Ett negativt case gör inget positivt plan- eller projektionsanspråk. |\n| `structuralSnapshot` | Normaliserad labbsnapshot och incheckad golden digest. | FNV-1a-lab är icke-kryptografisk och canonical=false. |\n| `gate` | Samlad blockeringslista härledd ur misslyckade krav och stages. | Regression eller golden-diff tar bort runnens subset-anspråk. |\n\n### Conformance report · förkortat exempel\n\nKörbar playground-subset · json\n\n```json\n{\n  \"schema\": \"textabana.conformance-report/lab-v1\",\n  \"suite\": { \"suiteId\": \"textabana.playground/interop-0.7\", \"version\": \"1.4.0-lab.1\" },\n  \"case\": { \"caseId\": \"golden-core-chain\", \"expectedOutcome\": \"succeeded\", \"actualOutcome\": \"succeeded\" },\n  \"profiles\": [{\n    \"profile\": \"runtime-json/1\", \"declaredSupport\": \"playground-subset\",\n    \"status\": \"passed\", \"derivedSupport\": \"playground-subset\", \"claimable\": true,\n    \"requirements\": [{ \"requirementId\": \"RUNTIME-ATOMIC-TERMINAL\", \"status\": \"passed\", \"evidenceRefs\": [\"lab:…\"] }]\n  }],\n  \"normalization\": { \"policy\": \"textabana.structural-snapshot/lab-v1\", \"ignoredPaths\": [\"/transport/runId\", \"/executionTrace/*/duration\"] },\n  \"golden\": { \"status\": \"passed\", \"expectedStructuralDigest\": \"fnv1a-lab:…\", \"actualStructuralDigest\": \"fnv1a-lab:…\" },\n  \"gate\": { \"status\": \"passed\", \"blockingRequirementIds\": [] },\n  \"extensions\": { \"textabana.playground\": { \"canonical\": false, \"fullConformance\": false } }\n}\n```\n\n**Våg 5 · extern värdsuite**\n\nCLI:n kör åtta gemensamma protokollfall genom Worker, TypeScript, CodeMirror, Monaco och Python. Rapporten visar 40 utfall och binder suite och kernel till SHA-256. Samma JavaScript-kärna används i alla värdar.\n\n[Hämta verifieringsrapporten (JSON)](../../../public/conformance/host-report.json)\n\n**Verifierat i aktuella labs**\n\nLossless CST, typed IR, inkrementell Lezer-/compilerreuse, typad DAG, verifierad cache, bounded concurrency, budgetar, atomiskt Result, Anchors/SourceMaps, credit-bunden metadata-streaming, host-cachecheckpoints, adapterisolering, TypeScript-/Python-hostklienter, CodeMirror-/Monaco-bindningar samt SHA-256-låsta modulpaket med explicita capability grants.\n\n**Återstår för full konformitet**\n\nFulla produktionsprofiler för IR/Plan/Result, full JSON Schema, transparent distribuerad cache, cached event replay, multicore stage-exekvering, effectful branch-concurrency, kontinuerlig stage-streaming, persistent dokumenthistorik, strukturell/fuzzy re-anchor, LSP-adapter, preemption, hårda CPU-/minneskvoter, extern side-effect rollback, beständiga artifacts, fulla polyglotta runtimes, Jupyter Messaging och nbformat-roundtrip samt externa observability-profiler.\n\n### Extern verifiering · sprint 5.1\n\nKörbar värdsuite · bash\n\n```bash\nnpm run conformance:external\nnode cli/textabana.mjs conformance > report.json\nnode cli/textabana.mjs digest report.json\nnode cli/textabana.mjs registry-check PACKAGE_REGISTRY.json\n```\n\nCLI:n kan även signera rapporter med en egen Ed25519-nyckel och verifiera dem mot en separat betrodd publik nyckel. De nedladdningsbara rapporterna är osignerade. Befintliga labb-ID:n behålls; sprint 5.2 lägger till separata källbundna SHA-256-identiteter för IR, Plan och committat Result.\n\n### Semantiska identiteter · sprint 5.2\n\nKörbar artefaktprofil · bash\n\n```bash\nnode cli/textabana.mjs identify examples/document.md > identity.json\nnode cli/textabana.mjs verify-identity identity.json\nnode cli/textabana.mjs conformance-semantic > semantic-report.json\n```\n\nAktivera SHA-256-identiteter i Playground och öppna Conformance → Identiteter för att se artefakterna. Den externa profilen verifierar 28 utfall mot fasta identiteter, inklusive inkrementell parsning och verklig cacheåteranvändning. [Hämta den semantiska profilrapporten (JSON)](../../../public/conformance/semantic-report.json). Integritetsverifiering bevisar paketets interna konsistens; fullständiga produktionsprofiler, bredare runtimejämförelse, release-signering och registertjänst återstår.\n\n### Exekverbart artefaktkontrakt · sprint 5.3\n\n80 kontraktfall · bash\n\n```bash\nnode cli/textabana.mjs verify-identity identity.json\nnode cli/textabana.mjs conformance-contract > contract-report.json\n```\n\nVerifieraren kontrollerar nu JSON-struktur, kontrollsummor, identitetskedja, tillgängliga källbytes samt interna referenser mellan IR, plan, events, ankare och source maps. Klicka på Verifiera paket i identitetsvyn, eller ladda ner paketet för samma kontroll i CLI. [JSON Schema](../../../public/contracts/semantic-bundle-v1.schema.json) och [kontraktrapporten](../../../public/conformance/contract-report.json) kan hämtas separat. De 80 frysta fallen omfattar 14 giltiga paket och 66 förväntade avvisningar. En omhashad ändring av render kan fortfarande vara ett giltigt paket: verifieraren kör inte om modulerna och intygar inte exekveringens riktighet.\n\n### Oberoende textprofil · sprint 5.4\n\n70 jämförelsefall · bash\n\n```bash\npython3 reference/text_core.py run examples/text-core.md\nnode cli/textabana.mjs conformance-text-core > text-core-report.json\n```\n\nEn fristående Python-parser och evaluator kör nu samma avgränsade textprofil som JavaScript-kärnan. Python-versionen behöver varken Node eller projektets JavaScript-kod. De 70 fasta testfallen jämför exakt renderad text, felutfall och commit-status för bland annat nästlade block, pipelines, Unicode och resursgränser. [Hämta rapporten](../../../public/conformance/text-core-report.json). Anspråket gäller endast textabana.text-core/v1; full språksemantik, moduler, kanaler, cache och identiska IR/Plan/Result-artefakter ingår inte.\n\n### Oberoende intervallprofil · sprint 5.5\n\n80 jämförelsefall · bash\n\n```bash\npython3 reference/scoped_text.py run examples/scoped-text.md\nnode cli/textabana.mjs conformance-scoped-text > scoped-text-report.json\n```\n\nProfilen textabana.scoped-text/v1 utökar jämförelsen till öppna intervall, namngivna avslut, numerisk ordning och block som ärver eller stänger av yttre intervall. 80 fasta fall jämför både render och hela ordningen på committade funktionsanrop. Gränsen för antalet anrop kontrolleras före exekvering; felaktiga scope-/blockgränser lämnar inget committat resultat. [Hämta intervallrapporten](../../../public/conformance/scoped-text-report.json). Godtyckliga moduler, alternativa korsningspolicyer, cache och full produktionskonformitet återstår.\n\n### Oberoende kanalprofil · sprint 5.6\n\n80 jämförelsefall · bash\n\n```bash\npython3 reference/channel_core.py run examples/channel-core.md\nnode cli/textabana.mjs conformance-channel-core > channel-core-report.json\n```\n\nProfilen textabana.channel-core/v1 jämför även exakta payloads, global händelseordning och sparade kanalresultat. Tillfälliga händelser behåller sina platsnummer men ingår inte i durable snapshots. 80 fasta fall verifierar bland annat payloadkopiering, obligatoriska tomma kanaler, blockarv och återställning av hela resultatet vid kanal- eller budgetfel. [Hämta kanalrapporten](../../../public/conformance/channel-core-report.json). Källpositioner och full proveniensekvivalens ingår inte i jämförelsen mellan runtimes.\n\n### Oberoende positionsprofil · sprint 5.7\n\n70 jämförelsefall · bash\n\n```bash\npython3 reference/source_map_core.py run examples/source-map-core.md\nnode cli/textabana.mjs conformance-source-map-core > source-map-core-report.json\n```\n\nProfilen textabana.source-map-core/v1 jämför var varje händelse hör hemma i den författade texten: deklarationsrader, källintervall, Unicode-positioner, citat och länkar till ankare och funktionsanrop. 70 fasta fall täcker bland annat tomma block, intervall, återanvända radankare och emoji vid citatgränser. Olika rad-id:n med samma interna ankarnyckel avvisas atomiskt. [Hämta positionsrapporten](../../../public/conformance/source-map-core-report.json). Full proveniensgraf, editorhistorik och semantisk artefaktekvivalens återstår.\n\n### Modulkontrakt · sprint 5.8\n\n54 verifieringsfall · bash\n\n```bash\nnode cli/textabana.mjs conformance-module-gate > module-gate-report.json\n```\n\nModulgrinden verifierar digest, låsning, grants och entydiga funktionsdeklarationer. Rapportens räknare visar om modulens startkod hann köras: felaktiga deklarationer stoppas före laddning, medan faktiska exportkontrakt kontrolleras efter laddning men före transform. [Hämta modulrapporten](../../../public/conformance/module-gate-report.json). Detta är en labbgrind runt samma JavaScript-kärna, inte oberoende modulexekvering eller en JavaScript-sandbox.\n\n### Oberoende paketkontroll · sprint 5.9\n\n72 jämförelsefall · bash\n\n```bash\nnode cli/textabana.mjs conformance-module-admission > module-admission-report.json\n```\n\nPython och JavaScript jämför nu 72 beslut om manifest, låsning, digests och grants. Python kör ingen modulkod. Godkänd förhandskontroll redovisas separat från senare export- och körningsfel; ett ogiltigt senare paket ska stoppa all startkod. [Hämta paketjämförelsen](../../../public/conformance/module-admission-report.json). Oberoendet gäller paketkontrollen och omfattar inte modulexekvering eller sandbox-säkerhet."
+        },
+        {
+          "type": "requirement",
+          "id": "CONF-001",
+          "markdown": "En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions."
+        },
+        {
+          "type": "requirement",
+          "id": "CONF-002",
+          "markdown": "Ett profilanspråk MÅSTE bindas till en versionssatt suite och verifiera source → IR → plan → result → projection. Profiler utan relevant input MÅSTE vara `not-run`, inte passerade."
+        },
+        {
+          "type": "requirement",
+          "id": "CONF-003",
+          "markdown": "En adapter får inte förändra Language Core-semantik för att passa hostens exekveringsmodell."
+        },
+        {
+          "type": "requirement",
+          "id": "CONF-004",
+          "markdown": "Deklarerad support och verifieringsutfall MÅSTE vara separata. Ett saknat eller misslyckat obligatoriskt krav blockerar `claimable` även när capability-katalogen säger playground-subset."
+        },
+        {
+          "type": "requirement",
+          "id": "CONF-005",
+          "markdown": "`contract-only` och `unsupported` får aldrig härledas till ett lyckat implementeringsanspråk. Ett passerat no-fabrication-krav verifierar endast kontraktsgränsen."
+        },
+        {
+          "type": "requirement",
+          "id": "CONF-006",
+          "markdown": "En structural snapshot MÅSTE publicera normaliseringspolicy, ignorerade transportfält, digestalgoritm, actual digest och versionssatt expected digest när en golden baseline finns."
+        },
+        {
+          "type": "requirement",
+          "id": "CONF-007",
+          "markdown": "Negativa fixtures MÅSTE köras isolerat och kräva förväntad terminalstatus, exakt diagnostikkod och atomiskt tom durable commit. Ett negativt pass får aldrig skriva om core-resultatet till succeeded."
+        },
+        {
+          "type": "requirement",
+          "id": "CONF-008",
+          "markdown": "Cancellation MÅSTE ha eget terminaltillstånd. Den aktuella subseten implementerar kooperativ cancellation och kooperativ deadline vid runtimegränser samt rapporterade stage-, event- och rendergränser. Credit-styrd metadata-streaming efter commit stöds. Den hävdar inte synkron preemption, multicore-exekvering, kontinuerlig stage-streaming, generell sink-backpressure eller kökvot, hård CPU-/minnessandbox eller rollback av externa sidoeffekter."
+        }
+      ]
+    },
+    {
+      "id": "documentation-sources",
+      "source": "docs/reference/specification/documentation-sources.md",
+      "label": "Contract sources and requirements",
+      "language": "sv",
+      "number": "26a",
+      "layer": "Conformance",
+      "normative": false,
+      "implementation": "implemented",
+      "title": "Contract sources and requirements",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Specification anger målbild och normativa principer. Ett profilanspråk avser bara det versionssatta profilkontraktets uttryckliga delmängd. En körningsrapport visar utfallet för sin bundna källa och sina fixtures.\n\nVid skillnad mellan en generell formulering här och ett labbkontrakt avgör profilkontraktet vad labbet får hävda. Det sänker inte målkravet. Implementation visar faktiskt beteende; ett testfilnamn eller en länk bevisar inte att hela kravet är uppfyllt.\n\n### Läs kontrakt och rapport tillsammans\n\n| Kontraktskälla | Verifiering |\n| --- | --- |\n| [TEXTABANA_PARSER.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/TEXTABANA_PARSER.md) | Parser- och kompilatortester i kravunderlaget |\n| [conformance/README.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/conformance/README.md) | [Hämta profilrapport](../../../public/conformance/host-report.json) |\n| [SEMANTIC_IDENTITY.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SEMANTIC_IDENTITY.md) | [Hämta profilrapport](../../../public/conformance/semantic-report.json) |\n| [SEMANTIC_CONTRACT.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SEMANTIC_CONTRACT.md) | [Hämta profilrapport](../../../public/conformance/contract-report.json) |\n| [TEXT_CORE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/TEXT_CORE_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/text-core-report.json) |\n| [SCOPED_TEXT_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SCOPED_TEXT_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/scoped-text-report.json) |\n| [CHANNEL_CORE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/CHANNEL_CORE_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/channel-core-report.json) |\n| [SOURCE_MAP_CORE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SOURCE_MAP_CORE_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/source-map-core-report.json) |\n| [MODULE_GATE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_GATE_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/module-gate-report.json) |\n| [MODULE_ADMISSION_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_ADMISSION_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/module-admission-report.json) |\n\n[Källan till artefaktschemat](https://github.com/leosa83/scd-adapter-textabana/blob/main/contracts/semantic-bundle-v1.js) genererar [JSON Schema 2020-12](../../../public/contracts/semantic-bundle-v1.schema.json). [Verifieringsguiden](https://github.com/leosa83/scd-adapter-textabana/blob/main/conformance/README.md) anger kommandon och anspråksgränser.\n\nAlla 144 krav har ett expanderbart underlag med kontrakt, implementationskälla, relevanta testkällor och begränsning. [Hämta kravregistret](../../../public/docs/requirements.json). Registret kontrollerar täckning och källreferenser; det är ingen fullständig konformitetsrapport.\n\n### Kontrollera dokumentationens spårbarhet\n\nDokumentationskontroll · bash\n\n```bash\nnode scripts/build-specification-docs.mjs --check\nnode --test tests/documentation.test.mjs\n```\n\n[Standardbedömning och prioriterade luckor](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/STANDARDS_DIRECTION.md) · [Integrationsguide](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/INTEGRATION_GUIDE.md) · [Dokumentationssprintens acceptans](https://github.com/leosa83/scd-adapter-textabana/blob/main/DOCUMENTATION_PLAN.md)."
+        }
+      ]
+    },
+    {
+      "id": "errors",
+      "source": "docs/reference/specification/errors.md",
+      "label": "Error model",
+      "language": "sv",
+      "number": "27",
+      "layer": "Conformance",
+      "normative": true,
+      "implementation": "defined",
+      "title": "Error model",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "### Felkodsfamiljer\n\n| Prefix | Fas | Exempel |\n| --- | --- | --- |\n| `TBA-PARSE` | Lexing / parsing | Obalanserat block eller ogiltig marker. |\n| `TBA-RESOLVE` | Include / manifest | Cykel, digest mismatch eller exportkollision. |\n| `TBA-TYPE` | Planering | Inkompatibel TextabanaValue eller channel payload. |\n| `TBA-RUN` | Exekvering | Funktionsfel, timeout, cancellation eller backpressure. |\n| `TBA-ANCHOR` | Positionering | Ambiguous, orphan eller falskt exact mapping claim. |\n| `TBA-SECURITY` | Capabilities | Saknad grant, otillåten URI eller secret leak. |\n| `TBA-ADAPTER` | Interop | Förlust av metadata, schema eller coordinate conversion. |\n\n### Diagnostic\n\nNormativt schemafragment · json\n\n```json\n{\n  \"diagnosticId\": \"diag:run-42:3\",\n  \"code\": \"TBA-TYPE-CHANNEL-PAYLOAD\",\n  \"severity\": \"error\",\n  \"message\": \"claims event matchar inte schema:claim/v2\",\n  \"anchorRef\": \"anchor:emit-call\",\n  \"related\": [{ \"anchorRef\": \"anchor:manifest-channel\" }],\n  \"phase\": \"planning\",\n  \"cause\": { \"schemaPath\": \"/required/label\" }\n}\n```"
+        },
+        {
+          "type": "requirement",
+          "id": "ERROR-001",
+          "markdown": "Diagnostik MÅSTE ha stabil kod, severity, message, fas och position när position är känd. Hostspecifika stacktraces FÅR bifogas som skyddad extension."
+        },
+        {
+          "type": "requirement",
+          "id": "ERROR-002",
+          "markdown": "För samma malformed construct MÅSTE `code`, `recoveryKind` och `diagnosticKey` vara semantiskt stabila. `diagnosticId` och source span är snapshotbundna och får flytta sig först genom en explicit ny analys eller re-anchor-transition."
+        },
+        {
+          "type": "requirement",
+          "id": "ERROR-003",
+          "markdown": "En parsediagnostik MÅSTE bära ett halvöppet `sourceSpan` och `recoveryNodeId`. Relaterad opener eller declaration BÖR anges i `related`."
+        },
+        {
+          "type": "requirement",
+          "id": "VERSION-001",
+          "markdown": "Language, IR, Result och adapterprofiler versioneras oberoende. Breaking semantik kräver ny major/schemaidentifierare."
+        },
+        {
+          "type": "requirement",
+          "id": "VERSION-002",
+          "markdown": "Extensions MÅSTE vara namespaced. Okända optional extensions round-trippas; okända required extensions stoppar körningen med capabilitydiagnostik."
+        }
+      ]
+    },
+    {
+      "id": "playgrounds",
+      "source": "docs/reference/specification/playgrounds.md",
+      "label": "Playground Labs",
+      "language": "sv",
+      "number": "28",
+      "layer": "Interactive implementation",
+      "normative": false,
+      "implementation": "partial",
+      "title": "Playground Labs",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "Language & Scope, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance använder samma valda källa och run. Language-vyn skiljer Parser, pre-transform Graf och observerat Körspår: partial CST/AST/IR kan visas när compile gate blockerar körning, medan en giltig run visar hela grafen även om exekveringen senare avbryts.\n\n01**Language & Scope Lab**\n\nLossless CST, AST, typed IR, recovery, source spans, scope-segment, pre-transform DAG, advisory invalidation, scheduler-waves/run-budget, faktisk execution report, planordnat `planNodeRef`-bundet körspår och render.\n\nLive · verified-stage-cache · bounded async branch subset\n\n02**Editor Kernel Lab**\n\nOpen document, revisionguardad ChangeSet, captured run snapshot, subscriptionfiltrerat metadata-delta och anchor continuity.\n\nLive · editor-kernel-revisions · editor-kernel/1 subset\n\n03**Editor Metadata Lab**\n\nsystem.out, metadatagutter, row/line, Anchor och SourceMap i den aktuella revisionen.\n\nLive · editor-revision\n\n04**Channel & Result Lab**\n\nChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.\n\nLive · channel-fanout + failed-run\n\n05**Data & Lineage Lab**\n\nJSON-tabell, schema-events, stabila recordId, deterministisk inner join, derived aggregation och cell-/record-lineage.\n\nLive · data-join · data/1 playground-subset\n\n06**Notebook Interop Lab**\n\nWhole-snapshot, stabila cell-id:n, tre MIME-representationer, explicit state och digest-baserad stale detection.\n\nLive · notebook-snapshot · notebook/1 playground-subset\n\n07**Annotation & AI Review Lab**\n\nImmutable AI-kandidater, confidence method, append-only human review, revisionskedja, Anchor-targets samt W3C- och Label Studio-export.\n\nLive · annotation-review · annotation/1 playground-subset\n\n08**Conformance Lab**\n\nProfilval, capability response, stage gates, normalized golden snapshot, strukturell diff, exakta negativa cases och kooperativ cancellation.\n\nLive · conformance-golden · report/lab-v1\n\n### Gemensamt playgroundkontrakt"
+        },
+        {
+          "type": "requirement",
+          "id": "PLAYGROUND-001",
+          "markdown": "Alla labs BÖR använda samma lilla dokument, modulmanifest, inputdata och förväntade resultatsnapshot så att relationen mellan vyerna är verifierbar."
+        },
+        {
+          "type": "requirement",
+          "id": "PLAYGROUND-002",
+          "markdown": "Varje lab MÅSTE skilja författad källa, kompilerad semantik, runtimeevents och adapterprojektion visuellt."
+        },
+        {
+          "type": "requirement",
+          "id": "PLAYGROUND-003",
+          "markdown": "En funktion som UI:t ännu inte implementerar MÅSTE visas som planned/unsupported och får inte simuleras som konformt resultat."
+        },
+        {
+          "type": "requirement",
+          "id": "PLAYGROUND-004",
+          "markdown": "Golden fixtures ska kunna exporteras och köras headless i samma conformance suite som UI:t visualiserar."
+        }
+      ]
+    },
+    {
+      "id": "glossary",
+      "source": "docs/reference/specification/glossary.md",
+      "label": "Glossary",
+      "language": "sv",
+      "number": "29",
+      "layer": "Referens",
+      "normative": false,
+      "implementation": "defined",
+      "title": "Glossary",
+      "blocks": [
+        {
+          "type": "markdown",
+          "markdown": "### Glossary\n\n| Begrepp | Definition |\n| --- | --- |\n| `SourceDocument` | Immutable, versionerad textkälla med logical identity och base URI. |\n| `CST` | Förlustfri konkret syntaxrepresentation från Lezer; bevarar lexem och radslut utan att bestämma domänexekvering. |\n| `AST` | Normaliserat blockträd med typed stages, literalnoder och recovery; intervallhändelser förblir separat modellerade. |\n| `SourceSpan` | Nollbaserat, halvöppet Unicode-code-point-intervall med 1-baserade line- och 0-baserade column-projektioner. |\n| `RecoveryNode` | Lokal representation av malformed eller saknad syntax. Den är alltid non-executable men gör partial editorstruktur möjlig. |\n| `Block` | Strikt nästlad funktionsregion vars kompletta pipeline kör före ambient inheritance. |\n| `Intervall` | Öppet, identifierbart scope som är aktivt över ett eller flera textsegment. |\n| `Property` | Icke-exekverande metadata på en Markdown-AST-enhet. |\n| `TextabanaIR` | Host-neutral semantisk representation av source snapshot. |\n| `ExecutionPlan` | Körbar, typad och capability-validerad stagegraf för en host. |\n| `ExecutionGraph` | Pre-transform DAG med source-, stage-, merge- och rendernoder samt explicita, typade beroenden. |\n| `Typed edge` | Riktat värde- eller kontrollberoende med namngivna portar, edge-kind och deterministisk order key. |\n| `ExecutionTrace` | Observerad följd av stage-resolutioner i execution-step/lab-v2; functionInvoked skiljer fresh invocation från cachematerialisering och varje post binds till grafen med planNodeRef. |\n| `Invalidation preview` | Rådgivande, historikberoende jämförelse mellan en baslinjegraf och en målgraf; inte en cacheträff eller körning. |\n| `Cache eligibility / hit / reuse` | Skilda tillstånd för statisk säkerhetsbedömning, faktisk lookup-träff och verkligt återanvänd stageoutput. |\n| `Scheduler wave` | Ett deterministiskt ready set av oberoende stages; settlement kan överlappa men trace, cachejournal och value commit följer alltid planordning. |\n| `Resource report` | Run-bunden redovisning av requested/effective gränser och faktisk stage-, event-, render-, deadline- och concurrencyanvändning. |\n| `TextabanaValue` | Portabelt typed value envelope i pipelines och runtimeprotokoll. |\n| `DocumentSnapshot` | Immutable textinnehåll för ett documentId vid en monoton documentRevision och content-bunden documentVersion. |\n| `ChangeSet` | Atomisk, versionsguardad mängd sorterade och icke-överlappande textpatchar. |\n| `Anchor` | Immutable, versionsbunden target record med selectors; cross-revision continuity är en separat, explicit resolution. |\n| `MetadataDelta` | Post-commit-jämförelse mellan två immutable metadatasnapshots, filtrerad för en editor subscription. |\n| `SourceMap` | Många-till-många-relation mellan outputselectors och inputanchors. |\n| `render` | Primärt resultatvärde från returpipelinen; inte en vanlig channel. |\n| `Channel` | Namngiven, typed append-only eventström inom en run. |\n| `system.out` | Reserverad channel för editor- och positionsbunden metadata. |\n| `ArtifactRef` | Content-addressed referens till stor eller binär payload. |\n| `Run` | En versionerad compilation/execution med explicit profil och livscykel. |\n| `Adapter` | Versionssatt post-commit-projektion mellan ett immutable TextabanaResult och en extern host, standard eller tjänst. |\n| `Candidate` | Immutable modell- eller verktygsförslag på revision 0, utan mänskligt decision state. |\n| `Review revision` | Append-only mänsklig handling och ny revision som accepterar, avvisar eller ersätter en kandidat. |\n| `Current view` | Härledd lista över nu accepterade annotationer; den raderar aldrig historiska kandidater eller revisioner. |\n| `ConformanceReport` | Maskinläsbar, source-result-bunden evidens för ett versionssatt suite-case; separat från canonical Result och CI-status. |\n| `Golden fixture` | Incheckad input och expected structural digest som inte beräknas från samma aktuella run. |\n| `Declared vs claimable` | Declared support beskriver katalogen; claimable kräver att alla tillämpliga krav passerar. Contract-only är aldrig claimable. |\n| `Conformance gate` | Härledd blockeringslista för failed requirements, stagefel och golden-regressioner i det aktuella caset. |\n\n**Specifikationens riktning**\n\nTextabana återanvänder etablerade format där de redan löser problemet: Markdown för läsbar text, JSON Schema för kontrakt, Arrow/Parquet för data, MIME för notebookpresentation, W3C-modeller för annotation/proveniens och LSP/OTel/OpenLineage/MLflow som adaptrar. Det nya är den sammanhängande semantiken mellan dem.\n\nDetta är inriktningen. [Standardmatrisen](./direction.md) visar vad som är implementerat, avgränsat eller planerat och varför kanalernas JSON Schema-validering är en prioriterad avvikelse."
+        }
+      ]
+    }
+  ]
+}

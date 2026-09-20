@@ -83,3 +83,19 @@ test("renders sidebar skeletons deterministically", async () => {
   assert.equal(first, second);
   assert.match(first, /--skeleton-width:70%/);
 });
+
+test("renders every migrated specification anchor, example and evidence disclosure", async () => {
+  const baseline = JSON.parse(await readFile(path.join(root, "tests/fixtures/specification-5.10.json"), "utf8"));
+  const { Specification } = await vite.ssrLoadModule("/app/specification.tsx");
+  const html = renderToStaticMarkup(React.createElement(Specification));
+  for (const id of [...baseline.sectionIds, ...baseline.requirements.map((requirement) => requirement.id)]) {
+    assert.equal(html.split(`id="${id}"`).length - 1, 1, `Missing or duplicate anchor: ${id}`);
+  }
+  for (const id of baseline.sectionIds) assert.ok(html.includes(`href="#${id}"`), `Missing navigation: ${id}`);
+  assert.equal((html.match(/<details class="spec-evidence">/g) || []).length, baseline.requirements.length);
+  assert.equal((html.match(/<pre\b/g) || []).length, Object.values(baseline.codeExamples).flat().length);
+  assert.match(html, /English translation is in progress/);
+  assert.match(html, /lang="sv"/);
+  assert.match(html, /<table class="spec-table">/);
+  assert.doesNotMatch(html, /href="\.\//);
+});

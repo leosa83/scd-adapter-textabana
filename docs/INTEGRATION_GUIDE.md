@@ -1,10 +1,10 @@
-# Integrera Textabana från den körbara källan
+# Integrate Textabana from source
 
-Guide för `textabana.editor-kernel/lab-v1`, modulpaket `lab-v1` och sprint 5.9:s runtime. SDK:erna finns i repot; inget separat publicerat npm-/PyPI-paket förutsätts. Klienterna transporterar meddelanden till samma JavaScript-kärna. De fristående Python-referensruntimerna är andra, smalare konformitetsprofiler.
+This guide covers `textabana.editor-kernel/lab-v1`, module packages `lab-v1` and the runtime delivered through sprint 5.9. SDK sources live in this repository; no separately published npm or PyPI package is assumed. Both host clients send messages to the same JavaScript kernel. The standalone Python reference evaluators implement separate, narrower conformance profiles.
 
-## Förbered och kör hela exemplet
+## Run the complete examples
 
-Från repots rot med installerade låsta dependencies, Node enligt `package.json` och Python 3:
+From the repository root, after installing locked dependencies, with Node as specified in `package.json` and Python 3:
 
 ```sh
 npm run runtime:build
@@ -12,11 +12,13 @@ node examples/integration/editor-loop.mjs
 python3 examples/integration/python-host.py
 ```
 
-Node-exemplet kompilerar den faktiska TypeScript-klienten med projektets befintliga esbuild. Det öppnar ett dokument, analyserar, prenumererar, kör, ger credit, ändrar källan, kör igen och verifierar att en gammal revision och saknad grant avvisas. Det avslutar både klient och transport även vid fel. Förväntat slutresultat är revision 2, `HALLÅ 🌊\n`, ett levererat metadatafragment och ett verifierat artefaktpaket. Python-exemplet använder den faktiska Python-klienten och JSONL-transporten och producerar tre MIME-alternativ för `HEJ 🌊\n`; det startar ingen Jupyter-kernel.
+The Node example bundles the actual TypeScript client using the existing esbuild dependency. It opens a document, analyzes it, subscribes, runs, grants credit, changes the source and runs again. It checks rejection of a stale revision and a missing grant, and closes the client and transport on success or failure. Expected final output is revision 2, `HALLÅ 🌊\n`, one delivered metadata chunk and a verified artifact bundle. The Swedish text is intentional Unicode example data.
 
-## Komplett modul, manifest och låsning
+The Python example uses the actual Python client over JSONL and produces three MIME alternatives for `HEJ 🌊\n`. It does not start a Jupyter kernel.
 
-De körbara källorna är [modulen](../examples/integration/module.js), [dokumentet](../examples/integration/document.md) och [paketbyggaren](../examples/integration/package.mjs). Paketbyggaren beräknar SHA-256 över exakt de UTF-8-bytes som transporteras och producerar en komplett `modules`-array och `options`.
+## Module, manifest and lock
+
+The runnable sources are the [module](../examples/integration/module.js), [document](../examples/integration/document.md) and [package builder](../examples/integration/package.mjs). The builder hashes the exact transported UTF-8 bytes and creates a complete `modules` array and `options`.
 
 ```sh
 mkdir -p outputs/docs
@@ -26,38 +28,38 @@ node cli/textabana.mjs identify examples/integration/document.md outputs/docs/mo
 node cli/textabana.mjs verify-identity outputs/docs/identity.json
 ```
 
-Modulens `documented_upper` returnerar versaler och emitterar en `docs.metrics`-payload med antalet Unicode code points. Samma anrop skapar båda. Funktionens effekt är `channel:docs.metrics`, därför är den inte en ren cachekandidat.
+`documented_upper` returns uppercase text and emits a `docs.metrics` payload containing the Unicode code-point count. One invocation creates both outputs. Its `channel:docs.metrics` effect means it is not a pure cache candidate.
 
-| Del | Bindning |
+| Part | Binding |
 |---|---|
-| Transport | `path`, exakta `content`, `digest`, `manifest` |
+| Transport | `path`, exact `content`, `digest`, `manifest` |
 | Manifest | `textabana.module-manifest/lab-v1`, namespace, version, entrypoint, digest, functions, capabilities |
-| Låsfil | `options.moduleLock.schema = textabana.module-lock/lab-v1`; `packages` låser samma namespace/version, entrypoint och digest |
-| Grant | `options.capabilityGrants` innehåller `channel:docs.metrics` |
-| Deklaration | `state=run`, `determinism=deterministic`, `effects=["channel:docs.metrics"]` matchar modulens faktiska export |
+| Lock | `options.moduleLock.schema = textabana.module-lock/lab-v1`; `packages` pins the same namespace/version, entrypoint and digest |
+| Grant | `options.capabilityGrants` includes `channel:docs.metrics` |
+| Function declaration | `state=run`, `determinism=deterministic`, `effects=["channel:docs.metrics"]` matches the actual export |
 
-Alla transporterade säkra paket kontrolleras före någon startkod, även oanvända och senare paket. Syntaxgrinden passerar också före modulstart. Efter laddning jämförs faktiska exports med manifestet före transform. Ett godkänt paketbeslut betyder inte att exportkontroll eller körning lyckas, och ger ingen JavaScript-sandbox. Legacy-paket utan låsning/manifest/digest har en separat äldre väg. Exakta regler och felordning finns i [MODULE_ADMISSION_PROFILE.md](../MODULE_ADMISSION_PROFILE.md) och [MODULE_GATE_PROFILE.md](../MODULE_GATE_PROFILE.md). Versionens labbgrammatik är inte full SemVer.
+All transported secure packages are checked before any entrypoint executes, including unused packages and later entries. The syntax gate also runs before module startup. Actual exports are compared with their manifests after loading and before transformation. Admission success does not guarantee export validation or execution success, and does not provide a JavaScript sandbox. Legacy packages without a lock, manifest or digest use a separate older path. Exact rules and failure precedence are specified in [MODULE_ADMISSION_PROFILE.md](../MODULE_ADMISSION_PROFILE.md) and [MODULE_GATE_PROFILE.md](../MODULE_GATE_PROFILE.md). The lab's version grammar is not full SemVer.
 
-Includes löses relativt dokumentets protokollsökväg. Därför öppnar alla exempel `examples/integration/document.md` och transporterar modulen som `examples/integration/module.js`; `./module.js` i dokumentet måste lösa till exakt samma sökväg som manifest och låsfil.
+Includes resolve relative to the document's protocol path. All examples therefore open `examples/integration/document.md` and transport the module as `examples/integration/module.js`. The authored `./module.js` include must resolve to the same path as the manifest and lock.
 
-## TypeScript och browserhost
+## TypeScript client in a browser host
 
-[TextabanaKernelClient](../sdk/typescript/client.ts) accepterar en transport med `postMessage`, `addEventListener` och `removeEventListener`. En browser-Worker kan användas direkt när värden serverar den byggda `public/runtime-worker.js`. Paketet nedan avser samma `modules`/`options` som paketbyggaren ovan producerar; värden ansvarar för inläsningen.
+[TextabanaKernelClient](../sdk/typescript/client.ts) accepts a transport with `postMessage`, `addEventListener` and `removeEventListener`. A browser Worker can be used directly when the host serves the built `public/runtime-worker.js`. In this illustrative JavaScript fragment, the host loads `source` and the package builder's `modules`/`options` before opening the document:
 
 ```js
 import { TextabanaKernelClient } from "./sdk/typescript/client";
 const worker = new Worker("/runtime-worker.js");
 const client = new TextabanaKernelClient(worker);
-// const source = ...; const pkg = ...; läs dokument och paket före open.
+// Load source and pkg before entering this fragment.
 try {
   const opened = await client.open("my-doc", "examples/integration/document.md", source);
   let revision = opened.document.documentRevision;
   const analyzed = await client.analyze("my-doc", revision);
-  // Kör endast om analyzed.analysis.executable är true.
+  // Run only when analyzed.analysis.executable is true.
   const result = await client.run("my-doc", revision, 1, pkg.modules, pkg.options);
-  // result.output är text; result.resultEnvelope är det committade kontraktet.
+  // Inspect result.resultEnvelope.run.committed and diagnostics.
   const changed = await client.change("my-doc", revision, [
-    { range: { from: 0, to: 0 }, insert: "Rubrik\n" },
+    { range: { from: 0, to: 0 }, insert: "Heading\n" },
   ]);
   revision = changed.document.documentRevision;
 } finally {
@@ -66,36 +68,36 @@ try {
 }
 ```
 
-Browserfragmentet visar livscykeln och förutsätter värdens paketinläsning och typning av svar. Det fristående Node-exemplet är det kompletta, automatiskt körda exemplet. SDK-svar är `unknown` som standard; ange en egen kontrollerad svarstyp via `command<T>` eller validera svaret vid värdgränsen. Ingen full genererad protokolltypning påstås.
+The standalone Node example is the complete, automatically exercised integration. SDK responses are `unknown` by default; supply an appropriately checked response type through `command<T>` or validate responses at the host boundary. Full generated protocol typing is still planned.
 
-## Metoder, fel och revisioner
+## Methods, errors and revisions
 
-| Metod | Observerbart kontrakt |
+| Method | Observable contract |
 |---|---|
-| `open(id, path, source)` | Vänta på `response.document.documentRevision`; identisk open kan vara idempotent. Reset görs via `command("open", {document: ..., replaceSession: true})`. |
-| `change(id, baseRevision, changes)` | Alla ranges avser samma bas, är sorterade, icke-överlappande och räknas i Unicode code points. Uppdatera lokal revision först från svaret. |
-| `analyze(id, revision)` | Read-only parserprodukt; partial IR och diagnostik även för ofullständig text. Inga stages körs. |
-| `run(id, revision, runId, modules, options)` | Fångar exakt revision. Läs `resultEnvelope.run.committed` och diagnostik, inte bara texten. |
-| `subscribe(id, subscriptionId, channels, initialCredit)` | SDK-metoden väljer stream-läge; noll credit betyder ingen fragmentleverans. Registrera `onChunk` före körning. |
-| `credit(subscriptionId, n)` | 1–1024 nya leveransenheter. Enheten är ett metadatafragment, inte ett event eller en hel revision. Läs fragmentens cursor/sequence/total/done. |
-| `exportCache` / `importCache` | Explicit host-checkpoint. Hosten lagrar det; import kräver att körningar inte är aktiva/köade. |
-| `cancel(runId)` | TypeScript-hjälparen skickar utan att invänta kvittens. Vänta på den pågående körningens terminalutfall; avbrott är kooperativt. |
-| `dispose()` | Tar bort lyssnare och avvisar väntande klientanrop. Avslutar inte Workern eller kärnans dokument. Hosten måste stänga transporten separat. |
+| `open(id, path, source)` | Await `response.document.documentRevision`. Identical opens can be idempotent. Reset through `command("open", {document: ..., replaceSession: true})`. |
+| `change(id, baseRevision, changes)` | Ranges use one base snapshot, are sorted and non-overlapping, and count Unicode code points. Advance the local revision from the response. |
+| `analyze(id, revision)` | Read-only parser products, partial IR and diagnostics for incomplete source. No stages execute. |
+| `run(id, revision, runId, modules, options)` | Captures the exact revision. Inspect `resultEnvelope.run.committed` and diagnostics, not only the output text. |
+| `subscribe(id, subscriptionId, channels, initialCredit)` | The SDK selects stream delivery. Zero credit means no chunks are delivered. Register `onChunk` before running. |
+| `credit(subscriptionId, n)` | Adds 1–1024 delivery units. A unit is one metadata chunk, not one event or an entire revision. Inspect cursor/sequence/total/done. |
+| `exportCache` / `importCache` | Explicit host checkpoint. The host stores it; imports require no active or queued runs. |
+| `cancel(runId)` | The TypeScript helper sends without awaiting acknowledgement. Observe the active run's terminal outcome; cancellation is cooperative. |
+| `dispose()` | Removes listeners and rejects pending client calls. Does not terminate the Worker or close kernel documents. The host closes the transport separately. |
 
-`KernelCommandError.response` innehåller det korrelerade felsvaret. Protokollfel kan finnas i `error.code`, körningsfel i `diagnostics`. Efter stale revision: återläs/resynkronisera dokumentet innan fler ändringar. TypeScript-klienten har ingen inbyggd generell anropstimeout; värden ansvarar för timeout, transportfel och återhämtning.
+`KernelCommandError.response` contains the correlated error response. Protocol errors may use `error.code`; execution failures use `diagnostics`. After a stale revision, resynchronize the document before further changes. The TypeScript client has no general built-in request timeout; the host owns timeout, transport failure and recovery policy.
 
-Streamleverans sker **efter commit**. Credit styr leveranstakten och förhindrar inte i sig att producentens kö växer. Nuvarande implementation har ingen generell kö-/minneskvot, persistent cursor eller unsubscribe-/close-document-kommando. `onChunk` returnerar en lokal avregistrering; den tar inte bort kärnans prenumeration. Kontinuerlig stage-streaming är fortfarande planerad.
+Stream delivery occurs **after commit**. Credit controls delivery rate but does not itself bound the producer's queue. There is no general queue/memory limit, persistent cursor, unsubscribe command or close-document command. The function returned by `onChunk` removes a local listener; it does not remove the kernel subscription. Continuous stage streaming remains planned.
 
-## CodeMirror och Monaco
+## CodeMirror and Monaco
 
-[codeMirrorTextabanaBinding](../sdk/typescript/codemirror.ts) tar klient, dokument-id, en funktion som läser senast accepterad revision och en callback för accepterat svar. Bind den till värdens uppdateringslyssnare, uppdatera revision i callback och hantera den returnerade Promise-rejektionen. En avvisad ändring stoppar dess kö; resynkronisera och skapa en ny bindning. Den bygger ingen editor åt värden.
+[codeMirrorTextabanaBinding](../sdk/typescript/codemirror.ts) takes the client, document ID, a function returning the latest accepted revision and a callback for accepted responses. Connect it to the host's update listener, advance the revision in the callback and handle rejected promises. A rejected change stops its queue; resynchronize and create a new binding. It does not construct an editor for the host.
 
-[applyMonacoChanges](../sdk/typescript/monaco.ts) kräver modellen **före** ändringen samt ändringarnas `rangeOffset`, `rangeLength` och `text`. Skicka inte redan uppdaterad modell som bas. Serialisera förändringar mot accepterade revisioner. Båda bindningarna översätter UTF-16-offsets till code points. De är inte LSP-adaptrar och ger inte OT/CRDT.
+[applyMonacoChanges](../sdk/typescript/monaco.ts) requires the model **before** the change and each change's `rangeOffset`, `rangeLength` and `text`. Do not pass the already-updated model as the base. Serialize changes against accepted revisions. Both bindings translate UTF-16 offsets into code points; neither implements LSP or OT/CRDT.
 
-## Python, MIME och verifiering
+## Python, MIME and verification
 
-[Python-klienten](../sdk/python/textabana_client.py) är callback-baserad: värden levererar inkommande meddelanden till `receive` och hanterar `ok=false` i callback. Använd `command` för övriga protokollkommandon. [Det kompletta Python-exemplet](../examples/integration/python-host.py) visar transport och stängning med en lokal JSONL-process på POSIX; andra värdar kan använda egen transport. Det gör inget anspråk på ett fristående Python-ekvivalent språk.
+The [Python client](../sdk/python/textabana_client.py) uses callbacks: the host forwards incoming messages to `receive` and handles `ok=false` in callbacks. Use `command` for other protocol operations. The [complete Python example](../examples/integration/python-host.py) demonstrates a local JSONL subprocess and cleanup on POSIX. Other hosts can supply their own transport. This is not a separate Python-equivalent implementation of the full language.
 
-`jupyter_mime_bundle` accepterar endast committade resultat. MIME-bundlen kan skickas som `display_data` av en riktig Jupyterhost; hjälparen implementerar inte själv Messaging, kernels eller nbformat.
+`jupyter_mime_bundle` accepts only committed results. A real Jupyter host can send its output as `display_data`; the helper does not implement Messaging, kernels or nbformat.
 
-`verify-identity` verifierar schema, referenser och integritet i det exporterade paketet. Den kör inte om transformationerna. Se [artefaktkontraktet](../SEMANTIC_CONTRACT.md) och [verifieringskommandona](../conformance/README.md). Läs [standardbedömningen](./STANDARDS_DIRECTION.md) före anspråk på full JSON Schema-, notebook-, data- eller provenienskonformitet.
+`verify-identity` checks schema, references and bundle integrity. It does not rerun transformations. See the [artifact contract](../SEMANTIC_CONTRACT.md), [conformance commands](../conformance/README.md) and [standards assessment](STANDARDS_DIRECTION.md) before claiming full schema, notebook, data or provenance conformance.

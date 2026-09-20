@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Textabana — Language & Interop Specification",
   description:
-    "Textabana Language & Interop draft 0.7: formell editorparser, typed IR, lokal recovery, öppna intervall, typade kanaler, anchors och post-commit-adaptrar.",
+    "Textabana Language & Interop draft 0.7: a formal editor parser, typed IR, local recovery, open intervals, typed channels, anchors and post-commit adapters.",
   icons: {
     icon: "/favicon-textabana.svg",
     shortcut: "/favicon-textabana.svg",
@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sv">
+    <html lang="en">
       <body className="antialiased">{children}</body>
     </html>
   );

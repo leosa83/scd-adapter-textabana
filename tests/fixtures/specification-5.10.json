@@ -1,0 +1,864 @@
+{
+  "sourceCommit": "a0ec88761b904602e28522a6334bc90c5ae0f5e3",
+  "requirements": [
+    {
+      "id": "STATUS-001",
+      "section": "status",
+      "text": "En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer."
+    },
+    {
+      "id": "STATUS-002",
+      "section": "status",
+      "text": "Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil."
+    },
+    {
+      "id": "STATUS-003",
+      "section": "status",
+      "text": "Nuvarande Playground implementerar åtta avgränsade vyer: Language & Scope med separata Parser-, Graf- och Körspår-flikar, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Grafvyn visar en pre-transform textabana.execution-plan/lab-v2, en typad textabana.execution-graph/lab-v1, rådgivande invalidation och en faktisk textabana.execution-report/lab-v1 med scheduler- och resursrapport. Editor-sessioner kan återanvända en verifierad pure/deterministic/effects-free stageoutput efter två lika observationer i skilda committed revisioner. Oberoende, snapshotbara stages med samma betrodda kontrakt kan överlappa asynkront i en Worker; completionordning påverkar aldrig planordnad trace, cachejournal eller merge. Resultatvyerna läser samma valda run; Editor Kernel visar dessutom revisionskedjan runt den. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. editor-kernel/1 och annotation/1 är playground-subsets; verklig modellkörning och ml-lineage/1 är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet."
+    },
+    {
+      "id": "DIRECTION-001",
+      "section": "direction",
+      "text": "Ett nytt Textabana-format MÅSTE ange vilket semantiskt samband det tillför, vilken etablerad standard som övervägts och hur utbyte ska ske utan dold betydelseförändring."
+    },
+    {
+      "id": "DIRECTION-002",
+      "section": "direction",
+      "text": "Standardstöd MÅSTE beskriva version, riktning för import/export, implementerad delmängd och verifierad gräns. Ett schema-ID, en dependency eller en planerad adapter får inte ensam räknas som stöd."
+    },
+    {
+      "id": "DIRECTION-003",
+      "section": "direction",
+      "text": "En adapter MÅSTE redovisa mapping och förluster vid standardgränsen. Intern konformitet och verifiering mot en oberoende extern konsument MÅSTE rapporteras separat."
+    },
+    {
+      "id": "HTML-ADAPTER-001",
+      "section": "html",
+      "text": "HTML FÅR vara renderformat och editorhost, men DOM-noder eller DOM-offsets får inte ersätta Textabanas kanoniska Anchor-identitet."
+    },
+    {
+      "id": "HTML-ADAPTER-002",
+      "section": "html",
+      "text": "När korsande intervall projiceras till HTML MÅSTE adaptern fragmentera presentationen utan att förlora scope-id, SourceMap eller exekveringssemantik."
+    },
+    {
+      "id": "HTML-ADAPTER-003",
+      "section": "html",
+      "text": "En HTML-adapter får presentera eller sanera resultatet men får inte göra browserordning, DOM-nästling eller eventtiming till ny språksemantik."
+    },
+    {
+      "id": "ARCH-001",
+      "section": "architecture",
+      "text": "En host-adapter FÅR projicera ett resultat till sin egen UI- eller transportmodell men FÅR INTE ändra eventets mening, identitet, anchor eller proveniens."
+    },
+    {
+      "id": "ARCH-002",
+      "section": "architecture",
+      "text": "Kompilering och exekvering MÅSTE kunna beskrivas utan beroende till JavaScript, Python, Jupyter eller en specifik editor."
+    },
+    {
+      "id": "VALUE-001",
+      "section": "source-value",
+      "text": "Kanoniska offsets MÅSTE vara nollbaserade Unicode-code-point-offsets och använda halvöppna intervall [start, end)."
+    },
+    {
+      "id": "VALUE-002",
+      "section": "source-value",
+      "text": "En sträng FÅR vara shorthand för kind=text. Ingen annan tyst typkonvertering är tillåten."
+    },
+    {
+      "id": "VALUE-003",
+      "section": "source-value",
+      "text": "Pipelinekanter MÅSTE typkontrolleras mot funktionens accepts och returns när schema är känt."
+    },
+    {
+      "id": "SYNTAX-001",
+      "section": "syntax",
+      "text": "Kontrollrader, stängningsrader och fristående propertyrader MÅSTE avlägsnas från primär render."
+    },
+    {
+      "id": "SYNTAX-002",
+      "section": "syntax",
+      "text": "Okända engine controls MÅSTE ge kompileringsdiagnostik; de får inte tyst skickas vidare till funktionen."
+    },
+    {
+      "id": "PARSE-001",
+      "section": "syntax",
+      "text": "Samma source snapshot och grammar version MÅSTE deterministiskt ge samma CST, diagnostikkoder och recovery kinds."
+    },
+    {
+      "id": "PARSE-002",
+      "section": "syntax",
+      "text": "Recovery MÅSTE behålla exakt authored span eller en explicit zero-width missing-token-position. Den får aldrig fabricera en körbar opener, close eller stage."
+    },
+    {
+      "id": "PARSE-003",
+      "section": "syntax",
+      "text": "Varje error-level recovery MÅSTE blockera modulinitiering och domänexekvering men partial CST, AST, IR och diagnostik MÅSTE fortfarande kunna levereras till editorn."
+    },
+    {
+      "id": "SCOPE-001",
+      "section": "blocks-intervals",
+      "text": "Ett intervall FÅR anropas flera gånger under sin livstid när förändringar i andra aktiva scopes skapar flera maximala segment."
+    },
+    {
+      "id": "SCOPE-002",
+      "section": "blocks-intervals",
+      "text": "Ett explicit @id BÖR användas för beständig adressering. Ett genererat id är endast stabilt inom samma dokumentversion."
+    },
+    {
+      "id": "SCOPE-003",
+      "section": "blocks-intervals",
+      "text": "Block MÅSTE vara strikt nästlade. Intervall FÅR överlappa och korsa varandra eftersom de representeras separat från blockträdet."
+    },
+    {
+      "id": "INHERIT-001",
+      "section": "inheritance",
+      "text": "Förekomsten av minst ett @intervals-steg MÅSTE stänga av all implicit intervallinjektion för blocket."
+    },
+    {
+      "id": "INHERIT-002",
+      "section": "inheritance",
+      "text": "Urval med funktionsnamn matchar alla aktiva instanser med namnet; urval med @id matchar exakt en instans."
+    },
+    {
+      "id": "INHERIT-003",
+      "section": "inheritance",
+      "text": "Inheritance styr hela intervallanropet, inklusive dess returvärde och emissioner. Redan emitterade events får aldrig pipas vidare som text."
+    },
+    {
+      "id": "PROPERTY-001",
+      "section": "properties-modules",
+      "text": "@order ordnar funktioner. En property som priority påverkar endast ordning om en uttrycklig funktion läser den."
+    },
+    {
+      "id": "MODULE-001",
+      "section": "properties-modules",
+      "text": "Compiler MÅSTE normalisera URI:er, bygga en DAG, upptäcka cykler och exportkollisioner samt pinna resolved URI, version och SHA-256 innan modulkod körs."
+    },
+    {
+      "id": "MODULE-002",
+      "section": "properties-modules",
+      "text": "Samma normaliserade URI och digest identifierar samma modulinstans. Modulen initieras en gång per fresh run, eller en gång per namngiven session i sessionprofilen."
+    },
+    {
+      "id": "MODULE-003",
+      "section": "properties-modules",
+      "text": "Cache FÅR inte ändra semantik. Återanvänd sessionstate, modulbyte eller nondeterministisk replay MÅSTE framgå av proveniens."
+    },
+    {
+      "id": "PROCESS-001",
+      "section": "processing",
+      "text": "Samtidig exekvering FÅR endast användas när beroenden, eligibility, deterministic merge och publik event-/traceordning är fullt definierade. Completion timing får inte bli semantisk ordning."
+    },
+    {
+      "id": "PROCESS-002",
+      "section": "processing",
+      "text": "Ett kompileringsfel MÅSTE stoppa all domänexekvering. Ett run-fel MÅSTE hindra durable commit."
+    },
+    {
+      "id": "PROCESS-003",
+      "section": "processing",
+      "text": "Modulinitiering är en effekt och FÅR INTE ske innan hela dokumentet har passerat parserns compile gate."
+    },
+    {
+      "id": "PROCESS-004",
+      "section": "processing",
+      "text": "ExecutionPlan och ExecutionGraph MÅSTE vara kompletta före första stage-resolution. ExecutionTrace textabana.execution-step/lab-v2 MÅSTE vara en separat observation där varje post refererar en planerad nod och skiljer fresh invocation från cachematerialisering. Vid fel behålls hela grafen och samtliga faktiskt startade, dränerade stageutfall publiceras i planordning; oschemalagda noder saknar tracepost."
+    },
+    {
+      "id": "IR-001",
+      "section": "ir-plan",
+      "text": "Intervall MÅSTE representeras som scopes och segmentmedlemskap; de får inte pressas in i ett AST-träd som förlorar korsningar."
+    },
+    {
+      "id": "IR-002",
+      "section": "ir-plan",
+      "text": "Authored ids FÅR vara stabila mellan revisioner. Genererade node ids MÅSTE dokumenteras som revision-local."
+    },
+    {
+      "id": "IR-003",
+      "section": "ir-plan",
+      "text": "Varje IR-node, stage och recovery MÅSTE ha ett halvöppet Unicode-code-point-span inom exakt source snapshot. Syntetiska missing tokens MÅSTE vara markerade och ha zero-width-span. En source-backed Blank-node FÅR vara zero-width utan att vara syntetisk; radslutet ägs då av CST:ns separata Newline-terminal."
+    },
+    {
+      "id": "IR-004",
+      "section": "ir-plan",
+      "text": "En Recovery-node MÅSTE ha executable=false och får aldrig refereras som en körbar stage i ExecutionPlan."
+    },
+    {
+      "id": "PLAN-001",
+      "section": "ir-plan",
+      "text": "ExecutionPlan MÅSTE bära varje stages exakta funktionsversion, typkontrakt, granted capabilities och deterministiska order key."
+    },
+    {
+      "id": "PLAN-002",
+      "section": "ir-plan",
+      "text": "ExecutionGraph MÅSTE ha unika node- och edge-id:n, typade endpoints, acyklisk topologisk ordning och exakt en renderterminal. Edge-typerna pipeline, interval, interval-injection, inheritance, merge och render MÅSTE vara explicita. Samma operationstape MÅSTE vara auktoritet för både planering och exekvering."
+    },
+    {
+      "id": "PLAN-003",
+      "section": "ir-plan",
+      "text": "Statisk cache eligibility, cache candidate, cache lookup, cache hit och faktisk reuse är skilda tillstånd. Ett ofullständigt state-, determinism- eller effektkontrakt MÅSTE göra funktionen icke-cachebar. En deklarerad kandidat är en betrodd manifestuppgift, inte i sig ett verifierat puritybevis."
+    },
+    {
+      "id": "PLAN-004",
+      "section": "ir-plan",
+      "text": "Invalidation preview MÅSTE vara rådgivande och separat från grafens och Resultatets semantiska identitet. Den MÅSTE ange basis, target och maskinläsbara orsaker samt får aldrig redovisas som cache hit eller reuse."
+    },
+    {
+      "id": "PLAN-005",
+      "section": "ir-plan",
+      "text": "Parallell eligibility och cache eligibility MÅSTE vara separata fält även när kriterierna sammanfaller. Endast oberoende pure + deterministic + effects=[]-stages utan kanaler eller icke-render-output FÅR överlappa i den aktuella subseten. En pending unknown, stateful eller effectful stage MÅSTE fence:a planmässigt senare ready branches tills barriären har avslutats; merge/render är seriella. Outputs från faktiskt samtidiga fresh-invocations MÅSTE snapshotas och klonas förlustfritt inom den portabla TextabanaValue-domänen vid settlement; andra typer avvisas atomiskt före planordnad publicering. Execution-ID:n, trace, values och cachejournal MÅSTE publiceras i planordning."
+    },
+    {
+      "id": "ANCHOR-001",
+      "section": "anchors",
+      "text": "En durable annotation MÅSTE binda till en versionerad target och minst en selector. Position och quote BÖR lagras tillsammans."
+    },
+    {
+      "id": "ANCHOR-002",
+      "section": "anchors",
+      "text": "En runtime får aldrig tyst välja en av flera re-anchor-kandidater. Flera giltiga kandidater MÅSTE ge ambiguous; ingen giltig kandidat MÅSTE ge orphaned. Båda utfallen ska förbli olösta och diagnostiserbara."
+    },
+    {
+      "id": "ANCHOR-003",
+      "section": "anchors",
+      "text": "Human-facing line och column är ettbaserade. LSP-adaptern MÅSTE konvertera till nollbaserade UTF-16-positioner."
+    },
+    {
+      "id": "SOURCEMAP-001",
+      "section": "anchors",
+      "text": "Varje mapping record MÅSTE ange exact, derived eller synthetic samt generating activity. Aggregat är aldrig exact utan verifierat mapping proof."
+    },
+    {
+      "id": "RESULT-001",
+      "section": "result",
+      "text": "Ett lyckat resultat MÅSTE vara immutable. resultId BÖR vara content-addressed."
+    },
+    {
+      "id": "RESULT-002",
+      "section": "result",
+      "text": "Ett failed eller cancelled resultat MÅSTE ha tom committed render och tomma committed domain channels, men FÅR bära control-plane diagnostics."
+    },
+    {
+      "id": "RESULT-003",
+      "section": "result",
+      "text": "Timestamps är transportmetadata och får inte styra semantisk hash eller eventordning."
+    },
+    {
+      "id": "CHANNEL-001",
+      "section": "channels",
+      "text": "Kanalnamn är obegränsade utom den reserverade namnrymden system.*. render är reserverat som resultatfält."
+    },
+    {
+      "id": "CHANNEL-002",
+      "section": "channels",
+      "text": "I strict profile MÅSTE descriptor och payloadschema deklareras före emit. En permissive legacyprofil FÅR syntetisera generisk JSON-descriptor vid första emit men får inte hävda typed-channel conformance."
+    },
+    {
+      "id": "CHANNEL-003",
+      "section": "channels",
+      "text": "Events är append-only inom en run. Ett schemafel, en cyklisk payload eller ett oserialiserbart värde MÅSTE avvisas — inte förlustkonverteras till text."
+    },
+    {
+      "id": "CHANNEL-004",
+      "section": "channels",
+      "text": "Varje accepted emit får en order key (planStep, invocationOrder, localEmitIndex). sequence tilldelas vid deterministic merge/commit."
+    },
+    {
+      "id": "CHANNEL-005",
+      "section": "channels",
+      "text": "En funktionsmodul körs inte en gång per kanal. Ett enda funktionsanrop FÅR emittera till valfritt många kanaler."
+    },
+    {
+      "id": "SYSTEM-OUT-001",
+      "section": "system-out",
+      "text": "Semantisk kind och positioneringssätt target.mode MÅSTE vara separata. row och line är target modes, inte eventtyper."
+    },
+    {
+      "id": "SYSTEM-OUT-002",
+      "section": "system-out",
+      "text": "context.system.out.row(...) och .line(...) FÅR finnas som SDK-helpers men MÅSTE normalisera till samma portabla event envelope och Anchor."
+    },
+    {
+      "id": "SYSTEM-OUT-003",
+      "section": "system-out",
+      "text": "Compile- och run-fel lagras i top-level diagnostics. En lyckad positionsbunden varning FÅR dessutom projiceras i system.out med samma diagnostic-id."
+    },
+    {
+      "id": "ARTIFACT-001",
+      "section": "artifacts",
+      "text": "Artifact digest MÅSTE verifieras. Signed URLs och credentials får inte serialiseras som durable URI; använd opaque handle och en host-resolver."
+    },
+    {
+      "id": "SINK-001",
+      "section": "artifacts",
+      "text": "En icke-transaktionell sink MÅSTE buffra durable leverans till commit. Extern leverans BÖR använda (runId, sequence) som idempotency key."
+    },
+    {
+      "id": "SINK-002",
+      "section": "artifacts",
+      "text": "Textabana får inte lova exactly-once över godtyckliga externa system. Adapterprofilen ska deklarera leveransgaranti, normalt at-least-once."
+    },
+    {
+      "id": "MANIFEST-001",
+      "section": "module-manifest",
+      "text": "Compiler MÅSTE kunna läsa och validera manifestet utan att exekvera modulens entrypoint."
+    },
+    {
+      "id": "MANIFEST-002",
+      "section": "module-manifest",
+      "text": "Dubbla exports utan namespace eller alias MÅSTE vara compile error."
+    },
+    {
+      "id": "MANIFEST-003",
+      "section": "module-manifest",
+      "text": "State och determinism är separata dimensioner. En stateful funktion kan vara deterministisk, och en stateless funktion kan vara nondeterministisk."
+    },
+    {
+      "id": "MANIFEST-004",
+      "section": "module-manifest",
+      "text": "behavior beskriver transformationens form och FÅR INTE tolkas som purity. State, determinism och observerbara effekter MÅSTE deklareras separat; saknad deklaration betyder unknown och icke-cachebar."
+    },
+    {
+      "id": "MANIFEST-005",
+      "section": "module-manifest",
+      "text": "En deklaration som state=pure, determinism=deterministic och effects=[] gör endast funktionen till cachekandidat. En host som faktiskt återanvänder output MÅSTE dessutom upprätthålla effektgränsen eller behandla kontraktet som betrott och redovisa den trust boundaryn."
+    },
+    {
+      "id": "RUNTIME-001",
+      "section": "runtime-protocol",
+      "text": "emit är logiskt acknowledged. Modulens completion MÅSTE flush:a alla accepted events innan stage avslutas."
+    },
+    {
+      "id": "RUNTIME-002",
+      "section": "runtime-protocol",
+      "text": "Funktioner får inte implicit läsa channels. En kanal som input kräver en explicit Plan-edge eller adapterstage."
+    },
+    {
+      "id": "RUNTIME-003",
+      "section": "runtime-protocol",
+      "text": "JavaScript, TypeScript, Python, R, Julia, SQL, WASM och externa tjänster FÅR implementera samma protokoll utan språksemantisk särbehandling."
+    },
+    {
+      "id": "EDITOR-KERNEL-001",
+      "section": "editor-kernel",
+      "text": "Editor Kernel MÅSTE vara ett control plane runt språk och runtime. Det får inte kunna anropas som en dokumentfunktion eller införa dold pipelineordning."
+    },
+    {
+      "id": "EDITOR-KERNEL-002",
+      "section": "editor-kernel",
+      "text": "Varje accepterad run MÅSTE fånga ett immutable snapshot med exakt documentId, documentRevision och documentVersion. Senare changes får inte ändra detta snapshot."
+    },
+    {
+      "id": "EDITOR-KERNEL-003",
+      "section": "editor-kernel",
+      "text": "system.out och andra channels är semantisk output som kan prenumereras på. De får inte bära open, change eller annan document lifecycle-semantik."
+    },
+    {
+      "id": "DOCUMENT-001",
+      "section": "editor-kernel",
+      "text": "Snapshot och monoton revision är separata begrepp. En no-op ChangeSet får returnera unchanged utan att skapa en revision."
+    },
+    {
+      "id": "DOCUMENT-002",
+      "section": "editor-kernel",
+      "text": "Failed eller cancelled run MÅSTE lämna senast committade metadata-baslinje orörd. Ett historiskt resultat får visas som stale men aldrig som aktuellt för en nyare head."
+    },
+    {
+      "id": "DOCUMENT-003",
+      "section": "editor-kernel",
+      "text": "En host MÅSTE avancera sin protokoll-head från kärnans korrelerade open- eller change-svar. Optimistiskt antagen revision/version får inte användas som grund för nästa change eller run."
+    },
+    {
+      "id": "ANALYZE-001",
+      "section": "editor-kernel",
+      "text": "analyze MÅSTE vara read-only, revisionsbundet och fritt från modulinitiering och stage-effekter. Det FÅR returnera partial IR med recovery även när samma snapshot inte kan köras."
+    },
+    {
+      "id": "CHANGE-001",
+      "section": "editor-kernel",
+      "text": "Alla ranges i en ChangeSet MÅSTE avse samma base snapshot, vara nollbaserade, halvöppna, sorterade och icke-överlappande samt tillämpas atomiskt."
+    },
+    {
+      "id": "CHANGE-002",
+      "section": "editor-kernel",
+      "text": "Canonical change offsets räknas i Unicode code points. UTF-16-, line/column- eller editor-native-koordinater MÅSTE konverteras av en hostadapter före protokollgränsen; en främmande deklarerad coordinateUnit MÅSTE avvisas före mutation."
+    },
+    {
+      "id": "CHANGE-003",
+      "section": "editor-kernel",
+      "text": "Stale revision eller version, ogiltig range och överlappning MÅSTE ge strukturerat protokollfel utan sourcemutation eller semantisk run."
+    },
+    {
+      "id": "SUBSCRIPTION-001",
+      "section": "editor-kernel",
+      "text": "Ett channelfilter begränsar endast leverans. Det får aldrig ändra core-resultatets channels, exekvering eller adapterfan-out."
+    },
+    {
+      "id": "SUBSCRIPTION-002",
+      "section": "editor-kernel",
+      "text": "Varje delta MÅSTE ange basis, target och cursor. En konsument med annan basis måste resynkronisera i stället för att applicera deltat."
+    },
+    {
+      "id": "DELTA-001",
+      "section": "editor-kernel",
+      "text": "Metadata-delta är en deterministisk post-commit-jämförelse mellan immutable snapshots; det muterar aldrig föregående TextabanaResult."
+    },
+    {
+      "id": "DELTA-002",
+      "section": "editor-kernel",
+      "text": "Cross-run matching MÅSTE använda deklarerad channel key eller explicit domänidentitet, aldrig run-lokala eventId eller sequence. Ounik identitet får inte ge ett falskt moved eller changed."
+    },
+    {
+      "id": "DELTA-003",
+      "section": "editor-kernel",
+      "text": "changed betyder samma stabila identitet med ändrad semantik eller payload; moved betyder semantiskt ekvivalent payload med ny fysisk target. Payloadändring har företräde."
+    },
+    {
+      "id": "DELTA-004",
+      "section": "editor-kernel",
+      "text": "Endast succeeded commit får publicera durable added, removed, changed eller moved. Failed och cancelled publicerar ett tomt not-committed-delta och behåller baslinjen."
+    },
+    {
+      "id": "REANCHOR-001",
+      "section": "editor-kernel",
+      "text": "Anchor-records är immutable och versionsbundna. Cross-revision continuity MÅSTE publiceras som en separat transition med metod och utfall; ambiguous och orphaned förblir olösta."
+    },
+    {
+      "id": "RUN-001",
+      "section": "runs",
+      "text": "Failed eller cancelled MÅSTE revokera tentative domänoutput. En extern side effect som inte kan rullas tillbaka måste deklareras och redovisas ärligt i proveniens."
+    },
+    {
+      "id": "RUN-002",
+      "section": "runs",
+      "text": "Semantic cache key MÅSTE inkludera stage-lokala source- och IR-beroendedigests samt resolved module identity, hela den ordnade faktiskt initierade modulclosure, funktion-, context-, contract-, exakt typad input-, authored-args-, config-, profile- och environment-digests. Edge-topologi, ordnad merge och observerbar argumentordning MÅSTE påverka den rekursiva beroendeidentiteten. Playgroundens labdigest får inte ensam auktorisera en träff; full key witness MÅSTE också vara exakt lika."
+    },
+    {
+      "id": "RUN-003",
+      "section": "runs",
+      "text": "Nondeterministiska och externa funktioner får inte cacheas utan explicit replay artifact eller dokumenterad policy."
+    },
+    {
+      "id": "RUN-004",
+      "section": "runs",
+      "text": "Backpressure, timeout och cancellation MÅSTE propageras genom runtime och sinks; tyst eventförlust är inte tillåten."
+    },
+    {
+      "id": "RUN-005",
+      "section": "runs",
+      "text": "Cache candidate, cache eligible, lookup, hit och reused MÅSTE rapporteras som skilda tillstånd. En invalidation preview eller matchande statisk nyckel får aldrig ensam redovisas som en träff. Den aktuella Editor Kernel-subseten kräver två exakt lika fresh observationer i skilda committed revisioner före reuse; samma revision främjar inte observationsunderlaget."
+    },
+    {
+      "id": "RUN-006",
+      "section": "runs",
+      "text": "Cacheobservationer och verifieringar MÅSTE skrivas i ett run-lokalt journal och blir synliga atomiskt först när core-resultat, immutable post-commit-projektioner, conformance-gate och aktuell editor-head har accepterats. observations/writes avser endast committad evidens; försök redovisas separat. Failed, cancelled, stale, gate-rejected eller ersatt session MÅSTE kasta journalen."
+    },
+    {
+      "id": "RUN-007",
+      "section": "runs",
+      "text": "Återanvända stages MÅSTE skapa ny run-kvalificerad provenance och execution-step/lab-v2 med functionInvoked=false; tidigare event-, stage-, invocation- eller activity-id:n får aldrig återspelas. Materialiseringen MÅSTE peka på aktuell cachepost och exakt två unika, resolverbara observationsposter med samma planNodeRef och output-digest. Cachetelemetri får inte ändra semantiskt Result-ID eller normalized conformance-golden."
+    },
+    {
+      "id": "RUN-008",
+      "section": "runs",
+      "text": "En concurrent ready-set-batch MÅSTE startas deterministiskt, dräneras med alla terminalutfall och publiceras i planordning. Ett branchfel stoppar ny scheduling. Efter drain har en aktiv terminal control-signal företräde: user cancellation ger cancelled och deadline ger failed; bland övriga branchfel blir det tidigaste planordnade felet primärdiagnostik."
+    },
+    {
+      "id": "RUN-009",
+      "section": "runs",
+      "text": "Den aktuella runtime-subseten MÅSTE avvisa icke-numeriska policyfält och rapportera requested/effective hosttak, wave/peak concurrency, planerade och resolverade stages, kanalhändelser samt final renderstorlek. Deadline är kooperativ vid runtimegränser. Stage-, event- och renderbrott MÅSTE inträffa före durable commit och får inte beskrivas som generell CPU-/minnesisolering eller synkron preemption."
+    },
+    {
+      "id": "RUNTIME-CACHE-PROVENANCE",
+      "section": "runs",
+      "text": "Conformance-grinden MÅSTE avvisa en cachematerialisering om cacheposten eller någon av dess två observationsentiteter saknas, dupliceras eller avviker i planNodeRef eller output-digest."
+    },
+    {
+      "id": "SECURITY-001",
+      "section": "security",
+      "text": "Ingen modul har implicit rätt till filesystem, network, process, model eller secrets. Host får endast ge en deklarerad subset."
+    },
+    {
+      "id": "SECURITY-002",
+      "section": "security",
+      "text": "Secrets MÅSTE injiceras som opaque handles och får aldrig förekomma i source, metadata, IR, Result, event, artifact-URI eller logg."
+    },
+    {
+      "id": "SECURITY-003",
+      "section": "security",
+      "text": "HTML, SVG, widgets och annan aktiv MIME MÅSTE följa hostens sanitization- och trustmodell."
+    },
+    {
+      "id": "SECURITY-004",
+      "section": "security",
+      "text": "Kanal- och artifactdescriptors BÖR ange classification, retention och åtkomstpolicy. Adaptrar får inte sänka skyddsnivån tyst."
+    },
+    {
+      "id": "ADAPTER-001",
+      "section": "adapter-contract",
+      "text": "En adapter MÅSTE deklarera id, version, profil, accepterade resultatscheman, producerade representationer, kapabilitetsbehov och fidelity-policy innan den körs."
+    },
+    {
+      "id": "ADAPTER-002",
+      "section": "adapter-contract",
+      "text": "Varje projektion MÅSTE referera till exakt source resultId och manifestdigest. Samma deterministiska input, manifestversion och konfiguration MÅSTE ge samma projectionId."
+    },
+    {
+      "id": "ADAPTER-003",
+      "section": "adapter-contract",
+      "text": "Adaptrar läser samma immutable Result som oberoende fan-out. Adapter-till-adapter-dataflöde kräver en explicit, acyklisk dependency edge; list- eller UI-ordning är aldrig semantik."
+    },
+    {
+      "id": "ADAPTER-004",
+      "section": "adapter-contract",
+      "text": "Event identity, Anchor, SourceMap, artifact och provenance MÅSTE bevaras genom referens eller redovisas individuellt som förlust. Ett tomt loss-fält är ett verifierbart påstående."
+    },
+    {
+      "id": "ADAPTER-005",
+      "section": "adapter-contract",
+      "text": "Ett adapterfel FÅR inte ändra core run status eller mutera ett committat Result. Felet returneras som adapterdiagnostik i adapterkörningen."
+    },
+    {
+      "id": "ADAPTER-006",
+      "section": "adapter-contract",
+      "text": "En contract-only-deskriptor får förhandlas och inspekteras men får inte producera simulerad output eller användas som stöd för profilkonformitet."
+    },
+    {
+      "id": "JUPYTER-001",
+      "section": "notebooks",
+      "text": "Standard execute_request innehåller kod men inte cell-id eller hela notebooken. Cross-cell-semantik kräver därför att hosten skickar en hel, versionerad notebook snapshot med stabila cell.id. Playgrounden avvisar partial snapshots."
+    },
+    {
+      "id": "JUPYTER-002",
+      "section": "notebooks",
+      "text": "MIME-alternativen text/plain, text/markdown och application/vnd.textabana.result+json representerar samma logiska cellvärde. Separata Textabanakanaler får inte modelleras som MIME-alternativ."
+    },
+    {
+      "id": "JUPYTER-003",
+      "section": "notebooks",
+      "text": "Jupyter streams och displays ska mappas till namespaced adapterkanaler som host.jupyter.stdout, host.jupyter.stderr och host.jupyter.display — aldrig till system.out som process-stdout."
+    },
+    {
+      "id": "JUPYTER-004",
+      "section": "notebooks",
+      "text": "En notebookadapter MÅSTE bevara okänd författad metadata, reservera metadata.textabana för adapterfält och märka varje output med cells source digest."
+    },
+    {
+      "id": "JUPYTER-005",
+      "section": "notebooks",
+      "text": "Cellordning är presentationsordning och FÅR inte bli implicit exekverings- eller kernelstate. Notebookens begärda stateprofil är skild från kärnans Result.run.profile."
+    },
+    {
+      "id": "JUPYTER-006",
+      "section": "notebooks",
+      "text": "En äldre output är stale exakt när previousOutput.sourceDigest !== currentCell.sourceDigest. En stale output FÅR visas som revisionsmetadata men aldrig som aktuell output."
+    },
+    {
+      "id": "JUPYTER-007",
+      "section": "notebooks",
+      "text": "Varje cell MÅSTE ha explicit, unik identitet. Saknat eller duplicerat cell-id stoppar körningen atomiskt före channel commit."
+    },
+    {
+      "id": "DATA-001",
+      "section": "data-ai",
+      "text": "Dataset row identity MÅSTE använda stabilt recordId eller deklarerad key — aldrig fysisk row index efter filter, join eller sortering."
+    },
+    {
+      "id": "DATA-002",
+      "section": "data-ai",
+      "text": "Filter bevarar lineage; join förenar inputanchors; aggregation producerar derived mapping och en explicit provenance relation."
+    },
+    {
+      "id": "DATA-003",
+      "section": "data-ai",
+      "text": "Kritisk proveniens får inte endast ligga i Arrow- eller Parquet-schema metadata om den ska överleva tredjepartsverktyg."
+    },
+    {
+      "id": "DATA-004",
+      "section": "data-ai",
+      "text": "Arrow IPC Stream delar ett schema. En inkompatibel schemaändring MÅSTE skapa en ny stream eller schemaversion."
+    },
+    {
+      "id": "DATA-005",
+      "section": "data-ai",
+      "text": "In-process Arrow- eller DLPack-handles får aldrig serialiseras i TextabanaResult; resultatet använder transportformat eller ArtifactRef."
+    },
+    {
+      "id": "AI-001",
+      "section": "data-ai",
+      "text": "Confidence är ett modellmått, inte sanning. Candidate, accepted, rejected och superseded är separata review states."
+    },
+    {
+      "id": "AI-002",
+      "section": "data-ai",
+      "text": "MCP FÅR exponera manifestfunktioner som tools och docs/resultat som resources, men är en adapter och får inte bli kärnans runtime- eller proveniensmodell."
+    },
+    {
+      "id": "ANNOTATION-001",
+      "section": "annotation-observability",
+      "text": "Intern annotation MÅSTE stödja span, document classification, relation och review state. W3C Web Annotation är en import/exportprofil, inte hela kärnmodellen."
+    },
+    {
+      "id": "ANNOTATION-002",
+      "section": "annotation-observability",
+      "text": "Human-in-the-loop MÅSTE skapa ett separat review-event och en ny reviewed revision. Modellkandidatens ursprungliga fakta får inte muteras. Endast supersede kräver en explicit ersättare med ömsesidiga supersededBy/supersedes-relationer."
+    },
+    {
+      "id": "ANNOTATION-003",
+      "section": "annotation-observability",
+      "text": "En AI-kandidat MÅSTE ange stabilt annotationId, modell-id/version/digest, prompt-id/digest, inputdigest samt confidence score och metod. Confidence är evidensmetadata, inte sanningssannolikhet."
+    },
+    {
+      "id": "ANNOTATION-004",
+      "section": "annotation-observability",
+      "text": "Varje durable candidate, review och revision MÅSTE lösas genom Event, AnnotationSelector, Anchor, SourceMap och generating Activity. En exporterad target får inte uppfinna fristående offsets."
+    },
+    {
+      "id": "ANNOTATION-005",
+      "section": "annotation-observability",
+      "text": "W3C Web Annotation och annoteringsverktygsformat är adapterprojektioner. De får inte skriva tillbaka extern formatsemantik till kandidat- eller revieweventen utan en explicit importerad ny revision."
+    },
+    {
+      "id": "ANNOTATION-006",
+      "section": "annotation-observability",
+      "text": "En whole annotation snapshot MÅSTE validera unika id:n, counts, länkar, beslut, current view och acyklisk supersede-kedja före commit. Den aktuella lab-subseten begränsar varje target till en icke-tom textrad."
+    },
+    {
+      "id": "PROV-001",
+      "section": "annotation-observability",
+      "text": "Varje durable output MÅSTE länka till generating Activity och använda inputanchors/entities. Operativa traces FÅR länkas men ersätter inte semantic provenance."
+    },
+    {
+      "id": "EXT-001",
+      "section": "annotation-observability",
+      "text": "Okända namespaced extensionfält MÅSTE round-trippas av adaptrar som inte förstår dem."
+    },
+    {
+      "id": "CONF-001",
+      "section": "conformance",
+      "text": "En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions."
+    },
+    {
+      "id": "CONF-002",
+      "section": "conformance",
+      "text": "Ett profilanspråk MÅSTE bindas till en versionssatt suite och verifiera source → IR → plan → result → projection. Profiler utan relevant input MÅSTE vara not-run, inte passerade."
+    },
+    {
+      "id": "CONF-003",
+      "section": "conformance",
+      "text": "En adapter får inte förändra Language Core-semantik för att passa hostens exekveringsmodell."
+    },
+    {
+      "id": "CONF-004",
+      "section": "conformance",
+      "text": "Deklarerad support och verifieringsutfall MÅSTE vara separata. Ett saknat eller misslyckat obligatoriskt krav blockerar claimable även när capability-katalogen säger playground-subset."
+    },
+    {
+      "id": "CONF-005",
+      "section": "conformance",
+      "text": "contract-only och unsupported får aldrig härledas till ett lyckat implementeringsanspråk. Ett passerat no-fabrication-krav verifierar endast kontraktsgränsen."
+    },
+    {
+      "id": "CONF-006",
+      "section": "conformance",
+      "text": "En structural snapshot MÅSTE publicera normaliseringspolicy, ignorerade transportfält, digestalgoritm, actual digest och versionssatt expected digest när en golden baseline finns."
+    },
+    {
+      "id": "CONF-007",
+      "section": "conformance",
+      "text": "Negativa fixtures MÅSTE köras isolerat och kräva förväntad terminalstatus, exakt diagnostikkod och atomiskt tom durable commit. Ett negativt pass får aldrig skriva om core-resultatet till succeeded."
+    },
+    {
+      "id": "CONF-008",
+      "section": "conformance",
+      "text": "Cancellation MÅSTE ha eget terminaltillstånd. Den aktuella subseten implementerar kooperativ cancellation och kooperativ deadline vid runtimegränser samt rapporterade stage-, event- och rendergränser. Credit-styrd metadata-streaming efter commit stöds. Den hävdar inte synkron preemption, multicore-exekvering, kontinuerlig stage-streaming, generell sink-backpressure eller kökvot, hård CPU-/minnessandbox eller rollback av externa sidoeffekter."
+    },
+    {
+      "id": "ERROR-001",
+      "section": "errors",
+      "text": "Diagnostik MÅSTE ha stabil kod, severity, message, fas och position när position är känd. Hostspecifika stacktraces FÅR bifogas som skyddad extension."
+    },
+    {
+      "id": "ERROR-002",
+      "section": "errors",
+      "text": "För samma malformed construct MÅSTE code, recoveryKind och diagnosticKey vara semantiskt stabila. diagnosticId och source span är snapshotbundna och får flytta sig först genom en explicit ny analys eller re-anchor-transition."
+    },
+    {
+      "id": "ERROR-003",
+      "section": "errors",
+      "text": "En parsediagnostik MÅSTE bära ett halvöppet sourceSpan och recoveryNodeId. Relaterad opener eller declaration BÖR anges i related."
+    },
+    {
+      "id": "VERSION-001",
+      "section": "errors",
+      "text": "Language, IR, Result och adapterprofiler versioneras oberoende. Breaking semantik kräver ny major/schemaidentifierare."
+    },
+    {
+      "id": "VERSION-002",
+      "section": "errors",
+      "text": "Extensions MÅSTE vara namespaced. Okända optional extensions round-trippas; okända required extensions stoppar körningen med capabilitydiagnostik."
+    },
+    {
+      "id": "PLAYGROUND-001",
+      "section": "playgrounds",
+      "text": "Alla labs BÖR använda samma lilla dokument, modulmanifest, inputdata och förväntade resultatsnapshot så att relationen mellan vyerna är verifierbar."
+    },
+    {
+      "id": "PLAYGROUND-002",
+      "section": "playgrounds",
+      "text": "Varje lab MÅSTE skilja författad källa, kompilerad semantik, runtimeevents och adapterprojektion visuellt."
+    },
+    {
+      "id": "PLAYGROUND-003",
+      "section": "playgrounds",
+      "text": "En funktion som UI:t ännu inte implementerar MÅSTE visas som planned/unsupported och får inte simuleras som konformt resultat."
+    },
+    {
+      "id": "PLAYGROUND-004",
+      "section": "playgrounds",
+      "text": "Golden fixtures ska kunna exporteras och köras headless i samma conformance suite som UI:t visualiserar."
+    }
+  ],
+  "codeExamples": {
+    "definition": [],
+    "status": [],
+    "direction": [],
+    "html": [
+      "1db4d79a4618669cd8b0ed5888a6b095ba353e1e3ba3bf40726059de9fcf39b0",
+      "6e0477ead4c0a3a86bf39499f1e6cef9db8f3dd59c74896f0128698793e9d4b8"
+    ],
+    "architecture": [
+      "b32fff9b53a40cfff7147a18223d28feadf78f8cc03745436fd75914cf4fe351"
+    ],
+    "contract": [],
+    "source-value": [],
+    "syntax": [
+      "e45bcda06b8649a81e37019fb529fd33729a075aeeb38decf2116714c4c9d543",
+      "410f4a8efc1130e084e4fa38e5d4eded96560ebceeb5836b11b4b5d53d375dc0"
+    ],
+    "blocks-intervals": [
+      "e54c94e7204b55559167851d466eaa9abc80b659f488678a5676fc0ac43e0371"
+    ],
+    "inheritance": [
+      "9cc040a42cb2d5393067ebec31fc5a7de77c1a7c29771f29068bdb395e69eb44"
+    ],
+    "properties-modules": [
+      "1648df97986398b96a2084959cf222c83a0df98f6ce051fb03705526d2e661e4",
+      "0de03192bdd2b5936f485a28caab151cc0509271b2613293329b2fed154eb2ce"
+    ],
+    "processing": [
+      "874de52d62e241c6b820f0858f83a2228fac71bfdd599a1629f19562c59a2f5b"
+    ],
+    "ir-plan": [
+      "254082ac9b598fa299189502e242b7f3ba8befd300625d6c807ecfdb0a3e15d1",
+      "08c106302e95ac18759fd84ad80c85401c7d3e2d6824c640c15018779384b00e"
+    ],
+    "anchors": [
+      "09ebbd2ec92571b5254feb644e811f271864f96a1c7ad92836660dfa8cb677c3"
+    ],
+    "result": [
+      "77b181752c2f85c7a42bf2b4e63816cfe0b08d8dd2fe95b40bbd8d02c4755b82"
+    ],
+    "channels": [
+      "023d7f87927876f158c1acfed3eaf865c6081b17334a3e6568ec498e4ad6333b"
+    ],
+    "system-out": [
+      "05b515d7681008decc7a01435519b8b55dcb5063a64be166e507629867dcc046"
+    ],
+    "artifacts": [
+      "ae03e41e27360873edc70a3cb1ec768b49b0277ebc1eb125f8856c97defca45a"
+    ],
+    "module-manifest": [
+      "c7ee86ab87c6ce19e99d832bb0ccbf8ae057d1edd12899c1b6412dcdb8d5f54a"
+    ],
+    "runtime-protocol": [
+      "675c1bd7b6f3711f0b7df5032eb44da03f43ed1ce551016fb362738551c61d5a"
+    ],
+    "editor-kernel": [
+      "37523d337b157fce920afcb36c1554e1e940edb29c2a6a51ff83ceb1b7e8604d"
+    ],
+    "integration": [
+      "a240a7dc9114b001d2e464a41ed692a6d1889dd702ed93c891e3f5af463e5879"
+    ],
+    "runs": [],
+    "security": [],
+    "adapter-contract": [
+      "f0b46007a7f67971e74e99919b83cdcd8e5c19a0048fbbb0c04df4def1ad9a93",
+      "69dc2e06915991939182267afb2c01d67f31f097fa4995d1f0142a992b7e7419"
+    ],
+    "notebooks": [
+      "0467f2785634cd140a66593549547b6ebeb05c75e150c616d1394f1f0d97464a",
+      "b50a6583c2818ab4be72c5b9e01670115c7b1799b2b9a96648de5be6343c9cea"
+    ],
+    "data-ai": [
+      "866cdee73fe201af8f38bf6c3a3e4c95a8c528e7dec8910b2811ec1c5c224011",
+      "9a2c7abb76923b616344990d7a1100f143133304ab6695ac57c3054db3fd796f"
+    ],
+    "annotation-observability": [
+      "c5f488636ec603e9ac8f264373a7b516167d97a73cad5e66c0910297d5d27bb6",
+      "765bc16372609b895622c6086fd6e776492fbe485b00da593751c1508869f800",
+      "f993517134cf5eac647a7af76c804ac6883d555a6d29c7a542bd4a1d11aafc98",
+      "18c47b57a679634832bc02fd9e4feabe2357dc725731dc76402547da792b09c3"
+    ],
+    "use-cases": [],
+    "conformance": [
+      "3fb51fc941692d674c7857ad8dd2a93fd87beb89a909bfee133630d7959d6b9e",
+      "7b581f902c55abbf0b4ef2915da2f8695290dabfca7433cef085a4f3297d9d65",
+      "5e2dac1cd6f8b5ae77dc5a8a20d61669aa4cd2b802f046bbe7476bc3c293d5fb",
+      "96b06234368a7d9379393bae8eb09db2d63b182e247663507f12a8fa4a7746ff",
+      "55c10b63f6c19fd903ec3230e9d25ceafbdc8bde5aea3215e570b1d05462999a",
+      "c97011253b263c86f7981bdce2373e2b3f577020efcd842bfdbb48915dc29f68",
+      "4ba77d2076877046d7aceea04f97716eefda55d988c306545b8aca1be918c049",
+      "10274ad0bfba675757ecb289fed167b86a70ae89f8c36067d8842c17cd3c01b0",
+      "d82ec90b083c5abe04c7fb480e5a7fa4a40f62a7611249c9d79bda7398b3c32d",
+      "87a3370208f407b3a214694b70bd498c1e273d9c69541110cfd0dcc78736ecab"
+    ],
+    "documentation-sources": [
+      "8da88ba3dcdd8bb36812dd3f08e326726373839537df13d27ffd9e78d0333892"
+    ],
+    "errors": [
+      "f6be7a9386c926b7c6d9ce06a42815c083230c3b52d6d7c1df8a89932db3aebd"
+    ],
+    "playgrounds": [],
+    "glossary": []
+  },
+  "sectionIds": [
+    "definition",
+    "status",
+    "direction",
+    "html",
+    "architecture",
+    "contract",
+    "source-value",
+    "syntax",
+    "blocks-intervals",
+    "inheritance",
+    "properties-modules",
+    "processing",
+    "ir-plan",
+    "anchors",
+    "result",
+    "channels",
+    "system-out",
+    "artifacts",
+    "module-manifest",
+    "runtime-protocol",
+    "editor-kernel",
+    "integration",
+    "runs",
+    "security",
+    "adapter-contract",
+    "notebooks",
+    "data-ai",
+    "annotation-observability",
+    "use-cases",
+    "conformance",
+    "documentation-sources",
+    "errors",
+    "playgrounds",
+    "glossary"
+  ]
+}

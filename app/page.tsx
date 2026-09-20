@@ -308,95 +308,95 @@ const playgroundFixtures: PlaygroundFixture[] = [
   {
     id: "scope-torture",
     title: "Scope torture",
-    summary: "Block, öppna intervall, order, inheritance, kanaler och Base64 i samma run.",
+    summary: "Blocks, open intervals, ordering, inheritance, channels and Base64 in one run.",
     document: sampleDocument,
   },
   {
     id: "parser-recovery",
     title: "Parser recovery",
-    summary: "Ett lokalt syntaxfel ger partial CST/AST/IR men noll modul- eller domänexekvering.",
+    summary: "A local syntax error yields partial CST/AST/IR without module or domain execution.",
     document: parserRecoveryFixtureDocument,
   },
   {
     id: "editor-revision",
     title: "Editor revision",
-    summary: "Flytta text och se skillnaden mellan stabil row-identitet och fysisk line.",
+    summary: "Move text to compare stable row identity with physical source lines.",
     document: editorFixtureDocument,
   },
   {
     id: "editor-kernel-revisions",
     title: "Kernel revisions",
-    summary: "Versionsguardade textpatchar, stabila metadataidentiteter, delta och ankarkontinuitet.",
+    summary: "Revision-guarded text patches, stable metadata identities, deltas and anchor continuity.",
     document: editorKernelFixtureDocument,
   },
   {
     id: "verified-stage-cache",
     title: "Cache & safe branches",
-    summary: "Två oberoende async-grenar, planordnad commit och verifierad sessionslokal cache reuse.",
+    summary: "Two independent async branches, commit in plan order and verified session-local cache reuse.",
     document: stageCacheFixtureDocument,
   },
   {
     id: "channel-fanout",
     title: "Channel fan-out",
-    summary: "Ett funktionsanrop producerar render, system.out, records och metrics.",
+    summary: "One function call produces render, system.out, records and metrics.",
     document: channelFixtureDocument,
   },
   {
     id: "base64-inverse",
     title: "Base64 inverse",
-    summary: "Två öppna intervall komponerar encode och decode till en invers.",
+    summary: "Two open intervals compose encode and decode into an inverse.",
     document: base64FixtureDocument,
   },
   {
     id: "failed-run",
     title: "Failed run",
-    summary: "En odeklarerad kanal visar strict validation och atomisk rollback.",
+    summary: "An undeclared channel demonstrates strict validation and atomic rollback.",
     document: failedRunFixtureDocument,
     conformance: { caseId: "negative-undeclared-channel", expectedOutcome: "failed", expectedDiagnosticCode: "TBA-TYPE-CHANNEL-LAB" },
   },
   {
     id: "data-join",
     title: "Data join",
-    summary: "Två Markdown-tabeller blir typade records, en deterministisk inner join och spårbar JSON-tabell.",
+    summary: "Two Markdown tables become typed records, a deterministic inner join and a traceable JSON table.",
     document: dataJoinFixtureDocument,
   },
   {
     id: "notebook-snapshot",
     title: "Notebook snapshot",
-    summary: "Stabila cell-id:n, whole-snapshot, MIME bundles, explicit state och stale output.",
+    summary: "Stable cell IDs, whole snapshots, MIME bundles, explicit state and stale output.",
     document: notebookFixtureDocument,
   },
   {
     id: "annotation-review",
     title: "Annotation & AI review",
-    summary: "Immutable modellkandidater, mänskliga review-revisioner och resolverbara standardprojektioner.",
+    summary: "Immutable model candidates, human review revisions and resolvable format projections.",
     document: annotationReviewFixtureDocument,
   },
   {
     id: "conformance-golden",
     title: "Conformance golden",
-    summary: "Versionssatt source → IR → plan → result → projection-snapshot med härledd profilgrind.",
+    summary: "A versioned source → IR → plan → result → projection snapshot with a derived profile gate.",
     document: conformanceGoldenFixtureDocument,
     conformance: { caseId: "golden-core-chain", expectedOutcome: "succeeded" },
   },
   {
     id: "negative-unknown-function",
     title: "Negative · unknown function",
-    summary: "Exakt terminalstatus och diagnostikkod verifieras utan committed output.",
+    summary: "Exact terminal status and diagnostic code are verified without committed output.",
     document: negativeUnknownFunctionFixtureDocument,
     conformance: { caseId: "negative-unknown-function", expectedOutcome: "failed", expectedDiagnosticCode: "TBA-RUN-LAB" },
   },
   {
     id: "negative-unclosed-block",
     title: "Negative · unclosed block",
-    summary: "En obalanserad blockmarkör ger exakt recovery-kod och atomisk rollback.",
+    summary: "An unbalanced block marker produces an exact recovery code and atomic rollback.",
     document: negativeUnclosedBlockFixtureDocument,
     conformance: { caseId: "negative-unclosed-block", expectedOutcome: "failed", expectedDiagnosticCode: "TBA-PARSE-BLOCK-UNCLOSED-LAB" },
   },
   {
     id: "cancellation-probe",
     title: "Cancellation probe",
-    summary: "En async stage emitterar tentativt, tar emot cancel och avslutas som cancelled utan durable output.",
+    summary: "An async stage emits tentatively, receives cancellation and finishes cancelled without durable output.",
     document: cancellationProbeFixtureDocument,
     conformance: { caseId: "cooperative-cancellation", expectedOutcome: "cancelled", expectedDiagnosticCode: "TBA-RUN-CANCELLED-LAB", autoCancelAfterMs: 60 },
   },
@@ -1374,7 +1374,7 @@ function CodeEditor({ file, onChange }: { file: ProjectFile; onChange: (value: s
         highlightSelectionMatches: true,
         autocompletion: true,
       }}
-      aria-label={`Redigera ${file.path}`}
+      aria-label={`Edit ${file.path}`}
     />
   );
 }
@@ -1474,7 +1474,7 @@ export default function Home() {
         kernelRequests.delete(event.data.requestId);
         if (event.data.ok) pending.resolve(event.data as KernelProtocolResponse);
         else {
-          const error = new Error(event.data.error?.message || "Editor Kernel avvisade kommandot.");
+          const error = new Error(event.data.error?.message || "The Editor Kernel rejected the command.");
           Object.assign(error, { code: event.data.error?.code || "TBA-EDITOR-PROTOCOL-LAB" });
           pending.reject(error);
         }
@@ -1521,10 +1521,10 @@ export default function Home() {
     worker.onerror = () => {
       for (const pending of kernelRequests.values()) {
         window.clearTimeout(pending.timeout);
-        pending.reject(new Error("Körmotorn kunde inte starta."));
+        pending.reject(new Error("The runtime could not start."));
       }
       kernelRequests.clear();
-      const failed = { ...emptyRuntimeResult, runId: runIdRef.current, ok: false, error: "Körmotorn kunde inte starta." };
+      const failed = { ...emptyRuntimeResult, runId: runIdRef.current, ok: false, error: "The runtime could not start." };
       setPreviousResult(lastResultRef.current);
       lastResultRef.current = failed;
       setResult(failed);
@@ -1535,7 +1535,7 @@ export default function Home() {
       window.clearTimeout(readyTimer);
       for (const pending of kernelRequests.values()) {
         window.clearTimeout(pending.timeout);
-        pending.reject(new Error("Editor Kernel stängdes innan kommandot besvarades."));
+        pending.reject(new Error("The Editor Kernel closed before responding to the command."));
       }
       kernelRequests.clear();
       worker.terminate();
@@ -1544,13 +1544,13 @@ export default function Home() {
 
   const sendKernelCommand = useCallback((command: Record<string, unknown>) => {
     const worker = workerRef.current;
-    if (!worker) return Promise.reject(new Error("Editor Kernel är inte startad."));
+    if (!worker) return Promise.reject(new Error("The Editor Kernel has not started."));
     requestIdRef.current += 1;
     const requestId = `request:${requestIdRef.current}`;
     return new Promise<KernelProtocolResponse>((resolve, reject) => {
       const timeout = window.setTimeout(() => {
         kernelRequestsRef.current.delete(requestId);
-        reject(new Error(`Editor Kernel svarade inte på ${String(command.type || "kommandot")}.`));
+        reject(new Error(`The Editor Kernel did not respond to ${String(command.type || "the command")}.`));
       }, 8_000);
       kernelRequestsRef.current.set(requestId, { resolve, reject, timeout });
       worker.postMessage({ ...command, requestId });
@@ -1572,9 +1572,9 @@ export default function Home() {
         return true;
       };
       const worker = workerRef.current;
-      if (!worker) throw new Error("Editor Kernel är inte startad.");
+      if (!worker) throw new Error("The Editor Kernel has not started.");
       const documentFile = files.find((file) => file.kind === "document");
-      if (!documentFile) throw new Error("Projektet saknar ett dokument att köra.");
+      if (!documentFile) throw new Error("The project has no document to run.");
       const fixture = playgroundFixtures.find((item) => item.id === fixtureId) ?? playgroundFixtures[0];
       const documentId = `doc:playground:${documentFile.path}`;
       let kernelDocument = kernelDocumentRef.current;
@@ -1586,7 +1586,7 @@ export default function Home() {
           document: { documentId, path: documentFile.path, source: documentFile.content, documentRevision: 1 },
         });
         if (abandonObsoleteIntent()) return;
-        if (!opened.document) throw new Error("Editor Kernel returnerade inget dokument efter open.");
+        if (!opened.document) throw new Error("The Editor Kernel returned no document after open.");
         kernelDocument = {
           documentId: opened.document.documentId,
           path: opened.document.path,
@@ -1615,7 +1615,7 @@ export default function Home() {
           changes: [change],
         });
         if (abandonObsoleteIntent()) return;
-        if (!changed.document) throw new Error("Editor Kernel returnerade inget dokument efter change.");
+        if (!changed.document) throw new Error("The Editor Kernel returned no document after change.");
         kernelDocument = {
           ...kernelDocument,
           source: documentFile.content,
@@ -1663,7 +1663,7 @@ export default function Home() {
     const runId = runIdRef.current;
     if (!postedRunIdsRef.current.has(runId)) latchedCancellationRef.current.add(runId);
     workerRef.current.postMessage({ type: "cancel", runId, reason: "user" });
-    toast.info("Avbrytning begärd vid nästa kooperativa stage-gräns");
+    toast.info("Cancellation requested at the next cooperative stage boundary");
   }, [running]);
 
   useEffect(() => {
@@ -1683,13 +1683,13 @@ export default function Home() {
     const newModule: ProjectFile = {
       path,
       kind: "module",
-      content: `define({\n  my_function: {\n    description: "Beskriv vad funktionen gör.",\n    outputs: ["render", "my.channel"],\n    channels: {\n      "my.channel": {\n        payloadKind: "object",\n        mediaType: "application/json",\n        schemaRef: "schema:my-channel/v1",\n        delivery: "snapshot",\n        persistence: "durable",\n        ordering: "global-sequence",\n        schema: { type: "object", required: ["message"] }\n      }\n    },\n    args: {},\n    transform(input, args, context) {\n      context.emit("my.channel", { message: "Metadata från funktionen" });\n      return String(input);\n    }\n  }\n});`,
+      content: `define({\n  my_function: {\n    description: "Describe what the function does.",\n    outputs: ["render", "my.channel"],\n    channels: {\n      "my.channel": {\n        payloadKind: "object",\n        mediaType: "application/json",\n        schemaRef: "schema:my-channel/v1",\n        delivery: "snapshot",\n        persistence: "durable",\n        ordering: "global-sequence",\n        schema: { type: "object", required: ["message"] }\n      }\n    },\n    args: {},\n    transform(input, args, context) {\n      context.emit("my.channel", { message: "Metadata from the function" });\n      return String(input);\n    }\n  }\n});`,
     };
     setFiles((current) => current.map((file) => file.kind === "document"
       ? { ...file, content: `>>>> include "./${path}"\n${file.content}` }
       : file).concat(newModule));
     setActivePath(path);
-    toast.success("Ny modul skapad och inkluderad");
+    toast.success("New module created and included");
   };
 
   const selectFixture = (nextFixtureId: string) => {
@@ -1701,11 +1701,11 @@ export default function Home() {
     setPreviousResult(null);
     lastResultRef.current = null;
     kernelDocumentRef.current = null;
-    toast.success(`Fixture laddad: ${playgroundFixtures.find((fixture) => fixture.id === nextFixtureId)?.title ?? nextFixtureId}`);
+    toast.success(`Fixture loaded: ${playgroundFixtures.find((fixture) => fixture.id === nextFixtureId)?.title ?? nextFixtureId}`);
   };
 
   const resetProject = () => {
-    if (!window.confirm("Återställ aktuell fixture och alla moduler?")) return;
+    if (!window.confirm("Reset the current fixture and all modules?")) return;
     kernelIntentRef.current += 1;
     kernelReplaceSessionRef.current = true;
     setFiles(filesForFixture(fixtureId));
@@ -1713,12 +1713,12 @@ export default function Home() {
     setPreviousResult(null);
     lastResultRef.current = null;
     kernelDocumentRef.current = null;
-    toast.success("Aktuell fixture återställdes");
+    toast.success("Current fixture reset");
   };
 
   const copyOutput = async () => {
     await navigator.clipboard.writeText(result.output);
-    toast.success("Resultatet kopierades");
+    toast.success("Output copied");
   };
 
   const downloadOutput = () => {
@@ -1729,7 +1729,7 @@ export default function Home() {
     link.download = "textabana-output.md";
     link.click();
     URL.revokeObjectURL(url);
-    toast.success("Markdown-filen laddades ner");
+    toast.success("Markdown file downloaded");
   };
 
   return (
@@ -1743,7 +1743,7 @@ export default function Home() {
 
           <Tabs value={view} onValueChange={setView} className="top-tabs">
             <TabsList>
-              <TabsTrigger value="docs"><BookOpen /> Specifikation 0.7</TabsTrigger>
+              <TabsTrigger value="docs"><BookOpen /> Specification 0.7</TabsTrigger>
               <TabsTrigger value="workspace"><Code2 /> Playground Labs</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -1751,12 +1751,12 @@ export default function Home() {
           <div className="top-actions">
             {view === "workspace" && (
               <>
-                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={resetProject} aria-label="Återställ exempel"><RotateCcw /></Button></TooltipTrigger><TooltipContent>Återställ exempel</TooltipContent></Tooltip>
-                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={copyOutput} disabled={!result.ok} aria-label="Kopiera resultat"><Copy /></Button></TooltipTrigger><TooltipContent>Kopiera resultat</TooltipContent></Tooltip>
-                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={downloadOutput} disabled={!result.ok} aria-label="Ladda ner resultat"><Download /></Button></TooltipTrigger><TooltipContent>Ladda ner Markdown</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={resetProject} aria-label="Reset example"><RotateCcw /></Button></TooltipTrigger><TooltipContent>Reset example</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={copyOutput} disabled={!result.ok} aria-label="Copy output"><Copy /></Button></TooltipTrigger><TooltipContent>Copy output</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-sm" onClick={downloadOutput} disabled={!result.ok} aria-label="Download output"><Download /></Button></TooltipTrigger><TooltipContent>Download Markdown</TooltipContent></Tooltip>
                 {running
-                  ? <Button size="sm" variant="outline" onClick={cancelRun}><Square /> Avbryt</Button>
-                  : <Button size="sm" onClick={execute}><Play /> Kör</Button>}
+                  ? <Button size="sm" variant="outline" onClick={cancelRun}><Square /> Cancel</Button>
+                  : <Button size="sm" onClick={execute}><Play /> Run</Button>}
               </>
             )}
           </div>
@@ -1765,30 +1765,30 @@ export default function Home() {
         {view === "workspace" ? (
           <main className="workspace">
             <div className="lab-toolbar">
-              <div className="lab-switcher" role="tablist" aria-label="Välj playground">
+              <div className="lab-switcher" role="tablist" aria-label="Choose a playground">
                 <button type="button" role="tab" aria-selected={lab === "language"} className={lab === "language" ? "is-active" : ""} onClick={() => setLab("language")}>
-                  <GitBranch /><span><strong>Language & Scope</strong><small>Vad körs, i vilken ordning och varför?</small></span>
+                  <GitBranch /><span><strong>Language & Scope</strong><small>What runs, in which order, and why?</small></span>
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "kernel"} className={lab === "kernel" ? "is-active" : ""} onClick={() => setLab("kernel")}>
-                  <PanelsTopLeft /><span><strong>Editor Kernel</strong><small>open, change, run och metadata-delta</small></span>
+                  <PanelsTopLeft /><span><strong>Editor Kernel</strong><small>open, change, run and metadata deltas</small></span>
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "editor"} className={lab === "editor" ? "is-active" : ""} onClick={() => setLab("editor")}>
-                  <PanelRight /><span><strong>Editor Metadata</strong><small>Gutter, anchors och SourceMap</small></span>
+                  <PanelRight /><span><strong>Editor Metadata</strong><small>Gutter, anchors and source maps</small></span>
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "channels"} className={lab === "channels" ? "is-active" : ""} onClick={() => setLab("channels")}>
-                  <RadioTower /><span><strong>Channel & Result</strong><small>Descriptors, atomiskt resultat och adapters</small></span>
+                  <RadioTower /><span><strong>Channel & Result</strong><small>Descriptors, atomic results and adapters</small></span>
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "data"} className={lab === "data" ? "is-active" : ""} onClick={() => setLab("data")}>
-                  <Database /><span><strong>Data & Lineage</strong><small>Typade records, join och källspårning</small></span>
+                  <Database /><span><strong>Data & Lineage</strong><small>Typed records, joins and source lineage</small></span>
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "notebook"} className={lab === "notebook" ? "is-active" : ""} onClick={() => setLab("notebook")}>
-                  <NotebookTabs /><span><strong>Notebook Interop</strong><small>Celler, MIME, state och stale output</small></span>
+                  <NotebookTabs /><span><strong>Notebook Interop</strong><small>Cells, MIME, state and stale output</small></span>
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "annotation"} className={lab === "annotation" ? "is-active" : ""} onClick={() => setLab("annotation")}>
-                  <Bot /><span><strong>Annotation & Review</strong><small>AI-kandidater, revisioner och export</small></span>
+                  <Bot /><span><strong>Annotation & Review</strong><small>AI candidates, revisions and export</small></span>
                 </button>
                 <button type="button" role="tab" aria-selected={lab === "conformance"} className={lab === "conformance" ? "is-active" : ""} onClick={() => setLab("conformance")}>
-                  <ShieldCheck /><span><strong>Conformance</strong><small>Profiler, krav, golden diff och grind</small></span>
+                  <ShieldCheck /><span><strong>Conformance</strong><small>Profiles, requirements, golden diff and gate</small></span>
                 </button>
               </div>
               <div className="lab-controls">
@@ -1796,7 +1796,7 @@ export default function Home() {
                 <label className="fixture-control">
                   <span>Fixture</span>
                   <Select value={fixtureId} onValueChange={selectFixture}>
-                    <SelectTrigger size="sm" aria-label="Välj fixture"><SelectValue /></SelectTrigger>
+                    <SelectTrigger size="sm" aria-label="Choose a fixture"><SelectValue /></SelectTrigger>
                     <SelectContent align="end">
                       {playgroundFixtures.map((fixture) => <SelectItem value={fixture.id} key={fixture.id}>{fixture.title}</SelectItem>)}
                     </SelectContent>
@@ -1807,8 +1807,8 @@ export default function Home() {
                   <span>Strict channels</span>
                 </label>
                 <label className="strict-control">
-                  <Switch size="sm" checked={semanticIdentity} onCheckedChange={setSemanticIdentity} aria-label="Beräkna SHA-256-identiteter" />
-                  <span>SHA-256-identiteter</span>
+                  <Switch size="sm" checked={semanticIdentity} onCheckedChange={setSemanticIdentity} aria-label="Compute SHA-256 identities" />
+                  <span>SHA-256 identities</span>
                 </label>
               </div>
             </div>
@@ -1817,7 +1817,7 @@ export default function Home() {
                 <span>{playgroundFixtures.find((fixture) => fixture.id === fixtureId)?.title}</span>
                 <p>{playgroundFixtures.find((fixture) => fixture.id === fixtureId)?.summary}</p>
               </div>
-              <div className="rail-heading"><span>Delad källa</span><Button variant="ghost" size="icon-xs" onClick={addModule} aria-label="Skapa modul"><Plus /></Button></div>
+              <div className="rail-heading"><span>Shared source</span><Button variant="ghost" size="icon-xs" onClick={addModule} aria-label="Create module"><Plus /></Button></div>
               <div className="file-list">
                 {files.map((file) => (
                   <button key={file.path} className={`file-item ${activePath === file.path ? "is-active" : ""}`} onClick={() => setActivePath(file.path)}>
@@ -1828,9 +1828,9 @@ export default function Home() {
                 ))}
               </div>
               <div className="rail-status">
-                <div><Layers3 /><span><strong>{result.modulesLoaded}</strong> moduler laddade</span></div>
-                <div><CircleDot /><span><strong>{result.functions.length}</strong> funktioner</span></div>
-                <div><RadioTower /><span><strong>{Object.keys(result.channels).length}</strong> kanaler · {result.emissions} events</span></div>
+                <div><Layers3 /><span><strong>{result.modulesLoaded}</strong> modules loaded</span></div>
+                <div><CircleDot /><span><strong>{result.functions.length}</strong> functions</span></div>
+                <div><RadioTower /><span><strong>{Object.keys(result.channels).length}</strong> channels · {result.emissions} events</span></div>
                 <div><Zap /><span><strong>{Math.round(result.duration)}</strong> ms</span></div>
               </div>
             </aside>
@@ -1853,8 +1853,8 @@ export default function Home() {
 
             <div className="mobile-workspace">
               <div className="mobile-switch">
-                <button className={mobilePane === "editor" ? "is-active" : ""} onClick={() => setMobilePane("editor")}>Källa</button>
-                <button className={mobilePane === "preview" ? "is-active" : ""} onClick={() => setMobilePane("preview")}>Resultat</button>
+                <button className={mobilePane === "editor" ? "is-active" : ""} onClick={() => setMobilePane("editor")}>Source</button>
+                <button className={mobilePane === "preview" ? "is-active" : ""} onClick={() => setMobilePane("preview")}>Result</button>
               </div>
               {mobilePane === "editor" ? (
                 <section className="editor-shell"><div className="panel-bar"><div className="panel-title">{activeFile.path}</div></div><div className="editor-area"><CodeEditor file={activeFile} onChange={updateActiveFile} /></div></section>
@@ -1866,7 +1866,7 @@ export default function Home() {
         <footer className="statusbar">
           <span><CheckCircle2 /> Interop draft 0.7 · Language 0.4 · Parser/CST/AST lab-v1 · typed IR lab-v2</span>
           <span className="syntax-hint"><code>change</code> snapshot <ChevronRight /><code>run</code> result <ChevronRight /><code>delta</code></span>
-          <span>Source-first · Typed · Positionsmedveten</span>
+          <span>Source-first · Typed · Position-aware</span>
         </footer>
       </div>
       <Toaster position="bottom-right" />

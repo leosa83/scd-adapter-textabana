@@ -1,141 +1,31 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import test from "node:test";
+import { loadSpecification, parseSpecificationMarkdown } from "../scripts/specification-source.mjs";
 
-const source = readFileSync(new URL("../app/specification.tsx", import.meta.url), "utf8");
+// Frozen from the pre-migration React presentation and requirement index.
+// Do not regenerate this baseline from the Markdown projection under test.
+const baseline = JSON.parse(await readFile(new URL("./fixtures/specification-5.10.json", import.meta.url), "utf8"));
 
-test("every documentation navigation target has a matching section", () => {
-  const navIds = [...source.matchAll(/\{ id: "([^"]+)", label:/g)].map((match) => match[1]);
-  const sectionIds = new Set(
-    [...source.matchAll(/<section[^>]+id="([^"]+)"/g)].map((match) => match[1]),
-  );
+test("the Markdown migration preserves every normative requirement and stable section anchor", async () => {
+  const { sections } = await loadSpecification();
+  assert.deepEqual(sections.map((section) => section.id), baseline.sectionIds);
+  const requirements = sections.flatMap((section) => section.requirements.map((r) => ({ id: r.id, section: section.id, text: r.markdown.replace(/`([^`]+)`/g, "$1").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\s+/g, " ").trim() })));
+  assert.deepEqual(requirements, baseline.requirements);
+});
 
-  assert.ok(navIds.length >= 20, "expected the grouped 0.4 documentation index");
-  assert.equal(new Set(navIds).size, navIds.length, "navigation ids must be unique");
-
-  for (const id of navIds) {
-    assert.ok(sectionIds.has(id), "missing documentation section #" + id);
+test("the Markdown migration preserves every published code example byte for byte", async () => {
+  const { sections } = await loadSpecification();
+  for (const section of sections) {
+    assert.deepEqual(section.codeExamples.map((source) => createHash("sha256").update(source).digest("hex")), baseline.codeExamples[section.id], `Changed example in ${section.id}`);
   }
 });
 
-test("the Interop 0.7 specification preserves its foundational contracts", () => {
-  const requiredContracts = [
-    "STATUS-003",
-    "HTML-ADAPTER-002",
-    "INHERIT-001",
-    "PARSE-001",
-    "PARSE-002",
-    "PARSE-003",
-    "PROCESS-004",
-    "IR-003",
-    "IR-004",
-    "PLAN-002",
-    "PLAN-003",
-    "PLAN-004",
-    "PLAN-005",
-    "SOURCEMAP-001",
-    "RESULT-002",
-    "CHANNEL-002",
-    "SYSTEM-OUT-001",
-    "MANIFEST-001",
-    "MANIFEST-004",
-    "MANIFEST-005",
-    "EDITOR-KERNEL-001",
-    "EDITOR-KERNEL-002",
-    "EDITOR-KERNEL-003",
-    "DOCUMENT-003",
-    "ANALYZE-001",
-    "CHANGE-001",
-    "CHANGE-002",
-    "CHANGE-003",
-    "SUBSCRIPTION-001",
-    "DELTA-001",
-    "DELTA-002",
-    "DELTA-003",
-    "DELTA-004",
-    "REANCHOR-001",
-    "RUN-005",
-    "RUN-006",
-    "RUN-007",
-    "RUN-008",
-    "RUN-009",
-    "RUNTIME-CACHE-PROVENANCE",
-    "JUPYTER-001",
-    "DATA-001",
-    "ANNOTATION-002",
-    "ANNOTATION-004",
-    "ANNOTATION-006",
-    "ADAPTER-001",
-    "ADAPTER-006",
-    "CONF-004",
-    "CONF-005",
-    "CONF-006",
-    "CONF-007",
-    "CONF-008",
-    "ERROR-002",
-    "ERROR-003",
-    "PLAYGROUND-003",
-  ];
-
-  for (const requirementId of requiredContracts) {
-    assert.match(source, new RegExp('id="' + requirementId + '"'));
-  }
-
-  assert.match(source, /render.*resultatfält, inte en emitterbar kanal/s);
-  assert.match(source, /row och line är projektioner/);
-  assert.match(source, /HTML beskriver ett dokumentträd.*Textabana beskriver vilka semantiska processer/s);
-  assert.match(source, /Nuvarande Playground implementerar åtta avgränsade vyer/);
-  assert.match(source, /Language & Scope Lab/);
-  assert.match(source, /Language & Scope.*Parser.*Graf.*Körspår/s);
-  assert.match(source, /Editor Kernel Lab/);
-  assert.match(source, /Editor Metadata Lab/);
-  assert.match(source, /Channel & Result Lab/);
-  assert.match(source, /Data & Lineage Lab/);
-  assert.match(source, /Notebook Interop Lab/);
-  assert.match(source, /Annotation & AI Review Lab/);
-  assert.match(source, /Conformance Lab/);
-  assert.match(source, /textabana\.adapter-manifest\/lab-v1/);
-  assert.match(source, /textabana\.adapter-projection\/lab-v1/);
-  assert.match(source, /adapter-contract\/1/);
-  assert.match(source, /data-, notebook- och annotationadaptrarna körs efter commit.*ml-lineage.*contract-only/s);
-  assert.match(source, /notebook\.snapshot.*notebook\.cells.*notebook\.outputs.*notebook\.state/s);
-  assert.match(source, /fresh.*session.*attached/s);
-  assert.match(source, /whole-snapshot.*stabila cell-id:n.*MIME.*stale detection/s);
-  assert.match(source, /Jupyter Messaging, nbformat-roundtrip, session\/attached kernelkörning.*Comms\/widgets.*unsupported/s);
-  assert.match(source, /annotation\.set.*annotation\.candidates.*annotation\.reviews.*annotation\.revisions/s);
-  assert.match(source, /Modellkandidatens ursprungliga fakta får inte muteras.*supersededBy.*supersedes/s);
-  assert.match(source, /modell-id\/version\/digest.*prompt-id\/digest.*inputdigest.*confidence score och metod/s);
-  assert.match(source, /W3C Web Annotation.*Label Studio.*adapterprojektion/s);
-  assert.match(source, /Label Studio.*task\/import-subset.*ingen API-\/projektroundtrip/s);
-  assert.match(source, /ml-lineage\/1.*contract-only/s);
-  assert.match(source, /stabila.*recordId.*deterministisk inner join.*multi-input-lineage/s);
-  assert.match(source, /Arrow IPC, Parquet, DuckDB, beständiga ArtifactRefs, OpenLineage-export.*unsupported/s);
-  assert.match(source, /Ingen interaktiv subset.*kontraktsregistrering är full profilkonformitet/);
-  assert.match(source, /textabana\.conformance-report\/lab-v1/);
-  assert.match(source, /deklarerad support från observerat testutfall/);
-  assert.match(source, /Contract-only.*aldrig claimable/s);
-  assert.match(source, /normaliseringspolicy.*actual digest.*expected digest/s);
-  assert.match(source, /Negativa fixtures.*exakt diagnostikkod.*atomiskt tom durable commit/s);
-  assert.match(source, /kooperativ cancellation.*kooperativ deadline.*synkron preemption/s);
-  assert.match(source, /textabana\.editor-kernel\/lab-v1/);
-  assert.match(source, /textabana\.parser\/lab-v1/);
-  assert.match(source, /textabana\.cst\/lab-v1/);
-  assert.match(source, /textabana\.ir\/lab-v2/);
-  assert.match(source, /textabana\.execution-plan\/lab-v2/);
-  assert.match(source, /textabana\.execution-graph\/lab-v1/);
-  assert.match(source, /textabana\.execution-step\/lab-v2/);
-  assert.match(source, /textabana\.execution-report\/lab-v1/);
-  assert.match(source, /bounded-deterministic-ready-set/);
-  assert.match(source, /single-worker-async-overlap/);
-  assert.match(source, /completionordning.*planordnad trace.*cachejournal.*merge/s);
-  assert.match(source, /stage-, event- och rendergränser.*synkron preemption.*hårda CPU-\/minneskvoter/s);
-  assert.match(source, /post-module-init-pre-transform/);
-  assert.match(source, /två.*observationer.*skilda committed revisioner/is);
-  assert.match(source, /analyze.*partial.*IR.*inga moduler eller stages/s);
-  assert.match(source, /korrelerade.*open.*change.*Optimistiskt antagen revision\/version/s);
-  assert.match(source, /inkrementell input.*Implementerat.*inkrementell stage-exekvering.*Avgränsad lab-subset.*Parser-\/compilerreuse.*Avgränsad lab-subset.*inkrementell leverans.*Implementerat/is);
-  assert.match(source, /run-lokala.*eventId.*sequence/s);
-  assert.match(source, /Flera giltiga kandidater.*ambiguous.*ingen giltig kandidat.*orphaned/s);
-  assert.match(source, /compiler-snapshot.*Lezer-fragment.*digestbundet host-checkpoint.*credit-baserad backpressure/s);
-  assert.match(source, /Recovery.*executable=false/s);
+test("literal examples cannot introduce normative requirements into the document index", () => {
+  const literal = '# Example\n\n````md\n```text\n<a id="FALSE-001"></a>\n> **FALSE-001** This is sample input.\n```\n````\n\n<a id="REAL-001"></a>\n> **REAL-001** This is the requirement.\n';
+  const parsed = parseSpecificationMarkdown(literal);
+  assert.deepEqual(parsed.requirements.map((r) => r.id), ["REAL-001"]);
+  assert.equal(parsed.codeExamples.length, 1);
+  assert.throws(() => parseSpecificationMarkdown('# Broken\n\n<a id="ONE-001"></a>\n> **TWO-001** Wrong anchor.\n'), /matching Markdown anchor/);
 });

@@ -1,16 +1,18 @@
 {
-  "schema": "textabana.documentation-index/v1",
+  "schema": "textabana.documentation-index/v2",
+  "sourceFormat": "markdown",
   "reviewedAt": "2026-09-20",
   "profileConformance": false,
-  "interpretation": "Källkoppling och avgränsning per krav; ingen automatisk test- eller standardkonformitet.",
+  "interpretation": "Source references and boundaries per requirement; no automatic test or standards conformance.",
   "requirements": [
     {
       "id": "STATUS-001",
       "section": "status",
+      "language": "sv",
       "text": "En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.",
       "requirementDigest": "sha256:ef8b583e6501b4d2c23a6ece893ed8594a11ca1b14800d99cbce3210c168e312",
       "contract": [
-        "app/specification.tsx#STATUS-001",
+        "docs/reference/specification/status.md#STATUS-001",
         "README.md",
         "conformance/README.md"
       ],
@@ -23,15 +25,16 @@
       "scope": "Deklarerad labbstatus och run-bundna delmängdsanspråk; ingen full produktionskonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "STATUS-002",
       "section": "status",
+      "language": "sv",
       "text": "Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.",
       "requirementDigest": "sha256:1abac351ca301bee6c97d8c238c0837ff4415c3711fd6bf143cfcd5327fd470d",
       "contract": [
-        "app/specification.tsx#STATUS-002",
+        "docs/reference/specification/status.md#STATUS-002",
         "README.md",
         "conformance/README.md"
       ],
@@ -44,15 +47,16 @@
       "scope": "Deklarerad labbstatus och run-bundna delmängdsanspråk; ingen full produktionskonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "STATUS-003",
       "section": "status",
+      "language": "sv",
       "text": "Nuvarande Playground implementerar åtta avgränsade vyer: Language & Scope med separata Parser-, Graf- och Körspår-flikar, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Grafvyn visar en pre-transform textabana.execution-plan/lab-v2, en typad textabana.execution-graph/lab-v1, rådgivande invalidation och en faktisk textabana.execution-report/lab-v1 med scheduler- och resursrapport. Editor-sessioner kan återanvända en verifierad pure/deterministic/effects-free stageoutput efter två lika observationer i skilda committed revisioner. Oberoende, snapshotbara stages med samma betrodda kontrakt kan överlappa asynkront i en Worker; completionordning påverkar aldrig planordnad trace, cachejournal eller merge. Resultatvyerna läser samma valda run; Editor Kernel visar dessutom revisionskedjan runt den. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. editor-kernel/1 och annotation/1 är playground-subsets; verklig modellkörning och ml-lineage/1 är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet.",
-      "requirementDigest": "sha256:cf0c7b332dfa10230ab82ad1a7d6a8284769bde00c40f50697f58a62a2470afd",
+      "requirementDigest": "sha256:16dba8cee44daaa19b21da220e1abb3f42c1688a31c80a7225a82549d5f1243b",
       "contract": [
-        "app/specification.tsx#STATUS-003",
+        "docs/reference/specification/status.md#STATUS-003",
         "README.md",
         "conformance/README.md"
       ],
@@ -65,15 +69,16 @@
       "scope": "Deklarerad labbstatus och run-bundna delmängdsanspråk; ingen full produktionskonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DIRECTION-001",
       "section": "direction",
+      "language": "sv",
       "text": "Ett nytt Textabana-format MÅSTE ange vilket semantiskt samband det tillför, vilken etablerad standard som övervägts och hur utbyte ska ske utan dold betydelseförändring.",
       "requirementDigest": "sha256:6d26ad600b91d1cc0866c2514fc7dff1c6bf89e2404a0c8ca3dce36d9397eb58",
       "contract": [
-        "app/specification.tsx#DIRECTION-001",
+        "docs/reference/specification/direction.md#DIRECTION-001",
         "docs/STANDARDS_DIRECTION.md",
         "docs/standards-status.json"
       ],
@@ -84,15 +89,16 @@
       "scope": "Utvecklingsprincip och statusredovisning. Dokumentkontroll är inte standardkonformitet.",
       "status": "development-policy",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DIRECTION-002",
       "section": "direction",
+      "language": "sv",
       "text": "Standardstöd MÅSTE beskriva version, riktning för import/export, implementerad delmängd och verifierad gräns. Ett schema-ID, en dependency eller en planerad adapter får inte ensam räknas som stöd.",
       "requirementDigest": "sha256:5747a72265486abf126bc885ba57c8588fe5a81b84caa7dc06932b4a96b5f33c",
       "contract": [
-        "app/specification.tsx#DIRECTION-002",
+        "docs/reference/specification/direction.md#DIRECTION-002",
         "docs/STANDARDS_DIRECTION.md",
         "docs/standards-status.json"
       ],
@@ -103,15 +109,16 @@
       "scope": "Utvecklingsprincip och statusredovisning. Dokumentkontroll är inte standardkonformitet.",
       "status": "development-policy",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DIRECTION-003",
       "section": "direction",
+      "language": "sv",
       "text": "En adapter MÅSTE redovisa mapping och förluster vid standardgränsen. Intern konformitet och verifiering mot en oberoende extern konsument MÅSTE rapporteras separat.",
       "requirementDigest": "sha256:0b423cdbab9d6b61407317d7ddf881a69046cd12a18ccebf66f32d689fa5b6c3",
       "contract": [
-        "app/specification.tsx#DIRECTION-003",
+        "docs/reference/specification/direction.md#DIRECTION-003",
         "docs/STANDARDS_DIRECTION.md",
         "docs/standards-status.json"
       ],
@@ -122,15 +129,16 @@
       "scope": "Utvecklingsprincip och statusredovisning. Dokumentkontroll är inte standardkonformitet.",
       "status": "development-policy",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "HTML-ADAPTER-001",
       "section": "html",
+      "language": "sv",
       "text": "HTML FÅR vara renderformat och editorhost, men DOM-noder eller DOM-offsets får inte ersätta Textabanas kanoniska Anchor-identitet.",
       "requirementDigest": "sha256:4c726bdc7f80ca1d9064d4e92850c4f0599b026928bcf1c690959781470aa9b6",
       "contract": [
-        "app/specification.tsx#HTML-ADAPTER-001"
+        "docs/reference/specification/html.md#HTML-ADAPTER-001"
       ],
       "implementation": [
         "app/playground-labs.tsx"
@@ -139,30 +147,32 @@
       "scope": "Presentationsprincip. Ingen komplett HTML-adapter med verifierad fragment-/SourceMap-roundtrip.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "HTML-ADAPTER-002",
       "section": "html",
+      "language": "sv",
       "text": "När korsande intervall projiceras till HTML MÅSTE adaptern fragmentera presentationen utan att förlora scope-id, SourceMap eller exekveringssemantik.",
       "requirementDigest": "sha256:a37b17b550d71e24ff89d9f397bde5ac1d37ce80612bbcb6dba46e7fecd3f687",
       "contract": [
-        "app/specification.tsx#HTML-ADAPTER-002"
+        "docs/reference/specification/html.md#HTML-ADAPTER-002"
       ],
       "implementation": [],
       "verification": [],
       "scope": "Generell HTML-fragmentering av korsande scopes med verifierad SourceMap finns inte.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "HTML-ADAPTER-003",
       "section": "html",
+      "language": "sv",
       "text": "En HTML-adapter får presentera eller sanera resultatet men får inte göra browserordning, DOM-nästling eller eventtiming till ny språksemantik.",
       "requirementDigest": "sha256:c58e233c39d5d844c6bf52d05f145e5a8b1975d9db02e55f2af1b829bccb689e",
       "contract": [
-        "app/specification.tsx#HTML-ADAPTER-003"
+        "docs/reference/specification/html.md#HTML-ADAPTER-003"
       ],
       "implementation": [
         "app/playground-labs.tsx"
@@ -171,15 +181,16 @@
       "scope": "Presentationsprincip. Ingen komplett HTML-adapter med verifierad fragment-/SourceMap-roundtrip.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "ARCH-001",
       "section": "architecture",
+      "language": "sv",
       "text": "En host-adapter FÅR projicera ett resultat till sin egen UI- eller transportmodell men FÅR INTE ändra eventets mening, identitet, anchor eller proveniens.",
       "requirementDigest": "sha256:99753a14e31d4a5130ef6bb599be9776b026fe743e1e3f813c0cc07f33ca190e",
       "contract": [
-        "app/specification.tsx#ARCH-001",
+        "docs/reference/specification/architecture.md#ARCH-001",
         "README.md"
       ],
       "implementation": [
@@ -191,15 +202,16 @@
       "scope": "Host-neutral kontraktsgräns; referenserna gäller den avgränsade adaptermodellen.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ARCH-002",
       "section": "architecture",
+      "language": "sv",
       "text": "Kompilering och exekvering MÅSTE kunna beskrivas utan beroende till JavaScript, Python, Jupyter eller en specifik editor.",
       "requirementDigest": "sha256:20d31e285de60403fe498cf4020eac64f0f94f5e11febfdf989f5ba2ea821437",
       "contract": [
-        "app/specification.tsx#ARCH-002",
+        "docs/reference/specification/architecture.md#ARCH-002",
         "README.md"
       ],
       "implementation": [
@@ -211,15 +223,16 @@
       "scope": "Host-neutral kontraktsgräns; referenserna gäller den avgränsade adaptermodellen.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "VALUE-001",
       "section": "source-value",
+      "language": "sv",
       "text": "Kanoniska offsets MÅSTE vara nollbaserade Unicode-code-point-offsets och använda halvöppna intervall [start, end).",
-      "requirementDigest": "sha256:9ba2d776a470ca8f223ed3468cd03751e484c689f457676fafb6ab372d1f70de",
+      "requirementDigest": "sha256:42f03930701c8a04611db876e2f106a7577799f8f513072d3bd08401b7a74382",
       "contract": [
-        "app/specification.tsx#VALUE-001",
+        "docs/reference/specification/source-value.md#VALUE-001",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -232,15 +245,16 @@
       "scope": "Unicode-spans och labbvärden. Full portabel värde-/pipeline-typkontroll är inte verifierad.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "VALUE-002",
       "section": "source-value",
+      "language": "sv",
       "text": "En sträng FÅR vara shorthand för kind=text. Ingen annan tyst typkonvertering är tillåten.",
-      "requirementDigest": "sha256:722d84d327a2175506d61b769e25a57f961cecf21f348ec8adc15fba02a3ce14",
+      "requirementDigest": "sha256:0ce63504011df13f667fef474d70c4686557b158dfe521dd612358f66f594f54",
       "contract": [
-        "app/specification.tsx#VALUE-002",
+        "docs/reference/specification/source-value.md#VALUE-002",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -253,15 +267,16 @@
       "scope": "Normativ strikt värdemodell; legacyfunktioner kan uttryckligen strängkonvertera och hela TextabanaValue-domänen är inte standardiserad.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "VALUE-003",
       "section": "source-value",
+      "language": "sv",
       "text": "Pipelinekanter MÅSTE typkontrolleras mot funktionens accepts och returns när schema är känt.",
-      "requirementDigest": "sha256:a621079f9b6c0a1cb442b9b36f8deacc27a2edd4cc53b27bed86a118cea85f72",
+      "requirementDigest": "sha256:1c43ff1d2e6427ee5d591f99f9d4d3911836bc67d7974c013c6803432845e51a",
       "contract": [
-        "app/specification.tsx#VALUE-003",
+        "docs/reference/specification/source-value.md#VALUE-003",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [],
@@ -269,15 +284,16 @@
       "scope": "Full accepts/returns-typkontroll av generella pipelinekanter är inte implementerad.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "SYNTAX-001",
       "section": "syntax",
+      "language": "sv",
       "text": "Kontrollrader, stängningsrader och fristående propertyrader MÅSTE avlägsnas från primär render.",
       "requirementDigest": "sha256:e1615f0e06d65e158e4c010d09d74779c24bd2abfd4e391aa8f7eec3e14cc8ec",
       "contract": [
-        "app/specification.tsx#SYNTAX-001",
+        "docs/reference/specification/syntax.md#SYNTAX-001",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -290,15 +306,16 @@
       "scope": "Lezer-parserns uttryckligen implementerade grammar/recovery-delmängd.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SYNTAX-002",
       "section": "syntax",
+      "language": "sv",
       "text": "Okända engine controls MÅSTE ge kompileringsdiagnostik; de får inte tyst skickas vidare till funktionen.",
       "requirementDigest": "sha256:223c5ddd7c2e6dec4c606b01604d7c28ef600bc1fbfa94f1f563e3ea87082dd3",
       "contract": [
-        "app/specification.tsx#SYNTAX-002",
+        "docs/reference/specification/syntax.md#SYNTAX-002",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -311,15 +328,16 @@
       "scope": "Lezer-parserns uttryckligen implementerade grammar/recovery-delmängd.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PARSE-001",
       "section": "syntax",
+      "language": "sv",
       "text": "Samma source snapshot och grammar version MÅSTE deterministiskt ge samma CST, diagnostikkoder och recovery kinds.",
       "requirementDigest": "sha256:75b673370b7eff7301cc27556ae7ba2a8092c557066ae5b4a8b1bbea6e603d80",
       "contract": [
-        "app/specification.tsx#PARSE-001",
+        "docs/reference/specification/syntax.md#PARSE-001",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -332,15 +350,16 @@
       "scope": "Lezer-parserns uttryckligen implementerade grammar/recovery-delmängd.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PARSE-002",
       "section": "syntax",
+      "language": "sv",
       "text": "Recovery MÅSTE behålla exakt authored span eller en explicit zero-width missing-token-position. Den får aldrig fabricera en körbar opener, close eller stage.",
       "requirementDigest": "sha256:070c8dc9591bfdd60d31bf9a2d5327068aa1f6d9448c97034f269747ef34518f",
       "contract": [
-        "app/specification.tsx#PARSE-002",
+        "docs/reference/specification/syntax.md#PARSE-002",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -353,15 +372,16 @@
       "scope": "Lezer-parserns uttryckligen implementerade grammar/recovery-delmängd.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PARSE-003",
       "section": "syntax",
+      "language": "sv",
       "text": "Varje error-level recovery MÅSTE blockera modulinitiering och domänexekvering men partial CST, AST, IR och diagnostik MÅSTE fortfarande kunna levereras till editorn.",
       "requirementDigest": "sha256:e9ccfc378c5987c0662c80c9f113d7e4711a55e5d351d3afc5d67dd4d16a7d68",
       "contract": [
-        "app/specification.tsx#PARSE-003",
+        "docs/reference/specification/syntax.md#PARSE-003",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -374,15 +394,16 @@
       "scope": "Lezer-parserns uttryckligen implementerade grammar/recovery-delmängd.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SCOPE-001",
       "section": "blocks-intervals",
+      "language": "sv",
       "text": "Ett intervall FÅR anropas flera gånger under sin livstid när förändringar i andra aktiva scopes skapar flera maximala segment.",
       "requirementDigest": "sha256:2410d66771b711350db5e26b3de0ed7e39184c58f875a17fbf7b056c180127c7",
       "contract": [
-        "app/specification.tsx#SCOPE-001",
+        "docs/reference/specification/blocks-intervals.md#SCOPE-001",
         "SCOPED_TEXT_PROFILE.md"
       ],
       "implementation": [
@@ -396,15 +417,16 @@
       "scope": "Block, intervall och cross=error. Alternativa korsningspolicyer ingår inte.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SCOPE-002",
       "section": "blocks-intervals",
+      "language": "sv",
       "text": "Ett explicit @id BÖR användas för beständig adressering. Ett genererat id är endast stabilt inom samma dokumentversion.",
-      "requirementDigest": "sha256:fa19221d605b96f6b1f04e8b47eaba80d93d6655d5ea1470b2571306eb257877",
+      "requirementDigest": "sha256:6294334d3b2a357160fd0350257a530915f90b785cb110c8e312bbcef3ca5a87",
       "contract": [
-        "app/specification.tsx#SCOPE-002",
+        "docs/reference/specification/blocks-intervals.md#SCOPE-002",
         "SCOPED_TEXT_PROFILE.md"
       ],
       "implementation": [
@@ -418,15 +440,16 @@
       "scope": "Block, intervall och cross=error. Alternativa korsningspolicyer ingår inte.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SCOPE-003",
       "section": "blocks-intervals",
+      "language": "sv",
       "text": "Block MÅSTE vara strikt nästlade. Intervall FÅR överlappa och korsa varandra eftersom de representeras separat från blockträdet.",
       "requirementDigest": "sha256:602bed6fc1a84c9e116afba6f3a901c21ad2971cd37fe057fe82b9db373ebfa2",
       "contract": [
-        "app/specification.tsx#SCOPE-003",
+        "docs/reference/specification/blocks-intervals.md#SCOPE-003",
         "SCOPED_TEXT_PROFILE.md"
       ],
       "implementation": [
@@ -440,15 +463,16 @@
       "scope": "Block, intervall och cross=error. Alternativa korsningspolicyer ingår inte.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "INHERIT-001",
       "section": "inheritance",
+      "language": "sv",
       "text": "Förekomsten av minst ett @intervals-steg MÅSTE stänga av all implicit intervallinjektion för blocket.",
-      "requirementDigest": "sha256:9356a411ba6aa0760c71dd49d7cd9a5283ef21b0620e9df026baf280233b58a6",
+      "requirementDigest": "sha256:f1f7a868dd4f036e86642f1057c24140ff91a877ea6d172e71de9d852f17be89",
       "contract": [
-        "app/specification.tsx#INHERIT-001",
+        "docs/reference/specification/inheritance.md#INHERIT-001",
         "SCOPED_TEXT_PROFILE.md"
       ],
       "implementation": [
@@ -461,15 +485,16 @@
       "scope": "Implementerat blockarv och explicit intervallinjektion i labbet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "INHERIT-002",
       "section": "inheritance",
+      "language": "sv",
       "text": "Urval med funktionsnamn matchar alla aktiva instanser med namnet; urval med @id matchar exakt en instans.",
-      "requirementDigest": "sha256:b36cb5ff6e1ea0ca3581b0a5ae53cb7c9c4ec4778b412159480ae2f869b77464",
+      "requirementDigest": "sha256:5c971499464fe91624de781de53db702fc1ee68cc4a9bb8b4697a5f30e2b7595",
       "contract": [
-        "app/specification.tsx#INHERIT-002",
+        "docs/reference/specification/inheritance.md#INHERIT-002",
         "SCOPED_TEXT_PROFILE.md"
       ],
       "implementation": [
@@ -482,15 +507,16 @@
       "scope": "Implementerat blockarv och explicit intervallinjektion i labbet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "INHERIT-003",
       "section": "inheritance",
+      "language": "sv",
       "text": "Inheritance styr hela intervallanropet, inklusive dess returvärde och emissioner. Redan emitterade events får aldrig pipas vidare som text.",
       "requirementDigest": "sha256:a025047a9fa02dd4c0d823b764d9c3fa7546bb310eeddb88bd908b9b54c86668",
       "contract": [
-        "app/specification.tsx#INHERIT-003",
+        "docs/reference/specification/inheritance.md#INHERIT-003",
         "SCOPED_TEXT_PROFILE.md"
       ],
       "implementation": [
@@ -503,15 +529,16 @@
       "scope": "Implementerat blockarv och explicit intervallinjektion i labbet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PROPERTY-001",
       "section": "properties-modules",
+      "language": "sv",
       "text": "@order ordnar funktioner. En property som priority påverkar endast ordning om en uttrycklig funktion läser den.",
-      "requirementDigest": "sha256:035b28d477295743f1d6ad74d37eea41aa46e52496c2cf0772cdd1500c42c058",
+      "requirementDigest": "sha256:14a5546bd4eabc0273f06e6e86976dd25905e4dd91c6a65597100ae1a051fcbe",
       "contract": [
-        "app/specification.tsx#PROPERTY-001",
+        "docs/reference/specification/properties-modules.md#PROPERTY-001",
         "TEXTABANA_PARSER.md",
         "MODULE_ADMISSION_PROFILE.md"
       ],
@@ -526,15 +553,16 @@
       "scope": "Lokala includes och säkra paket. Alias och allmän polyglott modul-/sessionssemantik återstår.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "MODULE-001",
       "section": "properties-modules",
+      "language": "sv",
       "text": "Compiler MÅSTE normalisera URI:er, bygga en DAG, upptäcka cykler och exportkollisioner samt pinna resolved URI, version och SHA-256 innan modulkod körs.",
       "requirementDigest": "sha256:80c301588881e57719c36410a6a9ed98e576fa06417a6f39e4295aa604c652d5",
       "contract": [
-        "app/specification.tsx#MODULE-001",
+        "docs/reference/specification/properties-modules.md#MODULE-001",
         "TEXTABANA_PARSER.md",
         "MODULE_ADMISSION_PROFILE.md"
       ],
@@ -549,15 +577,16 @@
       "scope": "SHA-256 och metadata för säkra transporterade paket kontrolleras före startkod. Generell dependency-DAG/exportanalys före all modulkod är inte verifierad.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "MODULE-002",
       "section": "properties-modules",
+      "language": "sv",
       "text": "Samma normaliserade URI och digest identifierar samma modulinstans. Modulen initieras en gång per fresh run, eller en gång per namngiven session i sessionprofilen.",
       "requirementDigest": "sha256:9e72376fc8707b3bac87739863b7b10ee83671ef763881de607072193a8d076b",
       "contract": [
-        "app/specification.tsx#MODULE-002",
+        "docs/reference/specification/properties-modules.md#MODULE-002",
         "TEXTABANA_PARSER.md",
         "MODULE_ADMISSION_PROFILE.md"
       ],
@@ -572,15 +601,16 @@
       "scope": "Fresh-moduler är körbara. Namngiven sessionprofil för modulstate är inte implementerad.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "MODULE-003",
       "section": "properties-modules",
+      "language": "sv",
       "text": "Cache FÅR inte ändra semantik. Återanvänd sessionstate, modulbyte eller nondeterministisk replay MÅSTE framgå av proveniens.",
       "requirementDigest": "sha256:1890eb33efab834d4075913241a60941a1f176a9a5c95e84563a193a8d1e1472",
       "contract": [
-        "app/specification.tsx#MODULE-003",
+        "docs/reference/specification/properties-modules.md#MODULE-003",
         "TEXTABANA_PARSER.md",
         "MODULE_ADMISSION_PROFILE.md"
       ],
@@ -595,15 +625,16 @@
       "scope": "Lokala includes och säkra paket. Alias och allmän polyglott modul-/sessionssemantik återstår.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PROCESS-001",
       "section": "processing",
+      "language": "sv",
       "text": "Samtidig exekvering FÅR endast användas när beroenden, eligibility, deterministic merge och publik event-/traceordning är fullt definierade. Completion timing får inte bli semantisk ordning.",
       "requirementDigest": "sha256:7e5b59aa58f604bb523a6a0b72b3ea8466b559cef856f3906abfb0338817dd62",
       "contract": [
-        "app/specification.tsx#PROCESS-001",
+        "docs/reference/specification/processing.md#PROCESS-001",
         "EDITOR_KERNEL_PLAN.md",
         "MODULE_GATE_PROFILE.md"
       ],
@@ -619,15 +650,16 @@
       "scope": "Paketkontroll och parsergrind före startkod; exportkontroll och komplett graf före transform.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PROCESS-002",
       "section": "processing",
+      "language": "sv",
       "text": "Ett kompileringsfel MÅSTE stoppa all domänexekvering. Ett run-fel MÅSTE hindra durable commit.",
       "requirementDigest": "sha256:42cdd19c2d2627df8fe4b828a69257e4119c0f2484f911c17b003e2431e51753",
       "contract": [
-        "app/specification.tsx#PROCESS-002",
+        "docs/reference/specification/processing.md#PROCESS-002",
         "EDITOR_KERNEL_PLAN.md",
         "MODULE_GATE_PROFILE.md"
       ],
@@ -643,15 +675,16 @@
       "scope": "Paketkontroll och parsergrind före startkod; exportkontroll och komplett graf före transform.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PROCESS-003",
       "section": "processing",
+      "language": "sv",
       "text": "Modulinitiering är en effekt och FÅR INTE ske innan hela dokumentet har passerat parserns compile gate.",
       "requirementDigest": "sha256:ae1df80339c36e7d18fae04dce77c7cecce07e87feb06af54bff3d61026e5206",
       "contract": [
-        "app/specification.tsx#PROCESS-003",
+        "docs/reference/specification/processing.md#PROCESS-003",
         "EDITOR_KERNEL_PLAN.md",
         "MODULE_GATE_PROFILE.md"
       ],
@@ -667,15 +700,16 @@
       "scope": "Paketkontroll och parsergrind före startkod; exportkontroll och komplett graf före transform.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PROCESS-004",
       "section": "processing",
+      "language": "sv",
       "text": "ExecutionPlan och ExecutionGraph MÅSTE vara kompletta före första stage-resolution. ExecutionTrace textabana.execution-step/lab-v2 MÅSTE vara en separat observation där varje post refererar en planerad nod och skiljer fresh invocation från cachematerialisering. Vid fel behålls hela grafen och samtliga faktiskt startade, dränerade stageutfall publiceras i planordning; oschemalagda noder saknar tracepost.",
-      "requirementDigest": "sha256:e9f052f8b98cd07c55d68af6d9f2763ef17a785d62c23592e716444baf6eab07",
+      "requirementDigest": "sha256:19f1d454723b9ef8e75ba971e58cc29bd1b8627df7fa0f3a4c784ac4bbf2367e",
       "contract": [
-        "app/specification.tsx#PROCESS-004",
+        "docs/reference/specification/processing.md#PROCESS-004",
         "EDITOR_KERNEL_PLAN.md",
         "MODULE_GATE_PROFILE.md"
       ],
@@ -691,15 +725,16 @@
       "scope": "Paketkontroll och parsergrind före startkod; exportkontroll och komplett graf före transform.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "IR-001",
       "section": "ir-plan",
+      "language": "sv",
       "text": "Intervall MÅSTE representeras som scopes och segmentmedlemskap; de får inte pressas in i ett AST-träd som förlorar korsningar.",
       "requirementDigest": "sha256:d1c70575fb9dd52ec24af34d097d6ba610abba5c8f518fe92f71cda18438deba",
       "contract": [
-        "app/specification.tsx#IR-001",
+        "docs/reference/specification/ir-plan.md#IR-001",
         "TEXTABANA_PARSER.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -715,15 +750,16 @@
       "scope": "lab-v2 IR/Plan och lab-v1 graf; inte full produktionsprofil.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "IR-002",
       "section": "ir-plan",
+      "language": "sv",
       "text": "Authored ids FÅR vara stabila mellan revisioner. Genererade node ids MÅSTE dokumenteras som revision-local.",
       "requirementDigest": "sha256:04d7242a360452cf5c7bf7258793da243380ee59efa18014d7c6afb0a4f60597",
       "contract": [
-        "app/specification.tsx#IR-002",
+        "docs/reference/specification/ir-plan.md#IR-002",
         "TEXTABANA_PARSER.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -739,15 +775,16 @@
       "scope": "lab-v2 IR/Plan och lab-v1 graf; inte full produktionsprofil.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "IR-003",
       "section": "ir-plan",
+      "language": "sv",
       "text": "Varje IR-node, stage och recovery MÅSTE ha ett halvöppet Unicode-code-point-span inom exakt source snapshot. Syntetiska missing tokens MÅSTE vara markerade och ha zero-width-span. En source-backed Blank-node FÅR vara zero-width utan att vara syntetisk; radslutet ägs då av CST:ns separata Newline-terminal.",
       "requirementDigest": "sha256:bc0f80bc41bf30b98458c01f713bf18c42743dd2b02c40994bcd705d6962408e",
       "contract": [
-        "app/specification.tsx#IR-003",
+        "docs/reference/specification/ir-plan.md#IR-003",
         "TEXTABANA_PARSER.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -763,15 +800,16 @@
       "scope": "lab-v2 IR/Plan och lab-v1 graf; inte full produktionsprofil.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "IR-004",
       "section": "ir-plan",
+      "language": "sv",
       "text": "En Recovery-node MÅSTE ha executable=false och får aldrig refereras som en körbar stage i ExecutionPlan.",
-      "requirementDigest": "sha256:e550d250ea6757e2736d7b4a6788f224298c06b1f24d7366dc9728e195a56ef8",
+      "requirementDigest": "sha256:dfc189a787bbd5b7d039b2abafad62d6dd1007764163f9e51f761116c139cf09",
       "contract": [
-        "app/specification.tsx#IR-004",
+        "docs/reference/specification/ir-plan.md#IR-004",
         "TEXTABANA_PARSER.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -787,15 +825,16 @@
       "scope": "lab-v2 IR/Plan och lab-v1 graf; inte full produktionsprofil.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PLAN-001",
       "section": "ir-plan",
+      "language": "sv",
       "text": "ExecutionPlan MÅSTE bära varje stages exakta funktionsversion, typkontrakt, granted capabilities och deterministiska order key.",
       "requirementDigest": "sha256:2d4d10052bed2d8802a89dc7c6da207b24cfd92dd6a597cd77eeba0ab4adbd2d",
       "contract": [
-        "app/specification.tsx#PLAN-001",
+        "docs/reference/specification/ir-plan.md#PLAN-001",
         "TEXTABANA_PARSER.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -811,15 +850,16 @@
       "scope": "Typad labbplan finns, men kompletta produktionstyper och alla funktions-/grantfält är inte verifierade per nod.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PLAN-002",
       "section": "ir-plan",
+      "language": "sv",
       "text": "ExecutionGraph MÅSTE ha unika node- och edge-id:n, typade endpoints, acyklisk topologisk ordning och exakt en renderterminal. Edge-typerna pipeline, interval, interval-injection, inheritance, merge och render MÅSTE vara explicita. Samma operationstape MÅSTE vara auktoritet för både planering och exekvering.",
-      "requirementDigest": "sha256:7c734a93e3636553437af032516248e41a3a292a22810cc1eede442e83a650f7",
+      "requirementDigest": "sha256:b5f3667975a61f087a11d73e9cb8c49fb59a70268a87a79af64ca8ca6ab935b6",
       "contract": [
-        "app/specification.tsx#PLAN-002",
+        "docs/reference/specification/ir-plan.md#PLAN-002",
         "TEXTABANA_PARSER.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -835,15 +875,16 @@
       "scope": "lab-v2 IR/Plan och lab-v1 graf; inte full produktionsprofil.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PLAN-003",
       "section": "ir-plan",
+      "language": "sv",
       "text": "Statisk cache eligibility, cache candidate, cache lookup, cache hit och faktisk reuse är skilda tillstånd. Ett ofullständigt state-, determinism- eller effektkontrakt MÅSTE göra funktionen icke-cachebar. En deklarerad kandidat är en betrodd manifestuppgift, inte i sig ett verifierat puritybevis.",
       "requirementDigest": "sha256:6a3c57ab5cc011b6bd74e18836fd2a02eb90fc887bde7bcf867fa3b60e089904",
       "contract": [
-        "app/specification.tsx#PLAN-003",
+        "docs/reference/specification/ir-plan.md#PLAN-003",
         "TEXTABANA_PARSER.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -859,15 +900,16 @@
       "scope": "lab-v2 IR/Plan och lab-v1 graf; inte full produktionsprofil.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PLAN-004",
       "section": "ir-plan",
+      "language": "sv",
       "text": "Invalidation preview MÅSTE vara rådgivande och separat från grafens och Resultatets semantiska identitet. Den MÅSTE ange basis, target och maskinläsbara orsaker samt får aldrig redovisas som cache hit eller reuse.",
       "requirementDigest": "sha256:75d7b79294efff725fe92799511702dd23948e42d1b1cd9a8f1570a6bc05d7df",
       "contract": [
-        "app/specification.tsx#PLAN-004",
+        "docs/reference/specification/ir-plan.md#PLAN-004",
         "TEXTABANA_PARSER.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -883,15 +925,16 @@
       "scope": "lab-v2 IR/Plan och lab-v1 graf; inte full produktionsprofil.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PLAN-005",
       "section": "ir-plan",
+      "language": "sv",
       "text": "Parallell eligibility och cache eligibility MÅSTE vara separata fält även när kriterierna sammanfaller. Endast oberoende pure + deterministic + effects=[]-stages utan kanaler eller icke-render-output FÅR överlappa i den aktuella subseten. En pending unknown, stateful eller effectful stage MÅSTE fence:a planmässigt senare ready branches tills barriären har avslutats; merge/render är seriella. Outputs från faktiskt samtidiga fresh-invocations MÅSTE snapshotas och klonas förlustfritt inom den portabla TextabanaValue-domänen vid settlement; andra typer avvisas atomiskt före planordnad publicering. Execution-ID:n, trace, values och cachejournal MÅSTE publiceras i planordning.",
-      "requirementDigest": "sha256:a9ff2949961c0110de7a3a9b797de0303ba1aacd2f250fe151650964e5e26482",
+      "requirementDigest": "sha256:f00b7ecf715b61543aa53ebb1420b6959759d6d2de5788bb6410d8d17f7cbee8",
       "contract": [
-        "app/specification.tsx#PLAN-005",
+        "docs/reference/specification/ir-plan.md#PLAN-005",
         "TEXTABANA_PARSER.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -907,15 +950,16 @@
       "scope": "lab-v2 IR/Plan och lab-v1 graf; inte full produktionsprofil.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ANCHOR-001",
       "section": "anchors",
+      "language": "sv",
       "text": "En durable annotation MÅSTE binda till en versionerad target och minst en selector. Position och quote BÖR lagras tillsammans.",
       "requirementDigest": "sha256:ac5272dcb271fa623028b20a534749913e9ff8a6b6f989a2551ac63d16802169",
       "contract": [
-        "app/specification.tsx#ANCHOR-001",
+        "docs/reference/specification/anchors.md#ANCHOR-001",
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -928,15 +972,16 @@
       "scope": "Källbundna labbankare och begränsad re-anchor; ingen generell strukturell eller fuzzy matchning.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ANCHOR-002",
       "section": "anchors",
+      "language": "sv",
       "text": "En runtime får aldrig tyst välja en av flera re-anchor-kandidater. Flera giltiga kandidater MÅSTE ge ambiguous; ingen giltig kandidat MÅSTE ge orphaned. Båda utfallen ska förbli olösta och diagnostiserbara.",
-      "requirementDigest": "sha256:ed7e46f008a66d2657bf25fd998aa3f5ad2a0920e32143789bc12668444c6019",
+      "requirementDigest": "sha256:67633d9b9ae92d6d22495e49e2cd0c46e994c5986d56428df4b4c91dee76b51f",
       "contract": [
-        "app/specification.tsx#ANCHOR-002",
+        "docs/reference/specification/anchors.md#ANCHOR-002",
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -949,15 +994,16 @@
       "scope": "Källbundna labbankare och begränsad re-anchor; ingen generell strukturell eller fuzzy matchning.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ANCHOR-003",
       "section": "anchors",
+      "language": "sv",
       "text": "Human-facing line och column är ettbaserade. LSP-adaptern MÅSTE konvertera till nollbaserade UTF-16-positioner.",
       "requirementDigest": "sha256:5a35b5e0dbce6bf18cd36f14c3b603b66855c1124f06439d68dddc87bd460a84",
       "contract": [
-        "app/specification.tsx#ANCHOR-003",
+        "docs/reference/specification/anchors.md#ANCHOR-003",
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -970,15 +1016,16 @@
       "scope": "Kärnans spans använder code points och nollbaserade kolumner; UI får presentera ettbaserat. LSP-adapter saknas.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SOURCEMAP-001",
       "section": "anchors",
+      "language": "sv",
       "text": "Varje mapping record MÅSTE ange exact, derived eller synthetic samt generating activity. Aggregat är aldrig exact utan verifierat mapping proof.",
-      "requirementDigest": "sha256:be1f9d4059eee0334b17fd517bc200eee013c7b2bc7413a3e7ecf2995e75deb1",
+      "requirementDigest": "sha256:9ac880da4a0a8944b039f63e761a45e21762bed59690f30baea831fbff829b3d",
       "contract": [
-        "app/specification.tsx#SOURCEMAP-001",
+        "docs/reference/specification/anchors.md#SOURCEMAP-001",
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -991,15 +1038,16 @@
       "scope": "Källbundna labbankare och begränsad re-anchor; ingen generell strukturell eller fuzzy matchning.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RESULT-001",
       "section": "result",
+      "language": "sv",
       "text": "Ett lyckat resultat MÅSTE vara immutable. resultId BÖR vara content-addressed.",
-      "requirementDigest": "sha256:0194ccf997cba573c716556a67d457ed9f724dd9e1b80611fb007133209d2755",
+      "requirementDigest": "sha256:32449c749833ff215873cc30ac5655c8b19ea2cb96ef02a39fd16687b0ed9b4b",
       "contract": [
-        "app/specification.tsx#RESULT-001",
+        "docs/reference/specification/result.md#RESULT-001",
         "SEMANTIC_IDENTITY.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -1015,15 +1063,16 @@
       "scope": "Atomiska labbresultat och valfria SHA-256-artefakter. FNV-labb-ID och SHA-256-identitet är separata.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RESULT-002",
       "section": "result",
+      "language": "sv",
       "text": "Ett failed eller cancelled resultat MÅSTE ha tom committed render och tomma committed domain channels, men FÅR bära control-plane diagnostics.",
       "requirementDigest": "sha256:3638adc2a8be4620463889eedfc0862f46d83a0c66e8cac944e5fe24302d15d3",
       "contract": [
-        "app/specification.tsx#RESULT-002",
+        "docs/reference/specification/result.md#RESULT-002",
         "SEMANTIC_IDENTITY.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -1039,15 +1088,16 @@
       "scope": "Atomiska labbresultat och valfria SHA-256-artefakter. FNV-labb-ID och SHA-256-identitet är separata.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RESULT-003",
       "section": "result",
+      "language": "sv",
       "text": "Timestamps är transportmetadata och får inte styra semantisk hash eller eventordning.",
       "requirementDigest": "sha256:d5872e4a14a1fb8ecf5ad259c55f01fe4a620f183b029ed0cc7dbe7acfbf7f46",
       "contract": [
-        "app/specification.tsx#RESULT-003",
+        "docs/reference/specification/result.md#RESULT-003",
         "SEMANTIC_IDENTITY.md",
         "SEMANTIC_CONTRACT.md"
       ],
@@ -1063,15 +1113,16 @@
       "scope": "Atomiska labbresultat och valfria SHA-256-artefakter. FNV-labb-ID och SHA-256-identitet är separata.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CHANNEL-001",
       "section": "channels",
+      "language": "sv",
       "text": "Kanalnamn är obegränsade utom den reserverade namnrymden system.*. render är reserverat som resultatfält.",
-      "requirementDigest": "sha256:eb9c1aa959d6d01c0b5de3dea9ab8d634f8fd23cecfae895cec3dc7115b25e93",
+      "requirementDigest": "sha256:34fb05429bc5624af41a9dd46308ba0f38e65f9b49df45a90da5c0d7b2b6142a",
       "contract": [
-        "app/specification.tsx#CHANNEL-001",
+        "docs/reference/specification/channels.md#CHANNEL-001",
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -1084,15 +1135,16 @@
       "scope": "Kanal-/serialiseringsdelmängd. Payloadschema har begränsad egen validering; full JSON Schema saknas.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CHANNEL-002",
       "section": "channels",
+      "language": "sv",
       "text": "I strict profile MÅSTE descriptor och payloadschema deklareras före emit. En permissive legacyprofil FÅR syntetisera generisk JSON-descriptor vid första emit men får inte hävda typed-channel conformance.",
       "requirementDigest": "sha256:ff9d31edd77a256016d90b4a19962f67ebc6f53091e1c1570bc0021aafcd3af7",
       "contract": [
-        "app/specification.tsx#CHANNEL-002",
+        "docs/reference/specification/channels.md#CHANNEL-002",
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -1105,15 +1157,16 @@
       "scope": "Strict mode kräver kanaldescriptor. Full JSON Schema-validering och generell schemaRef-resolution saknas.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CHANNEL-003",
       "section": "channels",
+      "language": "sv",
       "text": "Events är append-only inom en run. Ett schemafel, en cyklisk payload eller ett oserialiserbart värde MÅSTE avvisas — inte förlustkonverteras till text.",
       "requirementDigest": "sha256:25936ee100308c1fe9bd1293558e209110d9131110a071520e166692a74a5a3c",
       "contract": [
-        "app/specification.tsx#CHANNEL-003",
+        "docs/reference/specification/channels.md#CHANNEL-003",
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -1126,15 +1179,16 @@
       "scope": "Serialiseringsfel och implementerade enkla payloadregler avvisas; obearbetade JSON Schema-keywords kan ignoreras.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CHANNEL-004",
       "section": "channels",
+      "language": "sv",
       "text": "Varje accepted emit får en order key (planStep, invocationOrder, localEmitIndex). sequence tilldelas vid deterministic merge/commit.",
-      "requirementDigest": "sha256:f8b33e5a0c200a179dd21783671828d37a3f15a9c5a1a724c34e5f1313647704",
+      "requirementDigest": "sha256:ee28dbf18268f1eecbccd815da5d9acd3398ba1d645cef2cfab803c6adee4ce8",
       "contract": [
-        "app/specification.tsx#CHANNEL-004",
+        "docs/reference/specification/channels.md#CHANNEL-004",
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -1147,15 +1201,16 @@
       "scope": "Global sekvens/anropsordning verifieras. Fullt normativt order-key-envelope och distribuerad merge ingår inte.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CHANNEL-005",
       "section": "channels",
+      "language": "sv",
       "text": "En funktionsmodul körs inte en gång per kanal. Ett enda funktionsanrop FÅR emittera till valfritt många kanaler.",
       "requirementDigest": "sha256:3bcabe7dd3b950a42e7c91984e509112876564aa2767feaa90238cc4cfc73254",
       "contract": [
-        "app/specification.tsx#CHANNEL-005",
+        "docs/reference/specification/channels.md#CHANNEL-005",
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -1168,15 +1223,16 @@
       "scope": "Kanal-/serialiseringsdelmängd. Payloadschema har begränsad egen validering; full JSON Schema saknas.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SYSTEM-OUT-001",
       "section": "system-out",
+      "language": "sv",
       "text": "Semantisk kind och positioneringssätt target.mode MÅSTE vara separata. row och line är target modes, inte eventtyper.",
-      "requirementDigest": "sha256:0adfeca8cfe56f9fe2192b050799fe016aaa287ac122152f40601c5c634b0f8f",
+      "requirementDigest": "sha256:384cd8da5ddbdb5d7326a4af3d84ebfd68319922d9eaab322236c58cc792eef0",
       "contract": [
-        "app/specification.tsx#SYSTEM-OUT-001",
+        "docs/reference/specification/system-out.md#SYSTEM-OUT-001",
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -1189,15 +1245,16 @@
       "scope": "Positionsbundna metadataposter; inte process-stdout eller dokumentkommandon.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SYSTEM-OUT-002",
       "section": "system-out",
+      "language": "sv",
       "text": "context.system.out.row(...) och .line(...) FÅR finnas som SDK-helpers men MÅSTE normalisera till samma portabla event envelope och Anchor.",
-      "requirementDigest": "sha256:5a2307a9e55261ae8d4f2560c22afcab25cf089ced27bcf17734b983ad6a2d49",
+      "requirementDigest": "sha256:6dc5332cbf67327c589255b51ed813fd7a58a35df931009a31679d432e7ddf5e",
       "contract": [
-        "app/specification.tsx#SYSTEM-OUT-002",
+        "docs/reference/specification/system-out.md#SYSTEM-OUT-002",
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -1210,15 +1267,16 @@
       "scope": "Positionsbundna metadataposter; inte process-stdout eller dokumentkommandon.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SYSTEM-OUT-003",
       "section": "system-out",
+      "language": "sv",
       "text": "Compile- och run-fel lagras i top-level diagnostics. En lyckad positionsbunden varning FÅR dessutom projiceras i system.out med samma diagnostic-id.",
-      "requirementDigest": "sha256:2a92efbd464c6126296b8a6fee987b1809f31f2b1978530571d8770d2d8ec228",
+      "requirementDigest": "sha256:98b56317b453c01915e9d1686870710725fdff1d3e386399194ea25e3ba08b46",
       "contract": [
-        "app/specification.tsx#SYSTEM-OUT-003",
+        "docs/reference/specification/system-out.md#SYSTEM-OUT-003",
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
@@ -1231,60 +1289,64 @@
       "scope": "Positionsbundna metadataposter; inte process-stdout eller dokumentkommandon.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ARTIFACT-001",
       "section": "artifacts",
+      "language": "sv",
       "text": "Artifact digest MÅSTE verifieras. Signed URLs och credentials får inte serialiseras som durable URI; använd opaque handle och en host-resolver.",
       "requirementDigest": "sha256:c1e6c64b62ee654d2b938aef234d9b33eaf92292926a5005148ed1971862e4c6",
       "contract": [
-        "app/specification.tsx#ARTIFACT-001"
+        "docs/reference/specification/artifacts.md#ARTIFACT-001"
       ],
       "implementation": [],
       "verification": [],
       "scope": "Beständiga artifacts med resolver och digest är ännu inte implementerade.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "SINK-001",
       "section": "artifacts",
+      "language": "sv",
       "text": "En icke-transaktionell sink MÅSTE buffra durable leverans till commit. Extern leverans BÖR använda (runId, sequence) som idempotency key.",
-      "requirementDigest": "sha256:00ce2e71ed9eabf1a4e9da6c9204034b7f178f4ce1c131c988f3541283c0bb6c",
+      "requirementDigest": "sha256:981b589226c24f130a53670e978b0335a5994a50c80372f3da4e0e6f61912468",
       "contract": [
-        "app/specification.tsx#SINK-001"
+        "docs/reference/specification/artifacts.md#SINK-001"
       ],
       "implementation": [],
       "verification": [],
       "scope": "Externa sinks och idempotent återleverans är inte implementerade.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "SINK-002",
       "section": "artifacts",
+      "language": "sv",
       "text": "Textabana får inte lova exactly-once över godtyckliga externa system. Adapterprofilen ska deklarera leveransgaranti, normalt at-least-once.",
       "requirementDigest": "sha256:bdbd11f1572b24bd2cede8a8bf2e4c87e90d11137af1fc37db4ec92189fe36b2",
       "contract": [
-        "app/specification.tsx#SINK-002"
+        "docs/reference/specification/artifacts.md#SINK-002"
       ],
       "implementation": [],
       "verification": [],
       "scope": "Leveransgaranti för externa system måste definieras i kommande adapter.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "MANIFEST-001",
       "section": "module-manifest",
+      "language": "sv",
       "text": "Compiler MÅSTE kunna läsa och validera manifestet utan att exekvera modulens entrypoint.",
       "requirementDigest": "sha256:e77f91a618b1626fd510fd63d1b96642eb9edc5b5fb4ea0ae8e470be0d1913d6",
       "contract": [
-        "app/specification.tsx#MANIFEST-001",
+        "docs/reference/specification/module-manifest.md#MANIFEST-001",
         "MODULE_GATE_PROFILE.md",
         "MODULE_ADMISSION_PROFILE.md"
       ],
@@ -1300,15 +1362,16 @@
       "scope": "Säkra JavaScript-paket och oberoende metadataförhandskontroll; ingen sandbox eller oberoende modulexekvering.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "MANIFEST-002",
       "section": "module-manifest",
+      "language": "sv",
       "text": "Dubbla exports utan namespace eller alias MÅSTE vara compile error.",
       "requirementDigest": "sha256:b5d60a13368a02bc590f7dacbc45f2eceda500091e62407f2bb02fe873df2669",
       "contract": [
-        "app/specification.tsx#MANIFEST-002",
+        "docs/reference/specification/module-manifest.md#MANIFEST-002",
         "MODULE_GATE_PROFILE.md",
         "MODULE_ADMISSION_PROFILE.md"
       ],
@@ -1324,15 +1387,16 @@
       "scope": "Dubbla deklarationer i ett paket avvisas före start. Generell alias-/namespacebaserad exportupplösning är inte implementerad.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "MANIFEST-003",
       "section": "module-manifest",
+      "language": "sv",
       "text": "State och determinism är separata dimensioner. En stateful funktion kan vara deterministisk, och en stateless funktion kan vara nondeterministisk.",
       "requirementDigest": "sha256:a0b0ce7e59ad78160be2743d8ad9b3bc41625ce2d9600b7b56c95f1b42743340",
       "contract": [
-        "app/specification.tsx#MANIFEST-003",
+        "docs/reference/specification/module-manifest.md#MANIFEST-003",
         "MODULE_GATE_PROFILE.md",
         "MODULE_ADMISSION_PROFILE.md"
       ],
@@ -1348,15 +1412,16 @@
       "scope": "Säkra JavaScript-paket och oberoende metadataförhandskontroll; ingen sandbox eller oberoende modulexekvering.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "MANIFEST-004",
       "section": "module-manifest",
+      "language": "sv",
       "text": "behavior beskriver transformationens form och FÅR INTE tolkas som purity. State, determinism och observerbara effekter MÅSTE deklareras separat; saknad deklaration betyder unknown och icke-cachebar.",
-      "requirementDigest": "sha256:5d879c80ee3d8705ac8b5c942e43f4637225cc00f90e1518a312f32db2182021",
+      "requirementDigest": "sha256:303d50fcefbbd47407ba9e3275638c29257e2281d463da4b4ede0f72075a0b0c",
       "contract": [
-        "app/specification.tsx#MANIFEST-004",
+        "docs/reference/specification/module-manifest.md#MANIFEST-004",
         "MODULE_GATE_PROFILE.md",
         "MODULE_ADMISSION_PROFILE.md"
       ],
@@ -1372,15 +1437,16 @@
       "scope": "Säkra JavaScript-paket och oberoende metadataförhandskontroll; ingen sandbox eller oberoende modulexekvering.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "MANIFEST-005",
       "section": "module-manifest",
+      "language": "sv",
       "text": "En deklaration som state=pure, determinism=deterministic och effects=[] gör endast funktionen till cachekandidat. En host som faktiskt återanvänder output MÅSTE dessutom upprätthålla effektgränsen eller behandla kontraktet som betrott och redovisa den trust boundaryn.",
-      "requirementDigest": "sha256:109518cdf18e230cadba0d89098e63bc2bfbf390c30fc8b4df909c926019ea87",
+      "requirementDigest": "sha256:c265a60248602ab48e176f45614bf2329557f2db29d64cb0d9fb6637df3a5ebe",
       "contract": [
-        "app/specification.tsx#MANIFEST-005",
+        "docs/reference/specification/module-manifest.md#MANIFEST-005",
         "MODULE_GATE_PROFILE.md",
         "MODULE_ADMISSION_PROFILE.md"
       ],
@@ -1396,15 +1462,16 @@
       "scope": "Säkra JavaScript-paket och oberoende metadataförhandskontroll; ingen sandbox eller oberoende modulexekvering.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUNTIME-001",
       "section": "runtime-protocol",
+      "language": "sv",
       "text": "emit är logiskt acknowledged. Modulens completion MÅSTE flush:a alla accepted events innan stage avslutas.",
-      "requirementDigest": "sha256:700410bbb6799f68656c55294ad488eb03e17afd3269f25be074410f3b003ba7",
+      "requirementDigest": "sha256:6e86f063e326ed92af3f94167c8a63178d4b1b801ea37fe72bce09cca6efd1b9",
       "contract": [
-        "app/specification.tsx#RUNTIME-001"
+        "docs/reference/specification/runtime-protocol.md#RUNTIME-001"
       ],
       "implementation": [
         "runtime/worker-entry.js"
@@ -1415,15 +1482,16 @@
       "scope": "Lokala emissioner och atomisk commit finns; generell acknowledged polyglott transport och flush saknas.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUNTIME-002",
       "section": "runtime-protocol",
+      "language": "sv",
       "text": "Funktioner får inte implicit läsa channels. En kanal som input kräver en explicit Plan-edge eller adapterstage.",
       "requirementDigest": "sha256:38c1a3301415200b39ca0da880372b85db583cd29f256faa99f7a6e5ade14aa2",
       "contract": [
-        "app/specification.tsx#RUNTIME-002"
+        "docs/reference/specification/runtime-protocol.md#RUNTIME-002"
       ],
       "implementation": [
         "runtime/worker-entry.js"
@@ -1434,30 +1502,32 @@
       "scope": "Lokalt Worker-API är körbart. Det fulla polyglotta initialize/execute/inspect-protokollet är ett målkontrakt.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUNTIME-003",
       "section": "runtime-protocol",
+      "language": "sv",
       "text": "JavaScript, TypeScript, Python, R, Julia, SQL, WASM och externa tjänster FÅR implementera samma protokoll utan språksemantisk särbehandling.",
       "requirementDigest": "sha256:dd062882253869c269edc49c2f60c8a8829c8d0dac44130753f25b7aee03bf7f",
       "contract": [
-        "app/specification.tsx#RUNTIME-003"
+        "docs/reference/specification/runtime-protocol.md#RUNTIME-003"
       ],
       "implementation": [],
       "verification": [],
       "scope": "Tillåtelse för polyglotta implementationer; dagens Python-profiler implementerar smalare språkdelmängder, inte hela runtimeprotokollet.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "EDITOR-KERNEL-001",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Editor Kernel MÅSTE vara ett control plane runt språk och runtime. Det får inte kunna anropas som en dokumentfunktion eller införa dold pipelineordning.",
       "requirementDigest": "sha256:ed6077f22f8f0dd9a619e62aaf32110c9a6348c04e4b2eb6b4e79bf1f59e4cfb",
       "contract": [
-        "app/specification.tsx#EDITOR-KERNEL-001",
+        "docs/reference/specification/editor-kernel.md#EDITOR-KERNEL-001",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1474,15 +1544,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "EDITOR-KERNEL-002",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Varje accepterad run MÅSTE fånga ett immutable snapshot med exakt documentId, documentRevision och documentVersion. Senare changes får inte ändra detta snapshot.",
-      "requirementDigest": "sha256:7bc26855d376aff4ced0c09c378612edee788b0741463564aa62a825c6e723ef",
+      "requirementDigest": "sha256:0f5f0b1d7ded55e952a935ef9916314a2c258576db39a0fefb195abb65829a2f",
       "contract": [
-        "app/specification.tsx#EDITOR-KERNEL-002",
+        "docs/reference/specification/editor-kernel.md#EDITOR-KERNEL-002",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1499,15 +1570,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "EDITOR-KERNEL-003",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "system.out och andra channels är semantisk output som kan prenumereras på. De får inte bära open, change eller annan document lifecycle-semantik.",
-      "requirementDigest": "sha256:dca59eef1ab33dee883278224e5f2e7881c62566193b234054ec74bc56cc1450",
+      "requirementDigest": "sha256:3d79779d0cb00df54086226348fbecca2eb85c21f483f7a721ade9b598c214ae",
       "contract": [
-        "app/specification.tsx#EDITOR-KERNEL-003",
+        "docs/reference/specification/editor-kernel.md#EDITOR-KERNEL-003",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1524,15 +1596,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DOCUMENT-001",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Snapshot och monoton revision är separata begrepp. En no-op ChangeSet får returnera unchanged utan att skapa en revision.",
-      "requirementDigest": "sha256:b728f8bd0f2d89b22cb32ccfb2b43d8d53d1f93bc66f5e5e0356f9ed34bf57c6",
+      "requirementDigest": "sha256:c27c7f1baf46a4d2be591a52031a4ce86ff1509fc438909ad348140401838965",
       "contract": [
-        "app/specification.tsx#DOCUMENT-001",
+        "docs/reference/specification/editor-kernel.md#DOCUMENT-001",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1549,15 +1622,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DOCUMENT-002",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Failed eller cancelled run MÅSTE lämna senast committade metadata-baslinje orörd. Ett historiskt resultat får visas som stale men aldrig som aktuellt för en nyare head.",
       "requirementDigest": "sha256:037f26a2e6022ce4c03d54958aa07a7372c889fa4cf857764d0a566e604b2c97",
       "contract": [
-        "app/specification.tsx#DOCUMENT-002",
+        "docs/reference/specification/editor-kernel.md#DOCUMENT-002",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1574,15 +1648,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DOCUMENT-003",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "En host MÅSTE avancera sin protokoll-head från kärnans korrelerade open- eller change-svar. Optimistiskt antagen revision/version får inte användas som grund för nästa change eller run.",
-      "requirementDigest": "sha256:48eb1fea43546aab940a522bc484ba86b3b0b81725ede346ed91407da0ac2d14",
+      "requirementDigest": "sha256:eb1de9f679ed0fe8977803a5bbc41f1bfefff7d6342e0e3835ba551729da24d2",
       "contract": [
-        "app/specification.tsx#DOCUMENT-003",
+        "docs/reference/specification/editor-kernel.md#DOCUMENT-003",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1599,15 +1674,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ANALYZE-001",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "analyze MÅSTE vara read-only, revisionsbundet och fritt från modulinitiering och stage-effekter. Det FÅR returnera partial IR med recovery även när samma snapshot inte kan köras.",
-      "requirementDigest": "sha256:984ac7f5961f13c07f796d4de164e32baf6ed3b3f3ce9661ab6abef812a4b85b",
+      "requirementDigest": "sha256:1f5369dc7c8741d64e7a4e787880cc413e41c0febe86829c64c40d66c8b1704f",
       "contract": [
-        "app/specification.tsx#ANALYZE-001",
+        "docs/reference/specification/editor-kernel.md#ANALYZE-001",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1624,15 +1700,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CHANGE-001",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Alla ranges i en ChangeSet MÅSTE avse samma base snapshot, vara nollbaserade, halvöppna, sorterade och icke-överlappande samt tillämpas atomiskt.",
       "requirementDigest": "sha256:26570a8fc63542827861dac367ccd4cfe631f0813baf6ddb664d0c7ce459bb48",
       "contract": [
-        "app/specification.tsx#CHANGE-001",
+        "docs/reference/specification/editor-kernel.md#CHANGE-001",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1649,15 +1726,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CHANGE-002",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Canonical change offsets räknas i Unicode code points. UTF-16-, line/column- eller editor-native-koordinater MÅSTE konverteras av en hostadapter före protokollgränsen; en främmande deklarerad coordinateUnit MÅSTE avvisas före mutation.",
-      "requirementDigest": "sha256:59748fbea4851119b83df3e315764d2a213ef69e07249849048e6fd46b1129eb",
+      "requirementDigest": "sha256:ac536815860e45ecab0b984140cfdb76483355d9a90d71cabba822324db04bb7",
       "contract": [
-        "app/specification.tsx#CHANGE-002",
+        "docs/reference/specification/editor-kernel.md#CHANGE-002",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1674,15 +1752,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CHANGE-003",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Stale revision eller version, ogiltig range och överlappning MÅSTE ge strukturerat protokollfel utan sourcemutation eller semantisk run.",
       "requirementDigest": "sha256:3b5344c88272ff9e402eebc558256a2609ef098ef9f557c12610cc187f36dd36",
       "contract": [
-        "app/specification.tsx#CHANGE-003",
+        "docs/reference/specification/editor-kernel.md#CHANGE-003",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1699,15 +1778,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SUBSCRIPTION-001",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Ett channelfilter begränsar endast leverans. Det får aldrig ändra core-resultatets channels, exekvering eller adapterfan-out.",
       "requirementDigest": "sha256:7118f8667255cb52f136199229e7d88a0194f54b9b5f6db50e38da7f0a36e1fd",
       "contract": [
-        "app/specification.tsx#SUBSCRIPTION-001",
+        "docs/reference/specification/editor-kernel.md#SUBSCRIPTION-001",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1724,15 +1804,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SUBSCRIPTION-002",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Varje delta MÅSTE ange basis, target och cursor. En konsument med annan basis måste resynkronisera i stället för att applicera deltat.",
       "requirementDigest": "sha256:52ec456838a901d6f0d7c2ca5703330d6220ff4c5dda9aa38cf6b59665d2e778",
       "contract": [
-        "app/specification.tsx#SUBSCRIPTION-002",
+        "docs/reference/specification/editor-kernel.md#SUBSCRIPTION-002",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1749,15 +1830,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DELTA-001",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Metadata-delta är en deterministisk post-commit-jämförelse mellan immutable snapshots; det muterar aldrig föregående TextabanaResult.",
-      "requirementDigest": "sha256:a37c77b2effd8056ea0f85d335160e6afe4f3c9ba34196ef36c65fefe25fbc24",
+      "requirementDigest": "sha256:ae2f81e1ab7cf8f52be4d2d885030b8ac2c96e88c21d2b974dcdfcd93c543130",
       "contract": [
-        "app/specification.tsx#DELTA-001",
+        "docs/reference/specification/editor-kernel.md#DELTA-001",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1774,15 +1856,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DELTA-002",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Cross-run matching MÅSTE använda deklarerad channel key eller explicit domänidentitet, aldrig run-lokala eventId eller sequence. Ounik identitet får inte ge ett falskt moved eller changed.",
-      "requirementDigest": "sha256:f0fa64e4898c5f5f28ecc7e991a8e160b1276a79583ff08f63d991584b0ad27d",
+      "requirementDigest": "sha256:33b1ed251a4c9abf783d876d70dad578332fce4b7524d1d57bcabfc883889f58",
       "contract": [
-        "app/specification.tsx#DELTA-002",
+        "docs/reference/specification/editor-kernel.md#DELTA-002",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1799,15 +1882,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DELTA-003",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "changed betyder samma stabila identitet med ändrad semantik eller payload; moved betyder semantiskt ekvivalent payload med ny fysisk target. Payloadändring har företräde.",
-      "requirementDigest": "sha256:8bcd9eeb11ae65f2b139a302f6acbaa0a360a27d8d8c28ef1ec74ef5dd0aa11c",
+      "requirementDigest": "sha256:6fea05c03ac8b62a1ce75bea3db3602ddb4f21415b2ea0b14f16885519f9a2e4",
       "contract": [
-        "app/specification.tsx#DELTA-003",
+        "docs/reference/specification/editor-kernel.md#DELTA-003",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1824,15 +1908,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DELTA-004",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Endast succeeded commit får publicera durable added, removed, changed eller moved. Failed och cancelled publicerar ett tomt not-committed-delta och behåller baslinjen.",
-      "requirementDigest": "sha256:e9dd815d9bcf184b1534754be731184fc770f076cc0e7a8c63e18bab9b20de96",
+      "requirementDigest": "sha256:8ba771ecafd6c51a639d41a12c0ba2e7469cabe5eddc219f1222a948456c11b8",
       "contract": [
-        "app/specification.tsx#DELTA-004",
+        "docs/reference/specification/editor-kernel.md#DELTA-004",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1849,15 +1934,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "REANCHOR-001",
       "section": "editor-kernel",
+      "language": "sv",
       "text": "Anchor-records är immutable och versionsbundna. Cross-revision continuity MÅSTE publiceras som en separat transition med metod och utfall; ambiguous och orphaned förblir olösta.",
-      "requirementDigest": "sha256:f29b4153fe9268ed5abed9c85fa6543071a946cf6eb0296ea26eb9612baca681",
+      "requirementDigest": "sha256:1848dcbf593d643f90949ce3a508a1152483e5bbf52c808b47a538fc6ec22cb0",
       "contract": [
-        "app/specification.tsx#REANCHOR-001",
+        "docs/reference/specification/editor-kernel.md#REANCHOR-001",
         "docs/INTEGRATION_GUIDE.md",
         "EDITOR_KERNEL_PLAN.md"
       ],
@@ -1874,15 +1960,16 @@
       "scope": "Sessionslokalt dokument, revisionsgrind, metadata-delta och credit-styrd post-commit-leverans.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUN-001",
       "section": "runs",
+      "language": "sv",
       "text": "Failed eller cancelled MÅSTE revokera tentative domänoutput. En extern side effect som inte kan rullas tillbaka måste deklareras och redovisas ärligt i proveniens.",
       "requirementDigest": "sha256:631dcf20cd5f310c81d3f50216c4d8f12198b8370a87121b13bfbd037e461f45",
       "contract": [
-        "app/specification.tsx#RUN-001",
+        "docs/reference/specification/runs.md#RUN-001",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -1897,15 +1984,16 @@
       "scope": "Atomiskt tomt durable resultat verifieras. Ingen rollback av godtyckliga externa effekter.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUN-002",
       "section": "runs",
+      "language": "sv",
       "text": "Semantic cache key MÅSTE inkludera stage-lokala source- och IR-beroendedigests samt resolved module identity, hela den ordnade faktiskt initierade modulclosure, funktion-, context-, contract-, exakt typad input-, authored-args-, config-, profile- och environment-digests. Edge-topologi, ordnad merge och observerbar argumentordning MÅSTE påverka den rekursiva beroendeidentiteten. Playgroundens labdigest får inte ensam auktorisera en träff; full key witness MÅSTE också vara exakt lika.",
       "requirementDigest": "sha256:2ec4d501bca9b61b7a3a03f0e9a1823ed7dd4e13cd09702e30cd5dc2a4aaf339",
       "contract": [
-        "app/specification.tsx#RUN-002",
+        "docs/reference/specification/runs.md#RUN-002",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -1920,15 +2008,16 @@
       "scope": "Fresh modulrun med sessionslokal editorcache, betrodda funktionskontrakt och kooperativa resursgränser.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUN-003",
       "section": "runs",
+      "language": "sv",
       "text": "Nondeterministiska och externa funktioner får inte cacheas utan explicit replay artifact eller dokumenterad policy.",
       "requirementDigest": "sha256:45d9c88e92496a89f4d4f2e3c616dd3c27c454dac3bd792f50269b1095951618",
       "contract": [
-        "app/specification.tsx#RUN-003",
+        "docs/reference/specification/runs.md#RUN-003",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -1943,15 +2032,16 @@
       "scope": "Fresh modulrun med sessionslokal editorcache, betrodda funktionskontrakt och kooperativa resursgränser.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUN-004",
       "section": "runs",
+      "language": "sv",
       "text": "Backpressure, timeout och cancellation MÅSTE propageras genom runtime och sinks; tyst eventförlust är inte tillåten.",
       "requirementDigest": "sha256:4b8150c028cda7dc89bde4c9ebffe813fcc625d13d505dfbdef62f7013542da4",
       "contract": [
-        "app/specification.tsx#RUN-004",
+        "docs/reference/specification/runs.md#RUN-004",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -1966,15 +2056,16 @@
       "scope": "Kooperativ timeout/cancel och credit-styrd metadata efter commit. Ingen generell sink-backpressure, kökvot eller synkron preemption.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUN-005",
       "section": "runs",
+      "language": "sv",
       "text": "Cache candidate, cache eligible, lookup, hit och reused MÅSTE rapporteras som skilda tillstånd. En invalidation preview eller matchande statisk nyckel får aldrig ensam redovisas som en träff. Den aktuella Editor Kernel-subseten kräver två exakt lika fresh observationer i skilda committed revisioner före reuse; samma revision främjar inte observationsunderlaget.",
       "requirementDigest": "sha256:d3c4dc05c90dd32727e71bacb34c57ad5e6d291678dd61f1b4710ce04f686392",
       "contract": [
-        "app/specification.tsx#RUN-005",
+        "docs/reference/specification/runs.md#RUN-005",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -1989,15 +2080,16 @@
       "scope": "Fresh modulrun med sessionslokal editorcache, betrodda funktionskontrakt och kooperativa resursgränser.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUN-006",
       "section": "runs",
+      "language": "sv",
       "text": "Cacheobservationer och verifieringar MÅSTE skrivas i ett run-lokalt journal och blir synliga atomiskt först när core-resultat, immutable post-commit-projektioner, conformance-gate och aktuell editor-head har accepterats. observations/writes avser endast committad evidens; försök redovisas separat. Failed, cancelled, stale, gate-rejected eller ersatt session MÅSTE kasta journalen.",
-      "requirementDigest": "sha256:60c903438aa0a2c2b4b669ef3ac31f3cb738b47082e8d2d418864f1c0b2897fa",
+      "requirementDigest": "sha256:341f7968e76697cb8cdef35f2d6db5adb9bfc4f15f6b822a090f7d4ede5f73fe",
       "contract": [
-        "app/specification.tsx#RUN-006",
+        "docs/reference/specification/runs.md#RUN-006",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -2012,15 +2104,16 @@
       "scope": "Fresh modulrun med sessionslokal editorcache, betrodda funktionskontrakt och kooperativa resursgränser.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUN-007",
       "section": "runs",
+      "language": "sv",
       "text": "Återanvända stages MÅSTE skapa ny run-kvalificerad provenance och execution-step/lab-v2 med functionInvoked=false; tidigare event-, stage-, invocation- eller activity-id:n får aldrig återspelas. Materialiseringen MÅSTE peka på aktuell cachepost och exakt två unika, resolverbara observationsposter med samma planNodeRef och output-digest. Cachetelemetri får inte ändra semantiskt Result-ID eller normalized conformance-golden.",
-      "requirementDigest": "sha256:93532a5d774f5a581b110dc48f2e786a8ff4c6a87b005cae2ee348aeaee807c2",
+      "requirementDigest": "sha256:b400f00f13e906701c749dfeac6c667024c0b7ddf7df7e06475c03fb60dff3b8",
       "contract": [
-        "app/specification.tsx#RUN-007",
+        "docs/reference/specification/runs.md#RUN-007",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -2035,15 +2128,16 @@
       "scope": "Fresh modulrun med sessionslokal editorcache, betrodda funktionskontrakt och kooperativa resursgränser.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUN-008",
       "section": "runs",
+      "language": "sv",
       "text": "En concurrent ready-set-batch MÅSTE startas deterministiskt, dräneras med alla terminalutfall och publiceras i planordning. Ett branchfel stoppar ny scheduling. Efter drain har en aktiv terminal control-signal företräde: user cancellation ger cancelled och deadline ger failed; bland övriga branchfel blir det tidigaste planordnade felet primärdiagnostik.",
-      "requirementDigest": "sha256:1a4bac9fb67e977907ec1405071bb3d44064ad9620b87935ec529180f7761773",
+      "requirementDigest": "sha256:0c1d01225f0fc8e161f1f8be8e7ad06c0cc173ce20fe878bced5dc5105274b5c",
       "contract": [
-        "app/specification.tsx#RUN-008",
+        "docs/reference/specification/runs.md#RUN-008",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -2058,15 +2152,16 @@
       "scope": "Fresh modulrun med sessionslokal editorcache, betrodda funktionskontrakt och kooperativa resursgränser.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUN-009",
       "section": "runs",
+      "language": "sv",
       "text": "Den aktuella runtime-subseten MÅSTE avvisa icke-numeriska policyfält och rapportera requested/effective hosttak, wave/peak concurrency, planerade och resolverade stages, kanalhändelser samt final renderstorlek. Deadline är kooperativ vid runtimegränser. Stage-, event- och renderbrott MÅSTE inträffa före durable commit och får inte beskrivas som generell CPU-/minnesisolering eller synkron preemption.",
       "requirementDigest": "sha256:5c07c5a070cc19f1d1e1b55ef7831bf80150233b48b57f04794bebb47c1ca52a",
       "contract": [
-        "app/specification.tsx#RUN-009",
+        "docs/reference/specification/runs.md#RUN-009",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -2081,15 +2176,16 @@
       "scope": "Fresh modulrun med sessionslokal editorcache, betrodda funktionskontrakt och kooperativa resursgränser.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "RUNTIME-CACHE-PROVENANCE",
       "section": "runs",
+      "language": "sv",
       "text": "Conformance-grinden MÅSTE avvisa en cachematerialisering om cacheposten eller någon av dess två observationsentiteter saknas, dupliceras eller avviker i planNodeRef eller output-digest.",
-      "requirementDigest": "sha256:f961db14558bfe58f8e7edac9abb452f176402cbdd9240b4c203115d65eac639",
+      "requirementDigest": "sha256:f383fdec9ec3cb231f8dcaa0b527b9712e3919b2aa81596c4ffadc75eecb12e1",
       "contract": [
-        "app/specification.tsx#RUNTIME-CACHE-PROVENANCE",
+        "docs/reference/specification/runs.md#RUNTIME-CACHE-PROVENANCE",
         "EDITOR_KERNEL_PLAN.md"
       ],
       "implementation": [
@@ -2104,15 +2200,16 @@
       "scope": "Fresh modulrun med sessionslokal editorcache, betrodda funktionskontrakt och kooperativa resursgränser.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SECURITY-001",
       "section": "security",
+      "language": "sv",
       "text": "Ingen modul har implicit rätt till filesystem, network, process, model eller secrets. Host får endast ge en deklarerad subset.",
       "requirementDigest": "sha256:274e38a60cf92220b32acab3127af240ab75b5bb617f2614219d6427c5cf6e81",
       "contract": [
-        "app/specification.tsx#SECURITY-001",
+        "docs/reference/specification/security.md#SECURITY-001",
         "MODULE_ADMISSION_PROFILE.md"
       ],
       "implementation": [
@@ -2124,15 +2221,16 @@
       "scope": "Grants är paketmetadata-grind. JavaScript-loadern verkställer ingen generell filesystem/network/process-sandbox.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SECURITY-002",
       "section": "security",
+      "language": "sv",
       "text": "Secrets MÅSTE injiceras som opaque handles och får aldrig förekomma i source, metadata, IR, Result, event, artifact-URI eller logg.",
       "requirementDigest": "sha256:85abf0e1fe9cf12863f755c0c83143a33dab8ef9693c6a918ffee6890762bee0",
       "contract": [
-        "app/specification.tsx#SECURITY-002",
+        "docs/reference/specification/security.md#SECURITY-002",
         "MODULE_ADMISSION_PROFILE.md"
       ],
       "implementation": [],
@@ -2140,15 +2238,16 @@
       "scope": "Generell secret-handle-injektion och informationsflödeskontroll finns inte.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "SECURITY-003",
       "section": "security",
+      "language": "sv",
       "text": "HTML, SVG, widgets och annan aktiv MIME MÅSTE följa hostens sanitization- och trustmodell.",
       "requirementDigest": "sha256:321cc97c88656691d26b6e469cbb3bb27e2427a6fd8792360723533683963a1a",
       "contract": [
-        "app/specification.tsx#SECURITY-003",
+        "docs/reference/specification/security.md#SECURITY-003",
         "MODULE_ADMISSION_PROFILE.md"
       ],
       "implementation": [
@@ -2160,15 +2259,16 @@
       "scope": "Markdown-projektion finns; godtycklig aktiv MIME, SVG och widgets har ingen generell säker hostprofil.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "SECURITY-004",
       "section": "security",
+      "language": "sv",
       "text": "Kanal- och artifactdescriptors BÖR ange classification, retention och åtkomstpolicy. Adaptrar får inte sänka skyddsnivån tyst.",
       "requirementDigest": "sha256:24ab4759c36a2eaf2361daaf96874a0632a57e6c7fbb296667d060604e422d50",
       "contract": [
-        "app/specification.tsx#SECURITY-004",
+        "docs/reference/specification/security.md#SECURITY-004",
         "MODULE_ADMISSION_PROFILE.md"
       ],
       "implementation": [],
@@ -2176,15 +2276,16 @@
       "scope": "Full retention-/åtkomstpolicy och bevis för att adaptrar inte sänker skydd saknas.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "ADAPTER-001",
       "section": "adapter-contract",
+      "language": "sv",
       "text": "En adapter MÅSTE deklarera id, version, profil, accepterade resultatscheman, producerade representationer, kapabilitetsbehov och fidelity-policy innan den körs.",
       "requirementDigest": "sha256:f1e25030dca2bfef9200789a5d490c8021eecdebfbc3d3975cb488948e6e9386",
       "contract": [
-        "app/specification.tsx#ADAPTER-001",
+        "docs/reference/specification/adapter-contract.md#ADAPTER-001",
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
@@ -2196,15 +2297,16 @@
       "scope": "Inbyggda rena post-commit-adaptrar. Inget generellt externt adapterekosystem eller full standardkonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ADAPTER-002",
       "section": "adapter-contract",
+      "language": "sv",
       "text": "Varje projektion MÅSTE referera till exakt source resultId och manifestdigest. Samma deterministiska input, manifestversion och konfiguration MÅSTE ge samma projectionId.",
-      "requirementDigest": "sha256:4475dd2f88680eab98eba836724c0d41216a449434f7ac5718fe0a186e28ae53",
+      "requirementDigest": "sha256:4db73dde27c488cd2745a0dfd09d4fe3de708aa78472d1c3c50bc98e48a8201a",
       "contract": [
-        "app/specification.tsx#ADAPTER-002",
+        "docs/reference/specification/adapter-contract.md#ADAPTER-002",
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
@@ -2216,15 +2318,16 @@
       "scope": "Inbyggda rena post-commit-adaptrar. Inget generellt externt adapterekosystem eller full standardkonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ADAPTER-003",
       "section": "adapter-contract",
+      "language": "sv",
       "text": "Adaptrar läser samma immutable Result som oberoende fan-out. Adapter-till-adapter-dataflöde kräver en explicit, acyklisk dependency edge; list- eller UI-ordning är aldrig semantik.",
       "requirementDigest": "sha256:96312f82b192fbe6c920b45f3a5c070154eb9589716bb8c2eb841c363715ea90",
       "contract": [
-        "app/specification.tsx#ADAPTER-003",
+        "docs/reference/specification/adapter-contract.md#ADAPTER-003",
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
@@ -2236,15 +2339,16 @@
       "scope": "Inbyggda rena post-commit-adaptrar. Inget generellt externt adapterekosystem eller full standardkonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ADAPTER-004",
       "section": "adapter-contract",
+      "language": "sv",
       "text": "Event identity, Anchor, SourceMap, artifact och provenance MÅSTE bevaras genom referens eller redovisas individuellt som förlust. Ett tomt loss-fält är ett verifierbart påstående.",
       "requirementDigest": "sha256:30845feaeeb9db1b497e2e70e19169568128d0098f66cfcae46ee5fa14c2c88f",
       "contract": [
-        "app/specification.tsx#ADAPTER-004",
+        "docs/reference/specification/adapter-contract.md#ADAPTER-004",
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
@@ -2256,15 +2360,16 @@
       "scope": "Inbyggda rena post-commit-adaptrar. Inget generellt externt adapterekosystem eller full standardkonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ADAPTER-005",
       "section": "adapter-contract",
+      "language": "sv",
       "text": "Ett adapterfel FÅR inte ändra core run status eller mutera ett committat Result. Felet returneras som adapterdiagnostik i adapterkörningen.",
       "requirementDigest": "sha256:ee01be294eccd98bd002bc270813f9c1cafd00cea16b5de57cd4e032b9665df3",
       "contract": [
-        "app/specification.tsx#ADAPTER-005",
+        "docs/reference/specification/adapter-contract.md#ADAPTER-005",
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
@@ -2276,15 +2381,16 @@
       "scope": "Inbyggda rena post-commit-adaptrar. Inget generellt externt adapterekosystem eller full standardkonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ADAPTER-006",
       "section": "adapter-contract",
+      "language": "sv",
       "text": "En contract-only-deskriptor får förhandlas och inspekteras men får inte producera simulerad output eller användas som stöd för profilkonformitet.",
       "requirementDigest": "sha256:2f346b31b8668734e250e67606006ea3ead7182217dd5b0d6d0736fbe563037e",
       "contract": [
-        "app/specification.tsx#ADAPTER-006",
+        "docs/reference/specification/adapter-contract.md#ADAPTER-006",
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
@@ -2296,15 +2402,16 @@
       "scope": "Inbyggda rena post-commit-adaptrar. Inget generellt externt adapterekosystem eller full standardkonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "JUPYTER-001",
       "section": "notebooks",
+      "language": "sv",
       "text": "Standard execute_request innehåller kod men inte cell-id eller hela notebooken. Cross-cell-semantik kräver därför att hosten skickar en hel, versionerad notebook snapshot med stabila cell.id. Playgrounden avvisar partial snapshots.",
-      "requirementDigest": "sha256:8d7f1b09861632175281f3f655b27f03691866bdaa0f289bc38b396c8b8d6265",
+      "requirementDigest": "sha256:f22526cf9c79bc7187abc88d8275d457d8d1bddf2eb787052d307dbe65372a26",
       "contract": [
-        "app/specification.tsx#JUPYTER-001",
+        "docs/reference/specification/notebooks.md#JUPYTER-001",
         "docs/INTEGRATION_GUIDE.md"
       ],
       "implementation": [
@@ -2317,15 +2424,16 @@
       "scope": "Whole snapshot och MIME-projektion. Ingen nbformat-roundtrip, Messaging eller extern kernel.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "JUPYTER-002",
       "section": "notebooks",
+      "language": "sv",
       "text": "MIME-alternativen text/plain, text/markdown och application/vnd.textabana.result+json representerar samma logiska cellvärde. Separata Textabanakanaler får inte modelleras som MIME-alternativ.",
-      "requirementDigest": "sha256:27b4baf52a900e3118ccd563a7e6e17f866ced089402ad1e65f1d5db8f5c57c7",
+      "requirementDigest": "sha256:44963453713c3ca1b8f56eeff49464a08a8c2998cff89a3e8f44fae2c1390c84",
       "contract": [
-        "app/specification.tsx#JUPYTER-002",
+        "docs/reference/specification/notebooks.md#JUPYTER-002",
         "docs/INTEGRATION_GUIDE.md"
       ],
       "implementation": [
@@ -2338,15 +2446,16 @@
       "scope": "Whole snapshot och MIME-projektion. Ingen nbformat-roundtrip, Messaging eller extern kernel.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "JUPYTER-003",
       "section": "notebooks",
+      "language": "sv",
       "text": "Jupyter streams och displays ska mappas till namespaced adapterkanaler som host.jupyter.stdout, host.jupyter.stderr och host.jupyter.display — aldrig till system.out som process-stdout.",
-      "requirementDigest": "sha256:ff2a7c1ff92e94963c919b513498dd26ad05953ac5428ea32213aa339e19907e",
+      "requirementDigest": "sha256:1bac8d14d331c0a29f1d528b354ace3406291e788c478a5973c28a5d9ab6a590",
       "contract": [
-        "app/specification.tsx#JUPYTER-003",
+        "docs/reference/specification/notebooks.md#JUPYTER-003",
         "docs/INTEGRATION_GUIDE.md"
       ],
       "implementation": [],
@@ -2354,15 +2463,16 @@
       "scope": "Jupyter Messaging och standardstream-projektion är ännu inte implementerade.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "JUPYTER-004",
       "section": "notebooks",
+      "language": "sv",
       "text": "En notebookadapter MÅSTE bevara okänd författad metadata, reservera metadata.textabana för adapterfält och märka varje output med cells source digest.",
-      "requirementDigest": "sha256:2bd1d33179b6f8e538785f87c1bc8062716cd312ce92c0af1d2f79ede779b392",
+      "requirementDigest": "sha256:096888c43365d8648d1e68d0d6fca7d11c4f548e64850d832a388116eb14e0db",
       "contract": [
-        "app/specification.tsx#JUPYTER-004",
+        "docs/reference/specification/notebooks.md#JUPYTER-004",
         "docs/INTEGRATION_GUIDE.md"
       ],
       "implementation": [
@@ -2375,15 +2485,16 @@
       "scope": "Författad metadata bevaras i labbsnapshot; full nbformat import/export med okända fält saknas.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "JUPYTER-005",
       "section": "notebooks",
+      "language": "sv",
       "text": "Cellordning är presentationsordning och FÅR inte bli implicit exekverings- eller kernelstate. Notebookens begärda stateprofil är skild från kärnans Result.run.profile.",
-      "requirementDigest": "sha256:40373e336b399c896f8b4797e9609d7b518ece2865951b072ebd9d58ef4cfc15",
+      "requirementDigest": "sha256:bdbbe3dfb2f9e7ed4eb440f463018464c15d3864ba5c8fd1a0326eba52a2ebe2",
       "contract": [
-        "app/specification.tsx#JUPYTER-005",
+        "docs/reference/specification/notebooks.md#JUPYTER-005",
         "docs/INTEGRATION_GUIDE.md"
       ],
       "implementation": [
@@ -2396,15 +2507,16 @@
       "scope": "Whole snapshot och MIME-projektion. Ingen nbformat-roundtrip, Messaging eller extern kernel.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "JUPYTER-006",
       "section": "notebooks",
+      "language": "sv",
       "text": "En äldre output är stale exakt när previousOutput.sourceDigest !== currentCell.sourceDigest. En stale output FÅR visas som revisionsmetadata men aldrig som aktuell output.",
-      "requirementDigest": "sha256:5237f258d14e3d3efb906e0fa6c63e745e8e544f76aa0ec2ab8b25c1b7b5111c",
+      "requirementDigest": "sha256:2e5906c57d27f2197886662bfc6af9c86c2f2f933ed5d7e42edbf0f5584053ec",
       "contract": [
-        "app/specification.tsx#JUPYTER-006",
+        "docs/reference/specification/notebooks.md#JUPYTER-006",
         "docs/INTEGRATION_GUIDE.md"
       ],
       "implementation": [
@@ -2417,15 +2529,16 @@
       "scope": "Whole snapshot och MIME-projektion. Ingen nbformat-roundtrip, Messaging eller extern kernel.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "JUPYTER-007",
       "section": "notebooks",
+      "language": "sv",
       "text": "Varje cell MÅSTE ha explicit, unik identitet. Saknat eller duplicerat cell-id stoppar körningen atomiskt före channel commit.",
       "requirementDigest": "sha256:91ec1b1c0c2564fa606e15fb0ed8e71de4acf2c58e4c1ac1166b3872dbe96172",
       "contract": [
-        "app/specification.tsx#JUPYTER-007",
+        "docs/reference/specification/notebooks.md#JUPYTER-007",
         "docs/INTEGRATION_GUIDE.md"
       ],
       "implementation": [
@@ -2438,15 +2551,16 @@
       "scope": "Whole snapshot och MIME-projektion. Ingen nbformat-roundtrip, Messaging eller extern kernel.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DATA-001",
       "section": "data-ai",
+      "language": "sv",
       "text": "Dataset row identity MÅSTE använda stabilt recordId eller deklarerad key — aldrig fysisk row index efter filter, join eller sortering.",
-      "requirementDigest": "sha256:b61bca55ca636ae0ca7cd91ca27b1d7826513ba330dc09bfb9ab3f392ba6a798",
+      "requirementDigest": "sha256:7ff75886cb839242be01bdaebf3ea099b9539f8951bd149009910372cc9d2083",
       "contract": [
-        "app/specification.tsx#DATA-001",
+        "docs/reference/specification/data-ai.md#DATA-001",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2460,15 +2574,16 @@
       "scope": "JSON-records och författade AI-metadata i labbet; ingen Arrow/Parquet- eller verklig modellkörning.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DATA-002",
       "section": "data-ai",
+      "language": "sv",
       "text": "Filter bevarar lineage; join förenar inputanchors; aggregation producerar derived mapping och en explicit provenance relation.",
-      "requirementDigest": "sha256:f4a594f0a5f94a025af85ec867fd69aa45a66d34b51dd15f8cda0ed3875340d6",
+      "requirementDigest": "sha256:d97a8739a5fe309ce62d13636cadb7f4a062fccce10382f27f66e186cdd10dd6",
       "contract": [
-        "app/specification.tsx#DATA-002",
+        "docs/reference/specification/data-ai.md#DATA-002",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2482,15 +2597,16 @@
       "scope": "JSON-records och författade AI-metadata i labbet; ingen Arrow/Parquet- eller verklig modellkörning.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "DATA-003",
       "section": "data-ai",
+      "language": "sv",
       "text": "Kritisk proveniens får inte endast ligga i Arrow- eller Parquet-schema metadata om den ska överleva tredjepartsverktyg.",
       "requirementDigest": "sha256:b467e32fb9de4f6cb77f9b7df508a6963614967654e0e5396350e8af96101c66",
       "contract": [
-        "app/specification.tsx#DATA-003",
+        "docs/reference/specification/data-ai.md#DATA-003",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [],
@@ -2498,15 +2614,16 @@
       "scope": "Ingen Arrow-/Parquet-projektion eller extern proveniensroundtrip finns.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "DATA-004",
       "section": "data-ai",
+      "language": "sv",
       "text": "Arrow IPC Stream delar ett schema. En inkompatibel schemaändring MÅSTE skapa en ny stream eller schemaversion.",
       "requirementDigest": "sha256:807127263c307f320342a5f29d13ebdd63a5ed4d6cd388f18f93d100257cc7dd",
       "contract": [
-        "app/specification.tsx#DATA-004",
+        "docs/reference/specification/data-ai.md#DATA-004",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [],
@@ -2514,15 +2631,16 @@
       "scope": "Ingen Arrow IPC-stream finns.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "DATA-005",
       "section": "data-ai",
+      "language": "sv",
       "text": "In-process Arrow- eller DLPack-handles får aldrig serialiseras i TextabanaResult; resultatet använder transportformat eller ArtifactRef.",
       "requirementDigest": "sha256:a7bcad226f2a1f3eec8542c018b4ed7536afd866b26febafaaf199514fb5f8c8",
       "contract": [
-        "app/specification.tsx#DATA-005",
+        "docs/reference/specification/data-ai.md#DATA-005",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [],
@@ -2530,15 +2648,16 @@
       "scope": "Ingen Arrow-/DLPack-handletransport eller beständig ArtifactRef-adapter finns.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "AI-001",
       "section": "data-ai",
+      "language": "sv",
       "text": "Confidence är ett modellmått, inte sanning. Candidate, accepted, rejected och superseded är separata review states.",
       "requirementDigest": "sha256:b98d2f38415146e8c9175550030f14ed41b3e409bc987f03995e43a4d01d3cac",
       "contract": [
-        "app/specification.tsx#AI-001",
+        "docs/reference/specification/data-ai.md#AI-001",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2552,15 +2671,16 @@
       "scope": "JSON-records och författade AI-metadata i labbet; ingen Arrow/Parquet- eller verklig modellkörning.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "AI-002",
       "section": "data-ai",
+      "language": "sv",
       "text": "MCP FÅR exponera manifestfunktioner som tools och docs/resultat som resources, men är en adapter och får inte bli kärnans runtime- eller proveniensmodell.",
       "requirementDigest": "sha256:5dc708c1d29b3bbb50912824a8efd95e1f0e9a159e4aba8d454c7417654f5382",
       "contract": [
-        "app/specification.tsx#AI-002",
+        "docs/reference/specification/data-ai.md#AI-002",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [],
@@ -2568,15 +2688,16 @@
       "scope": "MCP är en tillåten adapterroll; någon sådan implementation ingår inte i denna Site.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "ANNOTATION-001",
       "section": "annotation-observability",
+      "language": "sv",
       "text": "Intern annotation MÅSTE stödja span, document classification, relation och review state. W3C Web Annotation är en import/exportprofil, inte hela kärnmodellen.",
       "requirementDigest": "sha256:019dcada9779b10d496032d141ab862227d43595b306c62f55d37669e31b7546",
       "contract": [
-        "app/specification.tsx#ANNOTATION-001",
+        "docs/reference/specification/annotation-observability.md#ANNOTATION-001",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2588,15 +2709,16 @@
       "scope": "Enkel radannotation och review finns; generell span-/relations-/klassificeringsmodell är bredare än labbet.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ANNOTATION-002",
       "section": "annotation-observability",
+      "language": "sv",
       "text": "Human-in-the-loop MÅSTE skapa ett separat review-event och en ny reviewed revision. Modellkandidatens ursprungliga fakta får inte muteras. Endast supersede kräver en explicit ersättare med ömsesidiga supersededBy/supersedes-relationer.",
-      "requirementDigest": "sha256:562df3c6f06c924a7695e1ea90de57fb3debcbc9cb41278e844dccf39eca04be",
+      "requirementDigest": "sha256:3056f151057648b277ca1c5e64ebd42c8a4d3cd1f6f07b2386a03f15eb20ebb4",
       "contract": [
-        "app/specification.tsx#ANNOTATION-002",
+        "docs/reference/specification/annotation-observability.md#ANNOTATION-002",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2608,15 +2730,16 @@
       "scope": "Radbundna kandidater, source-styrd review och exportdelmängd. Ingen generell W3C-/PROV-/observabilitykonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ANNOTATION-003",
       "section": "annotation-observability",
+      "language": "sv",
       "text": "En AI-kandidat MÅSTE ange stabilt annotationId, modell-id/version/digest, prompt-id/digest, inputdigest samt confidence score och metod. Confidence är evidensmetadata, inte sanningssannolikhet.",
       "requirementDigest": "sha256:03ca0230ac21f8d27e6ec21d2472a31f33c251faddfb0e914e028e95e194e0e7",
       "contract": [
-        "app/specification.tsx#ANNOTATION-003",
+        "docs/reference/specification/annotation-observability.md#ANNOTATION-003",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2628,15 +2751,16 @@
       "scope": "Radbundna kandidater, source-styrd review och exportdelmängd. Ingen generell W3C-/PROV-/observabilitykonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ANNOTATION-004",
       "section": "annotation-observability",
+      "language": "sv",
       "text": "Varje durable candidate, review och revision MÅSTE lösas genom Event, AnnotationSelector, Anchor, SourceMap och generating Activity. En exporterad target får inte uppfinna fristående offsets.",
       "requirementDigest": "sha256:474cb559ebdd2920f7efa8f7bedfe45d018f70adff6ad06b29eac3d5d273a368",
       "contract": [
-        "app/specification.tsx#ANNOTATION-004",
+        "docs/reference/specification/annotation-observability.md#ANNOTATION-004",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2648,15 +2772,16 @@
       "scope": "Radbundna kandidater, source-styrd review och exportdelmängd. Ingen generell W3C-/PROV-/observabilitykonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ANNOTATION-005",
       "section": "annotation-observability",
+      "language": "sv",
       "text": "W3C Web Annotation och annoteringsverktygsformat är adapterprojektioner. De får inte skriva tillbaka extern formatsemantik till kandidat- eller revieweventen utan en explicit importerad ny revision.",
       "requirementDigest": "sha256:fcf4bc0484dbd2ade80dd0b00148e7487f142c01f758f442a524a2371a3f7416",
       "contract": [
-        "app/specification.tsx#ANNOTATION-005",
+        "docs/reference/specification/annotation-observability.md#ANNOTATION-005",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2668,15 +2793,16 @@
       "scope": "Exportdelmängd finns, men generell import-/roundtripsemantik är inte verifierad.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ANNOTATION-006",
       "section": "annotation-observability",
+      "language": "sv",
       "text": "En whole annotation snapshot MÅSTE validera unika id:n, counts, länkar, beslut, current view och acyklisk supersede-kedja före commit. Den aktuella lab-subseten begränsar varje target till en icke-tom textrad.",
       "requirementDigest": "sha256:c927a6a4eb68b8e6edfe64a12b1f898328f08286b9fdd5aa45534de7cedaee25",
       "contract": [
-        "app/specification.tsx#ANNOTATION-006",
+        "docs/reference/specification/annotation-observability.md#ANNOTATION-006",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2688,15 +2814,16 @@
       "scope": "Radbundna kandidater, source-styrd review och exportdelmängd. Ingen generell W3C-/PROV-/observabilitykonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PROV-001",
       "section": "annotation-observability",
+      "language": "sv",
       "text": "Varje durable output MÅSTE länka till generating Activity och använda inputanchors/entities. Operativa traces FÅR länkas men ersätter inte semantic provenance.",
       "requirementDigest": "sha256:8f9348a341a408926a2317af7510a88ec87dc1b470e2b2fb548829b03ca40f0b",
       "contract": [
-        "app/specification.tsx#PROV-001",
+        "docs/reference/specification/annotation-observability.md#PROV-001",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
@@ -2708,15 +2835,16 @@
       "scope": "Radbundna kandidater, source-styrd review och exportdelmängd. Ingen generell W3C-/PROV-/observabilitykonformitet.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "EXT-001",
       "section": "annotation-observability",
+      "language": "sv",
       "text": "Okända namespaced extensionfält MÅSTE round-trippas av adaptrar som inte förstår dem.",
       "requirementDigest": "sha256:a6f3411c9ee4da0b61ba5cd60c8ccd7e159725b88581a3ad2fd0c103c33ceaed",
       "contract": [
-        "app/specification.tsx#EXT-001",
+        "docs/reference/specification/annotation-observability.md#EXT-001",
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [],
@@ -2724,15 +2852,16 @@
       "scope": "Roundtrip av godtyckliga okända extensionfält genom alla adaptrar är inte verifierad.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "CONF-001",
       "section": "conformance",
+      "language": "sv",
       "text": "En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.",
       "requirementDigest": "sha256:cccf35a2109e9144e1c2d872b3067453e2d90b4ef00dca996802cac14606ae39",
       "contract": [
-        "app/specification.tsx#CONF-001",
+        "docs/reference/specification/conformance.md#CONF-001",
         "conformance/README.md"
       ],
       "implementation": [
@@ -2746,15 +2875,16 @@
       "scope": "Profilernas avgränsade verifiering. Dokumentationsindexet utför inte dessa körningar.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CONF-002",
       "section": "conformance",
+      "language": "sv",
       "text": "Ett profilanspråk MÅSTE bindas till en versionssatt suite och verifiera source → IR → plan → result → projection. Profiler utan relevant input MÅSTE vara not-run, inte passerade.",
-      "requirementDigest": "sha256:7a683e83227b9b7d238269d31f2f2de4c654acde15fc343d356e917af1457119",
+      "requirementDigest": "sha256:72bf69df20ce015dca69115153882d14199d5116e169f8eeb96e47e53b3c14fa",
       "contract": [
-        "app/specification.tsx#CONF-002",
+        "docs/reference/specification/conformance.md#CONF-002",
         "conformance/README.md"
       ],
       "implementation": [
@@ -2768,15 +2898,16 @@
       "scope": "Profilernas avgränsade verifiering. Dokumentationsindexet utför inte dessa körningar.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CONF-003",
       "section": "conformance",
+      "language": "sv",
       "text": "En adapter får inte förändra Language Core-semantik för att passa hostens exekveringsmodell.",
       "requirementDigest": "sha256:7b9e17afb8fbeb115fcba03fa7c1b12834570435372abf20579deb70e1afdf57",
       "contract": [
-        "app/specification.tsx#CONF-003",
+        "docs/reference/specification/conformance.md#CONF-003",
         "conformance/README.md"
       ],
       "implementation": [
@@ -2790,15 +2921,16 @@
       "scope": "Profilernas avgränsade verifiering. Dokumentationsindexet utför inte dessa körningar.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CONF-004",
       "section": "conformance",
+      "language": "sv",
       "text": "Deklarerad support och verifieringsutfall MÅSTE vara separata. Ett saknat eller misslyckat obligatoriskt krav blockerar claimable även när capability-katalogen säger playground-subset.",
-      "requirementDigest": "sha256:aadb770b374c9e97f6d325c020261f75ca4d970e228a49ca54ff679ac3b9ef89",
+      "requirementDigest": "sha256:a642ca39b736d833d19a9e842f40d4644d43f4ef5450eb6a8f385c444271cf37",
       "contract": [
-        "app/specification.tsx#CONF-004",
+        "docs/reference/specification/conformance.md#CONF-004",
         "conformance/README.md"
       ],
       "implementation": [
@@ -2812,15 +2944,16 @@
       "scope": "Profilernas avgränsade verifiering. Dokumentationsindexet utför inte dessa körningar.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CONF-005",
       "section": "conformance",
+      "language": "sv",
       "text": "contract-only och unsupported får aldrig härledas till ett lyckat implementeringsanspråk. Ett passerat no-fabrication-krav verifierar endast kontraktsgränsen.",
-      "requirementDigest": "sha256:dda3ee313e9dfb436220d50bb5fa61559d8c9235fc86eb9f8a681d8922b0c9f4",
+      "requirementDigest": "sha256:70ef45d31bc6803e51a2130402d1b68e3d8fdea9d9265d59bc0ca47afefb6f0b",
       "contract": [
-        "app/specification.tsx#CONF-005",
+        "docs/reference/specification/conformance.md#CONF-005",
         "conformance/README.md"
       ],
       "implementation": [
@@ -2834,15 +2967,16 @@
       "scope": "Profilernas avgränsade verifiering. Dokumentationsindexet utför inte dessa körningar.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CONF-006",
       "section": "conformance",
+      "language": "sv",
       "text": "En structural snapshot MÅSTE publicera normaliseringspolicy, ignorerade transportfält, digestalgoritm, actual digest och versionssatt expected digest när en golden baseline finns.",
       "requirementDigest": "sha256:3304a283bdbe49af9e1ee3fe075582fe230e6ca75370813f8613615facdc135f",
       "contract": [
-        "app/specification.tsx#CONF-006",
+        "docs/reference/specification/conformance.md#CONF-006",
         "conformance/README.md"
       ],
       "implementation": [
@@ -2856,15 +2990,16 @@
       "scope": "Profilernas avgränsade verifiering. Dokumentationsindexet utför inte dessa körningar.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CONF-007",
       "section": "conformance",
+      "language": "sv",
       "text": "Negativa fixtures MÅSTE köras isolerat och kräva förväntad terminalstatus, exakt diagnostikkod och atomiskt tom durable commit. Ett negativt pass får aldrig skriva om core-resultatet till succeeded.",
       "requirementDigest": "sha256:0d1dd94aadf3552c971112e7c3107f535e8ebdb6976799f00090de3b22b4ee9f",
       "contract": [
-        "app/specification.tsx#CONF-007",
+        "docs/reference/specification/conformance.md#CONF-007",
         "conformance/README.md"
       ],
       "implementation": [
@@ -2878,15 +3013,16 @@
       "scope": "Profilernas avgränsade verifiering. Dokumentationsindexet utför inte dessa körningar.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "CONF-008",
       "section": "conformance",
+      "language": "sv",
       "text": "Cancellation MÅSTE ha eget terminaltillstånd. Den aktuella subseten implementerar kooperativ cancellation och kooperativ deadline vid runtimegränser samt rapporterade stage-, event- och rendergränser. Credit-styrd metadata-streaming efter commit stöds. Den hävdar inte synkron preemption, multicore-exekvering, kontinuerlig stage-streaming, generell sink-backpressure eller kökvot, hård CPU-/minnessandbox eller rollback av externa sidoeffekter.",
       "requirementDigest": "sha256:a8eb0086d8b689fc0ecf5df7bbebe73f77056421959c013f1c18b091cdea877a",
       "contract": [
-        "app/specification.tsx#CONF-008",
+        "docs/reference/specification/conformance.md#CONF-008",
         "conformance/README.md"
       ],
       "implementation": [
@@ -2900,15 +3036,16 @@
       "scope": "Profilernas avgränsade verifiering. Dokumentationsindexet utför inte dessa körningar.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ERROR-001",
       "section": "errors",
+      "language": "sv",
       "text": "Diagnostik MÅSTE ha stabil kod, severity, message, fas och position när position är känd. Hostspecifika stacktraces FÅR bifogas som skyddad extension.",
       "requirementDigest": "sha256:afed3ddd77ebd6624a310930dc22795982c69f5bc2898ae050850998dc3aa1ec",
       "contract": [
-        "app/specification.tsx#ERROR-001",
+        "docs/reference/specification/errors.md#ERROR-001",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -2922,15 +3059,16 @@
       "scope": "Labbspecifika diagnostikkoder och parseråterhämtning; produktions-/extensionpolicy är bredare.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ERROR-002",
       "section": "errors",
+      "language": "sv",
       "text": "För samma malformed construct MÅSTE code, recoveryKind och diagnosticKey vara semantiskt stabila. diagnosticId och source span är snapshotbundna och får flytta sig först genom en explicit ny analys eller re-anchor-transition.",
-      "requirementDigest": "sha256:b26b9374d6d2ceeb3644d7d11ce1351cc8f0e98b622ed06286978e12bce27074",
+      "requirementDigest": "sha256:12018b11417f0878c78d2362bec58800069d7a50de514ada1f56117123755c30",
       "contract": [
-        "app/specification.tsx#ERROR-002",
+        "docs/reference/specification/errors.md#ERROR-002",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -2944,15 +3082,16 @@
       "scope": "Labbspecifika diagnostikkoder och parseråterhämtning; produktions-/extensionpolicy är bredare.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "ERROR-003",
       "section": "errors",
+      "language": "sv",
       "text": "En parsediagnostik MÅSTE bära ett halvöppet sourceSpan och recoveryNodeId. Relaterad opener eller declaration BÖR anges i related.",
-      "requirementDigest": "sha256:439909a628cee153a31651f9eccf49841bd858f1fc9a6310a88ac1e8888628ea",
+      "requirementDigest": "sha256:2c97fb21fd001a563ca653cdc21079ae89b84034cedae549dbef9c282dc4d023",
       "contract": [
-        "app/specification.tsx#ERROR-003",
+        "docs/reference/specification/errors.md#ERROR-003",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -2966,15 +3105,16 @@
       "scope": "Labbspecifika diagnostikkoder och parseråterhämtning; produktions-/extensionpolicy är bredare.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "VERSION-001",
       "section": "errors",
+      "language": "sv",
       "text": "Language, IR, Result och adapterprofiler versioneras oberoende. Breaking semantik kräver ny major/schemaidentifierare.",
       "requirementDigest": "sha256:e431831cb94d3f175ffc3f189b5fb0503aa339efdb869caa5bdb34678bb83020",
       "contract": [
-        "app/specification.tsx#VERSION-001",
+        "docs/reference/specification/errors.md#VERSION-001",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [
@@ -2988,15 +3128,16 @@
       "scope": "Versionsprincip; inget test kan ensamt bevisa semantisk bakåtkompatibilitet.",
       "status": "development-policy",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "VERSION-002",
       "section": "errors",
+      "language": "sv",
       "text": "Extensions MÅSTE vara namespaced. Okända optional extensions round-trippas; okända required extensions stoppar körningen med capabilitydiagnostik.",
       "requirementDigest": "sha256:ef23b163ad845883a089b0fc7dc0da7870d99e07b2b86411f957839e494fdbcd",
       "contract": [
-        "app/specification.tsx#VERSION-002",
+        "docs/reference/specification/errors.md#VERSION-002",
         "TEXTABANA_PARSER.md"
       ],
       "implementation": [],
@@ -3004,15 +3145,16 @@
       "scope": "Generell capabilityförhandling för okända required extensions är ännu inte verifierad.",
       "status": "target-contract",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Ingen direkt verifiering länkad; kravet är inte verifierat av dokumentationsregistret."
+      "verificationGap": "No direct verification is linked; this documentation index does not verify the requirement."
     },
     {
       "id": "PLAYGROUND-001",
       "section": "playgrounds",
+      "language": "sv",
       "text": "Alla labs BÖR använda samma lilla dokument, modulmanifest, inputdata och förväntade resultatsnapshot så att relationen mellan vyerna är verifierbar.",
       "requirementDigest": "sha256:46fa39424a4573db7662d04f15f8302b5131116bf507a9ce917436625dbe2ecc",
       "contract": [
-        "app/specification.tsx#PLAYGROUND-001",
+        "docs/reference/specification/playgrounds.md#PLAYGROUND-001",
         "README.md"
       ],
       "implementation": [
@@ -3026,15 +3168,16 @@
       "scope": "Labs kan läsa samma run, men flera domänspecifika fixtures behövs och används.",
       "status": "partial",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PLAYGROUND-002",
       "section": "playgrounds",
+      "language": "sv",
       "text": "Varje lab MÅSTE skilja författad källa, kompilerad semantik, runtimeevents och adapterprojektion visuellt.",
       "requirementDigest": "sha256:564bd6ece83dd53c45cf00a64773a3d6c2fd4d2383badbb8327dfedb531791f1",
       "contract": [
-        "app/specification.tsx#PLAYGROUND-002",
+        "docs/reference/specification/playgrounds.md#PLAYGROUND-002",
         "README.md"
       ],
       "implementation": [
@@ -3048,15 +3191,16 @@
       "scope": "Åtta vyer och valda fixtures; testerna ger inte full användbarhets- eller standardverifiering.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PLAYGROUND-003",
       "section": "playgrounds",
+      "language": "sv",
       "text": "En funktion som UI:t ännu inte implementerar MÅSTE visas som planned/unsupported och får inte simuleras som konformt resultat.",
       "requirementDigest": "sha256:5feb9cfc4cde6b4fd848aab6f8d4d8ebd602b4859cb5008bf9970a638277284a",
       "contract": [
-        "app/specification.tsx#PLAYGROUND-003",
+        "docs/reference/specification/playgrounds.md#PLAYGROUND-003",
         "README.md"
       ],
       "implementation": [
@@ -3070,15 +3214,16 @@
       "scope": "Åtta vyer och valda fixtures; testerna ger inte full användbarhets- eller standardverifiering.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     },
     {
       "id": "PLAYGROUND-004",
       "section": "playgrounds",
+      "language": "sv",
       "text": "Golden fixtures ska kunna exporteras och köras headless i samma conformance suite som UI:t visualiserar.",
       "requirementDigest": "sha256:46b80a62e70a4bcd7d7c13db5cb8173b7f5e2241f36e58a08cadb406c5b17ac8",
       "contract": [
-        "app/specification.tsx#PLAYGROUND-004",
+        "docs/reference/specification/playgrounds.md#PLAYGROUND-004",
         "README.md"
       ],
       "implementation": [
@@ -3092,7 +3237,7 @@
       "scope": "Åtta vyer och valda fixtures; testerna ger inte full användbarhets- eller standardverifiering.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
-      "verificationGap": "Relevant testkälla är länkad; full kravuppfyllelse härleds inte av detta register."
+      "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
     }
   ]
 }

@@ -1,59 +1,57 @@
-# Följer Textabana specifikationens riktning?
+# Standards reuse and architectural direction
 
-Bedömt 2026-09-20 mot sprint 5.9, GitHub `76c760cf7a6e0169ef790c10b4dd72295c272d3f`. Dokumentationssprint 5.10 ändrar inte detta runtimeunderlag.
+**Assessment:** the architecture follows the stated direction, but actual standards reuse is only partially implemented. There is both documentation debt and implementation debt. This assessment is grounded in the sprint 5.9 runtime, reviewed during sprint 5.10 and translated during sprint 5.11.
 
-**Bedömning: arkitekturen följer riktningen, men standardåteranvändningen är delvis genomförd.** De senaste sprintarna har främst stärkt kärnans egna kontrakt och jämförelsen mellan JavaScript och Python. De är relevant grundarbete, men bevisar inte interoperabilitet med externa standardimplementationer.
+The direction, translated from the accepted specification, is:
 
-Utgångspunkten är användarens uttryckliga princip:
+> Textabana reuses established formats where they already solve the problem: Markdown for readable text, JSON Schema for contracts, Arrow/Parquet for data, MIME for notebook presentation, W3C models for annotation/provenance, and LSP/OTel/OpenLineage/MLflow as adapters. The new contribution is the coherent semantics connecting them.
 
-> Textabana återanvänder etablerade format där de redan löser problemet: Markdown för läsbar text, JSON Schema för kontrakt, Arrow/Parquet för data, MIME för notebookpresentation, W3C-modeller för annotation/proveniens och LSP/OTel/OpenLineage/MLflow som adaptrar. Det nya är den sammanhängande semantiken mellan dem.
+## Actual support
 
-## Faktisk återanvändning
-
-Den gemensamma [standardmatrisen](./standards-status.json) används även direkt av Specification. Varje rad anger implementation, begränsning, primärkälla och relevanta lokala kontrollfiler. Kontrollfilerna är navigationshjälp: ett test av att Arrow är unsupported är inte evidens för Arrow-stöd.
+The table is generated from [standards-status.json](standards-status.json). Each standard links to its primary specification or documentation. Implementation sources and relevant local tests are listed in the JSON; these references alone are not proof of full conformance.
 
 <!-- standards:start -->
-| Standard | Status | Faktisk användning | Begränsning |
+| Standard | Status | Actual use | Boundary |
 |---|---|---|---|
-| [Markdown / GFM](https://github.github.com/gfm/) | Används i presentation | Renderad text visas med react-markdown och remark-gfm. Textabana lägger egna kontrollrader runt den läsbara texten. | Textabanas grammar är ett eget språk. Ingen full CommonMark/GFM-konformitet för hela Textabana-källan är verifierad. |
-| [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) | Delvis implementerat | Artefaktpaketets schema kompileras med Ajv2020 och används av samma verifierare i CLI och webben. | Kanalpayloads använder egen grundkontroll av type, required och ett lager properties. Bland annat $ref, enum, minimum och nästlade constraints verkställs inte. schemaRef är ingen automatisk resolver. |
-| [Apache Arrow / IPC](https://arrow.apache.org/docs/format/Columnar.html) | Planerat | Data-labbet använder JSON-records med stabila nycklar och separat lineage. | Ingen Arrow-kodning, Arrow-schemaöversättning eller IPC-roundtrip är implementerad. JSON-records är inte Arrow-stöd. |
-| [Apache Parquet](https://parquet.apache.org/docs/overview/) | Planerat | Dataadaptern publicerar en host-neutral tabellprojektion. | Inga Parquet-filer eller beständiga ArtifactRefs skapas. Proveniens i JSON är inte Parquet-interoperabilitet. |
-| [MIME / Jupyter](https://nbformat.readthedocs.io/en/latest/format_description.html) | Körbar delmängd | text/plain, text/markdown och application/vnd.textabana.result+json är presentationer av samma committade värde. Python-klienten skapar en MIME bundle. | Eget notebook-snapshotkontrakt; ingen nbformat-import/export, Jupyter Messaging eller extern kernelroundtrip. Textabanas egna mediatypnamn är inte belägg för IANA-registrering. |
-| [W3C Web Annotation](https://www.w3.org/TR/annotation-model/) | Exportdelmängd | Annotationadaptern skapar AnnotationPage, Annotation, body, target och selectors samt namespaced Textabana-fält. | Lokala tester verifierar projektion och referenser. Full JSON-LD-semantik, extern konsument och import/export-roundtrip är inte verifierade; egna selectors behöver en uttrycklig mapping. |
-| [W3C PROV](https://www.w3.org/TR/prov-dm/) | Modellanknytning | Den egna proveniensen använder entities, activities och generating/input-relationer för den semantiska kedjan. | Liknande begrepp är inte PROV-konformitet. Ingen PROV-O/RDF-export, full relationsmapping eller standardvalidering är implementerad. |
-| [LSP](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/) | Planerat | Egna editorprotokollet och CodeMirror-/Monaco-bindningar hanterar revisioner och Unicode-offsets. | Editorbindningar är inte en LSP-server. Ingen LSP-transport, capability-förhandling eller standarddiagnostikexport finns. |
-| [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/) | Planerat | Kärnan har egna körspår och resursrapporter. | Inget OTel-SDK, ingen OTLP-export och ingen collector-integration. Operativa traces ersätter inte semantisk proveniens. |
-| [OpenLineage](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.md) | Planerat | Data-labbet spårar egna dataset-, record- och inputrelationer. | Inga standardiserade RunEvent, Job/Dataset-identiteter, facets eller OpenLineage-transport implementeras. |
-| [MLflow](https://mlflow.org/docs/latest/ml/tracking/) | Planerat | Modell-/promptmetadata finns i annotationernas labbkontrakt. | Ingen MLflow tracking client, tracking server, modellkörning eller experiment-roundtrip är implementerad. |
+| [Markdown / GFM](https://github.github.com/gfm/) | Used for presentation | Rendered text uses react-markdown and remark-gfm. Textabana adds its own control lines around readable text. | Textabana has its own grammar. Full CommonMark/GFM conformance for an entire Textabana source document has not been verified. |
+| [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) | Partially implemented | The artifact bundle schema is compiled with Ajv2020 and used by the same verifier in the CLI and application. | Channel payloads use handwritten checks for type, required and one level of properties. Constraints such as $ref, enum, minimum and nested rules are not enforced. schemaRef is not an automatic resolver. |
+| [Apache Arrow / IPC](https://arrow.apache.org/docs/format/Columnar.html) | Planned | The data lab uses JSON records with stable keys and separate lineage. | There is no Arrow encoding, schema translation or IPC round trip. JSON records do not constitute Arrow support. |
+| [Apache Parquet](https://parquet.apache.org/docs/overview/) | Planned | The data adapter produces a host-neutral table projection. | No Parquet files or persistent ArtifactRefs are created. JSON provenance is not Parquet interoperability. |
+| [MIME / Jupyter](https://nbformat.readthedocs.io/en/latest/format_description.html) | Executable subset | text/plain, text/markdown and application/vnd.textabana.result+json present the same committed value. The Python client creates a MIME bundle. | Textabana has its own notebook snapshot contract; no nbformat import/export, Jupyter Messaging or external kernel round trip. Custom media type names do not establish IANA registration. |
+| [W3C Web Annotation](https://www.w3.org/TR/annotation-model/) | Export subset | The annotation adapter produces AnnotationPage, Annotation, body, target and selectors, with namespaced Textabana fields. | Local tests verify projection and references. Full JSON-LD semantics, an external consumer and import/export round trips are unverified; custom selectors need an explicit mapping. |
+| [W3C PROV](https://www.w3.org/TR/prov-dm/) | Related conceptual model | Internal provenance uses entities, activities and generating/input relationships for the semantic chain. | Similar concepts do not establish PROV conformance. No PROV-O/RDF export, complete relation mapping or standards validation is implemented. |
+| [LSP](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/) | Planned | The editor protocol and CodeMirror/Monaco bindings handle revisions and Unicode offsets. | Editor bindings are not an LSP server. No LSP transport, capability negotiation or standard diagnostic export exists. |
+| [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/) | Planned | The kernel has internal execution traces and resource reports. | There is no OTel SDK, OTLP export or collector integration. Operational traces do not replace semantic provenance. |
+| [OpenLineage](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.md) | Planned | The data lab tracks internal dataset, record and input relationships. | Standard RunEvent objects, Job/Dataset identities, facets and OpenLineage transport are not implemented. |
+| [MLflow](https://mlflow.org/docs/latest/ml/tracking/) | Planned | Model and prompt metadata exists in the annotation lab contracts. | No MLflow tracking client/server, model execution or experiment round trip is implemented. |
 <!-- standards:end -->
 
-## Var de egna kontrakten är motiverade
+## Where Textabana-specific contracts are justified
 
-Textabana behöver definiera hur intervall/block, source-revision, execution plan, atomisk commit, flera kanaler och ankarkontinuitet hänger ihop. Inget av de uppräknade utbytesformaten fastställer hela denna språksemantik. Ett eget IR, Result-envelope och editorprotokoll är därför förenliga med riktningen när gränserna och projektionerna är explicita.
+Textabana needs to define how intervals, blocks, source revisions, execution plans, atomic commit, multiple channels and anchor continuity relate. None of the listed interchange formats establishes the whole language semantics. An internal IR, result envelope and editor protocol therefore fit the direction when their boundaries and projections are explicit.
 
-JSON Schema kan beskriva strukturen i Textabanas egna kontrakt. Det behöver kompletteras med referens- och identitetskontroller samt verifiering av exekveringssemantik. Det är motiverat att `semantic-contract.js` kontrollerar relationer mellan artefakter utöver schemavalideringen. JSON Schema bevisar varken att modulerna körts rätt eller att två implementationer har samma betydelse.
+JSON Schema can describe the structure of these contracts. Reference and identity checks and execution-semantics verification are still needed. The cross-artifact checks in `runtime/semantic-contract.js` complement schema validation; a valid schema does not prove correct execution or equivalence between implementations.
 
-Ett eget notebook-snapshot kan bära Textabanas revisions- och körningssemantik. När data utbyts med Jupyter ska adaptern använda MIME, nbformat och Messaging där de redan löser uppgiften. Motsvarande gräns gäller typade data i Arrow/Parquet och extern provenance i PROV/OpenLineage.
+A notebook snapshot can carry Textabana's revision and run semantics. Exchange with Jupyter should use MIME, nbformat and Messaging for their established responsibilities. The same principle applies to Arrow/Parquet data and external PROV/OpenLineage provenance.
 
-## Konkreta avvikelser och risker
+## Specific gaps
 
-1. **Kanalernas schemakontroll är en faktisk implementationsskuld.** `validatePayload` i `runtime/worker-entry.js` tolkar `type`, `required` och direkta `properties[*].type`. Den är inte en JSON Schema-validator. Exempelvis `{ "type": "integer", "minimum": 10 }` kontrollerar heltal men inte gränsen 10. `$ref`, `enum`, sammansatta och nästlade constraints kan lämnas utan verkan. Artefaktpaketets Ajv2020-validering ska inte användas som belägg för att kanalerna får samma kontroll. `strictChannels` skärper deklaration och serialisering men utökar inte schemadialekten.
-2. **Standardvokabulär är svagare än verifierad standardintegration.** AnnotationPage-exporten är körbar, men intern referensvalidering är inte oberoende JSON-LD-/W3C-verifiering. Proveniensen använder närliggande begrepp, men PROV-mapping saknas. Klassificera dessa separat.
-3. **Transport- och dataplansarbetet har skjutits fram.** Arrow, Parquet, LSP, OTel, OpenLineage och MLflow är fortfarande planerade. Fler interna profiler minskar inte automatiskt denna integrationsskuld.
-4. **Dokumentationens status måste vara lika exakt som runtimeanspråken.** Ett schema-ID, ett mediatypnamn, en installerad dependency eller en planerad adapter är inte i sig standardstöd. De egna labbschemana och mediatypnamnen innebär inte extern standardisering eller registrering.
+1. **Channel schema validation is implementation debt.** `validatePayload` in `runtime/worker-entry.js` checks `type`, `required` and direct `properties[*].type`. For example, `{ "type": "integer", "minimum": 10 }` checks the integer type but ignores the minimum. `$ref`, `enum`, composition and nested constraints may have no effect. Artifact-bundle validation with Ajv2020 is not evidence that channels receive the same validation. `strictChannels` tightens declaration and serialization checks without extending the schema dialect.
+2. **Standards vocabulary is weaker than verified interoperability.** AnnotationPage export runs, but internal reference checks are not independent JSON-LD/W3C validation. Internal provenance uses related concepts without a complete PROV mapping. These must remain separate claims.
+3. **Data and transport integration is deferred.** Arrow, Parquet, LSP, OTel, OpenLineage and MLflow remain planned. Additional internal profiles do not automatically reduce that integration debt.
+4. **Documentation must state the exact scope.** A schema identifier, media type name, dependency or planned adapter does not establish standard support. Internal schemas and media type names do not imply external standardization or registration.
 
-## Rekommenderad fortsättning
+## Recommended next steps
 
-| Prioritet | Konkret nästa steg | Evidens som behövs för att stänga luckan |
+| Priority | Work | Evidence needed to close the gap |
 |---|---|---|
-| 1 | Kanalernas schemadialekt och validering | Etablerad validator eller explicit begränsad dialekt som avvisar okända schemafunktioner; negativa fall för nästling, $ref och constraints. Ingen tyst ignorering. |
-| 2 | En komplett extern adapterkedja | Välj ett avgränsat fall: exempelvis AnnotationPage med fryst mapping, verklig extern konsument och redovisade förluster. |
-| 3 | Verklig dataplan | Arrow IPC/Parquet via etablerade bibliotek, schema-/typbevarande, digest och oberoende återläsning med bibehållna lineage-referenser. |
-| 4 | Övriga adaptrar efter konkret värdbehov | PROV, LSP, OTel, OpenLineage och MLflow får separata mappings, versionsgränser och externa verifieringsfall. |
+| 1 | Channel schema dialect and validation | An established validator, or a declared limited dialect that rejects unsupported features; negative cases for nesting, references and constraints; no silent ignoring. |
+| 2 | One complete external adapter chain | A frozen mapping, an actual external consumer and declared losses, for example an AnnotationPage exchange. |
+| 3 | A real data interchange layer | Arrow IPC/Parquet through established libraries, preserved types and schemas, file digests and independent readback with lineage references. |
+| 4 | Further adapters for concrete host needs | Separate versioned mappings and external verification for PROV, LSP, OTel, OpenLineage and MLflow. |
 
-Ordningen är en rekommendation; ingen av dessa runtimeutökningar är levererad av dokumentationssprinten. Våg 5 ska inte stängas enbart för att dokumentationsregistret är komplett.
+The [consolidation plan](../CONSOLIDATION_PLAN.md) first makes the repository maintainable. These runtime extensions are not delivered by documentation or translation work. A complete documentation index does not close Wave 5's production requirements.
 
-## Källor och avgränsning
+## Sources and limits
 
-Primärkällor till standardernas ansvar finns per rad i matrisen. Implementationsbedömningen bygger på [den granskade källversionen](https://github.com/leosa83/scd-adapter-textabana/tree/76c760cf7a6e0169ef790c10b4dd72295c272d3f), särskilt `app/playground-labs.tsx`, `runtime/worker-entry.js`, `scripts/build-semantic-contract.mjs`, `sdk/` och respektive adapters tester. Slutsatsen om riktningen är en arkitekturbedömning, inte ett konformitetscertifikat.
+The implementation assessment is based on the [reviewed source revision](https://github.com/leosa83/scd-adapter-textabana/tree/76c760cf7a6e0169ef790c10b4dd72295c272d3f), particularly `app/playground-labs.tsx`, `runtime/worker-entry.js`, `scripts/build-semantic-contract.mjs`, `sdk/` and the adapter tests. The conclusion about direction is an architectural assessment, not a conformance certificate.
