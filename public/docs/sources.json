@@ -1,0 +1,64 @@
+{
+  "contracts": [
+    {
+      "path": "TEXTABANA_PARSER.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/TEXTABANA_PARSER.md",
+      "report": null
+    },
+    {
+      "path": "conformance/README.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/conformance/README.md",
+      "report": "/conformance/host-report.json"
+    },
+    {
+      "path": "SEMANTIC_IDENTITY.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/SEMANTIC_IDENTITY.md",
+      "report": "/conformance/semantic-report.json"
+    },
+    {
+      "path": "SEMANTIC_CONTRACT.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/SEMANTIC_CONTRACT.md",
+      "report": "/conformance/contract-report.json"
+    },
+    {
+      "path": "TEXT_CORE_PROFILE.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/TEXT_CORE_PROFILE.md",
+      "report": "/conformance/text-core-report.json"
+    },
+    {
+      "path": "SCOPED_TEXT_PROFILE.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/SCOPED_TEXT_PROFILE.md",
+      "report": "/conformance/scoped-text-report.json"
+    },
+    {
+      "path": "CHANNEL_CORE_PROFILE.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/CHANNEL_CORE_PROFILE.md",
+      "report": "/conformance/channel-core-report.json"
+    },
+    {
+      "path": "SOURCE_MAP_CORE_PROFILE.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/SOURCE_MAP_CORE_PROFILE.md",
+      "report": "/conformance/source-map-core-report.json"
+    },
+    {
+      "path": "MODULE_GATE_PROFILE.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_GATE_PROFILE.md",
+      "report": "/conformance/module-gate-report.json"
+    },
+    {
+      "path": "MODULE_ADMISSION_PROFILE.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_ADMISSION_PROFILE.md",
+      "report": "/conformance/module-admission-report.json"
+    }
+  ],
+  "guides": [
+    {
+      "path": "docs/INTEGRATION_GUIDE.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/INTEGRATION_GUIDE.md"
+    },
+    {
+      "path": "docs/STANDARDS_DIRECTION.md",
+      "href": "https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/STANDARDS_DIRECTION.md"
+    }
+  ]
+}

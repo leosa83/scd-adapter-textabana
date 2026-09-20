@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import standards from "../docs/standards-status.json";
+import requirementIndex from "../public/docs/requirements.json";
+import documentationSources from "../public/docs/sources.json";
 import {
   AlertTriangle,
   ArrowDown,
@@ -38,6 +41,7 @@ const navGroups: NavGroup[] = [
     items: [
       { id: "definition", label: "Definition" },
       { id: "status", label: "Status & normer" },
+      { id: "direction", label: "Riktning & standarder" },
       { id: "html", label: "Textabana vs HTML" },
       { id: "architecture", label: "Arkitektur" },
       { id: "contract", label: "Semantiskt kontrakt" },
@@ -71,6 +75,7 @@ const navGroups: NavGroup[] = [
       { id: "module-manifest", label: "Manifest & funktioner" },
       { id: "runtime-protocol", label: "Runtime-protokoll" },
       { id: "editor-kernel", label: "Editor Kernel" },
+      { id: "integration", label: "Integrera med kärnan" },
       { id: "runs", label: "Runs & transaktioner" },
       { id: "security", label: "Säkerhet" },
     ],
@@ -89,6 +94,7 @@ const navGroups: NavGroup[] = [
     items: [
       { id: "use-cases", label: "Verkliga problem" },
       { id: "conformance", label: "Profiler & versioner" },
+      { id: "documentation-sources", label: "Kontraktskällor & krav" },
       { id: "errors", label: "Felmodell" },
       { id: "playgrounds", label: "Playground Labs" },
       { id: "glossary", label: "Begrepp" },
@@ -154,11 +160,26 @@ function SectionHeading({
   );
 }
 
+const requirementBindings = new Map(requirementIndex.requirements.map((entry) => [entry.id, entry]));
+const bindingLabels: Record<string, string> = { "lab-subset": "Labbdelmängd", partial: "Delvis implementerat", "target-contract": "Målkontrakt", "development-policy": "Utvecklingsprincip" };
+const repoFile = (path: string) => "https://github.com/leosa83/scd-adapter-textabana/blob/main/" + path.split("#")[0];
+
 function Requirement({ id, children }: { id: string; children: ReactNode }) {
+  const binding = requirementBindings.get(id);
   return (
-    <div className="requirement">
+    <div className="requirement" id={id}>
       <code>{id}</code>
-      <p>{children}</p>
+      <div>
+        <p>{children}</p>
+        {binding && <details className="spec-evidence">
+          <summary>Underlag · {bindingLabels[binding.status]}</summary>
+          <p>{binding.scope}</p>
+          <p>Kontrakt: {binding.contract.map((path, index) => <span key={path}>{index > 0 && " · "}<a href={path.startsWith("app/specification.tsx#") ? `#${id}` : repoFile(path)}>{path.startsWith("app/specification.tsx#") ? id : path}</a></span>)}</p>
+          <p>Implementation: {binding.implementation.length ? binding.implementation.map((path, index) => <span key={path}>{index > 0 && " · "}<a href={repoFile(path)}>{path}</a></span>) : "Ingen implementation kopplad."}</p>
+          <p>Verifieringskällor: {binding.verification.length ? binding.verification.map((path, index) => <span key={path}>{index > 0 && " · "}<a href={repoFile(path)}>{path}</a></span>) : "Ingen direkt verifiering kopplad."}</p>
+          <p>{binding.verificationGap}</p>
+        </details>}
+      </div>
     </div>
   );
 }
@@ -244,6 +265,7 @@ export function Specification() {
           <span>Textabana</span>
           <strong>Language & Interop draft 0.7</strong>
           <small>Language 0.4 · typed IR lab-v2 · execution plan lab-v2 · execution graph lab-v1 · Editor Kernel + adapters lab-v1</small>
+          <small>Dokumentationsrevision 2026-09-20 · runtime till sprint 5.9</small>
         </div>
         <SpecNav />
         <div className="spec-legend" aria-label="Statusförklaring">
@@ -265,7 +287,7 @@ export function Specification() {
             <StatusBadge tone="normative">Interop draft 0.7</StatusBadge>
             <StatusBadge tone="implemented">Språkkärna 0.4-subset</StatusBadge>
             <StatusBadge tone="implemented">Parser + typed IR live</StatusBadge>
-            <StatusBadge tone="implemented">Våg 3 · cache + bounded concurrency live</StatusBadge>
+            <StatusBadge tone="implemented">Våg 5 · verifierade labbprofiler</StatusBadge>
             <StatusBadge tone="partial">Åtta labs · Editor Kernel live</StatusBadge>
           </div>
           <h1 id="definition-title">Läsbar text som körbar, positionsmedveten och flerkanalig semantisk källa.</h1>
@@ -283,7 +305,8 @@ export function Specification() {
 
         <section className="docs-section spec-section" id="status">
           <SectionHeading number="00" layer="Översikt" title="Status, normativa ord och kompatibilitet" implementation="partial" />
-          <p className="lead">Detta dokument skiljer strikt på vad språket betyder och vad webbplaygroundens nuvarande runtime råkar implementera. Semantik får inte härledas ur en enskild UI-implementation.</p>
+          <p className="lead">Detta dokument skiljer på språkets målkontrakt och den implementerade labbdelmängden. Semantik får inte härledas ur en enskild UI-implementation. Öppna Underlag vid ett krav för dess implementationsgräns och källor. Normativt betyder en regel för det angivna kontraktet, inte att hela regeln är implementerad eller verifierad.</p>
+          <p>Interop draft 0.7, Language 0.4, labbschemana och implementationsplanens version är olika versionsaxlar. Denna dokumentationsrevision harmoniserar beskrivningen till sprint 5.9 och inför inga nya runtimeförmågor. Se <a href="#documentation-sources">kontraktskällor och kravregister</a>.</p>
           <SpecTable
             caption="Dokumentets två statusdimensioner"
             headers={["Dimension", "Värden", "Betydelse"]}
@@ -300,6 +323,20 @@ export function Specification() {
           <Requirement id="STATUS-001">En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.</Requirement>
           <Requirement id="STATUS-002">Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.</Requirement>
           <Requirement id="STATUS-003">Nuvarande Playground implementerar åtta avgränsade vyer: Language & Scope med separata Parser-, Graf- och Körspår-flikar, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Grafvyn visar en pre-transform <code>textabana.execution-plan/lab-v2</code>, en typad <code>textabana.execution-graph/lab-v1</code>, rådgivande invalidation och en faktisk <code>textabana.execution-report/lab-v1</code> med scheduler- och resursrapport. Editor-sessioner kan återanvända en verifierad pure/deterministic/effects-free stageoutput efter två lika observationer i skilda committed revisioner. Oberoende, snapshotbara stages med samma betrodda kontrakt kan överlappa asynkront i en Worker; completionordning påverkar aldrig planordnad trace, cachejournal eller merge. Resultatvyerna läser samma valda run; Editor Kernel visar dessutom revisionskedjan runt den. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. <code>editor-kernel/1</code> och <code>annotation/1</code> är playground-subsets; verklig modellkörning och <code>ml-lineage/1</code> är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet.</Requirement>
+        </section>
+
+        <section className="docs-section spec-section" id="direction">
+          <SectionHeading number="00a" layer="Arkitekturriktning" title="Återanvänd standarderna och definiera sambanden" implementation="partial" />
+          <p className="lead">{standards.assessment}</p>
+          <p>Bedömt {standards.reviewedAt} mot sprint 5.9. Tabellen skiljer faktisk formatanvändning, avgränsad projektion och planerat stöd. Ett internt test eller ett välkänt fältnamn bevisar inte extern interoperabilitet.</p>
+          <SpecTable caption="Etablerade standarder: faktisk användning och gräns" headers={["Standard", "Status", "Det som finns", "Avgränsning"]} rows={standards.entries.map((entry) => [<a key={entry.id} href={entry.upstream} target="_blank" rel="noreferrer">{entry.name}</a>, entry.status, entry.implemented, entry.boundary])} />
+          <Callout title="Prioriterad implementationsskuld: kanalernas schemavalidering" icon={<AlertTriangle />} tone="warning">
+            Artefaktpaketet använder Ajv2020. Kanalpayloads använder fortfarande en egen begränsad kontroll; exempelvis <code>minimum</code>, <code>enum</code> och <code>$ref</code> verkställs inte. Nästa schemaarbete behöver använda en standardvalidator eller avvisa regler utanför en uttrycklig dialekt. Den här dokumentationsrevisionen ändrar inte valideringsbeteendet.
+          </Callout>
+          <p>Egna IR-, Result- och revisionskontrakt behövs för att binda källa, plan, events och projektion till samma betydelse. Vid formatgränser ska etablerade representationer användas. Läs <a href={repoFile("docs/STANDARDS_DIRECTION.md")}>hela riktningsbedömningen med källor och prioriteringar</a>.</p>
+          <Requirement id="DIRECTION-001">Ett nytt Textabana-format MÅSTE ange vilket semantiskt samband det tillför, vilken etablerad standard som övervägts och hur utbyte ska ske utan dold betydelseförändring.</Requirement>
+          <Requirement id="DIRECTION-002">Standardstöd MÅSTE beskriva version, riktning för import/export, implementerad delmängd och verifierad gräns. Ett schema-ID, en dependency eller en planerad adapter får inte ensam räknas som stöd.</Requirement>
+          <Requirement id="DIRECTION-003">En adapter MÅSTE redovisa mapping och förluster vid standardgränsen. Intern konformitet och verifiering mot en oberoende extern konsument MÅSTE rapporteras separat.</Requirement>
         </section>
 
         <section className="docs-section spec-section" id="html">
@@ -703,11 +740,12 @@ export function Specification() {
             <li><span>4</span><div><strong>Beräkna intervallgraf</strong><p>Behåll open/close-events separat från blockträdet och härled maximala scope-segment.</p></div></li>
             <li><span>5</span><div><strong>Publicera typed IR</strong><p>Ge varje node/stage ett verifierbart Unicode code-point-span och varje fel en stabil kod.</p></div></li>
             <li><span>6</span><div><strong>Stäng compile gate</strong><p>Recovery förblir synlig för editorn, men error-level diagnostics stoppar all modulinitiering och exekvering.</p></div></li>
-            <li><span>7</span><div><strong>Lös, initiera och bind moduler</strong><p>Includes och config läses ur samma IR. Nuvarande lab-loader initierar därefter modulerna för att läsa deras funktionsdeskriptorer; manifest-före-entrypoint är fortfarande målkontraktet.</p></div></li>
+            <li><span>7</span><div><strong>Lös, initiera och bind moduler</strong><p>Alla säkra transporterade paket måste ha passerat metadata-, digest-, lock- och grantkontroll. Includes och config läses ur samma IR. Efter modulstart jämförs faktiska exports med manifestet, före första transform.</p></div></li>
             <li><span>8</span><div><strong>Kompilera plan och graf</strong><p>Bygg en komplett, typad DAG efter modulinitiering men före första <code>transform</code>. Source-, stage-, merge- och rendernoder får deterministisk ordning och explicita beroenden.</p></div></li>
             <li><span>9</span><div><strong>Resolvera deterministiska ready sets</strong><p>Varje stage får antingen ett fresh transformanrop eller en verifierad cachematerialisering. Oberoende effects-free kandidater kan överlappa asynkront; effectful/unknown är seriella barriärer. Startade batcher dräneras och values, trace samt cachejournal publiceras i planordning.</p></div></li>
             <li><span>10</span><div><strong>Commit atomiskt</strong><p>Publicera immutable render, kanalsnapshots, proveniens och diagnostik som ett resultat.</p></div></li>
           </ol>
+          <p>Listan visar de semantiska stegen. I den aktuella Workern görs paketförhandskontrollen före dokumentparsningen; båda grindarna måste passera före någon modulstart. Ett paketfel kan därför rapporteras före ett syntaxfel. Legacy-moduler utan säker paketsignal följer den äldre loadergränsen. Se <a href={repoFile("MODULE_ADMISSION_PROFILE.md")}>exakt paketkontroll och felordning</a>.</p>
           <Requirement id="PROCESS-001">Samtidig exekvering FÅR endast användas när beroenden, eligibility, deterministic merge och publik event-/traceordning är fullt definierade. Completion timing får inte bli semantisk ordning.</Requirement>
           <Requirement id="PROCESS-002">Ett kompileringsfel MÅSTE stoppa all domänexekvering. Ett run-fel MÅSTE hindra durable commit.</Requirement>
           <Requirement id="PROCESS-003">Modulinitiering är en effekt och FÅR INTE ske innan hela dokumentet har passerat parserns compile gate.</Requirement>
@@ -838,6 +876,7 @@ export function Specification() {
           <Requirement id="ANCHOR-001">En durable annotation MÅSTE binda till en versionerad target och minst en selector. Position och quote BÖR lagras tillsammans.</Requirement>
           <Requirement id="ANCHOR-002">En runtime får aldrig tyst välja en av flera re-anchor-kandidater. Flera giltiga kandidater MÅSTE ge <code>ambiguous</code>; ingen giltig kandidat MÅSTE ge <code>orphaned</code>. Båda utfallen ska förbli olösta och diagnostiserbara.</Requirement>
           <Requirement id="ANCHOR-003">Human-facing line och column är ettbaserade. LSP-adaptern MÅSTE konvertera till nollbaserade UTF-16-positioner.</Requirement>
+          <p>Detta avser presentation för människor. Serialiserad <code>SourceSpan</code> använder ettbaserade rader men nollbaserade code-point-kolumner och halvöppna offsets. CodeMirror-/Monaco-bindningarna konverterar UTF-16-offsets; en LSP-adapter är ännu planerad.</p>
           <Requirement id="SOURCEMAP-001">Varje mapping record MÅSTE ange <code>exact</code>, <code>derived</code> eller <code>synthetic</code> samt generating activity. Aggregat är aldrig <code>exact</code> utan verifierat mapping proof.</Requirement>
           <Callout title="Editor Metadata Lab" icon={<PanelRight />} tone="info">
             Editor Metadata Lab producerar Anchor med position- och quote-selector och visar SourceMap-records. Editor Kernel Lab publicerar därutöver verkliga cross-revision transitions: stabilt anchor-id matchas först och unik quote + origin därefter; flera kandidater blir <code>ambiguous</code> och ingen kandidat blir <code>orphaned</code>. Persistens över worker-restart, strukturell/fuzzy matching och LSP-coordinate conversion återstår.
@@ -847,7 +886,7 @@ export function Specification() {
         <section className="docs-section spec-section" id="result">
           <SectionHeading number="12" layer="Canonical contracts" title="TextabanaResult är den atomiska leveransen" implementation="partial" />
           <CodeExample
-            title="Resultatkuvert"
+            title="Resultatkuvert · målkontrakt"
             language="json"
             status="Normativt schemafragment"
             code={code(
@@ -883,7 +922,7 @@ export function Specification() {
           <Requirement id="RESULT-002">Ett failed eller cancelled resultat MÅSTE ha tom committed render och tomma committed domain channels, men FÅR bära control-plane diagnostics.</Requirement>
           <Requirement id="RESULT-003">Timestamps är transportmetadata och får inte styra semantisk hash eller eventordning.</Requirement>
           <Callout title="Resultatet som playgrounden visar" icon={<FileJson />} tone="info">
-            <code>textabana.result/lab-v1</code> samlar render, channel snapshots, anchors, SourceMaps, provenanceprojektion och diagnostics i en och samma run. Success committas atomiskt; failed och cancelled visar tom committed render och tomma domänkanaler. Playgrounden stödjer kooperativ cancellation och valfri kooperativ deadline vid runtimegränser samt explicita stage-, event- och rendergränser. SHA-256-identitet, synkron preemption, streaming/backpressure, hårda CPU-/minneskvoter, extern rollback och artifacts återstår före full <code>runtime-json/1</code>-konformitet.
+            Det aktuella kuvertet är <code>textabana.result/lab-v1</code>, inte produktionsschemat i fragmentet ovan. Läs <code>response.resultEnvelope</code> och kanalernas <code>channelSnapshots[name].events</code>; transportens <code>output</code> och <code>channels</code> är separata bekvämlighetsfält. Success committas atomiskt; failed och cancelled visar tom committed render och tomma domänkanaler. Separata SHA-256-artefaktidentiteter, credit-styrd metadata-streaming efter commit samt explicita stage-, event- och rendergränser finns. Återstående arbete omfattar synkron preemption, kontinuerlig stage-streaming, generell sink-backpressure, hårda CPU-/minneskvoter, extern rollback och beständiga binära artifacts före full <code>runtime-json/1</code>-konformitet.
           </Callout>
         </section>
 
@@ -944,7 +983,7 @@ export function Specification() {
           <div className="return-emit-grid">
             <article><code>return value</code><strong>Primärt värde</strong><p>Blir input till nästa steg och slutligen resultatets <code>render</code>.</p></article>
             <article><code>context.emit(name, event)</code><strong>Sidoflöde</strong><p>Appenderar ett validerat event utan att ändra pipelinevärdet.</p></article>
-            <article><code>result.channel(name)</code><strong>Explicit läsning</strong><p>Sker efter run eller via en uttrycklig Plan-edge — aldrig som dold feedback.</p></article>
+            <article><code>result.channel(name)</code><strong>Mål-API för läsning</strong><p>Illustrativ hjälpare. Aktuell SDK läser <code>resultEnvelope.channelSnapshots[name].events</code> efter run.</p></article>
           </div>
           <Requirement id="CHANNEL-001">Kanalnamn är obegränsade utom den reserverade namnrymden <code>system.*</code>. <code>render</code> är reserverat som resultatfält.</Requirement>
           <Requirement id="CHANNEL-002">I strict profile MÅSTE descriptor och payloadschema deklareras före emit. En permissive legacyprofil FÅR syntetisera generisk JSON-descriptor vid första emit men får inte hävda typed-channel conformance.</Requirement>
@@ -952,7 +991,7 @@ export function Specification() {
           <Requirement id="CHANNEL-004">Varje accepted emit får en order key <code>(planStep, invocationOrder, localEmitIndex)</code>. <code>sequence</code> tilldelas vid deterministic merge/commit.</Requirement>
           <Requirement id="CHANNEL-005">En funktionsmodul körs inte en gång per kanal. Ett enda funktionsanrop FÅR emittera till valfritt många kanaler.</Requirement>
           <Callout title="Strict channels i playgrounden" icon={<RadioTower />} tone="info">
-            Strict mode kräver en deklarerad descriptor, avvisar odeklarerade kanaler, reserverade namn, cykliska eller icke-serialiserbara payloads och validerar den JSON Schema-subset som fixturemodulerna använder. Full JSON Schema 2020-12 och stream/backpressure är ännu unsupported.
+            Strict mode kräver en deklarerad descriptor och avvisar odeklarerade kanaler, reserverade namn samt cykliska eller icke-serialiserbara payloads. Egen payloadkontroll verkställer endast <code>type</code>, <code>required</code> och direkta <code>properties[*].type</code>. Exempelvis <code>$ref</code>, <code>enum</code>, <code>minimum</code> och nästlade constraints kan ignoreras; <code>schemaRef</code> löser inte automatiskt ett schema. Full JSON Schema 2020-12 för kanalpayloads återstår. Editor Kernel har credit-styrd metadata-streaming efter commit; kontinuerlig stage-streaming och generell sink-backpressure återstår.
           </Callout>
         </section>
 
@@ -1067,7 +1106,7 @@ export function Specification() {
             )}
           />
           <SpecTable
-            caption="Funktionskontrakt"
+            caption="Funktionskontrakt · målmodell"
             headers={["Fält", "Exempel", "Konsekvens"]}
             rows={[
               [<code key="args">args</code>, "JSON Schema", "Validering före invocation."],
@@ -1080,18 +1119,20 @@ export function Specification() {
               [<code key="permissions">permissions</code>, "network · filesystem · process · model · secrets", "Host grant före init."],
             ]}
           />
+          <p>Säkra labbmanifest accepterar <code>state</code> som <code>pure | run | session</code> och <code>determinism</code> som <code>deterministic | nondeterministic</code>. Tabellens övriga alternativ och generella args-schemavalidering är målkontrakt. Följ paketprofilen för dagens exakta fält och typer.</p>
           <Requirement id="MANIFEST-001">Compiler MÅSTE kunna läsa och validera manifestet utan att exekvera modulens entrypoint.</Requirement>
           <Requirement id="MANIFEST-002">Dubbla exports utan namespace eller alias MÅSTE vara compile error.</Requirement>
           <Requirement id="MANIFEST-003">State och determinism är separata dimensioner. En stateful funktion kan vara deterministisk, och en stateless funktion kan vara nondeterministisk.</Requirement>
           <Requirement id="MANIFEST-004"><code>behavior</code> beskriver transformationens form och FÅR INTE tolkas som purity. State, determinism och observerbara effekter MÅSTE deklareras separat; saknad deklaration betyder <code>unknown</code> och icke-cachebar.</Requirement>
           <Requirement id="MANIFEST-005">En deklaration som <code>state=pure</code>, <code>determinism=deterministic</code> och <code>effects=[]</code> gör endast funktionen till cachekandidat. En host som faktiskt återanvänder output MÅSTE dessutom upprätthålla effektgränsen eller behandla kontraktet som betrott och redovisa den trust boundaryn.</Requirement>
           <Callout title="Nuvarande loadergräns" icon={<AlertTriangle />} tone="warning">
-            JavaScript-labbet verifierar namespace, semver, entrypoint, SHA-256, exakt lockfile och explicita capability grants innan entrypoint. Efter <code>define(...)</code> jämförs faktiska funktioners state, determinism och effects med manifestet före transform. Grinden begränsar paketauktoritet men gör inte godtycklig JavaScript till en sandbox.
+            JavaScript-labbet verifierar namespace, labbets versionsgrammatik, entrypoint, SHA-256, exakt lockfile, explicita capability grants och entydiga funktionsdeklarationer för alla säkra transporterade paket innan någon entrypoint körs. Versionsgrammatiken är inte full SemVer. Efter <code>define(...)</code> jämförs faktiska funktioners state, determinism och effects med manifestet före transform. Grinden begränsar paketauktoritet men gör inte godtycklig JavaScript till en sandbox. Fullt paketexempel och exakta typer finns i <a href={repoFile("docs/INTEGRATION_GUIDE.md")}>integrationsguiden</a> och <a href={repoFile("MODULE_ADMISSION_PROFILE.md")}>paketprofilen</a>.
           </Callout>
         </section>
 
         <section className="docs-section spec-section" id="runtime-protocol">
           <SectionHeading number="17" layer="Runtime" title="Runtime-protokollet är transportneutralt" implementation="defined" />
+          <p>Detta är målprotokollet för polyglotta runtimes. Den körbara hostgränsen i dag är Editor Kernels meddelanden nedan; <code>initialize</code> och <code>execute</code> är inte metoder i dagens TypeScript-klient. Börja med <a href="#integration">integrationsguiden</a> för fungerande anrop.</p>
           <SpecTable
             caption="Runtime-metoder"
             headers={["Metod", "Krav", "Ansvar"]}
@@ -1210,6 +1251,20 @@ export function Specification() {
           <Callout title="Exakt gräns för den körbara subseten" icon={<AlertTriangle />} tone="warning">
             Workern håller en in-memory documentsession, applicerar versionguardade Unicode-patchar och erbjuder read-only <code>analyze</code> med formell parser och lokal recovery. En exakt analyserad revision återanvänder sin compiler-snapshot; nästa ChangeSet kan återanvända giltiga Lezer-fragment. En deterministisk ready-set-scheduler får överlappa oberoende, snapshotbara effects-free stages asynkront i samma Worker. Cachen kan flyttas explicit som ett digestbundet host-checkpoint och committade metadatadeltan kan streamas med credit-baserad backpressure. Multicore-exekvering, kontinuerlig stage-streaming, OT/CRDT, generell strukturell re-anchor, fullständiga editorintegrationer och LSP-adapter, synkron preemption och hård CPU-/minnessandbox är inte implementerade.
           </Callout>
+        </section>
+
+        <section className="docs-section spec-section" id="integration">
+          <SectionHeading number="18a" layer="Runtime" title="Integrera med den körbara kärnan" normative={false} implementation="implemented" />
+          <p className="lead">Ett komplett modulpaket och två körbara värdar visar dokumentets hela livscykel. Exemplen använder repots TypeScript- och Python-klienter mot samma JavaScript-kärna.</p>
+          <CodeExample title="Kör integrationsmaterialet från repots rot" language="bash" status="Automatiskt verifierade exempel" code={code("npm run runtime:build", "node examples/integration/editor-loop.mjs", "python3 examples/integration/python-host.py", "node --test tests/documentation.test.mjs")} />
+          <p>Node-exemplet öppnar, analyserar, prenumererar, kör, ger credit, ändrar och kör igen. Det kontrollerar resultatet <code>HALLÅ 🌊</code> på revision 2, stale revision, saknad grant och artefaktintegritet. Python-exemplet kör via JSONL och skapar tre MIME-alternativ.</p>
+          <SpecTable caption="Värdens ansvar" headers={["Gräns", "Aktuellt beteende"]} rows={[
+            ["Revisioner och positioner", "Vänta på accepterad revision före nästa change/run. Ranges är halvöppna Unicode-code-point-offsets; editorbindningar konverterar UTF-16."],
+            ["Fel och avbrott", "Hantera protokollfel och run-diagnostik. Avbrott är kooperativa; värden ansvarar för timeout och återhämtning."],
+            ["Prenumeration och credit", "Metadata levereras efter commit. Credit räknar fragment och begränsar leveranstakten; producentens kö saknar generell minneskvot."],
+            ["Livscykel", "dispose avregistrerar klienten. Värden stänger transporten separat. Unsubscribe och close-document finns ännu inte."],
+          ]} />
+          <p><a href={repoFile("docs/INTEGRATION_GUIDE.md")}>Läs hela integrationsguiden</a> för metoder, komplett modul/manifest/låsfil, CLI, CodeMirror, Monaco, Python och felhantering. <a href={repoFile("examples/integration/editor-loop.mjs")}>Öppna det körbara editorexemplet</a>. Sidans övriga schemafragment beskriver form och mål; fragment med <code>...</code> är inte kompletta körbara paket.</p>
         </section>
 
         <section className="docs-section spec-section" id="runs">
@@ -1579,7 +1634,7 @@ export function Specification() {
 
           <h3>Standardreferenser</h3>
           <div className="standard-links">
-            <a href="https://lezer.codemirror.net/docs/guide/" target="_blank" rel="noreferrer"><strong>Lezer</strong><span>Editorparser, CST, recovery och framtida inkrementell återanvändning</span></a>
+            <a href="https://lezer.codemirror.net/docs/guide/" target="_blank" rel="noreferrer"><strong>Lezer</strong><span>Editorparser, CST, recovery och inkrementell återanvändning</span></a>
             <a href="https://json-schema.org/draft/2020-12" target="_blank" rel="noreferrer"><strong>JSON Schema 2020-12</strong><span>Validering av portabla JSON-kontrakt</span></a>
             <a href="https://www.w3.org/TR/2017/REC-annotation-model-20170223/" target="_blank" rel="noreferrer"><strong>W3C Web Annotation</strong><span>Annotationsexport</span></a>
             <a href="https://www.w3.org/TR/2013/REC-prov-o-20130430/" target="_blank" rel="noreferrer"><strong>W3C PROV-O</strong><span>Proveniensexport</span></a>
@@ -1688,7 +1743,21 @@ export function Specification() {
           <Requirement id="CONF-005"><code>contract-only</code> och <code>unsupported</code> får aldrig härledas till ett lyckat implementeringsanspråk. Ett passerat no-fabrication-krav verifierar endast kontraktsgränsen.</Requirement>
           <Requirement id="CONF-006">En structural snapshot MÅSTE publicera normaliseringspolicy, ignorerade transportfält, digestalgoritm, actual digest och versionssatt expected digest när en golden baseline finns.</Requirement>
           <Requirement id="CONF-007">Negativa fixtures MÅSTE köras isolerat och kräva förväntad terminalstatus, exakt diagnostikkod och atomiskt tom durable commit. Ett negativt pass får aldrig skriva om core-resultatet till succeeded.</Requirement>
-          <Requirement id="CONF-008">Cancellation MÅSTE ha eget terminaltillstånd. Den aktuella subseten implementerar kooperativ cancellation och kooperativ deadline vid runtimegränser samt rapporterade stage-, event- och rendergränser. Den hävdar inte synkron preemption, multicore-exekvering, streaming/backpressure, hård CPU-/minnessandbox eller rollback av externa sidoeffekter.</Requirement>
+          <Requirement id="CONF-008">Cancellation MÅSTE ha eget terminaltillstånd. Den aktuella subseten implementerar kooperativ cancellation och kooperativ deadline vid runtimegränser samt rapporterade stage-, event- och rendergränser. Credit-styrd metadata-streaming efter commit stöds. Den hävdar inte synkron preemption, multicore-exekvering, kontinuerlig stage-streaming, generell sink-backpressure eller kökvot, hård CPU-/minnessandbox eller rollback av externa sidoeffekter.</Requirement>
+        </section>
+
+        <section className="docs-section spec-section" id="documentation-sources">
+          <SectionHeading number="26a" layer="Conformance" title="Kontraktskällor och spårbara krav" normative={false} implementation="implemented" />
+          <p className="lead">Specification anger målbild och normativa principer. Ett profilanspråk avser bara det versionssatta profilkontraktets uttryckliga delmängd. En körningsrapport visar utfallet för sin bundna källa och sina fixtures.</p>
+          <p>Vid skillnad mellan en generell formulering här och ett labbkontrakt avgör profilkontraktet vad labbet får hävda. Det sänker inte målkravet. Implementation visar faktiskt beteende; ett testfilnamn eller en länk bevisar inte att hela kravet är uppfyllt.</p>
+          <SpecTable caption="Läs kontrakt och rapport tillsammans" headers={["Kontraktskälla", "Verifiering"]} rows={documentationSources.contracts.map((source) => [
+            <a key={source.path} href={source.href}>{source.path}</a>,
+            source.report ? <a key={source.report} href={source.report} download>Hämta profilrapport</a> : "Parser- och kompilatortester i kravunderlaget",
+          ])} />
+          <p><a href={repoFile("contracts/semantic-bundle-v1.js")}>Källan till artefaktschemat</a> genererar <a href="/contracts/semantic-bundle-v1.schema.json" download>JSON Schema 2020-12</a>. <a href={repoFile("conformance/README.md")}>Verifieringsguiden</a> anger kommandon och anspråksgränser.</p>
+          <p>Alla {requirementIndex.requirements.length} krav har ett expanderbart underlag med kontrakt, implementationskälla, relevanta testkällor och begränsning. <a href="/docs/requirements.json" download>Hämta kravregistret</a>. Registret kontrollerar täckning och källreferenser; det är ingen fullständig konformitetsrapport.</p>
+          <CodeExample title="Kontrollera dokumentationens spårbarhet" language="bash" status="Dokumentationskontroll" code={code("node scripts/build-specification-docs.mjs --check", "node --test tests/documentation.test.mjs")} />
+          <p><a href={repoFile("docs/STANDARDS_DIRECTION.md")}>Standardbedömning och prioriterade luckor</a> · <a href={repoFile("docs/INTEGRATION_GUIDE.md")}>Integrationsguide</a> · <a href={repoFile("DOCUMENTATION_PLAN.md")}>Dokumentationssprintens acceptans</a>.</p>
         </section>
 
         <section className="docs-section spec-section" id="errors">
@@ -1797,6 +1866,7 @@ export function Specification() {
           <Callout title="Specifikationens riktning" icon={<Box />} tone="success">
             Textabana återanvänder etablerade format där de redan löser problemet: Markdown för läsbar text, JSON Schema för kontrakt, Arrow/Parquet för data, MIME för notebookpresentation, W3C-modeller för annotation/proveniens och LSP/OTel/OpenLineage/MLflow som adaptrar. Det nya är den sammanhängande semantiken mellan dem.
           </Callout>
+          <p>Detta är inriktningen. <a href="#direction">Standardmatrisen</a> visar vad som är implementerat, avgränsat eller planerat och varför kanalernas JSON Schema-validering är en prioriterad avvikelse.</p>
         </section>
       </main>
     </div>

@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.14.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.9 genomförda |
+| Planversion | `1.15.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.10 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -219,13 +219,13 @@ Textabana Editor Kernel
 - `sdk/typescript` publicerar en transportneutral `TextabanaKernelClient` för samtliga kernelkommandon, korrelerade svar och credit-bundna streamchunks.
 - CodeMirror- och Monaco-bindningarna översätter värdarnas UTF-16-offsets till Textabanas Unicode-code-point-ranges och skickar revisionguardade ChangeSets.
 - `sdk/python` implementerar samma JSON-meddelandekontrakt samt en Jupyter MIME-projektion som vägrar presentera failed eller icke-committade runs som aktuell output.
-- Säkra modulpaket verifieras före entrypoint mot namespace, semver, entrypoint, SHA-256, exakt lockfile och explicita required/channel/resource-grants. Efter laddning måste varje faktisk funktions `state`, `determinism` och `effects` matcha manifestet före transform.
+- Säkra modulpaket verifieras före entrypoint mot namespace, labbets versionsgrammatik (inte full SemVer), entrypoint, SHA-256, exakt lockfile och explicita required/channel/resource-grants. Efter laddning måste varje faktisk funktions `state`, `determinism` och `effects` matcha manifestet före transform.
 - Negativa tester stoppar saknad grant, manipulerade bytes och kontraktsdrift atomiskt. TypeScript-SDK:n typecheckas och Pythonpaketet byte-kompileras i releasegrinden.
 - Releasegrinden omfattar 173 automatiska test, TypeScript-typecheck, Python byte-compilation, ESLint och Sites produktionsbygge.
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.9 genomförda, senast 2026-09-20
+**Status:** aktiv · sprint 5.1–5.10 genomförda, senast 2026-09-20
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -371,6 +371,18 @@ Textabana Editor Kernel
 
 **Återstår innan Våg 5 kan stängas:** produktionsprofilernas fullständiga scheman/fixtures, bredare jämförelse med en oberoende runtime, konfigurerad release-signering samt publicerad registertjänst. Tidigare labbdelmängders begränsningar kvarstår.
 
+#### Sprint 5.10 — Specification, standardriktning och integration
+
+**Status:** genomförd 2026-09-20 enligt [TA-SPEC-DOCS-001](./DOCUMENTATION_PLAN.md).
+
+**Acceptans:** samstämmig process-/resultatmodell, standardmatris med källor och avgränsningar, underlag för varje krav, läsbara profilkontrakt vid rapporterna samt kompletta, körbara integrationsflöden. Ingen ny runtimeförmåga får härledas ur dokumentationsarbetet.
+
+**Leverans:** Specification beskriver paketförhandskontroll, exportkontroll, metadata-streaming, SHA-256-identiteter, koordinater och labbkontrakt konsekvent. Alla 144 krav har kontrakts-, implementations- och verifieringsreferenser eller uttrycklig lucka. Elva standardbedömningar skiljer faktisk återanvändning från framtida adaptrar. Node/TypeScript, Python/JSONL och CLI använder samma kompletta modulpaket och verifierar observerbara resultat.
+
+**Riktningsbedömning:** arkitekturen följer avsikten att definiera sambanden mellan etablerade format. Kanalpayloads använder dock en egen begränsad schemakontroll; Arrow/Parquet, PROV-export, LSP och observability-adaptrar återstår. Prioriteringen är kanalernas schemadialekt/validator, en verifierad extern adapterkedja och därefter verklig dataplan. Se [hela bedömningen](./docs/STANDARDS_DIRECTION.md).
+
+**Evidens:** se dokumentationsplanens verifieringsprotokoll. Kravregistret är källspårning och får inte räknas som 144 passerade konformitetskrav. Våg 5 förblir aktiv.
+
 ## Beroenden och ordning
 
 | Våg | Kräver | Låser upp |
@@ -382,6 +394,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.15.0 — 2026-09-20
+
+- Sprint 5.10 tillför kravunderlag, standardbedömning och körbar integrationsdokumentation.
+- Föråldrade påståenden om manifest, streaming, identiteter och versionsvalidering är harmoniserade till sprint 5.9:s runtime.
+- Verklig standardintegration och full produktionskonformitet kvarstår som implementationsarbete.
 
 ### 1.14.0 — 2026-09-20
 

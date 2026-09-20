@@ -2475,11 +2475,49 @@ a {
   white-space: nowrap;
 }
 
-.requirement > p {
+.requirement > div {
+  min-width: 0;
+}
+
+.requirement > div > p {
   margin: 0;
   color: #aeb8c4;
   font-size: 13px;
   line-height: 1.62;
+}
+
+.spec-evidence {
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+  color: #aeb8c4;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.spec-evidence summary {
+  width: fit-content;
+  color: #afc4fa;
+  cursor: pointer;
+}
+
+.spec-evidence summary:focus-visible {
+  outline: 2px solid #c8f66a;
+  outline-offset: 4px;
+}
+
+.spec-evidence p {
+  margin: 10px 0 0;
+  font-size: inherit;
+}
+
+#direction .spec-table,
+#integration .spec-table,
+#documentation-sources .spec-table {
+  font-size: 14px;
+}
+
+#documentation-sources .spec-table a {
+  overflow-wrap: anywhere;
 }
 
 .architecture-flow {

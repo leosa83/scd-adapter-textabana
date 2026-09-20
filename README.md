@@ -4,13 +4,18 @@ Textabana gör läsbar text till en körbar, positionsmedveten och flerkanalig s
 
 Den publicerade specifikationen och playgrounden finns på [textpipe-editor.leo-salmonsson.chatgpt.site](https://textpipe-editor.leo-salmonsson.chatgpt.site).
 
+## Specification och integration
+
+[Integrationsguiden](./docs/INTEGRATION_GUIDE.md) innehåller ett komplett modulpaket, en körbar editorloop, Python/JSONL och artefaktverifiering. [Riktningsbedömningen](./docs/STANDARDS_DIRECTION.md) granskar återanvändningen av elva etablerade standarder. Arkitekturen följer inriktningen, men standardstödet är delvis genomfört: särskilt kanalernas egna begränsade schemakontroll behöver ersättas eller få en uttrycklig, strikt avgränsad dialekt.
+
+Dokumentationssprint 5.10 harmoniserar Specification med sprint 5.9:s runtime, länkar nio profilrapporter till sina kontrakt och kopplar samtliga 144 krav till underlag och kända begränsningar. [Kravregistret](./public/docs/requirements.json) är källspårning, inte bevis på full kravuppfyllelse. Kontrollera det med `node scripts/build-specification-docs.mjs --check` och kör exemplen med `node --test tests/documentation.test.mjs`. Sprintens acceptans finns i [dokumentationsplanen](./DOCUMENTATION_PLAN.md).
+
 ## Playground Labs
 
 Åtta interaktiva labs visar samma källa och valda run från olika semantiska perspektiv:
 
 - **Language & Scope** — lossless CST, AST, typed IR, recovery, Unicode-spans, block, öppna intervall, pre-execution-graf, rådgivande invalidation, faktisk execution report och separat observerat körspår.
 - **Editor Kernel** — documentsession, revisionguardade ChangeSets, channel subscriptions, metadata-delta och anchor continuity.
-- **Wave 3 closure** — inkrementell Lezer-/compiler-reuse, portabla cachecheckpoints och credit-bunden post-commit metadata-streaming.
 - **Editor Metadata** — `system.out`, row/line, Anchor, SourceMap och jämförelse mellan revisioner.
 - **Channel & Result** — deklarerade kanaldeskriptorer, strict validation, global eventtimeline och atomiskt result envelope.
 - **Data & Lineage** — typade dataset/schema-events, stabila records, deterministisk inner join, cell-/record-lineage, derived aggregation och en source-bound JSON-tabellprojektion.
@@ -19,6 +24,8 @@ Den publicerade specifikationen och playgrounden finns på [textpipe-editor.leo-
 - **Conformance** — profilval, stage gates, härledda subset-anspråk, versionssatt normalized golden snapshot, strukturell diff, exakta negativa cases och kooperativ cancellation.
 
 Channel & Result innehåller även en adapterinspektör. Den visar det körbara kontraktet efter core commit utan att starta en separat run.
+
+Editor Kernel visar dessutom inkrementell Lezer-/compiler-reuse, portabla cachecheckpoints och credit-styrd metadata-streaming efter commit från Wave 3 closure.
 
 Fixturepaketet innehåller bland annat `parser-recovery`, `scope-torture`, `editor-revision`, `editor-kernel-revisions`, `verified-stage-cache`, `channel-fanout`, `base64-inverse`, `failed-run`, `data-join`, `notebook-snapshot`, `annotation-review`, `conformance-golden`, två ytterligare negativa cases och `cancellation-probe`.
 
@@ -32,7 +39,7 @@ Delta matchas med stabil channel-/domänidentitet, aldrig med run-lokala event-i
 
 `sdk/typescript` innehåller den framework-neutrala klienten och tunna bindningar för CodeMirror och Monaco. Samtliga editoroffsets konverteras till kärnans Unicode-code-point-koordinater. `sdk/python` innehåller samma JSON-meddelandeklient och en Jupyter-kompatibel MIME-projektion som endast accepterar committade resultat.
 
-Ett säkert JavaScript-modulpaket använder `textabana.module-manifest/lab-v1`, ett namespaced paket-id, semantisk version, exakt entrypoint och SHA-256 över källbytes. `options.moduleLock` måste låsa exakt samma identitet, digest och entrypoint. `options.capabilityGrants` måste explicit ge varje required-, channel- och resource-capability innan entrypoint laddas. Efter laddning verifieras att exporterade funktioners `state`, `determinism` och `effects` exakt matchar manifestet. Detta är en paket- och behörighetsgrind, inte en JavaScript-sandbox.
+Ett säkert JavaScript-modulpaket använder `textabana.module-manifest/lab-v1`, ett namespaced paket-id, version enligt labbets begränsade grammatik, exakt entrypoint och SHA-256 över källbytes. Versionskontrollen är inte full SemVer. `options.moduleLock` måste låsa exakt samma identitet, digest och entrypoint. `options.capabilityGrants` måste explicit ge varje required-, channel- och resource-capability innan entrypoint laddas. Alla säkra transporterade paket kontrolleras före någon startkod. Efter laddning verifieras att exporterade funktioners `state`, `determinism` och `effects` exakt matchar manifestet. Detta är en paket- och behörighetsgrind, inte en JavaScript-sandbox.
 
 Subseten ger inkrementell dokumenttransport, inkrementell metadataleverans och konservativ selektiv stage-exekvering. Den använder en formell Lezer-parser och `textabana.ir/lab-v2`. Efter modulinitiering men före första transform byggs en typed `textabana.execution-plan/lab-v2` som styr en deterministisk ready-set-scheduler. Oberoende stages med det betrodda kontraktet `pure + deterministic + effects=[]`, render-only output och lossless snapshotbart input får överlappa asynkront i samma Worker; unknown, stateful och effectful stages är seriella barriärer. `textabana.invalidation-preview/lab-v1` jämför rådgivande mot senaste lyckade editorbaslinje; faktisk lookup, hit, fresh invocation, reuse och scheduler-wave redovisas separat i `textabana.execution-report/lab-v1`.
 
