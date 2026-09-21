@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Plan | `TA-OSS-CONSOLIDATION-001` |
-| Version | `1.0.1` |
-| Status | Active; sprint 5.11 implemented, sprint 5.12 next |
+| Version | `1.1.0` |
+| Status | Active; sprint 5.12 in progress |
 | Baseline | Sprint 5.10, GitHub `a0ec88761b904602e28522a6334bc90c5ae0f5e3` |
 | Accepted | 2026-09-20 |
 | Goal | A repository that external developers can understand, run, test and maintain without conversation history or a Sites account |
@@ -34,6 +34,14 @@ English is the primary language for the entire application and codebase. New pub
 5. Preserve the 144 requirement IDs, section anchors, code examples, links and normative content. Verify the migration against a frozen baseline independently of the new generator. Preserve narrow profile documents whose byte digests are part of conformance manifests.
 6. Provide an English README, documentation index, development/contribution guides, architecture map and language migration register. Translate the application shell and metadata as the first UI slice. Clearly identify remaining Swedish specification/lab/runtime content.
 7. Check a clean source copy with no pre-existing web build. Regenerate docs and kernel artifacts, run relevant tests, build the Site, publish matching source trees to GitHub and Sites, and record actual outcomes.
+
+## Sprint 5.12: translation contract
+
+1. Translate all specification prose and requirement evidence notes into English. Keep the same 34 section IDs, 144 requirement IDs, links, public identifiers, normative force and implementation limits. Keep all 43 fenced examples byte-identical; multilingual source content remains legitimate input.
+2. Use the [translation glossary](docs/translation-glossary.md) for normative language, lifecycle terms and identity distinctions. Record the Swedish source and English target per requirement with digests and checks. This review is performed within the implementation task; it is not independent external acceptance or a conformance claim.
+3. Translate authored labels, explanations, empty states and accessibility copy in all eight lab panels. Preserve runtime messages, user-authored values, fixtures and protocol data. Their translation belongs to the separately versioned runtime/profile work.
+4. Add an English API reference for the current TypeScript client, editor bindings, Node transport, Python client and JSONL boundary, grounded in their actual signatures, state ownership and error behavior. Add explanatory API comments without changing method signatures or response semantics. Complete response types and hosting declarations remain sprint 5.13 work.
+5. Extend the migration checks to English requirements while retaining the frozen Swedish baseline and code-example expectations. Check negative modal/identifier edits, render the translated specification and labs, run existing integration/host tests and verify the build. Update the register and publish matching Git trees to GitHub and Sites.
 
 ## Working rules
 
