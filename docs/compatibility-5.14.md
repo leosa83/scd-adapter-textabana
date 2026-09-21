@@ -44,4 +44,12 @@ Unrecognized kinds, schemas, phases, codes or missing/mismatched recovery nodes 
 
 The application tests exercise the recovery inventory, actual parser failures with Unicode, immutable inputs, related spans, fallbacks and rendered English/raw separation. Existing semantic-profile tests continue to protect the frozen identities. Adapter/conformance/example migration remains the next increment.
 
-Sprint 5.14 remains active after 5.14A. Sprint 5.15 release preparation does not begin automatically; licensing, packaging and security-contact decisions remain open.
+## Increment 5.14B.3: separate English conformance presentation
+
+`app/conformance-presentation.ts` returns display strings for report schema `textabana.conformance-report/lab-v1` and suite `textabana.playground/interop-0.7@1.4.0-lab.1`. Requirement identity and status select wording for all 24 current requirement identities. Stage wording distinguishes passed, failed and not-run outcomes. Negative fixture wording also checks fixture/case identity, expected outcome and diagnostic code; cancellation wording checks its declared cooperative boundary. Unknown versions, identifiers or unsupported outcomes preserve original prose.
+
+Only the reading views change. No translated report is created under an old report ID. Report JSON, structural-diff inputs, source/result references, gates, claimability, golden baselines and all runtime files retain their bytes. In particular, a failed plan or projection check receives failure wording rather than the success-sounding message present in the legacy report. This does not change the check result or perform new verification. Contract-only support remains non-claimable; this view does not know CI status or assert full conformance.
+
+The conformance tabs and empty-blocker label are English. Tests exercise the current requirement/outcome inventory, frozen real reports, failed and skipped stages, unknown contracts and rendered reading views. Adapter manifests/projections and embedded example modules remain deferred; their source/digest migration is not claimed here.
+
+Sprint 5.14 remains active. Sprint 5.15 release preparation does not begin automatically; licensing, packaging and security-contact decisions remain open.

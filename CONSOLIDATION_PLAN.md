@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Plan | `TA-OSS-CONSOLIDATION-001` |
-| Version | `1.3.2` |
-| Status | Active; sprints 5.11–5.13, 5.14A and 5.14B.1–B.2 implemented; remaining 5.14B work next |
+| Version | `1.3.3` |
+| Status | Active; sprints 5.11–5.13, 5.14A and 5.14B.1–B.3 implemented; remaining 5.14B work next |
 | Baseline | Sprint 5.10, GitHub `a0ec88761b904602e28522a6334bc90c5ae0f5e3` |
 | Accepted | 2026-09-20 |
 | Goal | A repository that external developers can understand, run, test and maintain without conversation history or a Sites account |
@@ -152,6 +152,12 @@ The Parser tab uses a separate English view for all 36 current recovery kinds, g
 
 Tests cover the complete recovery-kind inventory, actual parser output, frozen input/non-mutation, source locations, fallback boundaries and rendered English/raw separation. Runtime sources, semantic artifacts, fixtures and golden files are unchanged. No canonical profile or wire field is added.
 
-Next within 5.14B: finish adapter/conformance/example migration with explicit version evidence. Parser presentation is now implemented, but adapters, conformance prose and embedded module text are not translated by this increment. License selection, public packaging and other 5.15 release work remain separate.
+### Increment 5.14B.3 — English conformance presentation
+
+The conformance reading views now use English stage, profile-requirement, negative-fixture and cancellation explanations. Remaining Swedish conformance tab labels are translated. Presentation is gated by report schema and exact suite version, plus requirement identity/status or fixture identity/code. Unknown versions and outcomes fall back to original wording. The formatter returns strings, not replacement reports: raw JSON, structural diffs, gates, evidence references, report IDs and golden baselines are unchanged.
+
+Tests cover all 24 current requirement identities and their emitted outcomes, actual successful/failed reports, immutable inputs, fallback behavior, rendered gate/profile wording and contract-only limits. Failed plan/projection checks explicitly say verification failed instead of inheriting success-sounding source prose. Presentation does not reevaluate a gate, assert CI success or grant full profile conformance.
+
+Next within 5.14B: adapter presentation/manifests and embedded example-module migration with explicit version evidence. Raw legacy parser/conformance messages remain original artifact data, not an unfinished translation of the English reading views. License selection, public packaging and other 5.15 release work remain separate.
 
 Publication uses matching Git trees in GitHub and Sites. Deployment status is verified separately through the hosting service; a local build alone is not a publication claim.
