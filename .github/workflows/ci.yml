@@ -35,6 +35,8 @@ jobs:
           python-version: '3.12'
       - run: npm ci
       - run: npm run docs:check
+      - run: npm run types:check
+      - run: npm run typecheck
       - run: npm run lint
       - run: npm test
 

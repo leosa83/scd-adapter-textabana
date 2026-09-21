@@ -1,3 +1,4 @@
+import type { ChangeResponse } from "./responses";
 import type { TextChange } from "./protocol";
 import { TextabanaKernelClient } from "./client";
 
@@ -15,7 +16,7 @@ function codeUnitsToCodePoints(source: string, offset: number) { return Array.fr
  * After a rejection, resynchronize the document and create a new binding.
  * Returns a listener yielding Promise<void>, or undefined for non-document updates.
  */
-export function codeMirrorTextabanaBinding(client: TextabanaKernelClient, documentId: string, revision: () => number, accepted: (response: unknown) => void) {
+export function codeMirrorTextabanaBinding(client: TextabanaKernelClient, documentId: string, revision: () => number, accepted: (response: ChangeResponse) => void) {
   let queue: Promise<void> = Promise.resolve();
   return (update: CodeMirrorUpdateLike) => {
     if (!update.docChanged) return;

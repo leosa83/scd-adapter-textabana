@@ -61,7 +61,7 @@ test("digest, lock and declared function contract are verified before execution"
 });
 
 test("TypeScript host SDK type-checks and Python/Jupyter client compiles", () => {
-  const typescript = spawnSync(process.execPath, ["node_modules/typescript/bin/tsc", "--noEmit", "--skipLibCheck", "--target", "ES2022", "--module", "ESNext", "--moduleResolution", "bundler", "sdk/typescript/index.ts"], { encoding: "utf8" });
+  const typescript = spawnSync(process.execPath, ["node_modules/typescript/bin/tsc", "--noEmit", "--strict", "--skipLibCheck", "--target", "ES2022", "--module", "ESNext", "--moduleResolution", "bundler", "sdk/typescript/index.ts", "tests/types/sdk-consumer.ts"], { encoding: "utf8" });
   assert.equal(typescript.status, 0, typescript.stderr || typescript.stdout);
   const python = spawnSync("python3", ["-m", "py_compile", "sdk/python/textabana_client.py", "sdk/python/__init__.py"], { encoding: "utf8" });
   assert.equal(python.status, 0, python.stderr || python.stdout);

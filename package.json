@@ -20,7 +20,10 @@
     "test:all": "npm test && npm run test:app",
     "docs:build": "node scripts/build-specification-docs.mjs",
     "docs:check": "node scripts/build-specification-docs.mjs --check",
-    "prebuild": "npm run docs:build"
+    "prebuild": "npm run docs:build",
+    "types:generate": "wrangler types types/cloudflare-runtime.d.ts --config worker/types.wrangler.json --include-env false",
+    "types:check": "wrangler types types/cloudflare-runtime.d.ts --config worker/types.wrangler.json --include-env false --check",
+    "typecheck": "tsc --noEmit --incremental false"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -1,10 +1,11 @@
+import type { CommandResponses, MetadataChunk, KernelFailure } from "./responses";
 import type { KernelCommand, KernelTransport, ModuleLock, ModulePackage, TextChange } from "./protocol";
 
 type Pending = { resolve(value: unknown): void; reject(reason: Error): void };
 
 /** Failed kernel response; inspect `response` for diagnostics and protocol fields. */
 export class KernelCommandError extends Error {
-  constructor(readonly response: Record<string, unknown>) {
+  constructor(readonly response: KernelFailure) {
     super(typeof response.error === "string" ? response.error : String((response.error as { message?: string })?.message || "Kernel command failed."));
   }
 }
@@ -16,7 +17,7 @@ export class KernelCommandError extends Error {
 export class TextabanaKernelClient {
   readonly transport: KernelTransport;
   readonly pending = new Map<string, Pending>();
-  readonly streams = new Map<string, Set<(chunk: unknown) => void>>();
+  readonly streams = new Map<string, Set<(chunk: MetadataChunk) => void>>();
   #sequence = 0;
   #disposed = false;
 
@@ -37,13 +38,13 @@ export class TextabanaKernelClient {
   #onMessage = (event: MessageEvent) => {
     const message = event.data as Record<string, unknown>;
     if (message?.type === "transport-error" && !message.requestId) {
-      for (const request of this.pending.values()) request.reject(new KernelCommandError(message));
+      for (const request of this.pending.values()) request.reject(new KernelCommandError(message as unknown as KernelFailure));
       this.pending.clear();
       this.dispose();
       return;
     }
     if (message?.type === "metadata-chunk" && typeof message.subscriptionId === "string") {
-      this.streams.get(message.subscriptionId)?.forEach((listener) => listener(message));
+      this.streams.get(message.subscriptionId)?.forEach((listener) => listener(message as MetadataChunk));
       return;
     }
     const requestId = typeof message?.requestId === "string" ? message.requestId : null;
@@ -51,14 +52,17 @@ export class TextabanaKernelClient {
     const pending = this.pending.get(requestId);
     if (!pending) return;
     this.pending.delete(requestId);
-    if (message.ok === false) pending.reject(new KernelCommandError(message));
+    if (message.ok === false) pending.reject(new KernelCommandError(message as unknown as KernelFailure));
     else pending.resolve(message);
   };
 
   /** Send one correlated command; reject failed responses or transport errors.
-   * `T` is a caller-supplied assertion, not runtime response validation.
+   * Literal commands infer their successful response; an explicit `T` remains
+   * a caller-supplied assertion, not runtime response validation.
    * A supplied requestId must be unique among this client's pending requests.
    */
+  command<C extends KernelCommand>(command: C, payload?: Record<string, unknown>): Promise<CommandResponses[C]>;
+  command<T>(command: KernelCommand, payload?: Record<string, unknown>): Promise<T>;
   command<T = unknown>(command: KernelCommand, payload: Record<string, unknown> = {}): Promise<T> {
     if (this.#disposed) return Promise.reject(new Error("Textabana client disposed."));
     const requestId = String(payload.requestId || `sdk:${command}:${++this.#sequence}`);
@@ -91,7 +95,7 @@ export class TextabanaKernelClient {
   /** Send an uncorrelated cooperative cancellation request; returns no completion. */
   cancel(runId: number) { this.transport.postMessage({ type: "cancel", runId }); }
   /** Listen locally for a subscription; the returned function removes only this listener. */
-  onChunk(subscriptionId: string, listener: (chunk: unknown) => void) {
+  onChunk(subscriptionId: string, listener: (chunk: MetadataChunk) => void) {
     const listeners = this.streams.get(subscriptionId) || new Set(); listeners.add(listener); this.streams.set(subscriptionId, listeners);
     return () => { listeners.delete(listener); if (!listeners.size) this.streams.delete(subscriptionId); };
   }
