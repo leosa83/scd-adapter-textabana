@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Plan | `TA-OSS-CONSOLIDATION-001` |
-| Version | `1.1.1` |
-| Status | Active; sprints 5.11–5.12 implemented, sprint 5.13 next |
+| Version | `1.2.0` |
+| Status | Active; sprints 5.11–5.12 implemented, sprint 5.13 in progress |
 | Baseline | Sprint 5.10, GitHub `a0ec88761b904602e28522a6334bc90c5ae0f5e3` |
 | Accepted | 2026-09-20 |
 | Goal | A repository that external developers can understand, run, test and maintain without conversation history or a Sites account |
@@ -42,6 +42,14 @@ English is the primary language for the entire application and codebase. New pub
 3. Translate authored labels, explanations, empty states and accessibility copy in all eight lab panels. Preserve runtime messages, user-authored values, fixtures and protocol data. Their translation belongs to the separately versioned runtime/profile work.
 4. Add an English API reference for the current TypeScript client, editor bindings, Node transport, Python client and JSONL boundary, grounded in their actual signatures, state ownership and error behavior. Add explanatory API comments without changing method signatures or response semantics. Complete response types and hosting declarations remain sprint 5.13 work.
 5. Extend the migration checks to English requirements while retaining the frozen Swedish baseline and code-example expectations. Check negative modal/identifier edits, render the translated specification and labs, run existing integration/host tests and verify the build. Update the register and publish matching Git trees to GitHub and Sites.
+
+## Sprint 5.13: boundary and typing contract
+
+1. Separate document/session lifecycle, module admission/loading, channel collection, result construction, adapter projections and lab conformance from the Worker dispatcher. State belongs to a kernel instance or accepted run; extracted modules must not import the Worker or the app.
+2. Preserve public messages, diagnostic bytes, validation precedence, captured revisions, commit timing, cancellation, cache observations, channel ordering and frozen profile outcomes. Keep the established handwritten channel dialect unchanged for the separately scoped sprint 5.14.
+3. Move reusable runtime data types out of the presentation layer. Type all nine command responses, protocol failures and metadata chunks; convenience methods infer their response. Keep the explicit generic command escape hatch and rejection semantics. Static types do not imply runtime validation.
+4. Supply hosting types from the installed Cloudflare tooling, with optional bindings represented honestly. Add a reproducible repository-wide type-check command and CI gate without hiding source errors or adding broad ambient `any` declarations.
+5. Verify isolated kernel state and unchanged message behavior with the existing regression suites and focused boundary/type-consumer tests. Refresh source-bound reports without rewriting golden expectations. Document ownership, errors and remaining limitations, then publish matching Git trees and the existing Site.
 
 ## Working rules
 
