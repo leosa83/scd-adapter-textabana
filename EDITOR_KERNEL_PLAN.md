@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.16.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.11 genomförda |
+| Planversion | `1.17.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.12 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.11 genomförda, senast 2026-09-20
+**Status:** aktiv · sprint 5.1–5.12 genomförda, senast 2026-09-21
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -393,6 +393,16 @@ Textabana Editor Kernel
 
 **Boundary:** no runtime semantics or independent conformance claims changed. English translation, module separation, SDK types, channel schema validation and release licensing continue in sprints 5.12–5.15. Wave 5 remains active. See the consolidation plan for local verification and the workflow for hosted CI status.
 
+#### Sprint 5.12 — English reference, lab panels and host API documentation
+
+**Status:** implemented 2026-09-21 under [TA-OSS-CONSOLIDATION-001](./CONSOLIDATION_PLAN.md).
+
+**Delivery:** English prose in all 34 specification sections, all 144 requirements and their evidence notes; an explicit glossary and source/target translation ledger; English explanations and controls in all eight lab panels; an API reference and TypeScript/Node comments/Python docstrings grounded in the current host interfaces.
+
+**Evidence:** 220 headless and 7 application tests pass, together with documentation checks, lint and the production build. Translation checks retain the frozen Swedish baseline, requirement identities, formal modal force, protected tokens and all 43 code examples. Both committed and failed kernel results render across all eight panels. SDK executable code is unchanged. Four report source fingerprints and the local Python adapter catalog patch were refreshed because comments change file bytes; profile outcomes and expected values are unchanged.
+
+**Boundary:** author translation review is not independent acceptance or a standards-conformance claim. Runtime diagnostics, embedded module text, version-bound profile prose and historical material remain recorded translation work. Engine separation, complete SDK response types and hosting declarations are next in sprint 5.13. See the [consolidation validation record](./CONSOLIDATION_PLAN.md#validation-record-sprint-512) for exact scope and remaining limits.
+
 ## Beroenden och ordning
 
 | Våg | Kräver | Låser upp |
@@ -404,6 +414,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.17.0 — 2026-09-21
+
+- Sprint 5.12 completes English specification prose, lab panels and current SDK API documentation.
+- Translation evidence preserves 144 requirement identities and all 43 code examples without changing runtime semantics or widening profile claims.
+- Sprint 5.13 remains the next implementation increment; diagnostics and version-bound profile translations follow in 5.14.
 
 ### 1.16.0 — 2026-09-20
 

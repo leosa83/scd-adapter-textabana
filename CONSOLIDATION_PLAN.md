@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Plan | `TA-OSS-CONSOLIDATION-001` |
-| Version | `1.1.0` |
-| Status | Active; sprint 5.12 in progress |
+| Version | `1.1.1` |
+| Status | Active; sprints 5.11–5.12 implemented, sprint 5.13 next |
 | Baseline | Sprint 5.10, GitHub `a0ec88761b904602e28522a6334bc90c5ae0f5e3` |
 | Accepted | 2026-09-20 |
 | Goal | A repository that external developers can understand, run, test and maintain without conversation history or a Sites account |
@@ -56,7 +56,7 @@ English is the primary language for the entire application and codebase. New pub
 
 The owner has requested open-source preparation but has not selected a project license. Do not invent a license grant. License selection and a working private security reporting route are release requirements, not blockers for repository cleanup. The current application workspace remains private as an npm package until distributable packages and release policy are defined.
 
-## Validation record
+## Validation record: sprint 5.11
 
 Observed on Linux with Node 24.19.0 and Python 3.12.14:
 
@@ -72,6 +72,24 @@ Observed on Linux with Node 24.19.0 and Python 3.12.14:
 | Type checking | `tsc --noEmit` reports three hosting declaration errors, documented in the development guide and scheduled for sprint 5.13. It is not a passing gate. |
 | GitHub Actions | The workflow defines headless jobs for Node 22/24 and an application job for Node 22. Hosted execution is separate from these observed local results; consult [Actions](https://github.com/leosa83/scd-adapter-textabana/actions/workflows/ci.yml) for the status of the published commit. |
 
-The first English increment covers repository entry points, contribution/development/architecture guidance, integration and standards guides, application controls, fixture summaries and specification navigation/introduction. The [migration register](docs/english-migration.md) records remaining specification prose, lab panels, API comments, diagnostics and version-bound profiles. Sprint 5.12 begins with an agreed glossary and the English reference/lab/API documentation; structural engine work follows in 5.13.
+The first English increment covered repository entry points, contribution/development/architecture guidance, integration and standards guides, application controls, fixture summaries and specification navigation/introduction. Sprint 5.12 completes the reference, lab explanations and SDK documentation. The [migration register](docs/english-migration.md) tracks the remaining runtime, profile and historical material.
+
+## Validation record: sprint 5.12
+
+Implemented on 2026-09-21 with Node 24.19.0 and Python 3.12.14:
+
+| Check | Result |
+|---|---|
+| Specification | All 34 sections and 144 requirements are English. The translation ledger binds each original Swedish requirement to its reviewed English target. All section/requirement IDs, inline protocol tokens, formal modal force and 43 fenced code examples pass the frozen-baseline checks. |
+| Negative translation checks | Deliberately weakening a prohibition or changing a protected range identifier is rejected even after the English digest is recalculated. Author review remains necessary for prose meaning; these checks are not independent acceptance. |
+| Lab rendering | All eight panels render real successful and failed kernel results with English controls and status copy. Runtime diagnostic codes and multilingual source values remain data. Existing stale descriptions of parser/cache reuse were corrected. |
+| SDK | English API reference and source comments cover current signatures, responses, ownership, Unicode conversion, errors and shutdown. TypeScript/Node emitted executable code and Python AST without docstrings are unchanged. No response type or runtime behavior was added. |
+| Automated checks | All 220 headless tests and 7 application tests pass. Documentation freshness, local links, lint and the Sites production build pass. Existing integration tests execute the TypeScript/Node and Python/JSONL examples. |
+| Integrity records | Python documentation changes require a new local adapter catalog entry, `org.textabana.python@1.0.1`, and new file/package digests; registry verification passes. Four external profile reports were rerun and changed only the Node transport source fingerprint after API comments were added. Their outcomes, fixtures and claims are identical; the other five reports remain byte-identical. |
+| Preserved semantics | Runtime/compiler sources, generated kernel, profile contracts, manifest expectations and frozen regression data are unchanged. Multilingual examples and version-bound diagnostics retain their original text. |
+| Remaining limits | Full SDK response types, engine separation and the three previously recorded hosting type errors remain sprint 5.13 work. Observable diagnostic translation and profile migration remain sprint 5.14 work. This translation does not expand standards support. |
+| Hosted CI | Local results above are observed; GitHub Actions status is recorded by the workflow for the published commit and must be checked separately. |
+
+The next increment is sprint 5.13: separate engine responsibilities in small behavior-preserving changes, complete public response types and establish a clean repository-wide type-check gate. The established-format direction and explicit standards boundaries remain unchanged.
 
 Publication uses matching Git trees in GitHub and Sites. Deployment status is verified separately through the hosting service; a local build alone is not a publication claim.
