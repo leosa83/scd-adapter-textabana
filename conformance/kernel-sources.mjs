@@ -5,6 +5,7 @@ export const KERNEL_BOUNDARY_SOURCES = Object.freeze([
   "runtime/module-admission.js",
   "runtime/module-loader.js",
   "runtime/channels.js",
+  "runtime/channel-schema.js",
   "runtime/result-envelope.js",
   "runtime/result-references.js",
   "runtime/adapters.js",

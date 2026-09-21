@@ -1,6 +1,7 @@
 import { adapterManifests, allCommittedEvents, playgroundImplementedCapabilities } from "./adapters.js";
 import { canonicalJson, canonicalValue, normalizePath, sourceHash, uniqueStrings, withoutKeys } from "./lab-values.js";
 import { cancellationDiagnosticCode } from "./runtime-errors.js";
+import { CHANNEL_SCHEMA_POLICY } from "./channel-schema.js";
 
 function buildCapabilities(inspection) {
   return {
@@ -33,7 +34,7 @@ function buildCapabilities(inspection) {
     },
     valueKinds: ["text", "object", "array", "number", "boolean", "null"],
     runtimes: [{ id: "browser-worker", support: "playground-subset", moduleLanguage: "javascript" }],
-    extensions: { namespace: "textabana.playground", canonical: false },
+    extensions: { namespace: "textabana.playground", canonical: false, channelSchemaPolicy: CHANNEL_SCHEMA_POLICY },
     implemented: playgroundImplementedCapabilities,
     unsupported: [...new Set([
       ...(inspection?.unsupported || []),
@@ -501,4 +502,3 @@ function buildConformanceReport({ fixtureId = "ad-hoc", result, inspection, plan
 }
 
 export { buildCapabilities, buildConformanceReport };
-

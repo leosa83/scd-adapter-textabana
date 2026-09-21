@@ -234,7 +234,8 @@ test("a failed run publishes no partial channel snapshot", async () => {
   assert.equal(result.ok, false);
   assert.equal(Object.keys(result.channels).length, 0);
   assert.equal(result.emissions, 0);
-  assert.match(result.error, /reserverat/);
+  assert.match(result.error, /reserved/);
+  assert.equal(result.diagnostics.at(-1).code, "TBA-RUN-LAB");
   assert.equal(result.resultEnvelope.run.status, "failed");
   assert.equal(result.resultEnvelope.render.data, "");
   assert.equal(JSON.stringify(result.resultEnvelope.channelSnapshots), "{}");
@@ -277,7 +278,8 @@ test("strict channel mode requires a declared descriptor and validates required 
   assert.equal(valid.channelDescriptors.audit.declared, true);
   assert.equal(valid.channels.audit[0].payload.step, "publish");
   assert.equal(invalid.ok, false);
-  assert.match(invalid.error, /obligatoriska fältet/);
+  assert.match(invalid.error, /required property 'step'/);
+  assert.equal(invalid.diagnostics.at(-1).code, "TBA-TYPE-CHANNEL-LAB");
   assert.equal(JSON.stringify(invalid.channels), "{}");
   assert.equal(invalid.resultEnvelope.render.data, "");
 });

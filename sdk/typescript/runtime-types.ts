@@ -901,7 +901,7 @@ export interface RuntimeCapabilities {
   limits: { digest: string; channelPayload: string; cancellation: string; scheduler: string; runBudgets: string; artifacts: string };
   valueKinds: string[];
   runtimes: Array<{ id: string; support: AdapterSupport; moduleLanguage: string }>;
-  extensions: { namespace: string; canonical: boolean };
+  extensions: { namespace: string; canonical: boolean; channelSchemaPolicy?: "textabana.channel-schema/2020-12-v1" };
   implemented: string[];
   unsupported: string[];
 }

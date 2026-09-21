@@ -223,7 +223,8 @@ test("failed-run fixture exposes diagnostics but no committed domain output", as
   const result = await run(template("failedRunFixtureDocument"));
 
   assert.equal(result.ok, false);
-  assert.match(result.error, /saknar deklarerad ChannelDescriptor/);
+  assert.match(result.error, /has no declared ChannelDescriptor/);
+  assert.equal(result.diagnostics.at(-1).code, "TBA-TYPE-CHANNEL-LAB");
   assert.equal(result.resultEnvelope.run.status, "failed");
   assert.equal(result.resultEnvelope.render.data, "");
   assert.equal(JSON.stringify(result.resultEnvelope.channelSnapshots), "{}");

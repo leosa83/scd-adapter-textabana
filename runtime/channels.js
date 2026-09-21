@@ -1,6 +1,7 @@
 import { materializeCacheKey } from "./execution-graph.js";
 import { channelNamePattern, serializableValue, sourceHash, uniqueStrings, valueKind, valueSummary } from "./lab-values.js";
 import { cancellationError } from "./runtime-errors.js";
+import { channelError, compileChannelSchema, validateChannelPayload } from "./channel-schema.js";
 
 function inferChannelDescriptor(name, value) {
   const kind = valueKind(value);
@@ -19,40 +20,12 @@ function inferChannelDescriptor(name, value) {
   };
 }
 
-function validatePayload(descriptor, value) {
-  const schema = descriptor && descriptor.schema;
-  if (!schema || typeof schema !== "object") return null;
-  const actual = valueKind(value);
-  const expected = schema.type;
-  const compatible = expected === undefined
-    || expected === actual
-    || (expected === "number" && actual === "number")
-    || (expected === "integer" && actual === "number" && Number.isInteger(value));
-  if (!compatible) return `payload måste vara ${expected}, men fick ${actual}`;
-  if (expected === "object" && Array.isArray(schema.required)) {
-    for (const field of schema.required) {
-      if (!Object.hasOwn(value || {}, field)) return `payload saknar obligatoriska fältet “${field}”`;
-    }
-  }
-  if (expected === "object" && schema.properties && typeof schema.properties === "object") {
-    for (const [field, fieldSchema] of Object.entries(schema.properties)) {
-      if (!Object.hasOwn(value || {}, field) || !fieldSchema || typeof fieldSchema !== "object" || !fieldSchema.type) continue;
-      const fieldValue = value[field];
-      const actualFieldType = valueKind(fieldValue);
-      const validField = fieldSchema.type === actualFieldType
-        || (fieldSchema.type === "integer" && actualFieldType === "number" && Number.isInteger(fieldValue));
-      if (!validField) return `fältet “${field}” måste vara ${fieldSchema.type}, men fick ${actualFieldType}`;
-    }
-  }
-  return null;
-}
-
 function serializationProblem(value, seen = new WeakSet(), path = "payload") {
-  if (value === undefined) return `${path} är undefined`;
-  if (typeof value === "function" || typeof value === "symbol" || typeof value === "bigint") return `${path} har typen ${typeof value}`;
-  if (typeof value === "number" && !Number.isFinite(value)) return `${path} är inte ett ändligt tal`;
+  if (value === undefined) return `${path} is undefined`;
+  if (typeof value === "function" || typeof value === "symbol" || typeof value === "bigint") return `${path} has type ${typeof value}`;
+  if (typeof value === "number" && !Number.isFinite(value)) return `${path} is not a finite number`;
   if (!value || typeof value !== "object") return null;
-  if (seen.has(value)) return `${path} är cyklisk`;
+  if (seen.has(value)) return `${path} is cyclic`;
   seen.add(value);
   const entries = Array.isArray(value) ? value.entries() : Object.entries(value);
   for (const [key, item] of entries) {
@@ -66,6 +39,7 @@ function serializationProblem(value, seen = new WeakSet(), path = "payload") {
 function createChannelBus({ runId, runInstanceId, documentVersion, documentPath, documentId = null, documentSource, strictChannels = false, isCancelled = () => false, runControl = null }) {
   const channels = new Map();
   const descriptors = new Map();
+  const validators = new Map();
   const anchors = new Map();
   const sourceMaps = [];
   const executionTrace = [];
@@ -83,6 +57,8 @@ function createChannelBus({ runId, runInstanceId, documentVersion, documentPath,
   const declare = (name, rawDescriptor = {}) => {
     const channel = String(name || "").trim();
     if (!channelNamePattern.test(channel) || channel === "render") return;
+    if (descriptors.has(channel)) return;
+    const compiled = Object.hasOwn(rawDescriptor, "schema") ? compileChannelSchema(channel, rawDescriptor.schema) : null;
     const descriptor = {
       name: channel,
       payloadKind: rawDescriptor.payloadKind || "object",
@@ -95,9 +71,10 @@ function createChannelBus({ runId, runInstanceId, documentVersion, documentPath,
       required: Boolean(rawDescriptor.required),
       sensitivity: rawDescriptor.sensitivity || "internal",
       declared: rawDescriptor.declared !== false,
-      ...(rawDescriptor.schema ? { schema: serializableValue(rawDescriptor.schema) } : {}),
+      ...(compiled ? { schema: compiled.schema } : {}),
     };
-    if (!descriptors.has(channel)) descriptors.set(channel, descriptor);
+    descriptors.set(channel, descriptor);
+    if (compiled) validators.set(channel, compiled.validate);
   };
 
   declare("system.out", {
@@ -190,28 +167,27 @@ function createChannelBus({ runId, runInstanceId, documentVersion, documentPath,
     throwIfCancelled();
     const channel = String(channelName || "").trim();
     if (!channelNamePattern.test(channel)) {
-      throw new Error(`Ogiltigt kanalnamn “${channel}”. Använd bokstäver, siffror, punkt, kolon, bindestreck eller understreck.`);
+      throw channelError(`Invalid channel name “${channel}”. Use letters, digits, dots, colons, hyphens or underscores.`);
     }
     if (channel === "render") {
-      throw new Error("Kanalen “render” skrivs med funktionens return-värde, inte med context.emit(...).");
+      throw channelError("Channel “render” is written by the function's return value, not by context.emit(...).", "TBA-RUN-LAB");
     }
     if (channel.startsWith("system.") && channel !== "system.out") {
-      throw new Error(`Kanalnamnet “${channel}” är reserverat av Textabana-kärnan.`);
+      throw channelError(`Channel name “${channel}” is reserved by the Textabana kernel.`, "TBA-RUN-LAB");
     }
 
     if (!descriptors.has(channel)) {
       if (strictChannels) {
-        throw new Error(`Kanalen “${channel}” saknar deklarerad ChannelDescriptor i strict channel mode.`);
+        throw channelError(`Channel “${channel}” has no declared ChannelDescriptor in strict channel mode.`);
       }
       descriptors.set(channel, inferChannelDescriptor(channel, value));
     }
-    if (strictChannels) {
+    const validate = validators.get(channel);
+    if (validate) value = validateChannelPayload(channel, validate, value);
+    else if (strictChannels) {
       const problem = serializationProblem(value);
-      if (problem) throw new Error(`Kanalen “${channel}”: ${problem} och kan inte serialiseras förlustfritt.`);
+      if (problem) throw channelError(`Channel “${channel}”: ${problem} and cannot be serialized without loss.`);
     }
-    const descriptor = descriptors.get(channel);
-    const validationError = validatePayload(descriptor, value);
-    if (validationError) throw new Error(`Kanalen “${channel}”: ${validationError}.`);
 
     const source = execution.source || { startLine: execution.stageLine || 1, endLine: execution.stageLine || 1 };
     const row = Number.isInteger(Number(location.row)) && Number(location.row) > 0
@@ -255,11 +231,11 @@ function createChannelBus({ runId, runInstanceId, documentVersion, documentPath,
         ? uniqueStrings(location.inputAnchorRefs)
         : [];
     if (explicitInputAnchorRefs && !explicitInputAnchorRefs.length) {
-      throw new Error(`Kanalen “${channel}”: inputAnchorRefs måste vara en icke-tom lista.`);
+      throw channelError(`Channel “${channel}”: inputAnchorRefs must be a nonempty list.`, "TBA-RUN-LAB");
     }
     if (explicitInputAnchorRefs) {
       for (const anchorRef of explicitInputAnchorRefs) {
-        if (!anchors.has(anchorRef)) throw new Error(`Kanalen “${channel}”: okänd input anchor “${anchorRef}”.`);
+        if (!anchors.has(anchorRef)) throw channelError(`Channel “${channel}”: unknown input anchor “${anchorRef}”.`, "TBA-RUN-LAB");
       }
     }
     const inputSelectors = location.inputSelectors === undefined
@@ -324,7 +300,7 @@ function createChannelBus({ runId, runInstanceId, documentVersion, documentPath,
       row,
       rowId,
       line,
-      payload: serializableValue(value),
+      payload: validate ? value : serializableValue(value),
       source: {
         path: source.path || "document.md",
         startLine: source.startLine,
@@ -463,4 +439,3 @@ function createChannelBus({ runId, runInstanceId, documentVersion, documentPath,
 }
 
 export { createChannelBus };
-
