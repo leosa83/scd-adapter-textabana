@@ -34,7 +34,7 @@ The regression in `tests/semantic-identity.test.mjs` pins the existing syntax-fa
 | Lab conformance | Structural evidence includes module source digests, adapter manifest digests and result/projection data; golden baselines are versioned. | Preserve the existing baseline and distinguish report presentation from bound evidence before translating. |
 | Embedded example modules | Module content participates in source digests and semantic context; explanatory strings inside source are still bytes. | Retain historical fixtures and publish separately versioned English examples if their source changes. Do not translate user values. |
 
-The adapter/conformance/module review here identifies the binding points; it is not a completed field-by-field migration. Their runtime sources, the parser source, frozen profiles and goldens remain untouched.
+The adapter/conformance/module review in 5.14B.1 identifies the binding points; it is not a completed field-by-field migration. In that increment, their runtime sources, the parser source, frozen profiles and goldens remain untouched. The following increments record the subsequent field-level decisions.
 
 ## Increment 5.14B.2: separate English parser presentation
 
@@ -50,6 +50,26 @@ The application tests exercise the recovery inventory, actual parser failures wi
 
 Only the reading views change. No translated report is created under an old report ID. Report JSON, structural-diff inputs, source/result references, gates, claimability, golden baselines and all runtime files retain their bytes. In particular, a failed plan or projection check receives failure wording rather than the success-sounding message present in the legacy report. This does not change the check result or perform new verification. Contract-only support remains non-claimable; this view does not know CI status or assert full conformance.
 
-The conformance tabs and empty-blocker label are English. Tests exercise the current requirement/outcome inventory, frozen real reports, failed and skipped stages, unknown contracts and rendered reading views. Adapter manifests/projections and embedded example modules remain deferred; their source/digest migration is not claimed here.
+The conformance tabs and empty-blocker label are English. Tests exercise the current requirement/outcome inventory, frozen real reports, failed and skipped stages, unknown contracts and rendered reading views. Adapter manifests/projections and embedded example modules were deferred from this increment; their source/digest migration is not claimed by 5.14B.3.
+
+## Increment 5.14B.4: English post-commit adapter diagnostics
+
+All 87 Swedish authored string occurrences in `runtime/adapters.js` are translated: manifest/projection validation, dispatcher diagnostics, data/notebook/annotation validation and the reference-projection explanatory note. The adapter panel's empty capability label is also English. This is a direct runtime translation, not a presentation formatter. Exported adapter diagnostics and the extension note therefore change too. User-provided identifiers, payloads and module source are not translated.
+
+The five manifests were reviewed field by field: their content already consists of English protocol identifiers, not Swedish descriptive prose. Their source bytes, versions and digests remain unchanged. A syntax-tree comparison confirms that the runtime edit changes only string/template text, with no altered checks, branches or identity algorithms.
+
+| Surface | Compatibility result |
+|---|---|
+| Adapter diagnostic messages and IDs | Message bytes change. `diagnosticId` hashes code, adapter ID and message, so translated diagnostics receive different IDs. Codes, severity, phase, source line and adapter identifiers are retained. Consumers must not treat prose or a message-derived ID as a cross-language stable code. |
+| Summary projection extension note | English note; `canonical: false` retained. The note is outside the lab projection seed. The full projection envelope is therefore **not** byte-identical despite its unchanged projection ID. |
+| Successful projection identity | Existing seeds bind adapter/version, manifest digest, source result and normalized output. Output and seed fields are unchanged. No new adapter or canonical profile version is declared. |
+| Unsupported/failed projection identity | Existing IDs bind manifest digest and source result, not diagnostic text. Their identity and status rules remain unchanged; these lab IDs are not full-envelope checksums. |
+| Committed core result and canonical semantic artifacts | Post-commit adapter reports are outside the canonical bundle. Adapter failures cannot turn a successful core commit into a core failure. Existing semantic artifacts and their frozen SHA-256 expectations are retained. |
+| Lab structural conformance | The structural projection includes manifest/output/projection evidence but excludes adapter diagnostic text and the extension note. The existing `conformance-golden@1.5.0-lab.1` baseline remains `fnv1a-lab:s960f`; no golden or expectation is rewritten. |
+| Generated external reports | All nine CLI profiles pass. Host and semantic reports change only `kernelDigest`; six independent runtime-profile reports change only their Worker and adapter-source fingerprints. The contract report remains byte-identical. |
+
+Five regressions in `tests/adapter-language.test.mjs` pin pre-translation manifest versions/digests, a successful summary output digest, and successful/unsupported/failed projection IDs. They verify changed diagnostic IDs alongside stable codes, Unicode identifiers, immutable input, malformed data/notebook/annotation input and actual Worker delivery. The Worker test also verifies equal canonical identities with and without failing/unsupported adapters, and English skip diagnostics after a failed core run. Existing domain and semantic suites cover successful domain projections and the unchanged frozen corpus. These checks protect the scoped behavior; they are not independent implementations or expanded standards-conformance claims.
+
+Next within 5.14B: inspect embedded example-module prose and source digests, retain historical fixtures, and introduce separately versioned English examples where needed. Original parser/conformance artifacts and intentional multilingual data remain in their original language.
 
 Sprint 5.14 remains active. Sprint 5.15 release preparation does not begin automatically; licensing, packaging and security-contact decisions remain open.

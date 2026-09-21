@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.19.0` |
-| Status | Wave 5 active · sprints 5.1–5.13 and increment 5.14A implemented |
+| Planversion | `1.19.1` |
+| Status | Wave 5 active · sprints 5.1–5.13 and increments 5.14A, 5.14B.1–B.4 implemented |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -421,7 +421,7 @@ Textabana Editor Kernel
 
 **Evidence:** 231 headless tests, 7 application tests and all nine CLI conformance suites pass. Lint, type checks, hosting declaration freshness, documentation checks and the production build pass. Eight reports update fingerprints only; the contract report also contains six translated rejection messages, with unchanged expected outcomes and error codes. Frozen profile documents, manifests, fixtures, semantic identities and multilingual examples remain unchanged.
 
-**Boundary and next increment:** a parser translation changed a frozen canonical IR identity, so it was withheld. Increment 5.14B.1 translates the parser guide and defines a separate, non-mutating presentation boundary, protected by an identity regression. Increment 5.14B.2 implements that English presentation in the Parser tab, with related locations and expandable original diagnostic data. Increment 5.14B.3 adds English conformance reading views without rewriting report JSON, gates or identities. Adapter and embedded-module migration remains 5.14B work. Sprint 5.14 remains active; release/licensing work in 5.15 is not started. See the [compatibility record](./docs/compatibility-5.14.md).
+**Boundary and next increment:** a parser translation changed a frozen canonical IR identity, so it was withheld. Increment 5.14B.1 translates the parser guide and defines a separate, non-mutating presentation boundary, protected by an identity regression. Increment 5.14B.2 implements that English presentation in the Parser tab, with related locations and expandable original diagnostic data. Increment 5.14B.3 adds English conformance reading views without rewriting report JSON, gates or identities. Increment 5.14B.4 translates post-commit adapter diagnostics and the projection extension note directly: message-derived diagnostic IDs change, while manifest bytes, projection identity rules and canonical core artifacts remain unchanged. Embedded-module migration remains 5.14B work. Sprint 5.14 remains active; release/licensing work in 5.15 is not started. See the [compatibility record](./docs/compatibility-5.14.md).
 
 ## Beroenden och ordning
 
@@ -434,6 +434,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.19.1 — 2026-09-21
+
+- Increments 5.14B.1–B.3 provide English parser guidance and separate parser/conformance reading views while preserving original artifact bytes and frozen expectations.
+- Increment 5.14B.4 translates post-commit adapter messages and documents changed diagnostic IDs separately from unchanged manifests, projection identity rules and canonical core artifacts.
+- Embedded example-module migration remains within 5.14B; license and external release preparation remain separate 5.15 decisions.
 
 ### 1.19.0 — 2026-09-21
 
