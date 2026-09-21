@@ -8,6 +8,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
 import { NodeKernelTransport } from "../sdk/node/transport.mjs";
+import { parseDocument } from "../runtime/parser.js";
+import { canonicalDigest } from "../runtime/canonical-json.js";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const vite = await createServer({
@@ -35,6 +37,87 @@ async function readCssTree(directory) {
   );
   return contents.join("\n");
 }
+
+test("English presentation covers every current parser recovery kind without matching prose", async () => {
+  const { presentParserDiagnostic } = await vite.ssrLoadModule("/app/parser-diagnostic-presentation.ts");
+  const source = await readFile(new URL("../runtime/parser.js", import.meta.url), "utf8");
+  const cases = [...source.matchAll(/recover\(\s*"([^"]+)",\s*"([^"]+)"/g)].map((match) => [match[1], match[2]]);
+  cases.push(["UnterminatedString", "TBA-PARSE-UNTERMINATED-STRING-LAB"], ["UnbalancedDelimiter", "TBA-PARSE-UNBALANCED-DELIMITER-LAB"]);
+  assert.equal(new Set(cases.map(([kind]) => kind)).size, 36);
+  for (const [recoveryKind, code] of cases) {
+    const diagnostic = { phase: "parsing", code, recoveryNodeId: "r", message: "not a translation key", related: [] };
+    const recovery = { nodeId: "r", recoveryKind, actual: "Hej 🌊", expected: "föremål", synthetic: false };
+    const view = presentParserDiagnostic(diagnostic, recovery, "textabana.parser/lab-v1");
+    assert.equal(view.translated, true, recoveryKind);
+    assert.doesNotMatch(view.message, /not a translation key/);
+    assert.ok(view.message.includes("Found: Hej 🌊."), recoveryKind);
+    assert.ok(view.message.includes("Expected: föremål."), recoveryKind);
+  }
+});
+
+test("parser presentation preserves raw IR and related Unicode source locations", async () => {
+  const { presentParserDiagnostic } = await vite.ssrLoadModule("/app/parser-diagnostic-presentation.ts");
+  const sources = [
+    ">>>> upper\nHej 🌊", ">>>> outer\n>>>> inner\n🌊\n<<<< outer",
+    ">>>> upper\n🌊\n<<<< other", ">>>>+ upper @id=ocean\n🌊",
+    ">>>> block\n>>>>+ upper @id=ocean\n🌊\n<<<< block",
+    ">>>>+ upper @id=ocean\n>>>> block\n<<<<+ @id=ocean\n<<<< block",
+    ">>>> upper text='🌊\n<<<< upper", ">>>> upper n=1 n=2\n<<<< upper",
+  ];
+  const freeze = (value) => {
+    if (value && typeof value === "object") { Object.values(value).forEach(freeze); Object.freeze(value); }
+    return value;
+  };
+  for (const source of sources) {
+    const parsed = parseDocument(source);
+    const ir = freeze(parsed.ir);
+    const before = await canonicalDigest(ir);
+    assert.ok(ir.diagnostics.length);
+    for (const diagnostic of ir.diagnostics) {
+      const recovery = ir.nodes.find((node) => node.nodeId === diagnostic.recoveryNodeId);
+      const view = presentParserDiagnostic(diagnostic, recovery, ir.parser.schema);
+      assert.equal(view.translated, true, diagnostic.code);
+      if (recovery.recoveryKind === "MismatchedBlockClose" && recovery.synthetic) {
+        assert.match(view.message, /non-executable synthetic closing marker/);
+        assert.deepEqual(view.related.map((r) => r.message), ["The inner block opened here.", "The authored closing marker belongs to the outer block."]);
+      }
+      assert.deepEqual(view.related.map((r) => r.sourceSpan), diagnostic.related.map((r) => r.sourceSpan));
+      for (const [index, item] of view.related.entries()) {
+        assert.notEqual(item.sourceSpan, diagnostic.related[index].sourceSpan);
+        assert.doesNotMatch(item.message, /öppnades|författade/);
+      }
+    }
+    assert.equal(await canonicalDigest(ir), before);
+  }
+});
+
+test("parser presentation falls back for unknown or mismatched inputs and renders raw evidence separately", async () => {
+  const { presentParserDiagnostic } = await vite.ssrLoadModule("/app/parser-diagnostic-presentation.ts");
+  const { ParserDiagnostic } = await vite.ssrLoadModule("/app/parser-diagnostic.tsx");
+  const ir = parseDocument(">>>> upper\nHej 🌊").ir;
+  const diagnostic = ir.diagnostics[0];
+  const recovery = ir.nodes.find((node) => node.nodeId === diagnostic.recoveryNodeId);
+  for (const [d, r, schema] of [
+    [diagnostic, undefined, ir.parser.schema],
+    [diagnostic, recovery, "textabana.parser/future"],
+    [{ ...diagnostic, phase: "transform" }, recovery, ir.parser.schema],
+    [{ ...diagnostic, code: "TBA-FUTURE" }, recovery, ir.parser.schema],
+    [diagnostic, { ...recovery, nodeId: "wrong" }, ir.parser.schema],
+    [diagnostic, { ...recovery, recoveryKind: "toString" }, ir.parser.schema],
+  ]) {
+    const view = presentParserDiagnostic(d, r, schema);
+    assert.equal(view.translated, false);
+    assert.equal(view.message, d.message);
+    assert.deepEqual(view.related, d.related);
+  }
+  const html = renderToStaticMarkup(React.createElement(ParserDiagnostic, { diagnostic, recovery, parserSchema: ir.parser.schema }));
+  assert.match(html, /The block is missing its closing marker/);
+  assert.match(html, /The block opened here/);
+  assert.match(html, /L1:0/);
+  assert.match(html, /<details><summary>Original diagnostic \(unchanged artifact data\)<\/summary>/);
+  assert.ok(html.includes("Blocket"));
+  assert.match(html, /&lt;&lt;&lt;&lt; upper/);
+});
 
 test("emits the catalog's animation and scrolling utilities", async () => {
   const css = await readCssTree(path.join(root, "dist"));

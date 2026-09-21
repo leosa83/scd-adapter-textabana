@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ParserDiagnostic } from "./parser-diagnostic";
 import {
   AlertTriangle,
   ArrowRight,
@@ -214,7 +215,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
         <div className="lab-scroll parser-overview">
           <div className="lab-metrics">
             <article><span>Parser</span><strong>{ir?.parser.engine ?? "–"}</strong><small>{ir?.parser.schema ?? "no analysis"}</small></article>
-            <article><span>Parse mode</span><strong>{ir?.parser.parseMode ?? "–"}</strong><small>incremental reuse: {ir?.parser.incrementalReuse ? "ja" : "nej"}</small></article>
+            <article><span>Parse mode</span><strong>{ir?.parser.parseMode ?? "–"}</strong><small>incremental reuse: {ir?.parser.incrementalReuse ? "yes" : "no"}</small></article>
             <article><span>CST</span><strong>{ir?.syntax.cst.nodes.length ?? 0}</strong><small>{ir?.syntax.cst.lossless ? "lossless source coverage" : "incomplete coverage"}</small></article>
             <article><span>Recovery</span><strong>{recoveries.length}</strong><small>{ir?.validity.executable ? "executable IR" : "all execution blocked"}</small></article>
           </div>
@@ -225,11 +226,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
           {parserDiagnostics.length ? (
             <div className="parser-diagnostics">
               {parserDiagnostics.map((diagnostic) => (
-                <article key={diagnostic.diagnosticId ?? `${diagnostic.code}:${diagnostic.line}`}>
-                  <div><strong>{diagnostic.code ?? "TBA-PARSE-LAB"}</strong><code>{diagnostic.sourceSpan ? `L${diagnostic.sourceSpan.startLine}:${diagnostic.sourceSpan.startColumn} · [${diagnostic.sourceSpan.start}, ${diagnostic.sourceSpan.end})` : `L${diagnostic.line}`}</code></div>
-                  <p>{diagnostic.message}</p>
-                  {diagnostic.recoveryNodeId ? <small>{diagnostic.recoveryNodeId} · {diagnostic.diagnosticKey}</small> : null}
-                </article>
+                <ParserDiagnostic key={diagnostic.diagnosticId ?? `${diagnostic.code}:${diagnostic.line}`} diagnostic={diagnostic} recovery={recoveries.find((node) => node.nodeId === diagnostic.recoveryNodeId)} parserSchema={ir?.parser.schema} />
               ))}
             </div>
           ) : (

@@ -3391,6 +3391,8 @@ a {
 }
 
 .parser-diagnostics article {
+  min-width: 0;
+  overflow-wrap: anywhere;
   border: 1px solid #d9b27b;
   border-radius: 9px;
   padding: 12px 14px;
@@ -3399,6 +3401,7 @@ a {
 
 .parser-diagnostics article > div {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -3407,14 +3410,26 @@ a {
 .parser-diagnostics p {
   margin: 7px 0 4px;
   color: #4f463c;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .parser-diagnostics small,
 .parser-diagnostics code {
   color: #89633c;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
+}
+
+.parser-diagnostics summary {
+  margin-top: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.parser-diagnostics pre {
+  max-width: 100%;
+  overflow: auto;
+  font-size: 12px;
 }
 
 .parser-json {
