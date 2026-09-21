@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ParserDiagnostic } from "./parser-diagnostic";
+import { presentConformanceRequirement, presentConformanceStage, presentNegativeFixture, presentCancellationLimit } from "./conformance-presentation";
 import {
   AlertTriangle,
   ArrowRight,
@@ -36,6 +37,7 @@ import type {
   LabId,
   RuntimeAnchor,
   ConformanceProfile,
+  ConformanceReport,
   RuntimeResult,
 } from "./playground-model";
 
@@ -1341,11 +1343,11 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
         onChange={setTab}
         items={[
           { id: "gate", label: "Gate", icon: ShieldCheck },
-          { id: "profiles", label: "Profiler", count: profiles.length, icon: Layers3 },
-          { id: "diff", label: "Strukturell diff", count: changes.length, icon: GitBranch },
-          { id: "negative", label: "Negativa cases", count: report.negativeFixtures.length + 1, icon: AlertTriangle },
+          { id: "profiles", label: "Profiles", count: profiles.length, icon: Layers3 },
+          { id: "diff", label: "Structural diff", count: changes.length, icon: GitBranch },
+          { id: "negative", label: "Negative cases", count: report.negativeFixtures.length + 1, icon: AlertTriangle },
           { id: "report", label: "Report JSON", icon: FileJson },
-          { id: "identity", label: "Identiteter", icon: Fingerprint },
+          { id: "identity", label: "Identities", icon: Fingerprint },
         ]}
       />
       {tab === "identity" ? <SemanticIdentityPanel bundle={result.semanticIdentity} /> : null}
@@ -1362,7 +1364,7 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
           </section>
           <div className="lab-metrics">
             <article><span>Passed profiles</span><strong>{report.summary.passed}</strong><small>active requirements only</small></article>
-            <article><span>Blocked profiles</span><strong>{report.summary.failed}</strong><small>{report.gate.blockingRequirementIds.join(" · ") || "inga blockers"}</small></article>
+            <article><span>Blocked profiles</span><strong>{report.summary.failed}</strong><small>{report.gate.blockingRequirementIds.join(" · ") || "no blockers"}</small></article>
             <article><span>Not run</span><strong>{report.summary.notRun}</strong><small>no relevant inputs</small></article>
             <article><span>Claimable subset</span><strong>{report.summary.claimableProfiles.length}</strong><small>contract-only never counts</small></article>
           </div>
@@ -1370,7 +1372,7 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
             {report.stages.map((stage, index) => (
               <article key={stage.stage} className={`is-${stage.status}`}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
-                <div><strong>{stage.stage}</strong><p>{stage.message}</p>{stage.evidenceRefs.length ? <code>{stage.evidenceRefs.join(" · ")}</code> : null}</div>
+                <div><strong>{stage.stage}</strong><p>{presentConformanceStage(report, stage)}</p>{stage.evidenceRefs.length ? <code>{stage.evidenceRefs.join(" · ")}</code> : null}</div>
                 <ConformanceStatusMark status={stage.status} />
               </article>
             ))}
@@ -1400,7 +1402,7 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
               </button>
             ))}
           </div>
-          {selectedProfile ? <ConformanceProfileDetail profile={selectedProfile} /> : null}
+          {selectedProfile ? <ConformanceProfileDetail profile={selectedProfile} report={report} /> : null}
         </div>
       ) : null}
       {tab === "diff" ? (
@@ -1424,12 +1426,12 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
           <div className="negative-case-list">
             {report.negativeFixtures.map((fixture) => (
               <article className={report.case.fixtureId === fixture.fixtureId ? `is-active is-${report.gate.status}` : ""} key={fixture.fixtureId}>
-                <AlertTriangle /><div><strong>{fixture.caseId}</strong><p>{fixture.purpose}</p><code>{fixture.expectedOutcome} · {fixture.expectedDiagnosticCode}</code></div>
+                <AlertTriangle /><div><strong>{fixture.caseId}</strong><p>{presentNegativeFixture(report, fixture)}</p><code>{fixture.expectedOutcome} · {fixture.expectedDiagnosticCode}</code></div>
                 <Button size="sm" variant="outline" onClick={() => onSelectFixture(fixture.fixtureId)}>Run fixture</Button>
               </article>
             ))}
             <article className={report.case.fixtureId === "cancellation-probe" ? `is-active is-${report.cancellation.status}` : ""}>
-              <CircleDot /><div><strong>cooperative-cancellation</strong><p>{report.cancellation.limitation}</p><code>cancelled · {report.cancellation.diagnosticCode}</code></div>
+              <CircleDot /><div><strong>cooperative-cancellation</strong><p>{presentCancellationLimit(report)}</p><code>cancelled · {report.cancellation.diagnosticCode}</code></div>
               <Button size="sm" variant="outline" onClick={() => onSelectFixture("cancellation-probe")}>Run cancellation</Button>
             </article>
           </div>
@@ -1445,7 +1447,7 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
   );
 }
 
-function ConformanceProfileDetail({ profile }: { profile: ConformanceProfile }) {
+export function ConformanceProfileDetail({ profile, report }: { profile: ConformanceProfile; report: ConformanceReport }) {
   return (
     <section className={`conformance-profile-detail is-${profile.status}`}>
       <header>
@@ -1456,7 +1458,7 @@ function ConformanceProfileDetail({ profile }: { profile: ConformanceProfile }) 
         {profile.requirements.map((requirement) => (
           <article key={requirement.requirementId}>
             <ConformanceStatusMark status={requirement.status} />
-            <div><strong>{requirement.requirementId}</strong><p>{requirement.message}</p>{requirement.evidenceRefs.length ? <code>{requirement.evidenceRefs.join(" · ")}</code> : null}</div>
+            <div><strong>{requirement.requirementId}</strong><p>{presentConformanceRequirement(report, requirement)}</p>{requirement.evidenceRefs.length ? <code>{requirement.evidenceRefs.join(" · ")}</code> : null}</div>
           </article>
         ))}
       </div>

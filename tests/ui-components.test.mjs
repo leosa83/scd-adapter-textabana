@@ -10,6 +10,7 @@ import { createServer } from "vite";
 import { NodeKernelTransport } from "../sdk/node/transport.mjs";
 import { parseDocument } from "../runtime/parser.js";
 import { canonicalDigest } from "../runtime/canonical-json.js";
+import { executeSemanticCase, semanticSuiteUrl } from "../conformance/semantic-runner.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const vite = await createServer({
@@ -37,6 +38,83 @@ async function readCssTree(directory) {
   );
   return contents.join("\n");
 }
+
+test("conformance presentation covers current requirement outcomes without rewriting reports", async () => {
+  const view = await vite.ssrLoadModule("/app/conformance-presentation.ts");
+  const suite = JSON.parse(await readFile(semanticSuiteUrl, "utf8"));
+  const response = await executeSemanticCase(suite.cases.find((c) => c.id === "pure-stage"), "direct");
+  const report = response.conformanceReport;
+  const before = await canonicalDigest(report);
+  const freeze = (value) => { if (value && typeof value === "object") { Object.values(value).forEach(freeze); Object.freeze(value); } };
+  freeze(report);
+  const source = await readFile(new URL("../runtime/lab-conformance.js", import.meta.url), "utf8");
+  const checks = [...source.matchAll(/checkedRequirement\("([^"]+)"/g)].flatMap((m) => [[m[1], "passed"], [m[1], "failed"]]);
+  checks.push(...[...source.matchAll(/notRunRequirement\("([^"]+)"/g)].map((m) => [m[1], "not-run"]));
+  checks.push(["CANCELLATION-ATOMIC", "failed"]);
+  for (const id of ["DATA-PROJECTION", "NOTEBOOK-PROJECTION", "ANNOTATION-PROJECTION"]) {
+    for (const status of ["passed", "failed", "not-run"]) checks.push([id, status]);
+  }
+  assert.equal(new Set(checks.map(([id]) => id)).size, 24);
+  const diagnosticReport = { ...report, case: { ...report.case, expectedDiagnosticCode: "TBA-TEST-🌊" } };
+  for (const [requirementId, status] of checks) {
+    const item = { requirementId, status, message: "original prose", evidenceRefs: ["evidence:🌊"] };
+    assert.notEqual(view.presentConformanceRequirement(diagnosticReport, item), item.message, `${requirementId}/${status}`);
+    assert.deepEqual(item.evidenceRefs, ["evidence:🌊"]);
+  }
+  for (const profile of report.profiles) {
+    for (const item of profile.requirements) assert.notEqual(view.presentConformanceRequirement(report, item), item.message);
+  }
+  for (const stage of report.stages) assert.notEqual(view.presentConformanceStage(report, stage), stage.message);
+  for (const fixture of report.negativeFixtures) assert.notEqual(view.presentNegativeFixture(report, fixture), fixture.purpose);
+  assert.match(view.presentCancellationLimit(report), /cannot be preempted/);
+  assert.equal(await canonicalDigest(report), before);
+});
+
+test("conformance wording fails safely for unknown contracts and never describes failed stages as verified", async () => {
+  const view = await vite.ssrLoadModule("/app/conformance-presentation.ts");
+  const suite = JSON.parse(await readFile(semanticSuiteUrl, "utf8"));
+  const response = await executeSemanticCase(suite.cases.find((c) => c.id === "syntax-failure"), "direct");
+  const report = response.conformanceReport;
+  for (const stage of report.stages) {
+    const message = view.presentConformanceStage(report, stage);
+    if (stage.stage === "plan") assert.match(message, /No plan claim/);
+    if (stage.stage === "result") assert.match(message, /rolled back/);
+  }
+  for (const stage of ["plan", "projection"]) {
+    const item = { stage, status: "failed", message: "original", evidenceRefs: [] };
+    assert.match(view.presentConformanceStage(report, item), /could not be verified/);
+  }
+  const item = report.profiles[0].requirements[0];
+  const future = { ...report, suite: { ...report.suite, version: "future" } };
+  assert.equal(view.presentConformanceRequirement(future, item), item.message);
+  assert.equal(view.presentConformanceStage(future, report.stages[0]), report.stages[0].message);
+  assert.equal(view.presentNegativeFixture(future, report.negativeFixtures[0]), report.negativeFixtures[0].purpose);
+  assert.equal(view.presentCancellationLimit(future), report.cancellation.limitation);
+  for (const requirementId of ["UNKNOWN", "toString"]) {
+    assert.equal(view.presentConformanceRequirement(report, { ...item, requirementId }), item.message);
+  }
+  assert.equal(view.presentConformanceRequirement(report, { ...item, status: "future" }), item.message);
+  const changed = { ...report.negativeFixtures[0], expectedDiagnosticCode: "FUTURE" };
+  assert.equal(view.presentNegativeFixture(report, changed), changed.purpose);
+});
+
+test("conformance gate and profile render English while retaining raw evidence and contract-only limits", async () => {
+  const { PlaygroundOutput, ConformanceProfileDetail } = await vite.ssrLoadModule("/app/playground-labs.tsx");
+  const suite = JSON.parse(await readFile(semanticSuiteUrl, "utf8"));
+  const result = await executeSemanticCase(suite.cases.find((c) => c.id === "pure-stage"), "direct");
+  const before = JSON.stringify(result.conformanceReport);
+  const html = renderToStaticMarkup(React.createElement(PlaygroundOutput, { lab: "conformance", result, previousResult: null, running: false, onOpenLab() {}, onSelectFixture() {} }));
+  assert.match(html, /A versioned source snapshot is available/);
+  assert.match(html, /no full profile conformance/);
+  assert.doesNotMatch(html, /Profiler|Strukturell|Negativa|Identiteter|inga blockers|Versionerad source/);
+  for (const profile of result.conformanceReport.profiles) {
+    const detail = renderToStaticMarkup(React.createElement(ConformanceProfileDetail, { profile, report: result.conformanceReport }));
+    for (const requirement of profile.requirements) assert.ok(detail.includes(requirement.requirementId));
+    if (profile.derivedSupport === "contract-only") assert.match(detail, /never claimable/);
+  }
+  assert.equal(JSON.stringify(result.conformanceReport), before);
+  assert.ok(before.includes("Versionerad source snapshot finns."));
+});
 
 test("English presentation covers every current parser recovery kind without matching prose", async () => {
   const { presentParserDiagnostic } = await vite.ssrLoadModule("/app/parser-diagnostic-presentation.ts");
