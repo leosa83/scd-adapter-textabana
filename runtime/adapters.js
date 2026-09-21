@@ -269,14 +269,14 @@ function adapterDiagnostic(code, message, adapterId, severity = "error") {
 
 function validateAdapterManifest(manifest) {
   const problems = [];
-  if (manifest.schema !== "textabana.adapter-manifest/lab-v1") problems.push("ogiltigt manifestschema");
-  if (!manifest.adapterId || !manifest.version || !manifest.profile) problems.push("id, version och profil krävs");
-  if (manifest.contract !== "adapter-contract/1" || manifest.phase !== "post-commit") problems.push("adaptern måste vara post-commit");
-  if (!Array.isArray(manifest.accepts?.resultSchemas) || !manifest.accepts.resultSchemas.length) problems.push("accepterade resultatscheman saknas");
-  if (!Array.isArray(manifest.produces) || !manifest.produces.length) problems.push("producerade projektioner saknas");
-  if (!["playground-subset", "contract-only", "unsupported"].includes(manifest.support)) problems.push("ogiltig supportnivå");
-  if (!["lossless", "selective", "lossy"].includes(manifest.fidelity?.mode)) problems.push("fidelity mode saknas");
-  if (manifest.fidelity?.mode !== "lossless" && !manifest.fidelity?.requiresSourceResult) problems.push("selektiv eller förlustbringande projektion måste behålla source result reference");
+  if (manifest.schema !== "textabana.adapter-manifest/lab-v1") problems.push("invalid manifest schema");
+  if (!manifest.adapterId || !manifest.version || !manifest.profile) problems.push("id, version and profile are required");
+  if (manifest.contract !== "adapter-contract/1" || manifest.phase !== "post-commit") problems.push("the adapter must run post-commit");
+  if (!Array.isArray(manifest.accepts?.resultSchemas) || !manifest.accepts.resultSchemas.length) problems.push("accepted result schemas are missing");
+  if (!Array.isArray(manifest.produces) || !manifest.produces.length) problems.push("produced projections are missing");
+  if (!["playground-subset", "contract-only", "unsupported"].includes(manifest.support)) problems.push("invalid support level");
+  if (!["lossless", "selective", "lossy"].includes(manifest.fidelity?.mode)) problems.push("fidelity mode is missing");
+  if (manifest.fidelity?.mode !== "lossless" && !manifest.fidelity?.requiresSourceResult) problems.push("a selective or lossy projection must retain its source result reference");
   return problems;
 }
 
@@ -354,7 +354,7 @@ function buildResultSummaryProjection(result, manifest) {
     extensions: {
       "textabana.playground": {
         canonical: false,
-        note: "Körbar referensprojektion för adapter-contract/1; inte ett domänadapteranspråk.",
+        note: "Executable reference projection for adapter-contract/1; not a domain-adapter claim.",
       },
     },
   };
@@ -368,7 +368,7 @@ function buildDataTableProjection(result, manifest) {
   const lineageEvents = snapshots["data.lineage"]?.events || [];
   const aggregateEvents = snapshots["data.aggregates"]?.events || [];
   const outputDatasetEvents = datasetEvents.filter((event) => event.payload?.role === "output");
-  if (outputDatasetEvents.length !== 1) throw new Error("data.datasets måste innehålla exakt ett output-dataset i denna playground-subset");
+  if (outputDatasetEvents.length !== 1) throw new Error("data.datasets must contain exactly one output dataset in this playground subset");
   const outputDatasetEvent = outputDatasetEvents[0];
 
   const datasetId = String(outputDatasetEvent.payload.datasetId);
@@ -376,9 +376,9 @@ function buildDataTableProjection(result, manifest) {
   const lineageForDataset = lineageEvents.filter((event) => event.payload?.output?.datasetId === datasetId);
   const recordLineage = lineageForDataset.filter((event) => event.payload?.granularity === "record");
   const cellLineage = lineageForDataset.filter((event) => event.payload?.granularity === "cell");
-  if (outputDatasetEvent.payload.recordCount !== rowsForDataset.length) throw new Error("output-datasetets recordCount matchar inte data.output.records");
+  if (outputDatasetEvent.payload.recordCount !== rowsForDataset.length) throw new Error("the output dataset recordCount does not match data.output.records");
   const recordIds = rowsForDataset.map((event) => String(event.payload?.recordId || ""));
-  if (recordIds.some((recordId) => !recordId) || new Set(recordIds).size !== recordIds.length) throw new Error("data.output.records måste ha unika recordId");
+  if (recordIds.some((recordId) => !recordId) || new Set(recordIds).size !== recordIds.length) throw new Error("data.output.records must have unique recordId values");
   const fields = outputDatasetEvent.payload.fields || [];
   const fieldNames = fields.map((field) => field.name);
   const inputRecordIds = new Set(inputEvents.map((event) => event.payload?.recordId));
@@ -386,40 +386,40 @@ function buildDataTableProjection(result, manifest) {
   const sourceMapByOutput = new Map((result.sourceMaps || []).map((mapping) => [mapping.outputRef, mapping]));
   for (const event of rowsForDataset) {
     for (const field of fields) {
-      if (!Object.hasOwn(event.payload?.values || {}, field.name)) throw new Error(`record ${event.payload.recordId} saknar kolumnen ${field.name}`);
+      if (!Object.hasOwn(event.payload?.values || {}, field.name)) throw new Error(`record ${event.payload.recordId} is missing column ${field.name}`);
       const value = event.payload.values[field.name];
       if (value === null && field.nullable) continue;
-      if (field.type === "integer" && !Number.isInteger(value)) throw new Error(`kolumnen ${field.name} måste innehålla heltal`);
-      if (field.type === "utf8" && typeof value !== "string") throw new Error(`kolumnen ${field.name} måste innehålla text`);
+      if (field.type === "integer" && !Number.isInteger(value)) throw new Error(`column ${field.name} must contain integers`);
+      if (field.type === "utf8" && typeof value !== "string") throw new Error(`column ${field.name} must contain text`);
     }
     const lineageEvent = recordLineage.find((candidate) => candidate.payload?.output?.recordId === event.payload.recordId);
-    if (!lineageEvent) throw new Error(`record ${event.payload.recordId} saknar record-lineage`);
+    if (!lineageEvent) throw new Error(`record ${event.payload.recordId} is missing record lineage`);
     if (lineageEvent.payload.inputRecordIds?.length !== 2 || !lineageEvent.payload.inputRecordIds.every((recordId) => inputRecordIds.has(recordId))) {
-      throw new Error(`record ${event.payload.recordId} måste referera två kända input-records`);
+      throw new Error(`record ${event.payload.recordId} must reference two known input records`);
     }
     const mapping = sourceMapByOutput.get(event.eventId);
     if (mapping?.mapping !== "derived" || mapping.inputAnchorRefs?.length !== 2 || !mapping.inputAnchorRefs.every((anchorRef) => knownAnchors.has(anchorRef))) {
-      throw new Error(`record ${event.payload.recordId} saknar en derived SourceMap med två inputankare`);
+      throw new Error(`record ${event.payload.recordId} is missing a derived SourceMap with two input anchors`);
     }
     if (mapping.outputSelector?.datasetId !== datasetId || mapping.outputSelector?.recordId !== event.payload.recordId) {
-      throw new Error(`record ${event.payload.recordId} saknar matchande DataSelector`);
+      throw new Error(`record ${event.payload.recordId} is missing a matching DataSelector`);
     }
   }
   for (const event of cellLineage) {
     if (!recordIds.includes(event.payload?.output?.recordId) || !fieldNames.includes(event.payload?.output?.column)) {
-      throw new Error("cell-lineage pekar på en okänd outputcell");
+      throw new Error("cell lineage refers to an unknown output cell");
     }
     if (!Array.isArray(event.payload?.inputs) || !event.payload.inputs.length || event.payload.inputs.some((selector) => !selector.column)) {
-      throw new Error("cell-lineage måste ange minst en inputkolumn");
+      throw new Error("cell lineage must specify at least one input column");
     }
     const mapping = sourceMapByOutput.get(event.eventId);
     if (mapping?.outputSelector?.column !== event.payload.output.column || mapping.mapping !== "derived") {
-      throw new Error("cell-lineage saknar en derived SourceMap med kolumnselector");
+      throw new Error("cell lineage is missing a derived SourceMap with a column selector");
     }
   }
   for (const event of aggregateEvents) {
     const mapping = sourceMapByOutput.get(event.eventId);
-    if (event.payload?.mapping !== "derived" || mapping?.mapping !== "derived") throw new Error("aggregation måste ha derived lineage");
+    if (event.payload?.mapping !== "derived" || mapping?.mapping !== "derived") throw new Error("aggregation must have derived lineage");
   }
   const consumedEvents = [
     ...datasetEvents,
@@ -514,23 +514,23 @@ function buildNotebookProjection(result, manifest) {
   const cellEvents = snapshots["notebook.cells"]?.events || [];
   const outputEvents = snapshots["notebook.outputs"]?.events || [];
   const stateEvents = snapshots["notebook.state"]?.events || [];
-  if (snapshotEvents.length !== 1) throw new Error("notebook.snapshot måste innehålla exakt en whole snapshot");
-  if (stateEvents.length !== 1) throw new Error("notebook.state måste innehålla exakt en explicit stateprofil");
+  if (snapshotEvents.length !== 1) throw new Error("notebook.snapshot must contain exactly one whole snapshot");
+  if (stateEvents.length !== 1) throw new Error("notebook.state must contain exactly one explicit state profile");
 
   const snapshot = snapshotEvents[0].payload || {};
   const state = stateEvents[0].payload || {};
-  if (snapshot.wholeSnapshot !== true || state.wholeSnapshot !== true) throw new Error("notebookadaptern accepterar endast whole snapshots");
+  if (snapshot.wholeSnapshot !== true || state.wholeSnapshot !== true) throw new Error("the notebook adapter accepts only whole snapshots");
   const notebookId = String(snapshot.notebookId || "");
   const snapshotId = String(snapshot.snapshotId || "");
-  if (!notebookId || !snapshotId || state.notebookId !== notebookId || state.snapshotId !== snapshotId) throw new Error("notebook- och snapshotidentitet måste vara konsekvent");
-  if (!["fresh", "session", "attached"].includes(state.requestedProfile) || state.profile !== snapshot.profile) throw new Error("notebook.state saknar en giltig explicit profil");
-  if (state.requestedProfile === "fresh" && (state.executionSupport !== "playground-subset" || state.kernelState !== "not-used")) throw new Error("fresh-profilen måste vara strukturell och kernel-fri");
-  if (state.requestedProfile !== "fresh" && (state.executionSupport !== "contract-only" || state.kernelState !== "external-unverified")) throw new Error("session och attached får inte simulera kernelstate");
+  if (!notebookId || !snapshotId || state.notebookId !== notebookId || state.snapshotId !== snapshotId) throw new Error("notebook and snapshot identities must be consistent");
+  if (!["fresh", "session", "attached"].includes(state.requestedProfile) || state.profile !== snapshot.profile) throw new Error("notebook.state is missing a valid explicit profile");
+  if (state.requestedProfile === "fresh" && (state.executionSupport !== "playground-subset" || state.kernelState !== "not-used")) throw new Error("the fresh profile must be structural and kernel-free");
+  if (state.requestedProfile !== "fresh" && (state.executionSupport !== "contract-only" || state.kernelState !== "external-unverified")) throw new Error("session and attached must not simulate kernel state");
 
   const orderedCellIds = cellEvents.map((event) => String(event.payload?.cellId || ""));
-  if (!orderedCellIds.length || orderedCellIds.some((cellId) => !cellId) || new Set(orderedCellIds).size !== orderedCellIds.length) throw new Error("notebook.cells måste ha unika stabila cellId");
-  if (snapshot.cellCount !== cellEvents.length || canonicalJson(snapshot.cellIds || []) !== canonicalJson(orderedCellIds)) throw new Error("snapshotens cellista måste matcha den författade cellordningen");
-  if (outputEvents.length !== cellEvents.length) throw new Error("varje notebookcell måste ha exakt en output");
+  if (!orderedCellIds.length || orderedCellIds.some((cellId) => !cellId) || new Set(orderedCellIds).size !== orderedCellIds.length) throw new Error("notebook.cells must have unique stable cellId values");
+  if (snapshot.cellCount !== cellEvents.length || canonicalJson(snapshot.cellIds || []) !== canonicalJson(orderedCellIds)) throw new Error("the snapshot cell list must match the authored cell order");
+  if (outputEvents.length !== cellEvents.length) throw new Error("each notebook cell must have exactly one output");
 
   const outputByCell = new Map(outputEvents.map((event) => [event.payload?.cellId, event]));
   const knownAnchors = new Set((result.anchors || []).map((anchor) => anchor.anchorId));
@@ -541,18 +541,18 @@ function buildNotebookProjection(result, manifest) {
   const cells = cellEvents.map((cellEvent, index) => {
     const cell = cellEvent.payload || {};
     const outputEvent = outputByCell.get(cell.cellId);
-    if (!outputEvent || outputEvent.payload?.notebookId !== notebookId || outputEvent.payload?.snapshotId !== snapshotId) throw new Error(`cellen ${cell.cellId} saknar matchande snapshot-bunden output`);
+    if (!outputEvent || outputEvent.payload?.notebookId !== notebookId || outputEvent.payload?.snapshotId !== snapshotId) throw new Error(`cell ${cell.cellId} is missing matching snapshot-bound output`);
     const output = outputEvent.payload;
-    if (cell.notebookId !== notebookId || cell.snapshotId !== snapshotId || cell.index !== index) throw new Error(`cellen ${cell.cellId} har inkonsekvent identitet eller ordning`);
-    if (output.sourceDigest !== cell.sourceDigest || output.status !== "fresh") throw new Error(`output för ${cell.cellId} är stale mot aktuell cellkälla`);
-    if (!output.mimeBundle || mimeTypes.some((mimeType) => !Object.hasOwn(output.mimeBundle, mimeType))) throw new Error(`output för ${cell.cellId} saknar obligatorisk MIME-representation`);
+    if (cell.notebookId !== notebookId || cell.snapshotId !== snapshotId || cell.index !== index) throw new Error(`cell ${cell.cellId} has inconsistent identity or order`);
+    if (output.sourceDigest !== cell.sourceDigest || output.status !== "fresh") throw new Error(`output for ${cell.cellId} is stale relative to the current cell source`);
+    if (!output.mimeBundle || mimeTypes.some((mimeType) => !Object.hasOwn(output.mimeBundle, mimeType))) throw new Error(`output for ${cell.cellId} is missing a required MIME representation`);
     const cellMap = sourceMapByOutput.get(cellEvent.eventId);
     const outputMap = sourceMapByOutput.get(outputEvent.eventId);
     for (const [event, mapping] of [[cellEvent, cellMap], [outputEvent, outputMap]]) {
-      if (!knownAnchors.has(event.target?.anchorRef) || !mapping || !knownActivities.has(mapping.generatingActivity)) throw new Error(`cellen ${cell.cellId} har en oresolverbar Anchor, SourceMap eller provenanceaktivitet`);
-      if (mapping.outputSelector?.type !== "CellSelector" || mapping.outputSelector.notebookId !== notebookId || mapping.outputSelector.cellId !== cell.cellId) throw new Error(`cellen ${cell.cellId} saknar matchande CellSelector`);
+      if (!knownAnchors.has(event.target?.anchorRef) || !mapping || !knownActivities.has(mapping.generatingActivity)) throw new Error(`cell ${cell.cellId} has an unresolved Anchor, SourceMap or provenance activity`);
+      if (mapping.outputSelector?.type !== "CellSelector" || mapping.outputSelector.notebookId !== notebookId || mapping.outputSelector.cellId !== cell.cellId) throw new Error(`cell ${cell.cellId} is missing a matching CellSelector`);
     }
-    if (outputMap.mapping !== "derived" || !outputMap.inputAnchorRefs?.includes(cellEvent.target.anchorRef)) throw new Error(`output för ${cell.cellId} saknar derived källbindning`);
+    if (outputMap.mapping !== "derived" || !outputMap.inputAnchorRefs?.includes(cellEvent.target.anchorRef)) throw new Error(`output for ${cell.cellId} is missing a derived source binding`);
     return {
       cellId: cell.cellId,
       title: cell.title,
@@ -574,7 +574,7 @@ function buildNotebookProjection(result, manifest) {
       },
     };
   });
-  if (outputByCell.size !== cellEvents.length) throw new Error("notebook.outputs innehåller okända eller duplicerade celler");
+  if (outputByCell.size !== cellEvents.length) throw new Error("notebook.outputs contains unknown or duplicate cells");
 
   const consumedEvents = [...snapshotEvents, ...stateEvents, ...cellEvents, ...outputEvents];
   const eventRefs = uniqueStrings(consumedEvents.map((event) => event.eventId));
@@ -634,12 +634,12 @@ function buildAnnotationReviewProjection(result, manifest) {
   const candidateEvents = snapshots["annotation.candidates"]?.events || [];
   const reviewEvents = snapshots["annotation.reviews"]?.events || [];
   const revisionEvents = snapshots["annotation.revisions"]?.events || [];
-  if (setEvents.length !== 1) throw new Error("annotation.set måste innehålla exakt en whole snapshot");
-  if (!candidateEvents.length) throw new Error("annotation.candidates måste innehålla minst en modellkandidat");
+  if (setEvents.length !== 1) throw new Error("annotation.set must contain exactly one whole snapshot");
+  if (!candidateEvents.length) throw new Error("annotation.candidates must contain at least one model candidate");
 
   const set = setEvents[0].payload || {};
   const setId = String(set.setId || "");
-  if (!setId || set.wholeSnapshot !== true) throw new Error("annotation.set måste ha stabilt setId och wholeSnapshot=true");
+  if (!setId || set.wholeSnapshot !== true) throw new Error("annotation.set must have a stable setId and wholeSnapshot=true");
 
   const knownAnchors = new Map((result.anchors || []).map((anchor) => [anchor.anchorId, anchor]));
   const knownActivities = new Set((result.provenance?.activities || []).map((activity) => activity.activityId));
@@ -649,25 +649,25 @@ function buildAnnotationReviewProjection(result, manifest) {
   const validateBinding = (event, annotationId, revision, expectedMapping) => {
     const anchor = knownAnchors.get(event.target?.anchorRef);
     const mapping = sourceMapByOutput.get(event.eventId);
-    if (!anchor || !mapping || !knownActivities.has(mapping.generatingActivity)) throw new Error(`${annotationId} har en oresolverbar Anchor, SourceMap eller provenanceaktivitet`);
-    if (anchor.target?.setId !== setId || anchor.target?.annotationId !== annotationId) throw new Error(`${annotationId} pekar inte på rätt annotation-anchor`);
+    if (!anchor || !mapping || !knownActivities.has(mapping.generatingActivity)) throw new Error(`${annotationId} has an unresolved Anchor, SourceMap or provenance activity`);
+    if (anchor.target?.setId !== setId || anchor.target?.annotationId !== annotationId) throw new Error(`${annotationId} does not refer to the correct annotation anchor`);
     if (mapping.outputSelector?.type !== "AnnotationSelector" || mapping.outputSelector.setId !== setId || mapping.outputSelector.annotationId !== annotationId || mapping.outputSelector.revision !== revision) {
-      throw new Error(`${annotationId} saknar matchande AnnotationSelector för revision ${revision}`);
+      throw new Error(`${annotationId} is missing a matching AnnotationSelector for revision ${revision}`);
     }
-    if (expectedMapping && mapping.mapping !== expectedMapping) throw new Error(`${annotationId} måste ha ${expectedMapping} SourceMap`);
+    if (expectedMapping && mapping.mapping !== expectedMapping) throw new Error(`${annotationId} must have a ${expectedMapping} SourceMap`);
     return { anchor, mapping };
   };
 
   for (const event of candidateEvents) {
     const candidate = event.payload || {};
     const annotationId = String(candidate.annotationId || "");
-    if (!annotationId || candidateById.has(annotationId)) throw new Error("annotation.candidates måste ha unika stabila annotationId");
-    if (candidate.setId !== setId || candidate.origin !== "ai" || candidate.status !== "candidate" || candidate.revision !== 0) throw new Error(`${annotationId} är inte en immutable modellkandidat på revision 0`);
-    if (Object.hasOwn(candidate, "decision") || Object.hasOwn(candidate, "reviewer") || Object.hasOwn(candidate, "supersededBy")) throw new Error(`${annotationId} blandar in mänskligt review state i modellkandidaten`);
-    if (!candidate.model?.id || !candidate.model?.version || !String(candidate.model?.digest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} saknar modellidentitet eller modelldigest`);
-    if (!candidate.prompt?.id || !String(candidate.prompt?.digest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} saknar promptidentitet eller promptdigest`);
-    if (!String(candidate.inputDigest || "").startsWith("fnv1a:") || candidate.inputDigest !== candidate.bodyDigest || !String(candidate.candidateDigest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} saknar matchande kandidat-, input- eller bodydigest`);
-    if (!Number.isFinite(candidate.confidence?.score) || candidate.confidence.score < 0 || candidate.confidence.score > 1 || !candidate.confidence?.method) throw new Error(`${annotationId} har ogiltig confidence eller confidence method`);
+    if (!annotationId || candidateById.has(annotationId)) throw new Error("annotation.candidates must have unique stable annotationId values");
+    if (candidate.setId !== setId || candidate.origin !== "ai" || candidate.status !== "candidate" || candidate.revision !== 0) throw new Error(`${annotationId} is not an immutable model candidate at revision 0`);
+    if (Object.hasOwn(candidate, "decision") || Object.hasOwn(candidate, "reviewer") || Object.hasOwn(candidate, "supersededBy")) throw new Error(`${annotationId} mixes human review state into the model candidate`);
+    if (!candidate.model?.id || !candidate.model?.version || !String(candidate.model?.digest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} is missing model identity or model digest`);
+    if (!candidate.prompt?.id || !String(candidate.prompt?.digest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} is missing prompt identity or prompt digest`);
+    if (!String(candidate.inputDigest || "").startsWith("fnv1a:") || candidate.inputDigest !== candidate.bodyDigest || !String(candidate.candidateDigest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} is missing matching candidate, input or body digests`);
+    if (!Number.isFinite(candidate.confidence?.score) || candidate.confidence.score < 0 || candidate.confidence.score > 1 || !candidate.confidence?.method) throw new Error(`${annotationId} has invalid confidence or confidence method`);
     validateBinding(event, annotationId, 0, "exact");
     candidateById.set(annotationId, event);
   }
@@ -678,15 +678,15 @@ function buildAnnotationReviewProjection(result, manifest) {
     const review = event.payload || {};
     const annotationId = String(review.annotationId || "");
     const candidateEvent = candidateById.get(annotationId);
-    if (!candidateEvent || reviewById.has(annotationId) || !review.reviewId || knownReviewIds.has(review.reviewId)) throw new Error(`review för ${annotationId || "okänd annotation"} saknar unik review- och kandidatidentitet`);
-    if (review.setId !== setId || review.revision !== 1 || !["accept", "reject", "supersede"].includes(review.decision) || !review.reviewer) throw new Error(`${annotationId} har ett ogiltigt review-event`);
-    if (review.candidateEventRef !== candidateEvent.eventId || !String(review.reviewDigest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} review är inte digest- och eventbundet till kandidaten`);
+    if (!candidateEvent || reviewById.has(annotationId) || !review.reviewId || knownReviewIds.has(review.reviewId)) throw new Error(`review for ${annotationId || "unknown annotation"} is missing unique review and candidate identities`);
+    if (review.setId !== setId || review.revision !== 1 || !["accept", "reject", "supersede"].includes(review.decision) || !review.reviewer) throw new Error(`${annotationId} has an invalid review event`);
+    if (review.candidateEventRef !== candidateEvent.eventId || !String(review.reviewDigest || "").startsWith("fnv1a:")) throw new Error(`${annotationId} review is not bound to the candidate by digest and event`);
     const { mapping } = validateBinding(event, annotationId, 1, "derived");
-    if (!mapping.inputAnchorRefs?.includes(candidateEvent.target.anchorRef)) throw new Error(`${annotationId} review saknar kandidatens input-anchor`);
+    if (!mapping.inputAnchorRefs?.includes(candidateEvent.target.anchorRef)) throw new Error(`${annotationId} review is missing the candidate input anchor`);
     knownReviewIds.add(review.reviewId);
     reviewById.set(annotationId, event);
   }
-  if (reviewById.size !== candidateById.size) throw new Error("varje modellkandidat måste ha exakt ett review-event");
+  if (reviewById.size !== candidateById.size) throw new Error("each model candidate must have exactly one review event");
 
   const replacementById = new Map();
   const decisionRevisionById = new Map();
@@ -694,41 +694,41 @@ function buildAnnotationReviewProjection(result, manifest) {
   for (const event of revisionEvents) {
     const revision = event.payload || {};
     const annotationId = String(revision.annotationId || "");
-    if (!annotationId || revision.setId !== setId || !revision.revisionId || knownRevisionIds.has(revision.revisionId) || !String(revision.revisionDigest || "").startsWith("fnv1a:")) throw new Error("annotation.revisions innehåller en revision utan unik identitet eller digest");
+    if (!annotationId || revision.setId !== setId || !revision.revisionId || knownRevisionIds.has(revision.revisionId) || !String(revision.revisionDigest || "").startsWith("fnv1a:")) throw new Error("annotation.revisions contains a revision without a unique identity or digest");
     knownRevisionIds.add(revision.revisionId);
     if (revision.origin === "human" && revision.revision === 0) {
-      if (replacementById.has(annotationId) || !revision.supersedes || revision.state !== "accepted") throw new Error(`${annotationId} är inte en giltig mänsklig ersättningsrevision`);
+      if (replacementById.has(annotationId) || !revision.supersedes || revision.state !== "accepted") throw new Error(`${annotationId} is not a valid human replacement revision`);
       validateBinding(event, annotationId, 0, "exact");
       replacementById.set(annotationId, event);
       continue;
     }
     const reviewEvent = reviewById.get(annotationId);
     const candidateEvent = candidateById.get(annotationId);
-    if (!reviewEvent || !candidateEvent || decisionRevisionById.has(annotationId)) throw new Error(`${annotationId} saknar en unik review-revision`);
-    if (revision.origin !== "human-review" || revision.revision !== 1 || revision.reviewEventRef !== reviewEvent.eventId || revision.basedOnEventRef !== candidateEvent.eventId) throw new Error(`${annotationId} review-revision saknar append-only kedja`);
+    if (!reviewEvent || !candidateEvent || decisionRevisionById.has(annotationId)) throw new Error(`${annotationId} is missing a unique review revision`);
+    if (revision.origin !== "human-review" || revision.revision !== 1 || revision.reviewEventRef !== reviewEvent.eventId || revision.basedOnEventRef !== candidateEvent.eventId) throw new Error(`${annotationId} review revision is missing an append-only chain`);
     const expectedState = { accept: "accepted", reject: "rejected", supersede: "superseded" }[reviewEvent.payload.decision];
-    if (revision.state !== expectedState) throw new Error(`${annotationId} review-state matchar inte beslutet`);
+    if (revision.state !== expectedState) throw new Error(`${annotationId} review state does not match the decision`);
     validateBinding(event, annotationId, 1, "derived");
     decisionRevisionById.set(annotationId, event);
   }
-  if (decisionRevisionById.size !== candidateById.size) throw new Error("varje review måste materialiseras som en ny revision");
+  if (decisionRevisionById.size !== candidateById.size) throw new Error("each review must be materialized as a new revision");
 
   for (const [annotationId, reviewEvent] of reviewById) {
     const review = reviewEvent.payload;
     if (review.decision === "supersede") {
       const replacement = replacementById.get(review.supersededBy);
-      if (!replacement || replacement.payload.supersedes !== annotationId) throw new Error(`${annotationId} supersede pekar inte på en matchande ersättningsrevision`);
+      if (!replacement || replacement.payload.supersedes !== annotationId) throw new Error(`${annotationId} supersede does not refer to a matching replacement revision`);
       const reviewMap = sourceMapByOutput.get(reviewEvent.eventId);
-      if (!reviewMap.inputAnchorRefs?.includes(replacement.target.anchorRef)) throw new Error(`${annotationId} supersede saknar ersättarens input-anchor`);
+      if (!reviewMap.inputAnchorRefs?.includes(replacement.target.anchorRef)) throw new Error(`${annotationId} supersede is missing the replacement input anchor`);
     } else if (review.supersededBy) {
-      throw new Error(`${annotationId} får endast ange supersededBy vid supersede`);
+      throw new Error(`${annotationId} may specify supersededBy only for supersede`);
     }
   }
   for (const [replacementId, event] of replacementById) {
     const visited = new Set([replacementId]);
     let cursor = event.payload.supersedes;
     while (cursor) {
-      if (visited.has(cursor)) throw new Error(`supersede-kedjan för ${replacementId} är cyklisk`);
+      if (visited.has(cursor)) throw new Error(`the supersede chain for ${replacementId} is cyclic`);
       visited.add(cursor);
       cursor = replacementById.get(cursor)?.payload?.supersedes || null;
     }
@@ -739,9 +739,9 @@ function buildAnnotationReviewProjection(result, manifest) {
   const replacementOrder = authoredOrder.filter((annotationId) => replacementById.has(annotationId));
   const allAnnotationIds = [...candidateOrder, ...replacementOrder];
   const currentIds = authoredOrder.filter((annotationId) => replacementById.has(annotationId) || reviewById.get(annotationId)?.payload?.decision === "accept");
-  if (canonicalJson(set.candidateIds || []) !== canonicalJson(candidateOrder) || canonicalJson(set.annotationIds || []) !== canonicalJson(allAnnotationIds)) throw new Error("annotation.set identitetslistor matchar inte committed events");
-  if (canonicalJson(set.currentIds || []) !== canonicalJson(currentIds)) throw new Error("annotation.set currentIds matchar inte reviewkedjan");
-  if (set.candidateCount !== candidateEvents.length || set.reviewCount !== reviewEvents.length || set.revisionCount !== revisionEvents.length) throw new Error("annotation.set counts matchar inte committed channels");
+  if (canonicalJson(set.candidateIds || []) !== canonicalJson(candidateOrder) || canonicalJson(set.annotationIds || []) !== canonicalJson(allAnnotationIds)) throw new Error("annotation.set identity lists do not match committed events");
+  if (canonicalJson(set.currentIds || []) !== canonicalJson(currentIds)) throw new Error("annotation.set currentIds does not match the review chain");
+  if (set.candidateCount !== candidateEvents.length || set.reviewCount !== reviewEvents.length || set.revisionCount !== revisionEvents.length) throw new Error("annotation.set counts do not match committed channels");
 
   const anchorFor = (event) => knownAnchors.get(event.target.anchorRef);
   const exportTarget = (event) => {
@@ -900,11 +900,11 @@ const adapterImplementations = new Map([
 
 function validateAdapterProjection(projection, result, manifest) {
   const problems = [];
-  if (projection.schema !== "textabana.adapter-projection/lab-v1") problems.push("ogiltigt projektionsschema");
-  if (projection.sourceResultRef?.resultId !== result.resultId) problems.push("sourceResultRef pekar inte på inputresultatet");
-  if (projection.adapterRef?.manifestDigest !== manifest.manifestDigest) problems.push("manifest digest matchar inte");
-  if (projection.output?.schemaRef !== manifest.produces[0]?.schemaRef) problems.push("output schema matchar inte manifestet");
-  if (projection.fidelity?.mode !== "lossless" && !projection.fidelity?.omittedPaths?.length) problems.push("selektiv eller förlustbringande projektion måste redovisa omittedPaths");
+  if (projection.schema !== "textabana.adapter-projection/lab-v1") problems.push("invalid projection schema");
+  if (projection.sourceResultRef?.resultId !== result.resultId) problems.push("sourceResultRef does not refer to the input result");
+  if (projection.adapterRef?.manifestDigest !== manifest.manifestDigest) problems.push("manifest digest does not match");
+  if (projection.output?.schemaRef !== manifest.produces[0]?.schemaRef) problems.push("output schema does not match the manifest");
+  if (projection.fidelity?.mode !== "lossless" && !projection.fidelity?.omittedPaths?.length) problems.push("a selective or lossy projection must declare omittedPaths");
 
   const knownEvents = new Set(allCommittedEvents(result).map((event) => event.eventId));
   const knownAnchors = new Set(result.anchors.map((anchor) => anchor.anchorId));
@@ -917,7 +917,7 @@ function validateAdapterProjection(projection, result, manifest) {
     [projection.references?.provenanceRefs || [], knownActivities, "provenance"],
   ];
   for (const [references, known, kind] of checks) {
-    for (const reference of references) if (!known.has(reference)) problems.push(`okänd ${kind}-referens ${reference}`);
+    for (const reference of references) if (!known.has(reference)) problems.push(`unknown ${kind} reference ${reference}`);
   }
   return problems;
 }
@@ -961,7 +961,7 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
       requested,
       manifests: adapterManifests,
       projections: [],
-      diagnostics: [adapterDiagnostic("TBA-ADAPTER-SKIPPED-LAB", "Adapters körs endast efter en lyckad atomisk commit.", "adapter-run", "info")],
+      diagnostics: [adapterDiagnostic("TBA-ADAPTER-SKIPPED-LAB", "Adapters run only after a successful atomic commit.", "adapter-run", "info")],
       verification: { beforeDigest, afterDigest: beforeDigest, immutable: true },
     };
   }
@@ -971,7 +971,7 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
   for (const adapterId of requested) {
     const manifest = adapterCatalog.get(adapterId);
     if (!manifest) {
-      diagnostics.push(adapterDiagnostic("TBA-ADAPTER-UNKNOWN-LAB", `Okänd adapter “${adapterId}”.`, adapterId));
+      diagnostics.push(adapterDiagnostic("TBA-ADAPTER-UNKNOWN-LAB", `Unknown adapter “${adapterId}”.`, adapterId));
       continue;
     }
     const manifestProblems = validateAdapterManifest(manifest);
@@ -982,7 +982,7 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
     if (manifest.support !== "playground-subset") {
       const diagnostic = adapterDiagnostic(
         "TBA-ADAPTER-CONTRACT-ONLY-LAB",
-        `${adapterId} är registrerad som contract-only och producerar ingen simulerad output.`,
+        `${adapterId} is registered as contract-only and produces no simulated output.`,
         adapterId,
         "info",
       );
@@ -991,14 +991,14 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
       continue;
     }
     if (!manifest.accepts.resultSchemas.includes(result.schema)) {
-      const diagnostic = adapterDiagnostic("TBA-ADAPTER-INPUT-LAB", `${adapterId} accepterar inte ${result.schema}.`, adapterId);
+      const diagnostic = adapterDiagnostic("TBA-ADAPTER-INPUT-LAB", `${adapterId} does not accept ${result.schema}.`, adapterId);
       projections.push(unsupportedProjection(manifest, result, diagnostic));
       diagnostics.push(diagnostic);
       continue;
     }
     const missingCapability = manifest.capabilities.required.find((capability) => !availableCapabilities.includes(capability));
     if (missingCapability) {
-      const diagnostic = adapterDiagnostic("TBA-ADAPTER-CAPABILITY-LAB", `${adapterId} kräver capability “${missingCapability}”.`, adapterId);
+      const diagnostic = adapterDiagnostic("TBA-ADAPTER-CAPABILITY-LAB", `${adapterId} requires capability “${missingCapability}”.`, adapterId);
       projections.push(unsupportedProjection(manifest, result, diagnostic));
       diagnostics.push(diagnostic);
       continue;
@@ -1009,14 +1009,14 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
       return !snapshot || (requirement.schemaRef && snapshot.descriptor.schemaRef !== requirement.schemaRef);
     });
     if (missingChannel) {
-      const diagnostic = adapterDiagnostic("TBA-ADAPTER-INPUT-LAB", `${adapterId} saknar kompatibel kanal “${missingChannel.name}”.`, adapterId);
+      const diagnostic = adapterDiagnostic("TBA-ADAPTER-INPUT-LAB", `${adapterId} is missing compatible channel “${missingChannel.name}”.`, adapterId);
       projections.push(unsupportedProjection(manifest, result, diagnostic));
       diagnostics.push(diagnostic);
       continue;
     }
     const implementation = adapterImplementations.get(adapterId);
     if (!implementation) {
-      const diagnostic = adapterDiagnostic("TBA-ADAPTER-IMPLEMENTATION-LAB", `${adapterId} har ingen körbar implementation i denna playground.`, adapterId);
+      const diagnostic = adapterDiagnostic("TBA-ADAPTER-IMPLEMENTATION-LAB", `${adapterId} has no executable implementation in this playground.`, adapterId);
       projections.push(unsupportedProjection(manifest, result, diagnostic));
       diagnostics.push(diagnostic);
       continue;
@@ -1039,7 +1039,7 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
   const resultAfter = canonicalJson(result);
   const afterDigest = `fnv1a:${sourceHash(resultAfter)}`;
   if (resultAfter !== resultBefore) {
-    const diagnostic = adapterDiagnostic("TBA-ADAPTER-MUTATION-LAB", "En adapter försökte mutera sitt immutable källresultat.", "adapter-run");
+    const diagnostic = adapterDiagnostic("TBA-ADAPTER-MUTATION-LAB", "An adapter attempted to mutate its immutable source result.", "adapter-run");
     diagnostics.push(diagnostic);
   }
   const succeeded = projections.filter((projection) => projection.status === "succeeded").length;
@@ -1058,4 +1058,3 @@ function runAdapters(result, requestedAdapterIds, availableCapabilities = []) {
 }
 
 export { adapterManifests, allCommittedEvents, playgroundImplementedCapabilities, runAdapters };
-

@@ -658,7 +658,7 @@ function AdapterRunView({ result }: { result: RuntimeResult }) {
               <p>{manifest.profile} · {manifest.phase} · {manifest.execution}</p>
               <dl>
                 <div><dt>Produces</dt><dd>{manifest.produces.map((item) => item.projectionKind).join(" · ")}</dd></div>
-                <div><dt>Requires</dt><dd>{manifest.capabilities.required.join(" · ") || "inga"}</dd></div>
+                <div><dt>Requires</dt><dd>{manifest.capabilities.required.join(" · ") || "none"}</dd></div>
                 <div><dt>Fidelity</dt><dd>{manifest.fidelity.mode}{manifest.fidelity.requiresSourceResult ? " · source-bound" : ""}</dd></div>
               </dl>
               <small>{manifest.manifestDigest}</small>
