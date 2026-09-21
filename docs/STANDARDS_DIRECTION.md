@@ -1,6 +1,6 @@
 # Standards reuse and architectural direction
 
-**Assessment:** the architecture follows the stated direction, but actual standards reuse is only partially implemented. There is both documentation debt and implementation debt. This assessment is grounded in the sprint 5.9 runtime, reviewed during sprint 5.10 and translated during sprint 5.11.
+**Assessment:** the architecture follows the stated direction, but actual standards reuse is only partially implemented. There is both documentation debt and implementation debt. The original sprint 5.9 assessment is updated through sprint 5.14A, which replaces handwritten channel payload checks with Ajv2020 under an explicitly bounded policy.
 
 The direction, translated from the accepted specification, is:
 
@@ -14,7 +14,7 @@ The table is generated from [standards-status.json](standards-status.json). Each
 | Standard | Status | Actual use | Boundary |
 |---|---|---|---|
 | [Markdown / GFM](https://github.github.com/gfm/) | Used for presentation | Rendered text uses react-markdown and remark-gfm. Textabana adds its own control lines around readable text. | Textabana has its own grammar. Full CommonMark/GFM conformance for an entire Textabana source document has not been verified. |
-| [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) | Partially implemented | The artifact bundle schema is compiled with Ajv2020 and used by the same verifier in the CLI and application. | Channel payloads use handwritten checks for type, required and one level of properties. Constraints such as $ref, enum, minimum and nested rules are not enforced. schemaRef is not an automatic resolver. |
+| [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) | Partially implemented | Ajv2020 validates artifact bundles and inline channel schemas. The versioned channel policy enforces nested rules, local references, enums and bounds, and rejects unsupported features. | Channel policy excludes external resolution, formats, content/custom vocabularies and async validation. Descriptors may omit inline schemas; schemaRef is not a resolver. Full typed-channel or general JSON Schema conformance is not claimed. |
 | [Apache Arrow / IPC](https://arrow.apache.org/docs/format/Columnar.html) | Planned | The data lab uses JSON records with stable keys and separate lineage. | There is no Arrow encoding, schema translation or IPC round trip. JSON records do not constitute Arrow support. |
 | [Apache Parquet](https://parquet.apache.org/docs/overview/) | Planned | The data adapter produces a host-neutral table projection. | No Parquet files or persistent ArtifactRefs are created. JSON provenance is not Parquet interoperability. |
 | [MIME / Jupyter](https://nbformat.readthedocs.io/en/latest/format_description.html) | Executable subset | text/plain, text/markdown and application/vnd.textabana.result+json present the same committed value. The Python client creates a MIME bundle. | Textabana has its own notebook snapshot contract; no nbformat import/export, Jupyter Messaging or external kernel round trip. Custom media type names do not establish IANA registration. |
@@ -36,7 +36,7 @@ A notebook snapshot can carry Textabana's revision and run semantics. Exchange w
 
 ## Specific gaps
 
-1. **Channel schema validation is implementation debt.** `validatePayload` in `runtime/worker-entry.js` checks `type`, `required` and direct `properties[*].type`. For example, `{ "type": "integer", "minimum": 10 }` checks the integer type but ignores the minimum. `$ref`, `enum`, composition and nested constraints may have no effect. Artifact-bundle validation with Ajv2020 is not evidence that channels receive the same validation. `strictChannels` tightens declaration and serialization checks without extending the schema dialect.
+1. **The silent channel-validation gap is closed within a bounded policy.** Sprint 5.14A uses Ajv2020 for inline schemas and rejects unsupported keywords. For example, `{ "type": "integer", "minimum": 10 }` now enforces the minimum. Nesting, local references, enums and composition have targeted positive/negative tests. Descriptors can still omit an inline schema, `schemaRef` is not a resolver, and formats/external references remain unsupported; this is not full typed-channel conformance. See the [policy](reference/channel-schemas.md) and [compatibility record](compatibility-5.14.md).
 2. **Standards vocabulary is weaker than verified interoperability.** AnnotationPage export runs, but internal reference checks are not independent JSON-LD/W3C validation. Internal provenance uses related concepts without a complete PROV mapping. These must remain separate claims.
 3. **Data and transport integration is deferred.** Arrow, Parquet, LSP, OTel, OpenLineage and MLflow remain planned. Additional internal profiles do not automatically reduce that integration debt.
 4. **Documentation must state the exact scope.** A schema identifier, media type name, dependency or planned adapter does not establish standard support. Internal schemas and media type names do not imply external standardization or registration.
@@ -45,7 +45,7 @@ A notebook snapshot can carry Textabana's revision and run semantics. Exchange w
 
 | Priority | Work | Evidence needed to close the gap |
 |---|---|---|
-| 1 | Channel schema dialect and validation | An established validator, or a declared limited dialect that rejects unsupported features; negative cases for nesting, references and constraints; no silent ignoring. |
+| 1 | Maintain the implemented channel schema boundary | Ajv2020 and explicit unsupported-feature rejection are implemented in 5.14A. Preserve regression evidence and review extensions separately. |
 | 2 | One complete external adapter chain | A frozen mapping, an actual external consumer and declared losses, for example an AnnotationPage exchange. |
 | 3 | A real data interchange layer | Arrow IPC/Parquet through established libraries, preserved types and schemas, file digests and independent readback with lineage references. |
 | 4 | Further adapters for concrete host needs | Separate versioned mappings and external verification for PROV, LSP, OTel, OpenLineage and MLflow. |
@@ -54,4 +54,4 @@ The [consolidation plan](../CONSOLIDATION_PLAN.md) first makes the repository ma
 
 ## Sources and limits
 
-The implementation assessment is based on the [reviewed source revision](https://github.com/leosa83/scd-adapter-textabana/tree/76c760cf7a6e0169ef790c10b4dd72295c272d3f), particularly `app/playground-labs.tsx`, `runtime/worker-entry.js`, `scripts/build-semantic-contract.mjs`, `sdk/` and the adapter tests. The conclusion about direction is an architectural assessment, not a conformance certificate.
+The original assessment is based on the [reviewed source revision](https://github.com/leosa83/scd-adapter-textabana/tree/76c760cf7a6e0169ef790c10b4dd72295c272d3f). Sprint 5.14A updates the channel row from `runtime/channel-schema.js`, `runtime/channels.js` and `tests/channel-schema.test.mjs`; the other adapter boundaries remain unchanged. Source links and limitations are recorded in [standards-status.json](standards-status.json). The conclusion about direction is an architectural assessment, not a conformance certificate.

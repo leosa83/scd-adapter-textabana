@@ -40,7 +40,7 @@ Run the [integration examples](INTEGRATION_GUIDE.md) after `npm run runtime:buil
 
 ## Generated files and evidence
 
-Author the language grammar in `runtime/textabana.grammar`, the artifact schema in `contracts/semantic-bundle-v1.js` and specification prose in `docs/reference/specification/`. Generated files under `runtime/generated/`, `public/contracts/` and `public/docs/`, plus `public/runtime-worker.js`, are checked in for reproducibility. Rebuild them from their sources.
+Author the language grammar in `runtime/textabana.grammar`, the artifact schema in `contracts/semantic-bundle-v1.js` and specification prose in `docs/reference/specification/`. Generated files under `runtime/generated/`, `public/contracts/` and `public/docs/`, plus `public/runtime-worker.js` and `public/runtime-worker.NOTICES.txt`, are checked in for reproducibility. Rebuild them from their sources. The Worker build preserves original license texts for the dependencies present in its bundle; this does not select a project license or complete the application-wide release notice audit.
 
 Static conformance reports bind particular source bytes and are not live CI status. Changing a fingerprinted source or lockfile requires refreshed reports before claiming they describe the new revision. Never replace frozen expected outcomes merely to make a changed implementation pass.
 

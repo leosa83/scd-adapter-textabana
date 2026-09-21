@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Plan | `TA-OSS-CONSOLIDATION-001` |
-| Version | `1.2.1` |
-| Status | Active; sprints 5.11–5.13 implemented, sprint 5.14 next |
+| Version | `1.3.0` |
+| Status | Active; sprints 5.11–5.13 and increment 5.14A implemented; 5.14B next |
 | Baseline | Sprint 5.10, GitHub `a0ec88761b904602e28522a6334bc90c5ae0f5e3` |
 | Accepted | 2026-09-20 |
 | Goal | A repository that external developers can understand, run, test and maintain without conversation history or a Sites account |
@@ -50,6 +50,13 @@ English is the primary language for the entire application and codebase. New pub
 3. Move reusable runtime data types out of the presentation layer. Type all nine command responses, protocol failures and metadata chunks; convenience methods infer their response. Keep the explicit generic command escape hatch and rejection semantics. Static types do not imply runtime validation.
 4. Supply hosting types from the installed Cloudflare tooling, with optional bindings represented honestly. Add a reproducible repository-wide type-check command and CI gate without hiding source errors or adding broad ambient `any` declarations.
 5. Verify isolated kernel state and unchanged message behavior with the existing regression suites and focused boundary/type-consumer tests. Refresh source-bound reports without rewriting golden expectations. Document ownership, errors and remaining limitations, then publish matching Git trees and the existing Site.
+
+## Sprint 5.14: compatibility-driven increments
+
+1. **5.14A — channel contracts and selected kernel diagnostics.** Use the already locked Ajv2020 implementation under a named admission policy. Compile at first declaration, reject unsupported features, validate before event append, preserve detached JSON data and test positive/negative cases through the actual Worker. Translate editor/module/scheduler/cache/run/channel messages, retain their machine-code families and disclose observable lab-ID changes. Keep existing frozen artifacts and expected results.
+2. **5.14B — version-sensitive translation.** Parser diagnostic prose participates in canonical semantic artifacts v1. Define the presentation/artifact version boundary before translating it. Review adapter/conformance messages, embedded example modules and their identity/digest implications; translate the parser guide. Preserve the old corpus, and publish explicit migration evidence for any new version. The independent profile documents and semantic identity/contract guides were already English; unchanged bound prose needs no artificial version bump.
+
+This split follows a failing canonical-identity regression during translation, not a weakened acceptance criterion. The attempted parser change was withheld and its frozen golden retained. See the [compatibility record](docs/compatibility-5.14.md) for the exact old/new trial identities. Sprint 5.14 is not complete after 5.14A, and 5.15 is not the next increment.
 
 ## Working rules
 
@@ -117,6 +124,22 @@ Implemented on 2026-09-21 with Node 24.19.0 and Python 3.12.14:
 | Remaining limits | The engine remains JavaScript tested by behavior/profile suites; repository type checking does not claim full `checkJs` coverage. Complete runtime response validation, published packages, a project license and broad standards adapters are not added. Channel validation and diagnostic/profile translation remain sprint 5.14 work. |
 | Hosted CI | Local results above are observed. The published commit's workflow separately records hosted Node 22/24 and application outcomes. |
 
-Next is sprint 5.14: define and enforce the channel schema boundary using an established validator or a strictly rejected unsupported dialect, then translate observable diagnostics and version-bound profile prose with explicit compatibility review. Preserve multilingual inputs and frozen expectations through that migration.
+## Validation record: sprint 5.14A
+
+Implemented on 2026-09-21 with Node 24.19.0 and Python 3.12.14:
+
+| Check | Result |
+|---|---|
+| Channel policy | `textabana.channel-schema/2020-12-v1` uses locked Ajv2020. Nested constraints, local references, enums, bounds, composition and 2020-12 tuple/unevaluated rules execute; unsupported features are rejected at declaration. Policy identity is exposed in capabilities. Descriptors may still omit inline schemas; no schemaRef resolver or full typed-channel claim is added. |
+| New regression evidence | Seven schema tests cover valid/invalid data, declaration before transformation, isolated registries, booleans, mutation/coercion prevention, Unicode/prototype-sensitive keys, signed zero, limits and atomic Worker rollback. Two language tests check stable codes/positions and unchanged multilingual source. The initial new schema tests failed against the old shallow validator. |
+| Translation | Channel, editor, module, run-budget, scheduler/graph and cache diagnostics are English. Ordinary wording assertions change explicitly. Parser bytes, embedded module examples, independent profile documents/manifests, frozen suites and golden identities remain unchanged. |
+| Compatibility decision | Translating parser prose changed the frozen syntax-failure IR SHA-256 without changing its source or error code. That edit was withheld, not accepted by replacing the golden. Version-sensitive parser/adapter/conformance/module translation is 5.14B. |
+| Tests and build | All 231 headless tests and 7 application tests pass. Documentation freshness/link checks, 144 requirement/43 example preservation, lint, TypeScript checking, generated hosting types and the production build pass. |
+| External reports | All nine CLI suites pass. Eight reports change only source/kernel fingerprints. The contract report additionally records six translated graph-rejection messages; outcomes, error codes, frozen expectations and profile claims are unchanged. |
+| Dependency notices | No package or lockfile version changes. The Worker build emits the original license texts for all six bundled dependencies, including Ajv and its runtime dependencies. Project-license selection and the broader application release notice audit remain open. |
+| Documentation | The executable schema policy, standards assessment, requirement bindings, kernel/architecture guides and English migration register describe the same boundary. The documentation index is still source evidence, not a conformance certificate. |
+| Hosted CI | These are observed local results; the published commit's Node 22/24 and application workflow outcomes are checked separately. |
+
+Next is sprint 5.14B: make the diagnostic presentation/artifact boundary explicit, then finish version-sensitive English translation without rewriting old profile evidence. License selection, public packaging and other 5.15 release work remain separate.
 
 Publication uses matching Git trees in GitHub and Sites. Deployment status is verified separately through the hosting service; a local build alone is not a publication claim.

@@ -22,6 +22,7 @@ flowchart TD
 | `runtime/editor-kernel.js` | Per-instance document revisions, parser snapshots, subscriptions, metadata deltas and accepted post-commit baselines. Receives message delivery and the active/queued-run guard from the dispatcher. |
 | `runtime/module-admission.js`, `runtime/module-loader.js` | Pure package/lock/grant checks and post-load export checks; separate trusted JS loading with a per-instance cache cleared at run start. |
 | `runtime/channels.js`, `runtime/result-envelope.js` | Per-run channel collection, payload/serialization checks, anchors and source maps; construction of atomic committed or rolled-back results. |
+| `runtime/channel-schema.js` | Ajv2020 compilation and validation under the versioned channel policy; rejects unsupported schema features and isolates each descriptor's registry. |
 | `runtime/adapters.js`, `runtime/lab-conformance.js` | Built-in post-commit projections and lab-only profile/golden checks. They do not own document state or execute modules. |
 | `runtime/lab-values.js`, `runtime/result-references.js`, `runtime/runtime-errors.js` | Existing lab normalization/hashes, operational-reference normalization and error constructors. Lab normalization is separate from RFC 8785 canonical JSON. |
 | `runtime/semantic-identity.js`, `runtime/semantic-contract.js` | Separate SHA-256 artifact identities and structural/reference validation. Verification does not rerun transformations. |

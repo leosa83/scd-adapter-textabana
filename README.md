@@ -48,7 +48,7 @@ See [Development](docs/development.md) for command boundaries, supported environ
 - SHA-256-locked JavaScript module packages, explicit grants and separately verifiable semantic artifacts.
 - Narrow, independently compared Python/JavaScript profiles for text, intervals, channels, source mapping and module admission.
 
-Module grants do not create a JavaScript sandbox. Channel payload validation is currently a limited handwritten subset, whereas semantic artifact bundles use JSON Schema validation. Arrow/Parquet, full PROV export, LSP, OpenTelemetry, OpenLineage, MLflow and full Jupyter integration remain incomplete or planned. See the [standards assessment](docs/STANDARDS_DIRECTION.md).
+Module grants do not create a JavaScript sandbox. Channel payloads and semantic artifact bundles use Ajv JSON Schema validation. The [channel policy](docs/reference/channel-schemas.md) explicitly limits supported features and does not resolve `schemaRef` or require an inline schema on every descriptor. Arrow/Parquet, full PROV export, LSP, OpenTelemetry, OpenLineage, MLflow and full Jupyter integration remain incomplete or planned. See the [standards assessment](docs/STANDARDS_DIRECTION.md).
 
 ## Explore the application
 

@@ -1162,17 +1162,20 @@
       "requirementDigest": "sha256:4cd4f4226c534268ac19d3cde98be1f8bbb390977f91f87399bc71573116c8a8",
       "contract": [
         "docs/reference/specification/channels.md#CHANNEL-001",
-        "CHANNEL_CORE_PROFILE.md"
+        "CHANNEL_CORE_PROFILE.md",
+        "docs/reference/channel-schemas.md"
       ],
       "implementation": [
         "runtime/worker-entry.js",
-        "runtime/channels.js"
+        "runtime/channels.js",
+        "runtime/channel-schema.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
+        "tests/channel-schema.test.mjs",
         "tests/runtime-smoke.test.mjs"
       ],
-      "scope": "Channel/serialization subset. Payload schemas use limited handwritten validation; full JSON Schema is absent.",
+      "scope": "Inline schemas use a bounded Ajv2020 policy. Unsupported features are rejected; schemaRef resolution and full typed-channel conformance remain absent.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
       "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
@@ -1185,17 +1188,20 @@
       "requirementDigest": "sha256:810d03c0300b1dd8812fe982cdf3b155ef1cd0b8413b9fe95d4c44fb9cfa43eb",
       "contract": [
         "docs/reference/specification/channels.md#CHANNEL-002",
-        "CHANNEL_CORE_PROFILE.md"
+        "CHANNEL_CORE_PROFILE.md",
+        "docs/reference/channel-schemas.md"
       ],
       "implementation": [
         "runtime/worker-entry.js",
-        "runtime/channels.js"
+        "runtime/channels.js",
+        "runtime/channel-schema.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
+        "tests/channel-schema.test.mjs",
         "tests/runtime-smoke.test.mjs"
       ],
-      "scope": "Strict mode requires a channel descriptor. Full JSON Schema validation and general schemaRef resolution are absent.",
+      "scope": "Strict mode requires a descriptor but not an inline schema. Inline schemas use the versioned Ajv2020 channel policy; schemaRef resolution is absent.",
       "status": "partial",
       "verificationStatus": "source-links-only",
       "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
@@ -1208,17 +1214,20 @@
       "requirementDigest": "sha256:0cda2ddc349df5ef65e1de13fa4521c9a3ac94697e3c687d43df604f8acf7ed1",
       "contract": [
         "docs/reference/specification/channels.md#CHANNEL-003",
-        "CHANNEL_CORE_PROFILE.md"
+        "CHANNEL_CORE_PROFILE.md",
+        "docs/reference/channel-schemas.md"
       ],
       "implementation": [
         "runtime/worker-entry.js",
-        "runtime/channels.js"
+        "runtime/channels.js",
+        "runtime/channel-schema.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
+        "tests/channel-schema.test.mjs",
         "tests/runtime-smoke.test.mjs"
       ],
-      "scope": "Serialization errors and the implemented simple payload rules are rejected; unhandled JSON Schema keywords can be ignored.",
+      "scope": "Inline schemas reject unsupported features and validate detached JSON payloads with Ajv2020. Legacy channels without an inline schema retain their narrower serialization checks.",
       "status": "partial",
       "verificationStatus": "source-links-only",
       "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."
@@ -1231,14 +1240,17 @@
       "requirementDigest": "sha256:1eed05111c7a74df804f665d6fbbcc764525becf5b670ba0eb4caa59ac5ab422",
       "contract": [
         "docs/reference/specification/channels.md#CHANNEL-004",
-        "CHANNEL_CORE_PROFILE.md"
+        "CHANNEL_CORE_PROFILE.md",
+        "docs/reference/channel-schemas.md"
       ],
       "implementation": [
         "runtime/worker-entry.js",
-        "runtime/channels.js"
+        "runtime/channels.js",
+        "runtime/channel-schema.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
+        "tests/channel-schema.test.mjs",
         "tests/runtime-smoke.test.mjs"
       ],
       "scope": "Global sequence/call order is verified. The full normative order-key envelope and distributed merge are excluded.",
@@ -1254,17 +1266,20 @@
       "requirementDigest": "sha256:61c26bea94286fcb47557d3fee6a519508f779dc6f17160bc4ca286c6d44f6db",
       "contract": [
         "docs/reference/specification/channels.md#CHANNEL-005",
-        "CHANNEL_CORE_PROFILE.md"
+        "CHANNEL_CORE_PROFILE.md",
+        "docs/reference/channel-schemas.md"
       ],
       "implementation": [
         "runtime/worker-entry.js",
-        "runtime/channels.js"
+        "runtime/channels.js",
+        "runtime/channel-schema.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
+        "tests/channel-schema.test.mjs",
         "tests/runtime-smoke.test.mjs"
       ],
-      "scope": "Channel/serialization subset. Payload schemas use limited handwritten validation; full JSON Schema is absent.",
+      "scope": "Inline schemas use a bounded Ajv2020 policy. Unsupported features are rejected; schemaRef resolution and full typed-channel conformance remain absent.",
       "status": "lab-subset",
       "verificationStatus": "source-links-only",
       "verificationGap": "Relevant test sources are linked; this index does not establish full requirement conformance."

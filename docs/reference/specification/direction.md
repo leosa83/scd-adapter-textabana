@@ -10,7 +10,7 @@ Assessed on 2026-09-20 against sprint 5.9. The table distinguishes actual format
 | Standard | Status | Actual use | Boundary |
 |---|---|---|---|
 | [Markdown / GFM](https://github.github.com/gfm/) | Used for presentation | Rendered text uses react-markdown and remark-gfm. Textabana adds its own control lines around readable text. | Textabana has its own grammar. Full CommonMark/GFM conformance for an entire Textabana source document has not been verified. |
-| [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) | Partially implemented | The artifact bundle schema is compiled with Ajv2020 and used by the same verifier in the CLI and application. | Channel payloads use handwritten checks for type, required and one level of properties. Constraints such as $ref, enum, minimum and nested rules are not enforced. schemaRef is not an automatic resolver. |
+| [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) | Partially implemented | Ajv2020 validates artifact bundles and inline channel schemas. The versioned channel policy enforces nested rules, local references, enums and bounds, and rejects unsupported features. | Channel policy excludes external resolution, formats, content/custom vocabularies and async validation. Descriptors may omit inline schemas; schemaRef is not a resolver. Full typed-channel or general JSON Schema conformance is not claimed. |
 | [Apache Arrow / IPC](https://arrow.apache.org/docs/format/Columnar.html) | Planned | The data lab uses JSON records with stable keys and separate lineage. | There is no Arrow encoding, schema translation or IPC round trip. JSON records do not constitute Arrow support. |
 | [Apache Parquet](https://parquet.apache.org/docs/overview/) | Planned | The data adapter produces a host-neutral table projection. | No Parquet files or persistent ArtifactRefs are created. JSON provenance is not Parquet interoperability. |
 | [MIME / Jupyter](https://nbformat.readthedocs.io/en/latest/format_description.html) | Executable subset | text/plain, text/markdown and application/vnd.textabana.result+json present the same committed value. The Python client creates a MIME bundle. | Textabana has its own notebook snapshot contract; no nbformat import/export, Jupyter Messaging or external kernel round trip. Custom media type names do not establish IANA registration. |
@@ -22,9 +22,9 @@ Assessed on 2026-09-20 against sprint 5.9. The table distinguishes actual format
 | [MLflow](https://mlflow.org/docs/latest/ml/tracking/) | Planned | Model and prompt metadata exists in the annotation lab contracts. | No MLflow tracking client/server, model execution or experiment round trip is implemented. |
 <!-- standards:end -->
 
-**Priority implementation debt: channel schema validation**
+**Channel schema validation: implemented bounded policy**
 
-The artifact bundle uses Ajv2020. Channel payloads still use a limited handwritten check; for example, `minimum`, `enum` and `$ref` are not enforced. The next schema work needs to use a standard validator or reject rules outside an explicit dialect. This documentation revision does not change validation behavior.
+Artifact bundles and inline channel schemas use Ajv2020. Sprint 5.14A adds the [versioned channel policy](../channel-schemas.md): nested constraints, `minimum`, `enum` and local `$ref` are enforced, while unsupported features are rejected. This closes a concrete standards-reuse gap without claiming external schema resolution or full typed-channel conformance. The [compatibility record](../../compatibility-5.14.md) distinguishes this behavior change from translation.
 
 Textabana's IR, Result and revision contracts are needed to bind source, plan, events and projection to the same meaning. Established representations are to be used at format boundaries. Read the [full direction assessment with sources and priorities](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/STANDARDS_DIRECTION.md).
 

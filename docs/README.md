@@ -11,7 +11,8 @@ Start with the task you want to complete:
 | Understand the codebase and its boundaries | [Architecture](architecture.md) |
 | Assess actual standard reuse | [Standards direction](STANDARDS_DIRECTION.md) |
 | Reproduce a conformance claim | [Conformance tools](../conformance/README.md) and the linked profile contract |
-| Follow consolidation and translation | [Active plan](../CONSOLIDATION_PLAN.md) and [English migration](english-migration.md) |
+| Follow consolidation and translation | [Active plan](../CONSOLIDATION_PLAN.md), [English migration](english-migration.md) and [5.14 compatibility](compatibility-5.14.md) |
+| Use channel schemas | [Executable schema policy](reference/channel-schemas.md) |
 | Inspect earlier implementation history | [Editor Kernel plan](../EDITOR_KERNEL_PLAN.md), [adapter plan](../IMPLEMENTATION_PLAN.md) and [sprint 5.10](../DOCUMENTATION_PLAN.md) |
 
 Tutorials and task guides explain how to use the software. Reference documents define contracts and APIs. Architecture and standards assessments explain design choices and limitations. Historical plans record how the project reached its current state. These roles follow the distinction described by [Diátaxis](https://diataxis.fr/).

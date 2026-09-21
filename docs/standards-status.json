@@ -1,6 +1,7 @@
 {
-  "reviewedAt": "2026-09-20",
-  "implementationBaseline": "76c760cf7a6e0169ef790c10b4dd72295c272d3f",
+  "reviewedAt": "2026-09-21",
+  "implementationBaseline": "a20929f40ed57894926928f0c85e54043827a84d",
+  "implementationIncrement": "sprint-5.14A",
   "assessment": "The architecture follows the stated direction; standards reuse is partially implemented and several adapters remain planned.",
   "entries": [
     {
@@ -23,19 +24,21 @@
       "id": "json-schema",
       "name": "JSON Schema 2020-12",
       "status": "Partially implemented",
-      "implemented": "The artifact bundle schema is compiled with Ajv2020 and used by the same verifier in the CLI and application.",
-      "boundary": "Channel payloads use handwritten checks for type, required and one level of properties. Constraints such as $ref, enum, minimum and nested rules are not enforced. schemaRef is not an automatic resolver.",
-      "next": "Use an established validator with a declared dialect, or explicitly reject schema features outside a versioned subset.",
+      "implemented": "Ajv2020 validates artifact bundles and inline channel schemas. The versioned channel policy enforces nested rules, local references, enums and bounds, and rejects unsupported features.",
+      "boundary": "Channel policy excludes external resolution, formats, content/custom vocabularies and async validation. Descriptors may omit inline schemas; schemaRef is not a resolver. Full typed-channel or general JSON Schema conformance is not claimed.",
+      "next": "Keep the versioned admission policy and test evidence explicit; add formats, resolvers or broader conformance only with separate compatibility and resource review.",
       "upstream": "https://json-schema.org/draft/2020-12",
       "sources": [
         "contracts/semantic-bundle-v1.js",
         "scripts/build-semantic-contract.mjs",
         "runtime/semantic-contract.js",
-        "runtime/worker-entry.js"
+        "runtime/channels.js",
+        "runtime/channel-schema.js"
       ],
       "evidence": [
         "tests/semantic-contract.test.mjs",
-        "tests/channel-core.test.mjs"
+        "tests/channel-core.test.mjs",
+        "tests/channel-schema.test.mjs"
       ]
     },
     {

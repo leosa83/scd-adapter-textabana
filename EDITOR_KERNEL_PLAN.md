@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.18.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.13 genomförda |
+| Planversion | `1.19.0` |
+| Status | Wave 5 active · sprints 5.1–5.13 and increment 5.14A implemented |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -413,6 +413,16 @@ Textabana Editor Kernel
 
 **Boundary:** public messages, diagnostics, frozen profile expectations and standards claims remain unchanged. The JavaScript engine is behavior-tested; static response types do not validate untrusted transport data. Channel validation, remaining diagnostic/profile translation and release packaging/licensing continue under the consolidation plan. Sprint 5.14 is next.
 
+#### Sprint 5.14A — Channel schema policy and compatible English diagnostics
+
+**Status:** implemented 2026-09-21 under [TA-OSS-CONSOLIDATION-001](./CONSOLIDATION_PLAN.md).
+
+**Delivery:** an explicit Ajv2020 channel schema policy with unsupported-feature rejection; English channel/editor/module/scheduler/cache/run diagnostics; original bundled dependency notices; synchronized specification status, implementation references and compatibility documentation.
+
+**Evidence:** 231 headless tests, 7 application tests and all nine CLI conformance suites pass. Lint, type checks, hosting declaration freshness, documentation checks and the production build pass. Eight reports update fingerprints only; the contract report also contains six translated rejection messages, with unchanged expected outcomes and error codes. Frozen profile documents, manifests, fixtures, semantic identities and multilingual examples remain unchanged.
+
+**Boundary and next increment:** a parser translation changed a frozen canonical IR identity, so it was withheld. Sprint 5.14B must define the presentation/artifact version boundary and complete parser, adapter/conformance and embedded-module translation deliberately. Sprint 5.14 remains active; release/licensing work in 5.15 is not started. See the [compatibility record](./docs/compatibility-5.14.md).
+
 ## Beroenden och ordning
 
 | Våg | Kräver | Låser upp |
@@ -424,6 +434,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.19.0 — 2026-09-21
+
+- Sprint 5.14A enforces a bounded JSON Schema 2020-12 channel policy through Ajv and translates selected kernel diagnostics.
+- A failing frozen identity check establishes the need for a separate 5.14B version-sensitive translation increment; no golden is rewritten to accept it.
+- Verification and standards documentation reflect the implemented boundary; existing interoperability and release gaps remain explicit.
 
 ### 1.18.0 — 2026-09-21
 
