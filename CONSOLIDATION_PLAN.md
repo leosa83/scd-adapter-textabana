@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Plan | `TA-OSS-CONSOLIDATION-001` |
-| Version | `1.3.0` |
-| Status | Active; sprints 5.11–5.13 and increment 5.14A implemented; 5.14B next |
+| Version | `1.3.1` |
+| Status | Active; sprints 5.11–5.13, 5.14A and 5.14B.1 implemented; remaining 5.14B work next |
 | Baseline | Sprint 5.10, GitHub `a0ec88761b904602e28522a6334bc90c5ae0f5e3` |
 | Accepted | 2026-09-20 |
 | Goal | A repository that external developers can understand, run, test and maintain without conversation history or a Sites account |
@@ -140,6 +140,12 @@ Implemented on 2026-09-21 with Node 24.19.0 and Python 3.12.14:
 | Documentation | The executable schema policy, standards assessment, requirement bindings, kernel/architecture guides and English migration register describe the same boundary. The documentation index is still source evidence, not a conformance certificate. |
 | Hosted CI | These are observed local results; the published commit's Node 22/24 and application workflow outcomes are checked separately. |
 
-Next is sprint 5.14B: make the diagnostic presentation/artifact boundary explicit, then finish version-sensitive English translation without rewriting old profile evidence. License selection, public packaging and other 5.15 release work remain separate.
+### Increment 5.14B.1 — parser documentation and identity boundary
+
+The parser guide is English, with the EBNF preserved byte-for-byte. The compatibility record selects a separate, non-mutating English presentation view while retaining raw v1 diagnostics. A regression pins the old syntax-failure IR identity and rejects changes to primary/related prose or added display fields under that identity. No formatter, new canonical profile, adapter migration or regenerated golden is claimed by this increment.
+
+Validation: all 232 headless tests pass, including the unchanged 28-check semantic profile and the new diagnostic-identity regression. The EBNF and ordered recovery-code inventory match the previous guide exactly. Runtime sources, frozen corpus and golden files are unchanged.
+
+Next within 5.14B: implement the separate English diagnostic presentation and test recovery details and related locations; then finish adapter/conformance/example migration with explicit version evidence. License selection, public packaging and other 5.15 release work remain separate.
 
 Publication uses matching Git trees in GitHub and Sites. Deployment status is verified separately through the hosting service; a local build alone is not a publication claim.

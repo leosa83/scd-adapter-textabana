@@ -421,7 +421,7 @@ Textabana Editor Kernel
 
 **Evidence:** 231 headless tests, 7 application tests and all nine CLI conformance suites pass. Lint, type checks, hosting declaration freshness, documentation checks and the production build pass. Eight reports update fingerprints only; the contract report also contains six translated rejection messages, with unchanged expected outcomes and error codes. Frozen profile documents, manifests, fixtures, semantic identities and multilingual examples remain unchanged.
 
-**Boundary and next increment:** a parser translation changed a frozen canonical IR identity, so it was withheld. Sprint 5.14B must define the presentation/artifact version boundary and complete parser, adapter/conformance and embedded-module translation deliberately. Sprint 5.14 remains active; release/licensing work in 5.15 is not started. See the [compatibility record](./docs/compatibility-5.14.md).
+**Boundary and next increment:** a parser translation changed a frozen canonical IR identity, so it was withheld. Increment 5.14B.1 translates the parser guide and defines a separate, non-mutating presentation boundary, protected by an identity regression. Implementing that English presentation and migrating adapter/conformance and embedded-module text remain 5.14B work. Sprint 5.14 remains active; release/licensing work in 5.15 is not started. See the [compatibility record](./docs/compatibility-5.14.md).
 
 ## Beroenden och ordning
 

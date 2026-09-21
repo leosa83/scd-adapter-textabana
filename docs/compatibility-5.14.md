@@ -17,10 +17,23 @@ Authored diagnostics and fallback descriptions in channel handling, document/ses
 | User/example values | Preserve source, module fixtures, multilingual data and the 43 specification examples. Do not translate identifiers or values merely because they are Swedish. |
 | Tests and reports | Update only ordinary assertions that explicitly test translated display wording. Do not regenerate frozen outcomes or golden identities. Rerun reports from the final source and record changed evidence separately. |
 
-## Deferred increment: 5.14B
+## Increment 5.14B.1: parser guide and compatibility boundary
 
 A trial parser-diagnostic translation changed the frozen `syntax-failure` IR identity from `sha256:1395a49402b093213102bf4a157fbd6271968d5af3ab78ebe175c418143c7b88` to `sha256:10c1abecbd093f145e5dd5b3c459d346b4e75f0e328656d0dc24bd3e7895d06c`, while the source, context, error code and failure outcome were unchanged. This is a real artifact compatibility change: diagnostic prose is part of the v1 artifact. The parser translation was not shipped and the golden was not changed.
 
-The next increment must decide and document an explicit presentation-versus-artifact/version boundary before translating parser diagnostics. It must also review adapter/projection identities, lab-conformance prose and embedded module source/digests before translating them, and finish the parser guide. Retain the old profile corpus and make any new profile expectations independently reviewable rather than overwriting old evidence.
+The parser guide is now English; its EBNF is unchanged. This increment adopts a non-mutating presentation boundary, not a new canonical profile. Existing v1 parser diagnostics retain their original bytes. English presentation must be built outside canonical artifacts, using diagnostic codes and structured recovery information, without replacing raw messages or adding display fields to hashed diagnostics. Raw inspection/export must retain the original artifact. A future change to canonical diagnostic content requires an explicitly versioned profile and independently reviewed expectations alongside the old corpus. No presentation formatter or new profile is shipped in 5.14B.1.
+
+The regression in `tests/semantic-identity.test.mjs` pins the existing syntax-failure identity and proves that changing either primary or related diagnostic prose, or adding a display field, changes the digest and fails verification against the original identity. This prevents a misleading fix that merely adds an English field inside a v1 artifact.
+
+### Remaining identity-sensitive surfaces
+
+| Surface | Observed binding | Required migration |
+|---|---|---|
+| Parser diagnostics | `identifyIR` omits only `diagnosticId` from diagnostics; primary and related prose remain hashed. | Separate English presentation from raw v1 artifacts. Cover recovery kinds, source details and related locations before wiring it into the UI. |
+| Adapter manifests and projections | `adapterManifest` hashes manifest content; projection seeds include manifest digest, adapter version and output. | Review text field by field; version changed manifests/projections explicitly rather than claim unchanged identities. |
+| Lab conformance | Structural evidence includes module source digests, adapter manifest digests and result/projection data; golden baselines are versioned. | Preserve the existing baseline and distinguish report presentation from bound evidence before translating. |
+| Embedded example modules | Module content participates in source digests and semantic context; explanatory strings inside source are still bytes. | Retain historical fixtures and publish separately versioned English examples if their source changes. Do not translate user values. |
+
+The adapter/conformance/module review here identifies the binding points; it is not a completed field-by-field migration. Their runtime sources, the parser source, frozen profiles and goldens remain untouched in this increment. The next 5.14B increment implements the separate English diagnostic presentation and its coverage, then addresses the remaining versioned surfaces.
 
 Sprint 5.14 remains active after 5.14A. Sprint 5.15 release preparation does not begin automatically; licensing, packaging and security-contact decisions remain open.

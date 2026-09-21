@@ -121,6 +121,29 @@ test("admitted failures retain inputs and failures/cancellation never expose a c
   } finally { client.dispose(); await transport.close(); }
 });
 
+test("v1 parser diagnostic prose and added display fields remain identity-bearing", async () => {
+  const response = await executeSemanticCase(fixture("syntax-failure"), "direct");
+  const bundle = response.semanticIdentity;
+  assert.equal(bundle.ir.id, "sha256:1395a49402b093213102bf4a157fbd6271968d5af3ab78ebe175c418143c7b88");
+  const original = structuredClone(bundle.ir.artifact);
+  const diagnostic = original.body.diagnostics[0];
+  assert.equal(diagnostic.code, "TBA-PARSE-BLOCK-UNCLOSED-LAB");
+  assert.equal(Object.hasOwn(diagnostic, "diagnosticId"), false);
+  assert.ok(diagnostic.related.length > 0);
+  for (const change of [
+    (item) => { item.message = "Block remains open at end of document."; },
+    (item) => { item.related[0].message = "The block opened here."; },
+    (item) => { item.displayMessage = "Block remains open at end of document."; },
+  ]) {
+    const changed = structuredClone(bundle);
+    change(changed.ir.artifact.body.diagnostics[0]);
+    assert.notEqual(await canonicalDigest(changed.ir.artifact), bundle.ir.id);
+    await assert.rejects(verifySemanticBundle(changed), /digest/);
+  }
+  assert.deepEqual(bundle.ir.artifact, original);
+  assert.equal((await verifySemanticBundle(bundle)).integrity, "verified");
+});
+
 test("CLI identify provides a reproducible artifact bundle", () => {
   const run = spawnSync(process.execPath, ["cli/textabana.mjs", "identify", "examples/document.md"], { encoding: "utf8", timeout: 15000 });
   assert.equal(run.status, 0, run.stderr);
