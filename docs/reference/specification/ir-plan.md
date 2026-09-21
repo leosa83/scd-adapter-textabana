@@ -1,26 +1,26 @@
 # IR, graph, plan and trace
 
-CST bevarar källformen, AST normaliserar syntaxen och typed IR beskriver dokumentets host-neutrala semantik. ExecutionPlan och dess graf bestämmer därefter vad hosten avser att resolvera. ExecutionTrace beskriver vad som faktiskt hann få ett fresh transformanrop eller en cachematerialisering; invalidation preview jämför två planer utan att påstå cacheträff eller reuse.
+The CST preserves source form, the AST normalizes syntax and typed IR describes the document's host-neutral semantics. ExecutionPlan and its graph then determine what the host intends to resolve. ExecutionTrace describes what actually received a fresh transform call or cache materialization; invalidation preview compares two plans without claiming a cache hit or reuse.
 
 **CST → AST → TextabanaIR**
 
-Lossless source, normaliserat blockträd och därefter en JSON-serialiserbar discriminated node-union med separat intervallgraf.
+Lossless source, a normalized block tree and then a JSON-serializable discriminated node union with a separate interval graph.
 
 **ExecutionPlan + Graph**
 
-Stage-instanser, `syntaxStageRef`, typade edges, order keys, runtimepolicy och statiska cache-recept före transform.
+Stage instances, `syntaxStageRef`, typed edges, order keys, runtime policy and static cache recipes before transform.
 
 **ExecutionTrace + preview**
 
-Observerade stage-resolutioner binds med `planNodeRef`; `functionInvoked` skiljer invocation från materialisering. Historikberoende invalidation är separat, rådgivande metadata.
+Observed stage resolutions are bound through `planNodeRef`; `functionInvoked` distinguishes invocation from materialization. History-dependent invalidation is separate, advisory metadata.
 
 **SourceMap**
 
-Många-till-många-relationer mellan genererade selectors och versionerade inputanchors.
+Many-to-many relations between generated selectors and versioned input anchors.
 
-### Minimalt IR-fragment
+### Minimal IR fragment
 
-Normativt schemafragment · json
+Normative schema fragment · json
 
 ```json
 {
@@ -43,9 +43,9 @@ Normativt schemafragment · json
 }
 ```
 
-### Pre-transform plan och typad graf · förkortat
+### Pre-transform plan and typed graph · abbreviated
 
-Körbar plan + sessionslokal cache-subset · json
+Executable plan + session-local cache subset · json
 
 ```json
 {
@@ -63,40 +63,40 @@ Körbar plan + sessionslokal cache-subset · json
 
 <a id="IR-001"></a>
 
-> **IR-001** Intervall MÅSTE representeras som scopes och segmentmedlemskap; de får inte pressas in i ett AST-träd som förlorar korsningar.
+> **IR-001** Intervals MUST be represented as scopes and segment membership; they cannot be forced into an AST tree that loses crossings.
 
 <a id="IR-002"></a>
 
-> **IR-002** Authored ids FÅR vara stabila mellan revisioner. Genererade node ids MÅSTE dokumenteras som revision-local.
+> **IR-002** Authored ids MAY be stable across revisions. Generated node ids MUST be documented as revision-local.
 
 <a id="IR-003"></a>
 
-> **IR-003** Varje IR-node, stage och recovery MÅSTE ha ett halvöppet Unicode-code-point-span inom exakt source snapshot. Syntetiska missing tokens MÅSTE vara markerade och ha zero-width-span. En source-backed Blank-node FÅR vara zero-width utan att vara syntetisk; radslutet ägs då av CST:ns separata Newline-terminal.
+> **IR-003** Every IR node, stage and recovery MUST have a half-open Unicode code point span within the exact source snapshot. Synthetic missing tokens MUST be marked and have a zero-width span. A source-backed Blank node MAY be zero-width without being synthetic; the line ending then belongs to the CST's separate Newline terminal.
 
 <a id="IR-004"></a>
 
-> **IR-004** En `Recovery`-node MÅSTE ha `executable=false` och får aldrig refereras som en körbar stage i ExecutionPlan.
+> **IR-004** A `Recovery` node MUST have `executable=false` and can never be referenced as an executable stage in ExecutionPlan.
 
 <a id="PLAN-001"></a>
 
-> **PLAN-001** ExecutionPlan MÅSTE bära varje stages exakta funktionsversion, typkontrakt, granted capabilities och deterministiska order key.
+> **PLAN-001** ExecutionPlan MUST carry each stage's exact function version, type contract, granted capabilities and deterministic order key.
 
 <a id="PLAN-002"></a>
 
-> **PLAN-002** ExecutionGraph MÅSTE ha unika node- och edge-id:n, typade endpoints, acyklisk topologisk ordning och exakt en renderterminal. Edge-typerna `pipeline`, `interval`, `interval-injection`, `inheritance`, `merge` och `render` MÅSTE vara explicita. Samma operationstape MÅSTE vara auktoritet för både planering och exekvering.
+> **PLAN-002** ExecutionGraph MUST have unique node and edge ids, typed endpoints, acyclic topological order and exactly one render terminal. The edge types `pipeline`, `interval`, `interval-injection`, `inheritance`, `merge` and `render` MUST be explicit. The same operation tape MUST be authoritative for both planning and execution.
 
 <a id="PLAN-003"></a>
 
-> **PLAN-003** Statisk cache eligibility, cache candidate, cache lookup, cache hit och faktisk reuse är skilda tillstånd. Ett ofullständigt state-, determinism- eller effektkontrakt MÅSTE göra funktionen icke-cachebar. En deklarerad kandidat är en betrodd manifestuppgift, inte i sig ett verifierat puritybevis.
+> **PLAN-003** Static cache eligibility, cache candidate, cache lookup, cache hit and actual reuse are distinct states. An incomplete state, determinism or effect contract MUST make the function non-cacheable. A declared candidate is a trusted manifest assertion, not in itself a verified proof of purity.
 
 <a id="PLAN-004"></a>
 
-> **PLAN-004** Invalidation preview MÅSTE vara rådgivande och separat från grafens och Resultatets semantiska identitet. Den MÅSTE ange basis, target och maskinläsbara orsaker samt får aldrig redovisas som cache hit eller reuse.
+> **PLAN-004** Invalidation preview MUST be advisory and separate from the graph's and Result's semantic identity. It MUST state the basis, target and machine-readable reasons and can never be reported as a cache hit or reuse.
 
 <a id="PLAN-005"></a>
 
-> **PLAN-005** Parallell eligibility och cache eligibility MÅSTE vara separata fält även när kriterierna sammanfaller. Endast oberoende `pure + deterministic + effects=[]`-stages utan kanaler eller icke-render-output FÅR överlappa i den aktuella subseten. En pending unknown, stateful eller effectful stage MÅSTE fence:a planmässigt senare ready branches tills barriären har avslutats; merge/render är seriella. Outputs från faktiskt samtidiga fresh-invocations MÅSTE snapshotas och klonas förlustfritt inom den portabla TextabanaValue-domänen vid settlement; andra typer avvisas atomiskt före planordnad publicering. Execution-ID:n, trace, values och cachejournal MÅSTE publiceras i planordning.
+> **PLAN-005** Parallel eligibility and cache eligibility MUST be separate fields even when their criteria coincide. Only independent `pure + deterministic + effects=[]` stages without channels or non-render output MAY overlap in the current subset. A pending unknown, stateful or effectful stage MUST fence ready branches that occur later in the plan until the barrier has completed; merge/render are serial. Outputs from actually concurrent fresh invocations MUST be snapshotted and cloned losslessly within the portable TextabanaValue domain at settlement; other types are rejected atomically before publication in plan order. Execution IDs, trace, values and cache journal MUST be published in plan order.
 
-**Playgroundens Våg 3-addendum**
+**Playground Wave 3 addendum**
 
-Language & Scope Lab visar verklig `textabana.cst/lab-v1`, `textabana.ast/lab-v1`, `textabana.ir/lab-v2`, en komplett pre-transform-graf, rådgivande invalidation, faktisk execution report med waves/run-budget och ett separat planordnat körspår från samma Worker. Planen byggs efter modulinitiering men före första transform. Editor Kernel återanvänder en exakt compiler-snapshot eller giltiga Lezer-fragment när revisionskedjan tillåter det. Schedulern får endast överlappa betrodda effects-free grenar asynkront; den ger ingen multicore-CPU-parallellism och kan inte preemptera synkrona loopar. Cachecheckpoint och credit-bunden metadata-streaming är hostmedierade lab-subsets, inte transparent distribuerad cache eller kontinuerlig stage-streaming.
+Language & Scope Lab shows actual `textabana.cst/lab-v1`, `textabana.ast/lab-v1`, `textabana.ir/lab-v2`, a complete pre-transform graph, advisory invalidation, an actual execution report with waves/run budget and a separate plan-ordered execution trace from the same Worker. The plan is built after module initialization but before the first transform. Editor Kernel reuses an exact compiler snapshot or valid Lezer fragments when the revision chain permits it. The scheduler may overlap only trusted effects-free branches asynchronously; it provides no multicore CPU parallelism and cannot preempt synchronous loops. Cache checkpoints and credit-bound metadata streaming are host-mediated lab subsets, not transparent distributed caching or continuous stage streaming.

@@ -1,20 +1,20 @@
 # Architecture
 
-Textabana placerar integrationsgränsen efter en tydlig, portabel resultatmodell. Värdar får presentera och transportera semantiken, men inte skriva om den.
+Textabana places its integration boundary after an explicit, portable result model. Hosts may present and transport the semantics, but cannot rewrite them.
 
 **Source** — .tba · .md · notebook · API
 
 **Parser + compiler** — CST · AST · IR · Plan/DAG
 
-**Runtime** — block · intervall · pipeline
+**Runtime** — block · interval · pipeline
 
 **Result** — render · channels · provenance
 
 **Adapters** — Jupyter · Arrow · LSP · MLflow
 
-### Abstrakt maskin
+### Abstract machine
 
-Normativ modell · contract
+Normative model · contract
 
 ```contract
 Parse(SourceDocument)
@@ -32,8 +32,8 @@ TextabanaResult
 
 <a id="ARCH-001"></a>
 
-> **ARCH-001** En host-adapter FÅR projicera ett resultat till sin egen UI- eller transportmodell men FÅR INTE ändra eventets mening, identitet, anchor eller proveniens.
+> **ARCH-001** A host adapter MAY project a result into its own UI or transport model but MUST NOT change the event's meaning, identity, anchor or provenance.
 
 <a id="ARCH-002"></a>
 
-> **ARCH-002** Kompilering och exekvering MÅSTE kunna beskrivas utan beroende till JavaScript, Python, Jupyter eller en specifik editor.
+> **ARCH-002** Compilation and execution MUST be describable without dependence on JavaScript, Python, Jupyter or a specific editor.

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
+import { NodeKernelTransport } from "../sdk/node/transport.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const vite = await createServer({
@@ -94,8 +95,50 @@ test("renders every migrated specification anchor, example and evidence disclosu
   for (const id of baseline.sectionIds) assert.ok(html.includes(`href="#${id}"`), `Missing navigation: ${id}`);
   assert.equal((html.match(/<details class="spec-evidence">/g) || []).length, baseline.requirements.length);
   assert.equal((html.match(/<pre\b/g) || []).length, Object.values(baseline.codeExamples).flat().length);
-  assert.match(html, /English translation is in progress/);
-  assert.match(html, /lang="sv"/);
+  assert.match(html, /The specification is authored in English/);
+  assert.doesNotMatch(html, /lang="sv"/);
   assert.match(html, /<table class="spec-table">/);
   assert.doesNotMatch(html, /href="\.\//);
+});
+
+test("all eight English lab panels render real committed and failed kernel results", async () => {
+  const { PlaygroundOutput } = await vite.ssrLoadModule("/app/playground-labs.tsx");
+  const { TextabanaKernelClient, KernelCommandError } = await vite.ssrLoadModule("/sdk/typescript/client.ts");
+  const transport = new NodeKernelTransport();
+  const client = new TextabanaKernelClient(transport);
+  try {
+    await client.open("translated-labs", "example.md", "Hej 🌊\n");
+    const committed = await client.run("translated-labs", 1, 1, []);
+    assert.equal(committed.resultEnvelope.run.committed, true);
+    assert.equal(committed.output, "Hej 🌊\n");
+    await client.open("failed-labs", "failure.md", ">>>> missing_function\nHej 🌊\n<<<< missing_function");
+    let failed;
+    try { await client.run("failed-labs", 1, 2, []); }
+    catch (error) {
+      assert.ok(error instanceof KernelCommandError);
+      failed = error.response;
+    }
+    assert.equal(failed.ok, false);
+    for (const lab of ["language", "kernel", "editor", "channels", "data", "notebook", "annotation", "conformance"]) {
+      for (const result of [committed, failed]) {
+        const html = renderToStaticMarkup(React.createElement(PlaygroundOutput, {
+          lab, result, previousResult: null, running: false,
+          onOpenLab() {}, onSelectFixture() {},
+        }));
+        assert.match(html, /lang="en"/, lab);
+        assert.doesNotMatch(html, /lang="sv"/, lab);
+        assert.match(html, /role="tablist"/, lab);
+        if (result.ok) assert.match(html, /Run 1 · committed/, lab);
+        else {
+          assert.match(html, /role="alert"/, lab);
+          assert.match(html, /The run committed no domain result/, lab);
+          // Diagnostic codes remain kernel data, not translated product copy.
+          assert.ok(html.includes(result.diagnostics[0].code), lab);
+        }
+      }
+    }
+  } finally {
+    client.dispose();
+    await transport.close();
+  }
 });

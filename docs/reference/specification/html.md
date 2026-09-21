@@ -1,30 +1,30 @@
 # Textabana and HTML
 
-HTML kan tillsammans med JavaScript bygga avancerade metadataapplikationer. Skillnaden är inte vad som över huvud taget går att programmera, utan vilken semantik som standardiseras och vilken artefakt som förblir den kanoniska källan.
+HTML and JavaScript can build advanced metadata applications. The difference concerns which semantics are standardized and which artifact remains the canonical source, rather than what is possible to program.
 
-**Den avgörande skillnaden**
+**The key distinction**
 
-HTML beskriver ett dokumentträd som en webbläsare kan presentera. Textabana beskriver vilka semantiska processer som gäller över vilka delar av en text, i vilken ordning, och vilka spårbara resultat de producerar.
+HTML describes a document tree that a browser can present. Textabana describes which semantic processes apply to which parts of a text, in what order, and which traceable results they produce.
 
-### HTML jämfört med Textabana
+### HTML compared with Textabana
 
 | Dimension | HTML | Textabana |
 | --- | --- | --- |
-| Primär artefakt | Ett märkt elementträd för webben. | Läsbar, versionerad text som kan leva utanför webben. |
-| Grundstruktur | En strikt nästlad DOM. | Ett blockträd plus öppna intervall som får överlappa och korsa. |
-| Beteende | Definieras normalt av separat, applikationsspecifik JavaScript. | Deklarerade funktioner, pipelines, scope-ordning och inheritance ingår i språkmodellen. |
-| Primär output | DOM och browserrendering. | TextabanaResult med render, typade channels, artifacts, diagnostics och provenance. |
-| Metadata | Attribut och data-* på element; betydelsen bestäms av applikationen. | Schema-kontrollerade events som binds till källan via Anchor och SourceMap. |
-| Position | DOM-noder, selectors och offsets i den renderade strukturen. | Versionerad källidentitet; row, line och DOM-position är utbytbara projektioner. |
-| Ordning | Bestäms av den aktuella applikationens event- och JavaScriptkod. | Är normativ genom pipeline, @order, aktiva scopes och inheritance-policy. |
-| Host | Webbläsar- och DOM-orienterad. | Host-neutral: editor, notebook, Python/R/Julia, server, datapipeline eller webb. |
-| Korsande intervall | Kan inte uttryckas som ett enda giltigt nästlat elementträd utan fragmentering. | Är ett förstaklassbegrepp med explicit cross-policy och bevarade scope-id:n. |
+| Primary artifact | A marked-up element tree for the web. | Readable, versioned text that can exist outside the web. |
+| Basic structure | A strictly nested DOM. | A block tree plus open intervals that may overlap and cross. |
+| Behavior | Usually defined by separate, application-specific JavaScript. | Declared functions, pipelines, scope order and inheritance are part of the language model. |
+| Primary output | DOM and browser rendering. | TextabanaResult with render, typed channels, artifacts, diagnostics and provenance. |
+| Metadata | Attributes and data-* on elements; the application defines their meaning. | Schema-checked events bound to source through Anchor and SourceMap. |
+| Position | DOM nodes, selectors and offsets in the rendered structure. | Versioned source identity; row, line and DOM positions are interchangeable projections. |
+| Order | Determined by the application's event and JavaScript code. | Normative through pipelines, @order, active scopes and inheritance policy. |
+| Host | Browser- and DOM-oriented. | Host-neutral: editor, notebook, Python/R/Julia, server, data pipeline or web. |
+| Crossing intervals | Cannot be expressed as one valid nested element tree without fragmentation. | A first-class concept with explicit cross policy and preserved scope ids. |
 
-### HTML lagrar ett färdigt påstående
+### HTML stores an existing assertion
 
-### Metadata i ett DOM-element
+### Metadata in a DOM element
 
-Illustrativt · html
+Illustrative · html
 
 ```html
 <p data-kind="claim" data-confidence="0.94">
@@ -32,13 +32,13 @@ Illustrativt · html
 </p>
 ```
 
-Elementet bär metadata, men HTML definierar inte vilken process som skapade den, hur den validerades eller hur den ska följa med tillbaka till en redigerad källtext.
+The element carries metadata, but HTML does not define which process created it, how it was validated or how it is to follow changes back to edited source text.
 
-### Textabana deklarerar processen
+### Textabana declares the process
 
-### Semantiska funktioner över källtext
+### Semantic functions over source text
 
-Illustrativt · textabana
+Illustrative · textabana
 
 ```textabana
 >>>>+ normalize @id=clean @order=10
@@ -50,24 +50,24 @@ Textabana kan användas för metadataeditorer.
 <<<<+ @id=claims
 ```
 
-Samma run kan producera en ren render, ett typat claim-event, en editorannotation, ett Anchor och proveniens utan att bädda in allt i den synliga texten.
+The same run can produce a clean render, a typed claim event, an editor annotation, an Anchor and provenance without embedding everything in the visible text.
 
-**Textabana source** — kanonisk semantik
+**Textabana source** — canonical semantics
 
 **TextabanaResult** — render · channels · anchors
 
-**HTML-adapter** — projection policy
+**HTML adapter** — projection policy
 
-**DOM** — en möjlig presentation
+**DOM** — one possible presentation
 
 <a id="HTML-ADAPTER-001"></a>
 
-> **HTML-ADAPTER-001** HTML FÅR vara renderformat och editorhost, men DOM-noder eller DOM-offsets får inte ersätta Textabanas kanoniska Anchor-identitet.
+> **HTML-ADAPTER-001** HTML MAY be a rendering format and editor host, but DOM nodes or DOM offsets cannot replace Textabana's canonical Anchor identity.
 
 <a id="HTML-ADAPTER-002"></a>
 
-> **HTML-ADAPTER-002** När korsande intervall projiceras till HTML MÅSTE adaptern fragmentera presentationen utan att förlora scope-id, SourceMap eller exekveringssemantik.
+> **HTML-ADAPTER-002** When crossing intervals are projected to HTML, the adapter MUST fragment the presentation without losing scope ids, SourceMap or execution semantics.
 
 <a id="HTML-ADAPTER-003"></a>
 
-> **HTML-ADAPTER-003** En HTML-adapter får presentera eller sanera resultatet men får inte göra browserordning, DOM-nästling eller eventtiming till ny språksemantik.
+> **HTML-ADAPTER-003** An HTML adapter may present or sanitize the result but cannot make browser order, DOM nesting or event timing new language semantics.

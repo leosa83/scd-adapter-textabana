@@ -70,7 +70,7 @@ function ResultShell({
 }: Pick<PlaygroundOutputProps, "lab" | "result" | "running"> & { children: React.ReactNode }) {
   const Icon = labCopy[lab].icon;
   return (
-    <section className="preview-shell lab-result-shell" lang="sv" aria-label={`${labCopy[lab].title} result`}>
+    <section className="preview-shell lab-result-shell" lang="en" aria-label={`${labCopy[lab].title} result`}>
       <div className="panel-bar" lang="en">
         <div className="panel-title"><Icon aria-hidden="true" />{labCopy[lab].title}</div>
         <span className={`runtime-state ${result.ok ? "is-ok" : "is-error"}`} aria-live="polite">
@@ -136,7 +136,7 @@ function RenderView({ output }: { output: string }) {
 }
 
 function StageFlow({ steps, compact = false }: { steps: ExecutionStep[]; compact?: boolean }) {
-  if (!steps.length) return <div className="lab-empty">Inga funktionssteg kördes för denna källa.</div>;
+  if (!steps.length) return <div className="lab-empty">No function stages ran for this source.</div>;
   return (
     <ol className={compact ? "stage-flow is-compact" : "stage-flow"}>
       {steps.map((step) => (
@@ -195,32 +195,32 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
         value={tab}
         onChange={setTab}
         items={[
-          { id: "semantics", label: "Semantik", count: scopes.length + blocks.length, icon: Layers3 },
+          { id: "semantics", label: "Semantics", count: scopes.length + blocks.length, icon: Layers3 },
           { id: "parser", label: "Parser", count: recoveries.length, icon: Rows3 },
-          { id: "graph", label: "Graf", count: graphStages.length, icon: GitBranch },
-          { id: "trace", label: "Körspår", count: steps.length, icon: Workflow },
-          { id: "ir", label: "IR-projektion", icon: FileJson },
+          { id: "graph", label: "Graph", count: graphStages.length, icon: GitBranch },
+          { id: "trace", label: "Execution trace", count: steps.length, icon: Workflow },
+          { id: "ir", label: "IR projection", icon: FileJson },
           { id: "render", label: "Render", icon: Sparkles },
         ]}
       />
       {tab === "render" ? <RenderView output={result.output} /> : null}
       {tab === "ir" ? (
         <div className="lab-json-scroll">
-          <div className="subset-notice"><CircleDot /> Typed runtimeprojektion · <code>textabana.ir/lab-v2</code> · inte full profilkonformitet</div>
+          <div className="subset-notice"><CircleDot /> Typed runtime projection · <code>textabana.ir/lab-v2</code> · not full profile conformance</div>
           <pre>{json(ir)}</pre>
         </div>
       ) : null}
       {tab === "parser" ? (
         <div className="lab-scroll parser-overview">
           <div className="lab-metrics">
-            <article><span>Parser</span><strong>{ir?.parser.engine ?? "–"}</strong><small>{ir?.parser.schema ?? "ingen analys"}</small></article>
-            <article><span>Parse mode</span><strong>{ir?.parser.parseMode ?? "–"}</strong><small>inkrementell reuse: {ir?.parser.incrementalReuse ? "ja" : "nej"}</small></article>
-            <article><span>CST</span><strong>{ir?.syntax.cst.nodes.length ?? 0}</strong><small>{ir?.syntax.cst.lossless ? "lossless source coverage" : "ofullständig coverage"}</small></article>
-            <article><span>Recovery</span><strong>{recoveries.length}</strong><small>{ir?.validity.executable ? "körbar IR" : "all exekvering blockerad"}</small></article>
+            <article><span>Parser</span><strong>{ir?.parser.engine ?? "–"}</strong><small>{ir?.parser.schema ?? "no analysis"}</small></article>
+            <article><span>Parse mode</span><strong>{ir?.parser.parseMode ?? "–"}</strong><small>incremental reuse: {ir?.parser.incrementalReuse ? "ja" : "nej"}</small></article>
+            <article><span>CST</span><strong>{ir?.syntax.cst.nodes.length ?? 0}</strong><small>{ir?.syntax.cst.lossless ? "lossless source coverage" : "incomplete coverage"}</small></article>
+            <article><span>Recovery</span><strong>{recoveries.length}</strong><small>{ir?.validity.executable ? "executable IR" : "all execution blocked"}</small></article>
           </div>
           <div className={`subset-notice ${ir?.validity.executable ? "" : "is-warning"}`}>
             {ir?.validity.executable ? <CheckCircle2 /> : <AlertTriangle />}
-            CST → AST → typed IR · Unicode code-point-spans · recovery nodes exekveras aldrig
+            CST → AST → typed IR · Unicode code point spans · recovery nodes never execute
           </div>
           {parserDiagnostics.length ? (
             <div className="parser-diagnostics">
@@ -233,7 +233,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
               ))}
             </div>
           ) : (
-            <div className="lab-empty"><CheckCircle2 /> Inga parsediagnostiker i aktuell source snapshot.</div>
+            <div className="lab-empty"><CheckCircle2 /> No parse diagnostics in the current source snapshot.</div>
           )}
           <div className="lab-json-scroll parser-json">
             <pre>{json({ parser: ir?.parser, validity: ir?.validity, recoveries, cst: ir?.syntax.cst, ast: ir?.syntax.ast })}</pre>
@@ -243,28 +243,28 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
       {tab === "graph" ? (
         <div className="lab-scroll">
           <div className="lab-intro">
-            <div><span>Post-module-init · pre-transform</span><strong>{result.plan?.graph.schema ?? "Ingen graf"}</strong></div>
-            <p>Grafen är exekveringsauktoritet. Oberoende betrodda, effects-free grenar kan överlappa asynkront i en Worker; all publicering sker fortsatt i planordning.</p>
+            <div><span>Post-module-init · pre-transform</span><strong>{result.plan?.graph.schema ?? "No graph"}</strong></div>
+            <p>The graph governs execution. Independent trusted, effects-free branches can overlap asynchronously in one Worker; publication still follows plan order.</p>
           </div>
           {result.plan ? (
             <>
               <div className="lab-metrics">
-                <article><span>Noder</span><strong>{graphNodes.length}</strong><small>source · stage · merge · render</small></article>
-                <article><span>Typed edges</span><strong>{graphEdges.length}</strong><small>acyklisk topologisk ordning</small></article>
-                <article><span>Planerat dirty</span><strong>{affectedNodeCount}</strong><small>{invalidation?.mode ?? "ingen baslinje"} · forced {invalidation?.forcedEffectNodeIds.length ?? 0}</small></article>
-                <article><span>Fresh / reuse</span><strong>{executionStats.executed} / {executionStats.reused}</strong><small>{executionStats.hits} hits · {executionStats.misses} misses · {executionStats.writes} committade cacheändringar</small></article>
+                <article><span>Nodes</span><strong>{graphNodes.length}</strong><small>source · stage · merge · render</small></article>
+                <article><span>Typed edges</span><strong>{graphEdges.length}</strong><small>acyclic topological order</small></article>
+                <article><span>Planned dirty nodes</span><strong>{affectedNodeCount}</strong><small>{invalidation?.mode ?? "no baseline"} · forced {invalidation?.forcedEffectNodeIds.length ?? 0}</small></article>
+                <article><span>Fresh / reuse</span><strong>{executionStats.executed} / {executionStats.reused}</strong><small>{executionStats.hits} hits · {executionStats.misses} misses · {executionStats.writes} committed cache changes</small></article>
               </div>
               <div className="lab-metrics">
-                <article><span>Scheduler</span><strong>{scheduling?.mode ?? "–"}</strong><small>{scheduling?.hostMode ?? "ingen runtime-rapport"}</small></article>
-                <article><span>Waves / peak</span><strong>{scheduling?.waveCount ?? 0} / {scheduling?.peakConcurrency ?? 0}</strong><small>max {scheduling?.maxConcurrency ?? 0} samtidiga invocationer</small></article>
-                <article><span>Seriella barriärer</span><strong>{scheduling?.barrierNodeRefs.length ?? 0}</strong><small>unknown · stateful · effectful</small></article>
-                <article><span>Run-budget</span><strong>{resources?.status ?? "–"}</strong><small>{resources?.usage.resolvedStageResolutions ?? 0}/{resources?.effective.maxStageResolutions ?? 0} stages · {resources?.usage.renderBytes ?? 0} bytes</small></article>
+                <article><span>Scheduler</span><strong>{scheduling?.mode ?? "–"}</strong><small>{scheduling?.hostMode ?? "no runtime report"}</small></article>
+                <article><span>Waves / peak</span><strong>{scheduling?.waveCount ?? 0} / {scheduling?.peakConcurrency ?? 0}</strong><small>max {scheduling?.maxConcurrency ?? 0} concurrent invocations</small></article>
+                <article><span>Serial barriers</span><strong>{scheduling?.barrierNodeRefs.length ?? 0}</strong><small>unknown · stateful · effectful</small></article>
+                <article><span>Run budget</span><strong>{resources?.status ?? "–"}</strong><small>{resources?.usage.resolvedStageResolutions ?? 0}/{resources?.effective.maxStageResolutions ?? 0} stages · {resources?.usage.renderBytes ?? 0} bytes</small></article>
               </div>
-              <div className="subset-notice"><CircleDot /> {executionReport?.transactionState ?? "ingen cachetransaktion"} · bounded async overlap · deterministic plan-order commit · två skilda committed revisioner före reuse</div>
+              <div className="subset-notice"><CircleDot /> {executionReport?.transactionState ?? "no cache transaction"} · bounded async overlap · deterministic plan-order commit · two distinct committed revisions before reuse</div>
               {scheduling?.waves.length ? (
                 <div className="data-table-wrap">
                   <table className="data-table">
-                    <thead><tr><th>Wave</th><th>Läge</th><th>Noder</th><th>Fresh / reuse</th><th>Commit</th></tr></thead>
+                    <thead><tr><th>Wave</th><th>Mode</th><th>Nodes</th><th>Fresh / reuse</th><th>Commit</th></tr></thead>
                     <tbody>
                       {scheduling.waves.map((wave) => (
                         <tr key={wave.waveId}>
@@ -282,7 +282,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
               {executionReport?.nodeResolutions.length ? (
                 <div className="data-table-wrap">
                   <table className="data-table">
-                    <thead><tr><th>Stage</th><th>Utfall</th><th>Lookup</th><th>Evidens</th><th>Orsak</th></tr></thead>
+                    <thead><tr><th>Stage</th><th>Outcome</th><th>Lookup</th><th>Evidence</th><th>Reason</th></tr></thead>
                     <tbody>
                       {executionReport.nodeResolutions.map((resolution) => (
                         <tr key={resolution.planNodeRef}>
@@ -300,43 +300,43 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
               <div className="lab-json-scroll parser-json">
                 <pre>{json({ plan: result.plan, invalidationPreview: invalidation, executionReport })}</pre>
               </div>
-              <div className="unsupported-strip"><AlertTriangle /> En Worker · endast async overlap · ingen multicore · ingen streaming/backpressure · ingen synkron preemption eller hård CPU-/minneskvot</div>
+              <div className="unsupported-strip"><AlertTriangle /> One Worker · async overlap only · no multicore execution, continuous stage streaming, general sink backpressure, synchronous preemption or hard CPU/memory quota</div>
             </>
           ) : (
-            <div className="lab-empty"><AlertTriangle /> Ingen graf — compile gate eller modulbindning blockerade planeringen.</div>
+            <div className="lab-empty"><AlertTriangle /> No graph — the compile gate or module binding blocked planning.</div>
           )}
         </div>
       ) : null}
       {tab === "trace" ? (
         <div className="lab-scroll">
           <div className="lab-intro">
-            <div><span>Observerad stage-resolution</span><strong>{steps.length} steg · {executionStats.executed} transforms · {executionStats.reused} reuse</strong></div>
-            <p>Varje startad stage får en trace-post i planordning, aldrig completionordning. <code>functionInvoked</code> skiljer ett transformanrop från cachematerialisering.</p>
+            <div><span>Observed stage resolution</span><strong>{steps.length} stages · {executionStats.executed} transforms · {executionStats.reused} reuse</strong></div>
+            <p>Each started stage receives a trace entry in plan order, never completion order. <code>functionInvoked</code> distinguishes a transform call from cache materialization.</p>
           </div>
           <StageFlow steps={steps} />
           {(result.plan?.unsupported.length ?? 0) > 0 ? (
-            <div className="unsupported-strip"><AlertTriangle /> Definierat men ännu unsupported: {result.plan?.unsupported.join(" · ")}</div>
+            <div className="unsupported-strip"><AlertTriangle /> Defined but not yet supported: {result.plan?.unsupported.join(" · ")}</div>
           ) : null}
-          <div className="unsupported-strip"><AlertTriangle /> Single-worker async overlap · ingen streaming/backpressure · ingen synkron preemption eller hård CPU-/minneskvot</div>
+          <div className="unsupported-strip"><AlertTriangle /> Single-Worker async overlap · no continuous stage streaming, general sink backpressure, synchronous preemption or hard CPU/memory quota</div>
         </div>
       ) : null}
       {tab === "semantics" ? (
         <div className="lab-scroll language-overview">
           <div className="lab-metrics">
-            <article><span>Intervall</span><strong>{scopes.length}</strong><small>sortering {ir?.configuration.scopeOrder ?? "–"}</small></article>
+            <article><span>Intervals</span><strong>{scopes.length}</strong><small>ordering {ir?.configuration.scopeOrder ?? "–"}</small></article>
             <article><span>Block</span><strong>{blocks.length}</strong><small>strict nesting</small></article>
-            <article><span>Stage-resolutioner</span><strong>{steps.length}</strong><small>fresh + materialized</small></article>
-            <article><span>Syntaxnoder</span><strong>{ir?.nodes.length ?? 0}</strong><small>source projection</small></article>
+            <article><span>Stage resolutions</span><strong>{steps.length}</strong><small>fresh + materialized</small></article>
+            <article><span>Syntax nodes</span><strong>{ir?.nodes.length ?? 0}</strong><small>source projection</small></article>
           </div>
 
           <section className="semantic-section">
-            <div className="semantic-section-title"><GitBranch /><div><strong>Öppna intervall</strong><span>Identifieritet, ordning och segment</span></div></div>
+            <div className="semantic-section-title"><GitBranch /><div><strong>Open intervals</strong><span>Identity, order and segments</span></div></div>
             <div className="scope-cards">
               {scopes.map((scope) => (
                 <article key={scope.scopeId}>
                   <div><strong>{scope.name}</strong><code>@id={scope.id}</code></div>
                   <span className="scope-order">order {scope.order}</span>
-                  <p>Öppnar line {scope.openLine} · stänger {scope.closeLine ? `line ${scope.closeLine}` : "inte"}</p>
+                  <p>Opens at line {scope.openLine} · closes at {scope.closeLine ? `line ${scope.closeLine}` : "no closing line"}</p>
                   <small>{scope.segments.map((segment) => `L${segment.startLine}–${segment.endLine}`).join(" · ") || "Inget textsegment"}</small>
                 </article>
               ))}
@@ -344,7 +344,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
           </section>
 
           <section className="semantic-section">
-            <div className="semantic-section-title"><Code2 /><div><strong>Block och inheritance</strong><span>Blockpipelinen kör före ambient inheritance</span></div></div>
+            <div className="semantic-section-title"><Code2 /><div><strong>Blocks and inheritance</strong><span>The block pipeline runs before ambient inheritance</span></div></div>
             <div className="block-cards">
               {blocks.map((block) => (
                 <article key={block.blockId}>
@@ -363,7 +363,7 @@ function LanguageLab({ result }: { result: RuntimeResult }) {
           </section>
 
           <section className="semantic-section">
-            <div className="semantic-section-title"><Workflow /><div><strong>Hur resolverades stages?</strong><span>Samma observerade resolution trace visas i detalj under Körspår</span></div></div>
+            <div className="semantic-section-title"><Workflow /><div><strong>How were stages resolved?</strong><span>The same observed resolution trace is detailed in Execution trace</span></div></div>
             <StageFlow steps={steps} compact />
           </section>
         </div>
@@ -414,9 +414,9 @@ function EditorKernelLab({
     return (
       <div className="lab-empty kernel-empty">
         <PanelsTopLeft aria-hidden="true" />
-        <strong>Den här körningen saknar Editor Kernel-evidens.</strong>
-        <p>Öppna den versionshanterade fixturen för att köra <code>open → subscribe → change → run</code>. Kärnan stöder även read-only <code>analyze</code> mellan changes.</p>
-        <Button size="sm" onClick={() => onSelectFixture("editor-kernel-revisions")}>Ladda Kernel revisions</Button>
+        <strong>This run has no Editor Kernel evidence.</strong>
+        <p>Open the versioned fixture to run <code>open → subscribe → change → run</code>. The kernel also supports read-only <code>analyze</code> between changes.</p>
+        <Button size="sm" onClick={() => onSelectFixture("editor-kernel-revisions")}>Load Kernel revisions</Button>
       </div>
     );
   }
@@ -436,16 +436,16 @@ function EditorKernelLab({
       />
       {tab === "revision" ? (
         <div className="lab-scroll kernel-lab">
-          <div className="subset-notice"><CircleDot /> Körbar <code>editor-kernel/lab-v1</code> · read-only analyze + recovery · full parse per revision</div>
+          <div className="subset-notice"><CircleDot /> Executable <code>editor-kernel/lab-v1</code> · read-only analyze + recovery · compiler snapshot and valid Lezer fragment reuse</div>
           <div className="lab-intro">
-            <div><span>Öppen documentsession</span><strong>{session?.path ?? "document.md"} · revision {session?.documentRevision ?? "–"}</strong></div>
-            <p>En accepterad textpatch flyttar document head. Metadata blir aktuell först efter en lyckad, atomisk run.</p>
+            <div><span>Open document session</span><strong>{session?.path ?? "document.md"} · revision {session?.documentRevision ?? "–"}</strong></div>
+            <p>An accepted text patch advances the document head. Metadata becomes current only after a successful atomic run.</p>
           </div>
           <div className="lab-metrics kernel-metrics">
-            <article><span>Document head</span><strong>{session?.documentRevision ?? "–"}</strong><small>{session?.documentVersion ?? "ingen version"}</small></article>
-            <article><span>Publicerad revision</span><strong>{session?.publishedRevision ?? "–"}</strong><small>{kernel.run.committed ? "current" : "senaste good står kvar"}</small></article>
-            <article><span>Senaste change</span><strong>{kernel.change?.status ?? "open"}</strong><small>{kernel.change ? `${kernel.change.baseRevision} → ${kernel.change.documentRevision}` : "initial snapshot"}</small></article>
-            <article><span>Metadataändringar</span><strong>{changedCount}</strong><small>{delta?.mode ?? "ingen subscription"}</small></article>
+            <article><span>Document head</span><strong>{session?.documentRevision ?? "–"}</strong><small>{session?.documentVersion ?? "no version"}</small></article>
+            <article><span>Published revision</span><strong>{session?.publishedRevision ?? "–"}</strong><small>{kernel.run.committed ? "current" : "last successful revision retained"}</small></article>
+            <article><span>Latest change</span><strong>{kernel.change?.status ?? "open"}</strong><small>{kernel.change ? `${kernel.change.baseRevision} → ${kernel.change.documentRevision}` : "initial snapshot"}</small></article>
+            <article><span>Metadata changes</span><strong>{changedCount}</strong><small>{delta?.mode ?? "no subscription"}</small></article>
           </div>
           <section className="kernel-flow" aria-label="Editor Kernel protocol trace">
             {(kernel.trace ?? []).map((entry, index) => (
@@ -457,38 +457,38 @@ function EditorKernelLab({
             ))}
           </section>
           <CalloutLike>
-            <strong>Tre separata former av inkrementalitet</strong>
-            <p>Patchinput och delta-output är implementerade. Parser, plan och exekvering räknas fortfarande om i sin helhet.</p>
+            <strong>Separate forms of incrementality</strong>
+            <p>ChangeSets update source and committed deltas update metadata. Valid Lezer fragments and exact compiler snapshots can be reused; the graph is built per run, with verified stage-cache reuse where eligible.</p>
           </CalloutLike>
           <div className="kernel-actions">
-            <Button size="sm" variant="outline" onClick={() => onSelectFixture("editor-kernel-revisions")}><GitBranch /> Ladda revisionsfixture</Button>
-            <Button size="sm" variant="outline" onClick={() => onOpenLab("editor")}><PanelRight /> Visa aktuell metadata</Button>
+            <Button size="sm" variant="outline" onClick={() => onSelectFixture("editor-kernel-revisions")}><GitBranch /> Load revision fixture</Button>
+            <Button size="sm" variant="outline" onClick={() => onOpenLab("editor")}><PanelRight /> Show current metadata</Button>
           </div>
         </div>
       ) : null}
       {tab === "delta" ? (
         <div className="lab-scroll kernel-delta-view">
-          <div className="lab-intro"><div><span>{delta?.cursor ?? "Ingen cursor"}</span><strong>{delta?.mode === "initial-snapshot" ? "Initial snapshot" : delta?.state === "committed" ? "Committat metadata-delta" : "Ingen ny commit"}</strong></div><p>Matchning använder stabil metadataidentitet; run-lokala event-id:n och sequence ignoreras.</p></div>
-          {!delta ? <div className="lab-empty">Ingen channel subscription levererade ett delta för denna run.</div> : (
+          <div className="lab-intro"><div><span>{delta?.cursor ?? "No cursor"}</span><strong>{delta?.mode === "initial-snapshot" ? "Initial snapshot" : delta?.state === "committed" ? "Committed metadata delta" : "No new commit"}</strong></div><p>Matching uses stable metadata identity; run-local event ids and sequence are ignored.</p></div>
+          {!delta ? <div className="lab-empty">No channel subscription delivered a delta for this run.</div> : (
             <>
               <div className="delta-summary-grid">
                 {(["added", "moved", "changed", "removed", "unchanged"] as const).map((kind) => <article className={`is-${kind}`} key={kind}><span>{kind}</span><strong>{delta.summary[kind]}</strong></article>)}
               </div>
-              {delta.mode === "not-committed" ? <div className="error-state compact"><AlertTriangle /><p>Revisionen publicerades inte. Föregående framgångsrika deltabaslinje ändrades inte.</p></div> : null}
+              {delta.mode === "not-committed" ? <div className="error-state compact"><AlertTriangle /><p>The revision was not published. The previous successful delta baseline was unchanged.</p></div> : null}
               <div className="delta-list">
                 {delta.collections.added.map((item) => <article key={`added:${item.identity}`} className="is-added"><span>added</span><strong>{item.target.rowId}</strong><p>{editorItemLabel(item)}</p><small>line {item.target.line} · {item.channel}</small></article>)}
-                {delta.collections.moved.map((item) => <article key={`moved:${item.identity}`} className="is-moved"><span>moved</span><strong>{item.after.target.rowId}</strong><p>{editorItemLabel(item.after)}</p><small>line {item.before.target.line} → {item.after.target.line} · stabil identitet</small></article>)}
-                {delta.collections.changed.map((item) => <article key={`changed:${item.identity}`} className="is-changed"><span>changed</span><strong>{item.after.target.rowId}</strong><p><del>{editorItemLabel(item.before)}</del><br />{editorItemLabel(item.after)}</p><small>{item.positionChanged ? `payload + position · line ${item.before.target.line} → ${item.after.target.line}` : "payload ändrad"}</small></article>)}
-                {delta.collections.removed.map((item) => <article key={`removed:${item.identity}`} className="is-removed"><span>removed</span><strong>{item.target.rowId}</strong><p>{editorItemLabel(item)}</p><small>tidigare line {item.target.line}</small></article>)}
+                {delta.collections.moved.map((item) => <article key={`moved:${item.identity}`} className="is-moved"><span>moved</span><strong>{item.after.target.rowId}</strong><p>{editorItemLabel(item.after)}</p><small>line {item.before.target.line} → {item.after.target.line} · stable identity</small></article>)}
+                {delta.collections.changed.map((item) => <article key={`changed:${item.identity}`} className="is-changed"><span>changed</span><strong>{item.after.target.rowId}</strong><p><del>{editorItemLabel(item.before)}</del><br />{editorItemLabel(item.after)}</p><small>{item.positionChanged ? `payload + position · line ${item.before.target.line} → ${item.after.target.line}` : "payload changed"}</small></article>)}
+                {delta.collections.removed.map((item) => <article key={`removed:${item.identity}`} className="is-removed"><span>removed</span><strong>{item.target.rowId}</strong><p>{editorItemLabel(item)}</p><small>previous line {item.target.line}</small></article>)}
               </div>
-              {changedCount === 0 ? <div className="lab-empty">Revisionen gav samma semantiska metadata. Källtexten kan ändå ha ändrats.</div> : null}
+              {changedCount === 0 ? <div className="lab-empty">The revision produced the same semantic metadata. The source text may still have changed.</div> : null}
             </>
           )}
         </div>
       ) : null}
       {tab === "anchors" ? (
         <div className="lab-scroll kernel-anchor-view">
-          <div className="lab-intro"><div><span>Cross-revision resolution</span><strong>Stabilt ID först, unik quote + origin därefter</strong></div><p><code>ambiguous</code> och <code>orphaned</code> väljer aldrig en kandidat tyst.</p></div>
+          <div className="lab-intro"><div><span>Cross-revision resolution</span><strong>Stable ID first, then unique quote + origin</strong></div><p><code>ambiguous</code> and <code>orphaned</code> never select a candidate silently.</p></div>
           <div className="delta-summary-grid anchor-summary-grid">
             {Object.entries(delta?.anchorContinuity.summary ?? {}).map(([status, count]) => <article key={status} className={`is-${status}`}><span>{status}</span><strong>{count}</strong></article>)}
           </div>
@@ -496,14 +496,14 @@ function EditorKernelLab({
             {(delta?.anchorContinuity.transitions ?? []).map((transition, index) => {
               const before = transition.from as { anchorRef?: string; line?: number; quote?: string } | null;
               const after = transition.to as { anchorRef?: string; line?: number; quote?: string } | null;
-              return <article key={`${transition.status}:${before?.anchorRef ?? after?.anchorRef ?? index}`}><span className={`is-${transition.status}`}>{transition.status}</span><div><strong>{before?.quote ?? after?.quote ?? "Ny eller olöst anchor"}</strong><p>{transition.method} · line {before?.line ?? "–"} → {after?.line ?? "–"}</p></div><code>{Math.round(transition.confidence * 100)}%</code></article>;
+              return <article key={`${transition.status}:${before?.anchorRef ?? after?.anchorRef ?? index}`}><span className={`is-${transition.status}`}>{transition.status}</span><div><strong>{before?.quote ?? after?.quote ?? "New or unresolved anchor"}</strong><p>{transition.method} · line {before?.line ?? "–"} → {after?.line ?? "–"}</p></div><code>{Math.round(transition.confidence * 100)}%</code></article>;
             })}
           </div>
         </div>
       ) : null}
       {tab === "protocol" ? (
         <div className="lab-json-scroll kernel-json-view">
-          <div className="subset-notice"><CircleDot /> Maskinläsbar editor-evidens · <code>canonical=false</code> · inte full <code>editor-kernel/1</code>-konformitet</div>
+          <div className="subset-notice"><CircleDot /> Machine-readable editor evidence · <code>canonical=false</code> · not full <code>editor-kernel/1</code>conformance</div>
           <pre>{json(kernel)}</pre>
         </div>
       ) : null}
@@ -548,7 +548,7 @@ function EditorLab({
       />
       {tab === "events" ? (
         <div className="channel-scroll">
-          <div className="lab-intro"><div><span>Reserverad kanal</span><strong>system.out</strong></div><p><code>kind</code> är semantik; <code>target.mode</code> är row eller line.</p></div>
+          <div className="lab-intro"><div><span>Reserved channel</span><strong>system.out</strong></div><p><code>kind</code> defines semantics; <code>target.mode</code> is row or line.</p></div>
           <div className="channel-events">{events.map((event) => <EventCard event={event} key={event.id} />)}</div>
         </div>
       ) : null}
@@ -561,13 +561,13 @@ function EditorLab({
       {tab === "editor" ? (
         <div className="metadata-lab">
           <div className="metadata-summary">
-            <span><CheckCircle2 /> {events.length} aktuella</span>
-            <span><GitBranch /> {moved} flyttade</span>
+            <span><CheckCircle2 /> {events.length} current</span>
+            <span><GitBranch /> {moved} moved</span>
             <span className={orphaned ? "has-warning" : ""}><AlertTriangle /> {orphaned} orphaned</span>
-            <small>Jämförs med föregående run på denna enhet</small>
+            <small>Compared with the previous run on this device</small>
           </div>
           <div className="metadata-workbench">
-            <div className="source-projection" aria-label="Källa med metadatagutter">
+            <div className="source-projection" aria-label="Source with metadata gutter">
               {(result.inspection?.sourceLines ?? []).map((sourceLine) => {
                 const lineEvents = events.filter((event) => event.line === sourceLine.line);
                 return (
@@ -580,7 +580,7 @@ function EditorLab({
                           key={event.id}
                           className={`metadata-marker is-${event.target.mode} ${selected?.id === event.id ? "is-selected" : ""}`}
                           onClick={() => setSelectedId(event.id)}
-                          aria-label={`Öppna ${event.kind} på rad ${event.line}`}
+                          aria-label={`Open ${event.kind} on line ${event.line}`}
                         >
                           {event.target.mode === "row" ? <Rows3 /> : <MapPin />}
                         </button>
@@ -606,9 +606,9 @@ function EditorLab({
                   <h4>Payload</h4>
                   <pre>{json(selected.payload)}</pre>
                   {anchor ? <AnchorSummary anchor={anchor} /> : null}
-                  <Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Öppna eventströmmen</Button>
+                  <Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Open event stream</Button>
                 </>
-              ) : <div className="lab-empty">Kör en fixture som emitterar till system.out.</div>}
+              ) : <div className="lab-empty">Run a fixture that emits to system.out.</div>}
             </aside>
           </div>
         </div>
@@ -622,7 +622,7 @@ function AnchorSummary({ anchor }: { anchor: RuntimeAnchor }) {
   return (
     <div className="anchor-summary">
       <h4>Anchor selectors</h4>
-      <code>{String(quote?.exact ?? "") || "Tom källrad"}</code>
+      <code>{String(quote?.exact ?? "") || "Empty source line"}</code>
       <small>{anchor.target.version} · Unicode code points</small>
     </div>
   );
@@ -630,24 +630,24 @@ function AnchorSummary({ anchor }: { anchor: RuntimeAnchor }) {
 
 function AdapterRunView({ result }: { result: RuntimeResult }) {
   const adapterRun = result.adapterRun;
-  if (!adapterRun) return <div className="lab-empty">Ingen adapterkörning finns för detta resultat.</div>;
+  if (!adapterRun) return <div className="lab-empty">No adapter run exists for this result.</div>;
   const executable = adapterRun.manifests.filter((manifest) => manifest.support === "playground-subset");
   const contractOnly = adapterRun.manifests.filter((manifest) => manifest.support === "contract-only");
 
   return (
     <div className="lab-scroll adapter-contract-view">
       <div className="subset-notice">
-        <CircleDot /> Post-commit fan-out · <code>adapter-contract/1</code> playground-subset · canonical Result muteras inte
+        <CircleDot /> Post-commit fan-out · <code>adapter-contract/1</code> playground-subset · canonical Result is not mutated
       </div>
       <div className="lab-metrics">
         <article><span>Adapter run</span><strong>{adapterRun.status}</strong><small>{adapterRun.verification.immutable ? "immutable verified" : "mutation detected"}</small></article>
-        <article><span>Körbara</span><strong>{executable.length}</strong><small>körbara projektioner</small></article>
-        <article><span>Contract-only</span><strong>{contractOnly.length}</strong><small>ingen simulerad output</small></article>
-        <article><span>Projektioner</span><strong>{adapterRun.projections.length}</strong><small>separata från Result</small></article>
+        <article><span>Executable</span><strong>{executable.length}</strong><small>executable projections</small></article>
+        <article><span>Contract-only</span><strong>{contractOnly.length}</strong><small>no simulated output</small></article>
+        <article><span>Projections</span><strong>{adapterRun.projections.length}</strong><small>separate from Result</small></article>
       </div>
 
       <section className="adapter-section">
-        <div className="semantic-section-title"><Braces /><div><strong>Adapterregister</strong><span>Version, profil, capabilities och fidelity deklareras före körning</span></div></div>
+        <div className="semantic-section-title"><Braces /><div><strong>Adapter registry</strong><span>Version, profile, capabilities and fidelity are declared before execution</span></div></div>
         <div className="adapter-manifest-grid">
           {adapterRun.manifests.map((manifest) => (
             <article key={manifest.adapterId} className={`adapter-manifest is-${manifest.support}`}>
@@ -669,7 +669,7 @@ function AdapterRunView({ result }: { result: RuntimeResult }) {
       </section>
 
       <section className="adapter-section">
-        <div className="semantic-section-title"><Workflow /><div><strong>ProjectionEnvelopes</strong><span>Varje output pekar tillbaka på exakt source result</span></div></div>
+        <div className="semantic-section-title"><Workflow /><div><strong>ProjectionEnvelopes</strong><span>Every output points back to the exact source result</span></div></div>
         {adapterRun.projections.length ? (
           <div className="adapter-projection-list">
             {adapterRun.projections.map((projection) => (
@@ -679,7 +679,7 @@ function AdapterRunView({ result }: { result: RuntimeResult }) {
                   <code>{projection.projectionId}</code>
                 </div>
                 <div className="projection-binding">
-                  <span>immutable source</span><code>{projection.sourceResultRef.resultId}</code><ArrowRight /><span>{projection.output?.projectionKind ?? "ingen output"}</span>
+                  <span>immutable source</span><code>{projection.sourceResultRef.resultId}</code><ArrowRight /><span>{projection.output?.projectionKind ?? "no output"}</span>
                 </div>
                 <div className="projection-reference-counts">
                   <span>{projection.references.eventRefs.length} events</span>
@@ -690,12 +690,12 @@ function AdapterRunView({ result }: { result: RuntimeResult }) {
                 <div className="fidelity-report">
                   <strong>Fidelity · {projection.fidelity.mode}</strong>
                   <p>{projection.fidelity.omittedPaths.length
-                    ? `Projektionen utelämnar ${projection.fidelity.omittedPaths.join(" · ")} och kräver därför källresultatet.`
-                    : "Ingen informationsförlust deklarerad för denna projektion."}</p>
+                    ? `The projection omits ${projection.fidelity.omittedPaths.join(" · ")} and therefore requires the source result.`
+                    : "No information loss is declared for this projection."}</p>
                 </div>
                 {projection.output ? (
                   <details>
-                    <summary>Visa faktisk adapteroutput</summary>
+                    <summary>Show actual adapter output</summary>
                     <pre>{json(projection.output)}</pre>
                   </details>
                 ) : null}
@@ -703,7 +703,7 @@ function AdapterRunView({ result }: { result: RuntimeResult }) {
               </article>
             ))}
           </div>
-        ) : <div className="lab-empty">Core run gav ingen adapterprojektion. Failed runs skippas efter den atomiska resultatgränsen.</div>}
+        ) : <div className="lab-empty">The core run produced no adapter projection. Failed runs are skipped after the atomic result boundary.</div>}
       </section>
     </div>
   );
@@ -879,7 +879,7 @@ function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "
   const empty = (
     <div className="data-empty">
       <Database />
-      <div><strong>Ingen kompatibel dataprojektion i denna run</strong><p>Välj fixturen <b>Data join</b> för att producera dataset, records och lineage.</p></div>
+      <div><strong>No compatible data projection in this run</strong><p>Select the fixture <b>Data join</b> to produce datasets, records and lineage.</p></div>
       {projection?.diagnostics[0] ? <small>{projection.diagnostics[0].code} · {projection.diagnostics[0].message}</small> : null}
     </div>
   );
@@ -900,11 +900,11 @@ function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "
         <div className="lab-scroll data-lab">
           {!data ? empty : (
             <>
-              <div className="projection-notice"><CircleDot /> Adapterprojektion · inte canonical Result · <code>application/json</code></div>
+              <div className="projection-notice"><CircleDot /> Adapter projection · not canonical Result · <code>application/json</code></div>
               <div className="data-summary">
                 <div><span>Dataset</span><strong>{data.dataset.datasetId}</strong><small>{data.dataset.schemaRef}</small></div>
-                <div><span>Records</span><strong>{data.rows.length}</strong><small>stabila recordId</small></div>
-                <div><span>Kolumner</span><strong>{data.columns.length}</strong><small>typade JSON-värden</small></div>
+                <div><span>Records</span><strong>{data.rows.length}</strong><small>stable recordId</small></div>
+                <div><span>Columns</span><strong>{data.columns.length}</strong><small>typed JSON values</small></div>
                 <div><span>Aggregation</span><strong>{data.aggregates[0]?.value ?? "–"}</strong><small>{data.aggregates[0]?.mapping ?? "saknas"}</small></div>
               </div>
               <div className="data-table-wrap">
@@ -918,7 +918,7 @@ function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "
                   ))}</tbody>
                 </table>
               </div>
-              <div className="data-table-foot"><span>{projection?.projectionId}</span><Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Visa raw events</Button></div>
+              <div className="data-table-foot"><span>{projection?.projectionId}</span><Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Show raw events</Button></div>
             </>
           )}
         </div>
@@ -939,10 +939,10 @@ function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "
       ) : null}
       {tab === "lineage" ? (
         <div className="lab-scroll data-lab lineage-lab">
-          <div className="canonical-notice"><CheckCircle2 /> Canonical events + SourceMap · derived från två inputankare</div>
+          <div className="canonical-notice"><CheckCircle2 /> Canonical events + SourceMap · derived from two input anchors</div>
           {!data || !selectedRow || !selectedLineage ? empty : (
             <>
-              <div className="record-picker" aria-label="Välj output record">{data.rows.map((row) => <button type="button" key={row.recordId} className={selectedRow.recordId === row.recordId ? "is-active" : ""} onClick={() => setSelectedRecordId(row.recordId)}>{String(row.values[data.dataset.key[0]])}</button>)}</div>
+              <div className="record-picker" aria-label="Select output record">{data.rows.map((row) => <button type="button" key={row.recordId} className={selectedRow.recordId === row.recordId ? "is-active" : ""} onClick={() => setSelectedRecordId(row.recordId)}>{String(row.values[data.dataset.key[0]])}</button>)}</div>
               <div className="lineage-chain">
                 <section>
                   <span>Output record</span><strong>{selectedRow.recordId}</strong><code>{selectedSourceMap?.outputSelector?.datasetId} · {selectedSourceMap?.mapping}</code>
@@ -962,8 +962,8 @@ function DataLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" | "
                 <section><h3>Record SourceMap</h3><pre>{json(selectedSourceMap)}</pre></section>
                 <section><h3>Provenance activity</h3><pre>{json(activity)}</pre></section>
               </div>
-              <section className="cell-lineage-section"><h3>Cell-lineage</h3><p>Varje outputkolumn pekar på en eller två semantiska inputceller via DataSelector.</p><div>{selectedCells.map((lineage) => <article key={lineage.lineageId}><strong>{lineage.output.column}</strong><ArrowRight /><span>{lineage.inputs.map((input) => input.datasetId + "." + input.column).join(" + ")}</span><small>{lineage.mapping}</small></article>)}</div></section>
-              <small className="lineage-event-count">{lineageEvents.length} lineage-events i committed Result</small>
+              <section className="cell-lineage-section"><h3>Cell-lineage</h3><p>Each output column points to one or two semantic input cells through DataSelector.</p><div>{selectedCells.map((lineage) => <article key={lineage.lineageId}><strong>{lineage.output.column}</strong><ArrowRight /><span>{lineage.inputs.map((input) => input.datasetId + "." + input.column).join(" + ")}</span><small>{lineage.mapping}</small></article>)}</div></section>
+              <small className="lineage-event-count">{lineageEvents.length} lineage events in committed Result</small>
             </>
           )}
         </div>
@@ -1012,7 +1012,7 @@ function NotebookLab({ result, previousResult, onOpenLab }: Pick<PlaygroundOutpu
   const empty = (
     <div className="data-empty notebook-empty">
       <NotebookTabs />
-      <div><strong>Ingen kompatibel notebookprojektion i denna run</strong><p>Välj fixturen <b>Notebook snapshot</b> för att producera celler, MIME bundles och explicit state.</p></div>
+      <div><strong>No compatible notebook projection in this run</strong><p>Select the fixture <b>Notebook snapshot</b> to produce cells, MIME bundles and explicit state.</p></div>
       {projection?.diagnostics[0] ? <small>{projection.diagnostics[0].code} · {projection.diagnostics[0].message}</small> : null}
     </div>
   );
@@ -1037,7 +1037,7 @@ function NotebookLab({ result, previousResult, onOpenLab }: Pick<PlaygroundOutpu
               <div className="canonical-notice"><CheckCircle2 /> Canonical runtime-events · <code>notebook.snapshot</code> + <code>notebook.cells</code></div>
               <div className="notebook-summary">
                 <div><span>Notebook</span><strong>{data.notebook.notebookId}</strong><small>{data.notebook.snapshotId}</small></div>
-                <div><span>Snapshot</span><strong>{data.notebook.wholeSnapshot ? "whole" : "partial"}</strong><small>{data.cells.length} stabila cell-id:n</small></div>
+                <div><span>Snapshot</span><strong>{data.notebook.wholeSnapshot ? "whole" : "partial"}</strong><small>{data.cells.length} stable cell ids</small></div>
                 <div><span>State</span><strong>{data.notebook.stateProfile}</strong><small>{data.notebook.executionSupport}</small></div>
               </div>
               <div className="notebook-cell-stack">{data.cells.map((cell) => {
@@ -1048,7 +1048,7 @@ function NotebookLab({ result, previousResult, onOpenLab }: Pick<PlaygroundOutpu
                   <aside><code>{cell.sourceDigest}</code><small>{event?.target.anchorRef}</small></aside>
                 </button>;
               })}</div>
-              <div className="data-table-foot"><span>Författad ordning är presentation, inte dold kernelstate.</span><Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Visa raw events</Button></div>
+              <div className="data-table-foot"><span>Authored order controls presentation, not hidden kernel state.</span><Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Show raw events</Button></div>
             </>
           )}
         </div>
@@ -1057,7 +1057,7 @@ function NotebookLab({ result, previousResult, onOpenLab }: Pick<PlaygroundOutpu
         <div className="lab-scroll notebook-lab mime-lab">
           {!data || !selectedCell ? empty : (
             <>
-              <div className="projection-notice"><CircleDot /> Adapterprojektion · inte canonical Result · <code>application/json</code></div>
+              <div className="projection-notice"><CircleDot /> Adapter projection · not canonical Result · <code>application/json</code></div>
               <div className="mime-head"><div><span>Cell</span><strong>{selectedCell.cellId}</strong><small>{selectedCell.output.outputDigest}</small></div><div className="mime-picker">{Object.keys(selectedCell.mimeBundle).map((type) => <button type="button" key={type} className={displayedMimeType === type ? "is-active" : ""} onClick={() => setMimeType(type)}>{type}</button>)}</div></div>
               <section className="mime-value"><h3>{displayedMimeType}</h3><pre>{typeof selectedCell.mimeBundle[displayedMimeType] === "string" ? String(selectedCell.mimeBundle[displayedMimeType]) : json(selectedCell.mimeBundle[displayedMimeType])}</pre></section>
               <div className="lineage-detail-grid"><section><h3>CellSelector + SourceMap</h3><pre>{json(selectedSourceMap)}</pre></section><section><h3>Output binding</h3><pre>{json(selectedCell.output)}</pre></section></div>
@@ -1069,12 +1069,12 @@ function NotebookLab({ result, previousResult, onOpenLab }: Pick<PlaygroundOutpu
         <div className="lab-scroll notebook-lab state-lab">
           {!data ? empty : (
             <>
-              <div className="canonical-notice"><CheckCircle2 /> Canonical runtime-event · <code>notebook.state</code> · kärnans runprofil förblir fresh</div>
+              <div className="canonical-notice"><CheckCircle2 /> Canonical runtime-event · <code>notebook.state</code> · the core run profile remains fresh</div>
               <div className="state-profile-grid">
                 {[
-                  { id: "fresh", support: "playground-subset", detail: "Strukturell snapshot och projektion utan kernel." },
-                  { id: "session", support: "contract-only execution", detail: "Profilen är explicit; extern session körs inte här." },
-                  { id: "attached", support: "contract-only execution", detail: "Extern kernel får inte antas eller simuleras." },
+                  { id: "fresh", support: "playground-subset", detail: "Structural snapshot and projection without a kernel." },
+                  { id: "session", support: "contract-only execution", detail: "The profile is explicit; no external session runs here." },
+                  { id: "attached", support: "contract-only execution", detail: "An external kernel cannot be assumed or simulated." },
                 ].map((profile) => <article key={profile.id} className={data.state.requestedProfile === profile.id ? "is-current" : ""}><span>{data.state.requestedProfile === profile.id ? "requested" : "available token"}</span><strong>{profile.id}</strong><code>{profile.support}</code><p>{profile.detail}</p></article>)}
               </div>
               <section className="state-envelope"><h3>Committed state descriptor</h3><pre>{json(data.state)}</pre></section>
@@ -1086,8 +1086,8 @@ function NotebookLab({ result, previousResult, onOpenLab }: Pick<PlaygroundOutpu
         <div className="lab-scroll notebook-lab stale-lab">
           {!data ? empty : (
             <>
-              <div className="projection-notice"><CircleDot /> View-only revision comparison · tidigare output blir aldrig aktuell output</div>
-              {!sameNotebookHistory ? <div className="notebook-history-empty"><AlertTriangle /><div><strong>Ingen jämförbar föregående snapshot</strong><p>Ändra texten i en cell utan att ändra dess cell-id. Nästa run kan då klassificera den äldre outputen.</p></div></div> : (
+              <div className="projection-notice"><CircleDot /> View-only revision comparison · previous output never becomes current output</div>
+              {!sameNotebookHistory ? <div className="notebook-history-empty"><AlertTriangle /><div><strong>No comparable previous snapshot</strong><p>Change a cell&apos;s text without changing its cell id. The next run can then classify the older output.</p></div></div> : (
                 <div className="stale-list">{staleComparisons.map(({ cell, previous, stale }) => <article key={cell.cellId} className={stale ? "is-stale" : "is-fresh"}>
                   <div><span>{cell.cellId}</span><strong>{stale ? "previous output · stale" : previous ? "previous output · still valid" : "new cell · no previous output"}</strong></div>
                   <dl><div><dt>previous source</dt><dd>{previous?.output.sourceDigest ?? "–"}</dd></div><div><dt>current source</dt><dd>{cell.sourceDigest}</dd></div><div><dt>rule</dt><dd>previous.output.sourceDigest {stale ? "≠" : "="} current.cell.sourceDigest</dd></div></dl>
@@ -1128,7 +1128,7 @@ function AnnotationLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "resul
   const empty = (
     <div className="data-empty annotation-empty">
       <Bot />
-      <div><strong>Ingen kompatibel annotationprojektion i denna run</strong><p>Välj fixturen <b>Annotation & AI review</b> för att producera kandidater, review-revisioner och standardexport.</p></div>
+      <div><strong>No compatible annotation projection in this run</strong><p>Select the fixture <b>Annotation & AI review</b> to produce candidates, review revisions and standards exports.</p></div>
       {projection?.diagnostics[0] ? <small>{projection.diagnostics[0].code} · {projection.diagnostics[0].message}</small> : null}
     </div>
   );
@@ -1154,7 +1154,7 @@ function AnnotationLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "resul
               <div className="canonical-notice"><CheckCircle2 /> Canonical append-only events · <code>annotation.candidates</code> + <code>annotation.reviews</code> + <code>annotation.revisions</code></div>
               <div className="annotation-summary">
                 <div><span>Set</span><strong>{data.set.setId}</strong><small>{data.set.wholeSnapshot ? "whole snapshot" : "partial"}</small></div>
-                <div><span>Kandidater</span><strong>{data.reviewChain.length}</strong><small>immutable revision 0</small></div>
+                <div><span>Candidates</span><strong>{data.reviewChain.length}</strong><small>immutable revision 0</small></div>
                 <div><span>Current</span><strong>{data.set.currentIds.length}</strong><small>{data.set.currentIds.join(" · ")}</small></div>
                 <div><span>Digest</span><strong>{data.set.digestAlgorithm}</strong><small>{data.set.setDigest}</small></div>
               </div>
@@ -1171,7 +1171,7 @@ function AnnotationLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "resul
                   <small>{chain.candidate.candidateDigest}</small>
                 </button>
               ))}</div>
-              <div className="data-table-foot"><span>Beslutet finns i källan; ändra <code>decision</code> och kör för att skapa en ny snapshotkedja.</span><Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Visa raw events</Button></div>
+              <div className="data-table-foot"><span>The decision is in the source; change <code>decision</code> and run to create a new snapshot chain.</span><Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Show raw events</Button></div>
             </>
           )}
         </div>
@@ -1180,8 +1180,8 @@ function AnnotationLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "resul
         <div className="lab-scroll annotation-lab annotation-chain-view">
           {!data || !selected ? empty : (
             <>
-              <div className="canonical-notice"><CheckCircle2 /> Review skapar revision 1 · kandidatens revision 0 skrivs aldrig om</div>
-              <div className="record-picker" aria-label="Välj annotation">{data.reviewChain.map((chain) => <button type="button" key={chain.annotationId} className={selected.annotationId === chain.annotationId ? "is-active" : ""} onClick={() => setSelectedAnnotationId(chain.annotationId)}>{chain.annotationId}</button>)}</div>
+              <div className="canonical-notice"><CheckCircle2 /> Review creates revision 1 · the candidate&apos;s revision 0 is never rewritten</div>
+              <div className="record-picker" aria-label="Select annotation">{data.reviewChain.map((chain) => <button type="button" key={chain.annotationId} className={selected.annotationId === chain.annotationId ? "is-active" : ""} onClick={() => setSelectedAnnotationId(chain.annotationId)}>{chain.annotationId}</button>)}</div>
               <div className="annotation-chain">
                 <section><span>Model candidate · r0</span><strong>{selected.candidate.status}</strong><code>{selected.candidate.eventRef}</code><p>{selected.candidate.body}</p></section>
                 <ArrowRight />
@@ -1199,24 +1199,24 @@ function AnnotationLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "resul
         <div className="lab-scroll annotation-lab annotation-targets">
           {!data || !selected ? empty : (
             <>
-              <div className="canonical-notice"><CheckCircle2 /> Samma stabila Anchor bär source target genom candidate, review och export</div>
-              <div className="record-picker" aria-label="Välj annotation">{data.reviewChain.map((chain) => <button type="button" key={chain.annotationId} className={selected.annotationId === chain.annotationId ? "is-active" : ""} onClick={() => setSelectedAnnotationId(chain.annotationId)}>{chain.annotationId}</button>)}</div>
+              <div className="canonical-notice"><CheckCircle2 /> The same stable Anchor carries the source target through candidate, review and export</div>
+              <div className="record-picker" aria-label="Select annotation">{data.reviewChain.map((chain) => <button type="button" key={chain.annotationId} className={selected.annotationId === chain.annotationId ? "is-active" : ""} onClick={() => setSelectedAnnotationId(chain.annotationId)}>{chain.annotationId}</button>)}</div>
               <div className="lineage-detail-grid"><section><h3>Anchor + selectors</h3><pre>{json(anchor)}</pre></section><section><h3>Candidate SourceMap</h3><pre>{json(sourceMap)}</pre></section></div>
-              <section className="annotation-review-map"><h3>Review SourceMap</h3><p>Derived mapping använder kandidatankaret{selected.replacement ? " och ersättarens ankare" : ""} som explicita inputs.</p><pre>{json(reviewMap)}</pre></section>
-              <Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Öppna Channel & Result</Button>
+              <section className="annotation-review-map"><h3>Review SourceMap</h3><p>Derived mapping uses the candidate anchor{selected.replacement ? " and the replacement anchor" : ""} as explicit inputs.</p><pre>{json(reviewMap)}</pre></section>
+              <Button size="sm" variant="outline" onClick={() => onOpenLab("channels")}><RadioTower /> Open Channel & Result</Button>
             </>
           )}
         </div>
       ) : null}
       {tab === "w3c" ? (
         <div className="lab-json-scroll annotation-export">
-          <div className="projection-notice"><CircleDot /> Adapterprojektion · W3C Web Annotation <code>AnnotationPage</code> · targets kopieras från Textabana Anchor</div>
+          <div className="projection-notice"><CircleDot /> Adapter projection · W3C Web Annotation <code>AnnotationPage</code> · targets are copied from Textabana Anchor</div>
           {!data ? empty : <pre>{json(data.exports.w3cWebAnnotation)}</pre>}
         </div>
       ) : null}
       {tab === "label-studio" ? (
         <div className="lab-json-scroll annotation-export">
-          <div className="projection-notice"><CircleDot /> Adapterprojektion · testad Label Studio task/import-subset · ingen API- eller projektroundtrip</div>
+          <div className="projection-notice"><CircleDot /> Adapter projection · tested Label Studio task/import subset · no API or project round trip</div>
           {!data ? empty : <pre>{json(data.exports.labelStudioTasks)}</pre>}
         </div>
       ) : null}
@@ -1282,13 +1282,13 @@ function SemanticIdentityPanel({ bundle }: { bundle: RuntimeResult["semanticIden
   const current = verification?.bundle === bundle ? verification : null;
   const verify = async () => {
     const snapshot = bundle;
-    setVerification({ bundle: snapshot, status: "checking", message: "Kontrollerar paketet…" });
+    setVerification({ bundle: snapshot, status: "checking", message: "Checking the bundle…" });
     try {
       const { verifySemanticBundle } = await import("../runtime/semantic-identity.js");
       const details = await verifySemanticBundle(snapshot);
-      setVerification({ bundle: snapshot, status: "passed", message: "Struktur, referenser och kontrollsummor verifierade.", details });
+      setVerification({ bundle: snapshot, status: "passed", message: "Structure, references and checksums verified.", details });
     } catch (error) {
-      setVerification({ bundle: snapshot, status: "failed", message: error instanceof Error ? error.message : "Paketet kunde inte verifieras." });
+      setVerification({ bundle: snapshot, status: "failed", message: error instanceof Error ? error.message : "The bundle could not be verified." });
     }
   };
   const download = () => {
@@ -1297,26 +1297,26 @@ function SemanticIdentityPanel({ bundle }: { bundle: RuntimeResult["semanticIden
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return <div className="lab-scroll conformance-lab">
-    <div className="subset-notice">SHA-256 för versionssatta semantiska artefakter. Kontrollen gäller paketets struktur, innehåll och interna samband; full runtimekonformitet kräver ytterligare profiltester.</div>
-    <p><a href="/contracts/semantic-bundle-v1.schema.json" download>Hämta JSON Schema</a> · <a href="/conformance/contract-report.json" download>Hämta kontraktets testresultat</a></p>
-    <p>Referensprofilen för text jämför 70 fasta testfall mellan JavaScript-kärnan och en fristående Python-runtime. Den täcker text, nästlade block och rena textfunktioner. <a href="/conformance/text-core-report.json" download>Hämta jämförelsen mellan runtimes</a>. Denna separata rapport verifierar inte det aktuella dokumentet eller dess artefaktidentiteter.</p>
-    <p>Intervallprofilen jämför ytterligare 80 fall: öppna intervall, ordning, namngivna avslut och blockarv. Även den exakta ordningen på committade funktionsanrop jämförs. <a href="/conformance/scoped-text-report.json" download>Hämta intervalljämförelsen</a>.</p>
-    <p>Kanalprofilen jämför ytterligare 80 fall för render, exakta payloads, global händelseordning och sparade kanalresultat. Tillfälliga händelser och atomisk återställning vid fel ingår. <a href="/conformance/channel-core-report.json" download>Hämta kanaljämförelsen</a>. Källpositioner och full proveniensekvivalens ligger utanför denna jämförelse.</p>
-    <p>Positionsprofilen jämför 70 fall för källrader, Unicode-positioner, citatkontext och kopplingen mellan händelser och ankare. Återanvända radankare, emoji och kolliderande radnycklar ingår. <a href="/conformance/source-map-core-report.json" download>Hämta positionsjämförelsen</a>. Rapporten avser den angivna kodversionen och verifierar inte det aktuella dokumentet.</p>
-    <p>Modulgrinden verifierar 54 fall för paketintegritet, grants och funktionskontrakt, inklusive om startkod hann köras före ett fel. <a href="/conformance/module-gate-report.json" download>Hämta modulrapporten</a>. Grinden kör samma JavaScript-kärna; den verifierar inte det aktuella dokumentet och innebär ingen sandbox-garanti.</p>
-    <p>Oberoende paketkontroll jämför 72 förhandsbeslut mellan JavaScript och fristående Python. Manifest, låsning, digests och grants kontrolleras utan att Python kör modulkod. <a href="/conformance/module-admission-report.json" download>Hämta paketjämförelsen</a>. Godkänd förhandskontroll innebär inte att senare exportkontroll eller körning lyckas. Rapporten gäller de frysta fallen, inte det aktuella dokumentet.</p>
-    {!bundle ? <div className="lab-empty">Aktivera SHA-256-identiteter och kör dokumentet.</div> : <>
-      <div className="lab-table-wrap"><table className="lab-table"><thead><tr><th>Artefakt</th><th>Identitet</th></tr></thead><tbody>
-        {(["source", "context", "ir", "plan", "result"] as const).map((key) => <tr key={key}><td>{key}</td><td><code>{bundle[key]?.id ?? "Ingen artefakt i denna körning"}</code></td></tr>)}
+    <div className="subset-notice">SHA-256 for versioned semantic artifacts. Verification covers the bundle&apos;s structure, content and internal relationships; full runtime conformance requires additional profile tests.</div>
+    <p><a href="/contracts/semantic-bundle-v1.schema.json" download>Download JSON Schema</a> · <a href="/conformance/contract-report.json" download>Download contract test results</a></p>
+    <p>The text reference profile compares 70 fixed cases between the JavaScript kernel and a standalone Python runtime. It covers text, nested blocks and pure text functions. <a href="/conformance/text-core-report.json" download>Download the cross-runtime comparison</a>. This separate report does not verify the current document or its artifact identities.</p>
+    <p>The interval profile compares 80 additional cases: open intervals, ordering, named closes and block inheritance. It also compares the exact order of committed function calls. <a href="/conformance/scoped-text-report.json" download>Download the interval comparison</a>.</p>
+    <p>The channel profile compares 80 additional cases for render, exact payloads, global event order and stored channel results. Transient events and atomic rollback on failure are included. <a href="/conformance/channel-core-report.json" download>Download the channel comparison</a>. Source positions and full provenance equivalence are outside this comparison.</p>
+    <p>The position profile compares 70 cases for source lines, Unicode positions, quote context and event-to-anchor links. Reused row anchors, emoji and colliding row keys are included. <a href="/conformance/source-map-core-report.json" download>Download the position comparison</a>. The report covers the specified code version and does not verify the current document.</p>
+    <p>The module gate verifies 54 cases for package integrity, grants and function contracts, including whether startup code ran before a failure. <a href="/conformance/module-gate-report.json" download>Download the module report</a>. The gate runs the same JavaScript kernel; it does not verify the current document or provide a sandbox guarantee.</p>
+    <p>Independent package admission compares 72 admission decisions between JavaScript and standalone Python. Manifests, locking, digests and grants are checked without Python executing module code. <a href="/conformance/module-admission-report.json" download>Download the package comparison</a>. Successful admission does not imply that subsequent export validation or execution succeeds. The report covers the frozen cases, not the current document.</p>
+    {!bundle ? <div className="lab-empty">Enable SHA-256 identities and run the document.</div> : <>
+      <div className="lab-table-wrap"><table className="lab-table"><thead><tr><th>Artifact</th><th>Identity</th></tr></thead><tbody>
+        {(["source", "context", "ir", "plan", "result"] as const).map((key) => <tr key={key}><td>{key}</td><td><code>{bundle[key]?.id ?? "No artifact in this run"}</code></td></tr>)}
       </tbody></table></div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={verify} disabled={current?.status === "checking"}><ShieldCheck aria-hidden="true" />{current?.status === "checking" ? "Verifierar…" : "Verifiera paket"}</Button>
-        <Button variant="outline" onClick={download}><FileJson aria-hidden="true" />Ladda ner paket</Button>
+        <Button variant="outline" onClick={verify} disabled={current?.status === "checking"}><ShieldCheck aria-hidden="true" />{current?.status === "checking" ? "Verifying…" : "Verify bundle"}</Button>
+        <Button variant="outline" onClick={download}><FileJson aria-hidden="true" />Download bundle</Button>
       </div>
-      {current ? <div role="status" aria-live="polite"><p>{current.status === "passed" ? "✓ " : current.status === "failed" ? "Ogiltigt paket: " : ""}{current.message}</p>
-        {current.details ? <details><summary>Verifieringsresultat · JSON</summary><pre>{json(current.details)}</pre></details> : null}
+      {current ? <div role="status" aria-live="polite"><p>{current.status === "passed" ? "✓ " : current.status === "failed" ? "Invalid bundle: " : ""}{current.message}</p>
+        {current.details ? <details><summary>Verification results · JSON</summary><pre>{json(current.details)}</pre></details> : null}
       </div> : null}
-      <details><summary>Verifieringspaket · JSON</summary><pre>{json(bundle)}</pre></details>
+      <details><summary>Verification bundle · JSON</summary><pre>{json(bundle)}</pre></details>
     </>}
   </div>;
 }
@@ -1335,7 +1335,7 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
   );
   const capabilities = result.capabilities as { implemented?: string[]; unsupported?: string[]; limits?: Record<string, string> } | null;
 
-  if (!report) return <div className="lab-empty">Kör en fixture för att skapa en maskinläsbar konformitetsrapport.</div>;
+  if (!report) return <div className="lab-empty">Run a fixture to create a machine-readable conformance report.</div>;
 
   return (
     <>
@@ -1354,20 +1354,20 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
       {tab === "identity" ? <SemanticIdentityPanel bundle={result.semanticIdentity} /> : null}
       {tab === "gate" ? (
         <div className="lab-scroll conformance-lab">
-          <div className="subset-notice"><ShieldCheck /> Run-bunden evidens · <code>{report.schema}</code> · ingen full profilkonformitet</div>
+          <div className="subset-notice"><ShieldCheck /> Run-bound evidence · <code>{report.schema}</code> · no full profile conformance</div>
           <section className={`conformance-gate is-${report.gate.status}`}>
             <div>
               <span>Conformance gate</span>
-              <strong>{report.gate.status === "passed" ? "Caset kan göra avgränsade subset-anspråk" : "Profilanspråk blockeras"}</strong>
-              <p><code>{report.case.caseId}</code> gav <b>{report.case.actualOutcome}</b>; förväntat var <b>{report.case.expectedOutcome}</b>.</p>
+              <strong>{report.gate.status === "passed" ? "This case can make bounded subset claims" : "Profile claims are blocked"}</strong>
+              <p><code>{report.case.caseId}</code> produced <b>{report.case.actualOutcome}</b>; expected <b>{report.case.expectedOutcome}</b>.</p>
             </div>
             <ConformanceStatusMark status={report.gate.status === "passed" ? "passed" : "failed"} />
           </section>
           <div className="lab-metrics">
-            <article><span>Passed profiles</span><strong>{report.summary.passed}</strong><small>endast aktiva krav</small></article>
+            <article><span>Passed profiles</span><strong>{report.summary.passed}</strong><small>active requirements only</small></article>
             <article><span>Blocked profiles</span><strong>{report.summary.failed}</strong><small>{report.gate.blockingRequirementIds.join(" · ") || "inga blockers"}</small></article>
-            <article><span>Not run</span><strong>{report.summary.notRun}</strong><small>inga relevanta inputs</small></article>
-            <article><span>Claimable subset</span><strong>{report.summary.claimableProfiles.length}</strong><small>contract-only räknas aldrig</small></article>
+            <article><span>Not run</span><strong>{report.summary.notRun}</strong><small>no relevant inputs</small></article>
+            <article><span>Claimable subset</span><strong>{report.summary.claimableProfiles.length}</strong><small>contract-only never counts</small></article>
           </div>
           <section className="conformance-stage-list" aria-label="Conformance pipeline">
             {report.stages.map((stage, index) => (
@@ -1379,7 +1379,7 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
             ))}
           </section>
           <section className="conformance-golden-card">
-            <div><span>Normalized golden</span><strong>{report.golden?.status === "passed" ? "0 strukturella skillnader mot baseline" : report.golden?.status === "failed" ? "Golden regression blockerar caset" : "Ingen golden baseline för denna fixture"}</strong></div>
+            <div><span>Normalized golden</span><strong>{report.golden?.status === "passed" ? "0 structural differences from the baseline" : report.golden?.status === "failed" ? "A golden regression blocks the case" : "No golden baseline for this fixture"}</strong></div>
             <dl>
               <div><dt>Suite</dt><dd>{report.suite.suiteId}@{report.suite.version}</dd></div>
               <div><dt>Baseline</dt><dd>{report.golden?.expectedStructuralDigest ?? "not applicable"}</dd></div>
@@ -1387,14 +1387,14 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
             </dl>
           </section>
           <section className="conformance-capabilities">
-            <div className="semantic-section-title"><Braces /><div><strong>Capability response</strong><span>Deklaration visas separat från verifierat utfall</span></div></div>
+            <div className="semantic-section-title"><Braces /><div><strong>Capability response</strong><span>Declaration is shown separately from the verified outcome</span></div></div>
             <div><article><span>Implemented subset</span><p>{capabilities?.implemented?.join(" · ") || "–"}</p></article><article><span>Explicit unsupported</span><p>{capabilities?.unsupported?.join(" · ") || "–"}</p></article></div>
           </section>
         </div>
       ) : null}
       {tab === "profiles" ? (
         <div className="lab-scroll conformance-profile-view">
-          <div className="conformance-profile-bar" role="list" aria-label="Välj konformitetsprofil">
+          <div className="conformance-profile-bar" role="list" aria-label="Select conformance profile">
             {profiles.map((profile) => (
               <button type="button" className={profile.profile === selectedProfile?.profile ? "is-active" : ""} onClick={() => setSelectedProfileId(profile.profile)} key={profile.profile}>
                 <code>{profile.profile}</code>
@@ -1408,14 +1408,14 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
       ) : null}
       {tab === "diff" ? (
         <div className="lab-scroll conformance-diff-view">
-          <div className="subset-notice"><GitBranch /> RFC 6901-sökvägar · {report.normalization?.ignoredPaths.length ?? 0} explicit ignorerade transportfält · max 120 visade ändringar</div>
-          {!previousResult?.conformanceReport ? <div className="lab-empty">Ändra texten eller kör igen för att jämföra med föregående run.</div> : changes.length === 0 ? (
-            <div className="conformance-zero-diff"><CheckCircle2 /><strong>0 strukturella skillnader</strong><p>Transport-id:n och mätt duration ingår inte; den publicerade normaliseringspolicyn syns i rapporten.</p></div>
+          <div className="subset-notice"><GitBranch /> RFC 6901 paths · {report.normalization?.ignoredPaths.length ?? 0} explicitly ignored transport fields · at most 120 changes shown</div>
+          {!previousResult?.conformanceReport ? <div className="lab-empty">Change the text or run again to compare with the previous run.</div> : changes.length === 0 ? (
+            <div className="conformance-zero-diff"><CheckCircle2 /><strong>0 structural differences</strong><p>Transport ids and measured duration are excluded; the report shows the published normalization policy.</p></div>
           ) : (
             <div className="conformance-diff-list">{changes.map((change, index) => (
               <article key={`${change.path}:${index}`}>
                 <div><span>{change.operation}</span><code>{change.path}</code></div>
-                <dl><div><dt>före</dt><dd>{diffValue(change.before)}</dd></div><div><dt>efter</dt><dd>{diffValue(change.after)}</dd></div></dl>
+                <dl><div><dt>before</dt><dd>{diffValue(change.before)}</dd></div><div><dt>after</dt><dd>{diffValue(change.after)}</dd></div></dl>
               </article>
             ))}</div>
           )}
@@ -1423,24 +1423,24 @@ function ConformanceLab({ result, previousResult, onSelectFixture }: Pick<Playgr
       ) : null}
       {tab === "negative" ? (
         <div className="lab-scroll negative-case-view">
-          <div className="lab-intro"><div><span>Isolerade regressionsfall</span><strong>Fel måste vara exakta och atomiska</strong></div><p>Ett passerat negativt case ändrar inte core-resultatet till succeeded. Det bevisar att rätt felgräns aktiverades.</p></div>
+          <div className="lab-intro"><div><span>Isolated regression cases</span><strong>Failures must be exact and atomic</strong></div><p>A passing negative case does not change the core result to succeeded. It proves that the correct failure boundary was triggered.</p></div>
           <div className="negative-case-list">
             {report.negativeFixtures.map((fixture) => (
               <article className={report.case.fixtureId === fixture.fixtureId ? `is-active is-${report.gate.status}` : ""} key={fixture.fixtureId}>
                 <AlertTriangle /><div><strong>{fixture.caseId}</strong><p>{fixture.purpose}</p><code>{fixture.expectedOutcome} · {fixture.expectedDiagnosticCode}</code></div>
-                <Button size="sm" variant="outline" onClick={() => onSelectFixture(fixture.fixtureId)}>Kör fixture</Button>
+                <Button size="sm" variant="outline" onClick={() => onSelectFixture(fixture.fixtureId)}>Run fixture</Button>
               </article>
             ))}
             <article className={report.case.fixtureId === "cancellation-probe" ? `is-active is-${report.cancellation.status}` : ""}>
               <CircleDot /><div><strong>cooperative-cancellation</strong><p>{report.cancellation.limitation}</p><code>cancelled · {report.cancellation.diagnosticCode}</code></div>
-              <Button size="sm" variant="outline" onClick={() => onSelectFixture("cancellation-probe")}>Kör cancel</Button>
+              <Button size="sm" variant="outline" onClick={() => onSelectFixture("cancellation-probe")}>Run cancellation</Button>
             </article>
           </div>
         </div>
       ) : null}
       {tab === "report" ? (
         <div className="lab-json-scroll conformance-report-json">
-          <div className="projection-notice"><CircleDot /> Maskinläsbar playground-subset-evidens · source-bound · canonical=false</div>
+          <div className="projection-notice"><CircleDot /> Machine-readable playground subset evidence · source-bound · canonical=false</div>
           <pre>{json(report)}</pre>
         </div>
       ) : null}
@@ -1452,8 +1452,8 @@ function ConformanceProfileDetail({ profile }: { profile: ConformanceProfile }) 
   return (
     <section className={`conformance-profile-detail is-${profile.status}`}>
       <header>
-        <div><span>Selected profile</span><strong>{profile.profile}</strong><p>Deklarerat: <code>{profile.declaredSupport}</code> · Härlett: <code>{profile.derivedSupport ?? "not evaluated"}</code></p></div>
-        <div className="profile-claim-state"><ConformanceStatusMark status={profile.status} /><small>{profile.claimable ? "claimable playground-subset" : profile.derivedSupport === "contract-only" ? "contract-only · aldrig claimable" : "inget aktivt anspråk"}</small></div>
+        <div><span>Selected profile</span><strong>{profile.profile}</strong><p>Declared: <code>{profile.declaredSupport}</code> · Derived: <code>{profile.derivedSupport ?? "not evaluated"}</code></p></div>
+        <div className="profile-claim-state"><ConformanceStatusMark status={profile.status} /><small>{profile.claimable ? "claimable playground-subset" : profile.derivedSupport === "contract-only" ? "contract-only · never claimable" : "no active claim"}</small></div>
       </header>
       <div className="conformance-requirement-list">
         {profile.requirements.map((requirement) => (
@@ -1494,7 +1494,7 @@ function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" 
       {activeTab === "adapters" ? <AdapterRunView result={result} /> : null}
       {activeTab === "result" ? (
         <div className="lab-json-scroll">
-          <div className="subset-notice"><CircleDot /> Atomisk playground-envelope · failed runs publicerar tom render och tomma domänkanaler</div>
+          <div className="subset-notice"><CircleDot /> Atomic playground envelope · failed runs publish empty render and empty domain channels</div>
           <pre>{json(result.resultEnvelope)}</pre>
         </div>
       ) : null}
@@ -1542,7 +1542,7 @@ function ChannelLab({ result, onOpenLab }: Pick<PlaygroundOutputProps, "result" 
             ))}
           </div>
           {events.some((event) => event.channel === "system.out") ? (
-            <Button size="sm" variant="outline" className="cross-lab-action" onClick={() => onOpenLab("editor")}><PanelRight /> Visa metadata i editorn</Button>
+            <Button size="sm" variant="outline" className="cross-lab-action" onClick={() => onOpenLab("editor")}><PanelRight /> Show metadata in the editor</Button>
           ) : null}
         </div>
       ) : null}

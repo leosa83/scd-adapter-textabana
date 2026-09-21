@@ -6,6 +6,7 @@ Start with the task you want to complete:
 |---|---|
 | Run or contribute to the project | [Development](development.md) and [Contributing](../CONTRIBUTING.md) |
 | Embed Textabana in an editor or Python host | [Integration guide](INTEGRATION_GUIDE.md) and [runnable examples](../examples/integration/) |
+| Look up SDK methods, lifecycle and errors | [Host SDK and transport reference](reference/sdk.md) |
 | Understand language and interoperability contracts | [Specification reference](reference/README.md) |
 | Understand the codebase and its boundaries | [Architecture](architecture.md) |
 | Assess actual standard reuse | [Standards direction](STANDARDS_DIRECTION.md) |

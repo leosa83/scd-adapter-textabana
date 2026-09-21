@@ -38,6 +38,6 @@ This glossary governs sprint 5.12. English is the authored reference language. T
 
 Read each original requirement next to its English target. Preserve its actor, obligation or permission, trigger, scope, exclusions, order, atomicity and identity rules. Preserve inline protocol identifiers and links. Use the same implementation and verification sources; a translation is not new implementation evidence.
 
-The translation ledger records source and target text, their hashes, modal sequence and protected inline tokens. Automated checks detect drift and structural omissions; they cannot establish semantic equivalence of arbitrary prose. The ledger records an author review, not an independent reviewer or user approval. The original requirement and code-example baselines must not be regenerated from the translated implementation.
+The translation ledger records source and target text, their hashes and author review. Automated checks derive and compare modal sequences and protected inline tokens from those texts. They detect drift and structural omissions; they cannot establish semantic equivalence of arbitrary prose. The review is not an independent review or user approval. The original requirement and code-example baselines must not be regenerated from the translated implementation.
 
 Keep source examples, runtime diagnostic strings and version-bound profile bytes unchanged in this sprint. The app may therefore display Swedish user data or runtime messages even when its authored interface and reference documentation are English.

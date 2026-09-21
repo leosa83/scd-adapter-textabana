@@ -1,20 +1,20 @@
 # Blocks and intervals
 
-**Block**
+**Blocks**
 
-Strikt balanserade. Ett inre block ersätts av sitt resultat innan omgivande block körs.
+Strictly balanced. An inner block is replaced by its result before the surrounding block runs.
 
 `outer(inner(text))`
 
-**Intervall**
+**Intervals**
 
-Behöver inte stängas LIFO. Varje maximalt segment med samma aktiva scope-set körs som en enhet.
+Do not need to close in LIFO order. Each maximal segment with the same active scope set runs as a unit.
 
 `ordered(activeScopes)`
 
-### Nästad intervallinvers
+### Nested interval inverse
 
-Konformitetsfixture · textabana
+Conformance fixture · textabana
 
 ```textabana
 >>>>+ base64encode @id=encoder
@@ -27,26 +27,26 @@ Konformitetsfixture · textabana
 <<<<+ @id=decoder
 ```
 
-Med deklarationsordning stigande körs `base64encode` före `base64decode`. Resultatet blir därför ursprungstexten. Exemplet visar att exekveringsordningen bestäms av scope-ordningen — inte av stängningsordningen.
+With ascending declaration order, `base64encode` runs before `base64decode`. The result is therefore the original text. The example shows that execution order is determined by scope order, not closing order.
 
-### Sortering av samtidiga intervall
+### Ordering concurrent intervals
 
-### Total ordning för aktiva intervall
+### Total order for active intervals
 
-| Del | Regel | Tie-break |
+| Part | Rule | Tie-break |
 | --- | --- | --- |
-| `explicit @order` | Ett ändligt numeriskt värde har företräde. | Declaration sequence. |
-| `utan @order` | Declaration sequence används som ordervärde. | Declaration sequence. |
-| `riktning` | Stigande är default; fallande måste anges i config. | Dokumentomfattande konfiguration. |
+| Explicit `@order` | A finite numeric value takes precedence. | Declaration sequence. |
+| Without `@order` | Declaration sequence is used as the order value. | Declaration sequence. |
+| Direction | Ascending is the default; descending must be specified in config. | Document-wide configuration. |
 
 <a id="SCOPE-001"></a>
 
-> **SCOPE-001** Ett intervall FÅR anropas flera gånger under sin livstid när förändringar i andra aktiva scopes skapar flera maximala segment.
+> **SCOPE-001** An interval MAY be called several times during its lifetime when changes in other active scopes create multiple maximal segments.
 
 <a id="SCOPE-002"></a>
 
-> **SCOPE-002** Ett explicit `@id` BÖR användas för beständig adressering. Ett genererat id är endast stabilt inom samma dokumentversion.
+> **SCOPE-002** An explicit `@id` SHOULD be used for persistent addressing. A generated id is stable only within the same document version.
 
 <a id="SCOPE-003"></a>
 
-> **SCOPE-003** Block MÅSTE vara strikt nästlade. Intervall FÅR överlappa och korsa varandra eftersom de representeras separat från blockträdet.
+> **SCOPE-003** Blocks MUST be strictly nested. Intervals MAY overlap and cross each other because they are represented separately from the block tree.

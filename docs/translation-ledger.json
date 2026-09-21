@@ -1,0 +1,1306 @@
+{
+  "schema": "textabana.translation-review/v1",
+  "sourceCommit": "e6fd7fd635e47b2176685ebb08ca8d74da064abd",
+  "sourceLanguage": "sv",
+  "targetLanguage": "en",
+  "reviewedAt": "2026-09-21",
+  "reviewMethod": "Author comparison of actor, force, trigger, scope, exclusions, order, atomicity and identity against the source; no independent reviewer or conformance claim. Automated checks cover identity, text bindings, capitalized normative operators and inline protocol tokens.",
+  "requirements": [
+    {
+      "id": "STATUS-001",
+      "section": "status",
+      "source": "En implementation MÅSTE ange exakt språkversion, IR-version, resultatschemaversion och varje adapterprofil den stödjer.",
+      "sourceDigest": "sha256:ef8b583e6501b4d2c23a6ece893ed8594a11ca1b14800d99cbce3210c168e312",
+      "target": "An implementation MUST state the exact language version, IR version, result schema version and every adapter profile it supports.",
+      "targetDigest": "sha256:33e81a3ba68120774849b6eac186d7c7a01345bb35aa664f2cc17fa1b2e2b1b0",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "STATUS-002",
+      "section": "status",
+      "source": "Stöd för godtycklig JSON eller en liknande funktion är inte tillräckligt för att hävda stöd för en namngiven konformitetsprofil.",
+      "sourceDigest": "sha256:1abac351ca301bee6c97d8c238c0837ff4415c3711fd6bf143cfcd5327fd470d",
+      "target": "Support for arbitrary JSON or a similar function is insufficient to claim support for a named conformance profile.",
+      "targetDigest": "sha256:e9a546f2c31495db3f23669a3e3e3348a694c1106eae83a7c89b98985ec1a929",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "STATUS-003",
+      "section": "status",
+      "source": "Nuvarande Playground implementerar åtta avgränsade vyer: Language & Scope med separata Parser-, Graf- och Körspår-flikar, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance. Grafvyn visar en pre-transform `textabana.execution-plan/lab-v2`, en typad `textabana.execution-graph/lab-v1`, rådgivande invalidation och en faktisk `textabana.execution-report/lab-v1` med scheduler- och resursrapport. Editor-sessioner kan återanvända en verifierad pure/deterministic/effects-free stageoutput efter två lika observationer i skilda committed revisioner. Oberoende, snapshotbara stages med samma betrodda kontrakt kan överlappa asynkront i en Worker; completionordning påverkar aldrig planordnad trace, cachejournal eller merge. Resultatvyerna läser samma valda run; Editor Kernel visar dessutom revisionskedjan runt den. Conformance Lab producerar en maskinläsbar, run-bunden rapport med härledda subset-anspråk, versionssatt golden snapshot, negativa cases och kooperativ cancellation. `editor-kernel/1` och `annotation/1` är playground-subsets; verklig modellkörning och `ml-lineage/1` är fortsatt contract-only. Ingen interaktiv subset, passerad negativ fixture eller kontraktsregistrering är full profilkonformitet.",
+      "sourceDigest": "sha256:16dba8cee44daaa19b21da220e1abb3f42c1688a31c80a7225a82549d5f1243b",
+      "target": "The current Playground implements eight bounded views: Language & Scope with separate Parser, Graph and Execution trace tabs, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review and Conformance. The graph view shows a pre-transform `textabana.execution-plan/lab-v2`, a typed `textabana.execution-graph/lab-v1`, advisory invalidation and an actual `textabana.execution-report/lab-v1` with scheduler and resource reports. Editor sessions can reuse verified pure/deterministic/effects-free stage output after two equal observations in distinct committed revisions. Independent, snapshotable stages with the same trusted contract can overlap asynchronously in a Worker; completion order never affects the plan-ordered trace, cache journal or merge. Result views read the same selected run; Editor Kernel also shows the surrounding revision chain. Conformance Lab produces a machine-readable, run-bound report with derived subset claims, a versioned golden snapshot, negative cases and cooperative cancellation. `editor-kernel/1` and `annotation/1` are playground subsets; actual model execution and `ml-lineage/1` remain contract-only. No interactive subset, passing negative fixture or contract registration constitutes full profile conformance.",
+      "targetDigest": "sha256:c14855f84dab5563ea1ff0cd7a7b83d3935dc885fbc05e45cbffe97f639255c8",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DIRECTION-001",
+      "section": "direction",
+      "source": "Ett nytt Textabana-format MÅSTE ange vilket semantiskt samband det tillför, vilken etablerad standard som övervägts och hur utbyte ska ske utan dold betydelseförändring.",
+      "sourceDigest": "sha256:6d26ad600b91d1cc0866c2514fc7dff1c6bf89e2404a0c8ca3dce36d9397eb58",
+      "target": "A new Textabana format MUST state which semantic relationship it adds, which established standard was considered and how interchange is to occur without hidden changes in meaning.",
+      "targetDigest": "sha256:94f66a422ea181299c5804c3845be4ebe055ed9151dd717d8e9bc5edec5acc8a",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DIRECTION-002",
+      "section": "direction",
+      "source": "Standardstöd MÅSTE beskriva version, riktning för import/export, implementerad delmängd och verifierad gräns. Ett schema-ID, en dependency eller en planerad adapter får inte ensam räknas som stöd.",
+      "sourceDigest": "sha256:5747a72265486abf126bc885ba57c8588fe5a81b84caa7dc06932b4a96b5f33c",
+      "target": "Standards support MUST describe the version, import/export direction, implemented subset and verified boundary. A schema id, dependency or planned adapter alone cannot count as support.",
+      "targetDigest": "sha256:4a41ee404fa0684331441dbf16fa99bd711c3a5ea695470e549ecb7dea5723ab",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DIRECTION-003",
+      "section": "direction",
+      "source": "En adapter MÅSTE redovisa mapping och förluster vid standardgränsen. Intern konformitet och verifiering mot en oberoende extern konsument MÅSTE rapporteras separat.",
+      "sourceDigest": "sha256:0b423cdbab9d6b61407317d7ddf881a69046cd12a18ccebf66f32d689fa5b6c3",
+      "target": "An adapter MUST report mappings and losses at the standards boundary. Internal conformance and verification against an independent external consumer MUST be reported separately.",
+      "targetDigest": "sha256:8170c39d9748355d2412fbc8c7fcde02ba32b7ae7b20e7426d6f460ec9db8fad",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "HTML-ADAPTER-001",
+      "section": "html",
+      "source": "HTML FÅR vara renderformat och editorhost, men DOM-noder eller DOM-offsets får inte ersätta Textabanas kanoniska Anchor-identitet.",
+      "sourceDigest": "sha256:4c726bdc7f80ca1d9064d4e92850c4f0599b026928bcf1c690959781470aa9b6",
+      "target": "HTML MAY be a rendering format and editor host, but DOM nodes or DOM offsets cannot replace Textabana's canonical Anchor identity.",
+      "targetDigest": "sha256:fbcbacc665c9aa7bd43f7548bfd235c08abebfb8db3783e1f1648f744b4bbe8d",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "HTML-ADAPTER-002",
+      "section": "html",
+      "source": "När korsande intervall projiceras till HTML MÅSTE adaptern fragmentera presentationen utan att förlora scope-id, SourceMap eller exekveringssemantik.",
+      "sourceDigest": "sha256:a37b17b550d71e24ff89d9f397bde5ac1d37ce80612bbcb6dba46e7fecd3f687",
+      "target": "When crossing intervals are projected to HTML, the adapter MUST fragment the presentation without losing scope ids, SourceMap or execution semantics.",
+      "targetDigest": "sha256:a108bbc1c24f31d68a358cc1942f4a48379858292fabeb7941d77bab46a696fb",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "HTML-ADAPTER-003",
+      "section": "html",
+      "source": "En HTML-adapter får presentera eller sanera resultatet men får inte göra browserordning, DOM-nästling eller eventtiming till ny språksemantik.",
+      "sourceDigest": "sha256:c58e233c39d5d844c6bf52d05f145e5a8b1975d9db02e55f2af1b829bccb689e",
+      "target": "An HTML adapter may present or sanitize the result but cannot make browser order, DOM nesting or event timing new language semantics.",
+      "targetDigest": "sha256:ac49cd30becbc23399f8c0655819e726fab57f1a85561932886378647cd6571f",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ARCH-001",
+      "section": "architecture",
+      "source": "En host-adapter FÅR projicera ett resultat till sin egen UI- eller transportmodell men FÅR INTE ändra eventets mening, identitet, anchor eller proveniens.",
+      "sourceDigest": "sha256:99753a14e31d4a5130ef6bb599be9776b026fe743e1e3f813c0cc07f33ca190e",
+      "target": "A host adapter MAY project a result into its own UI or transport model but MUST NOT change the event's meaning, identity, anchor or provenance.",
+      "targetDigest": "sha256:fbeb2ecc2ef513f53ce1d6c216e7cace12684adede3dadd6f1b6c721109724a9",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ARCH-002",
+      "section": "architecture",
+      "source": "Kompilering och exekvering MÅSTE kunna beskrivas utan beroende till JavaScript, Python, Jupyter eller en specifik editor.",
+      "sourceDigest": "sha256:20d31e285de60403fe498cf4020eac64f0f94f5e11febfdf989f5ba2ea821437",
+      "target": "Compilation and execution MUST be describable without dependence on JavaScript, Python, Jupyter or a specific editor.",
+      "targetDigest": "sha256:b571f6654c0fb063cc599647cdb02e38a0b1967291f2633dcd7b9d9cf3e94f35",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "VALUE-001",
+      "section": "source-value",
+      "source": "Kanoniska offsets MÅSTE vara nollbaserade Unicode-code-point-offsets och använda halvöppna intervall `[start, end)`.",
+      "sourceDigest": "sha256:42f03930701c8a04611db876e2f106a7577799f8f513072d3bd08401b7a74382",
+      "target": "Canonical offsets MUST be zero-based Unicode code point offsets and use half-open ranges `[start, end)`.",
+      "targetDigest": "sha256:2df750b49fdf5e280886d2705b419978d0acacc62b34464a70511db44b6b093b",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "VALUE-002",
+      "section": "source-value",
+      "source": "En sträng FÅR vara shorthand för `kind=text`. Ingen annan tyst typkonvertering är tillåten.",
+      "sourceDigest": "sha256:0ce63504011df13f667fef474d70c4686557b158dfe521dd612358f66f594f54",
+      "target": "A string MAY be shorthand for `kind=text`. No other silent type conversion is permitted.",
+      "targetDigest": "sha256:e1456e42b9e333f3b15d3276c32992b14bf6becce65f3886b0ecc6c9c815c3f5",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "VALUE-003",
+      "section": "source-value",
+      "source": "Pipelinekanter MÅSTE typkontrolleras mot funktionens `accepts` och `returns` när schema är känt.",
+      "sourceDigest": "sha256:1c43ff1d2e6427ee5d591f99f9d4d3911836bc67d7974c013c6803432845e51a",
+      "target": "Pipeline edges MUST be type-checked against the function's `accepts` and `returns` when the schema is known.",
+      "targetDigest": "sha256:9135c47b316ec77e527e99f3c681c0b2abb64b863c098d1e483b3a13e5259cfb",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SYNTAX-001",
+      "section": "syntax",
+      "source": "Kontrollrader, stängningsrader och fristående propertyrader MÅSTE avlägsnas från primär render.",
+      "sourceDigest": "sha256:e1615f0e06d65e158e4c010d09d74779c24bd2abfd4e391aa8f7eec3e14cc8ec",
+      "target": "Control lines, closing lines and standalone property lines MUST be removed from the primary render.",
+      "targetDigest": "sha256:32f3410871f54e026d60c85218b99131c78e347f6d8c4a11dd161d52f0183490",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SYNTAX-002",
+      "section": "syntax",
+      "source": "Okända engine controls MÅSTE ge kompileringsdiagnostik; de får inte tyst skickas vidare till funktionen.",
+      "sourceDigest": "sha256:223c5ddd7c2e6dec4c606b01604d7c28ef600bc1fbfa94f1f563e3ea87082dd3",
+      "target": "Unknown engine controls MUST produce compilation diagnostics; they cannot be silently passed to the function.",
+      "targetDigest": "sha256:4b7abfd41c6b9d9cf83c8dbca3a0b7befc6a315d61b2de14f4235323aaeb1712",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PARSE-001",
+      "section": "syntax",
+      "source": "Samma source snapshot och grammar version MÅSTE deterministiskt ge samma CST, diagnostikkoder och recovery kinds.",
+      "sourceDigest": "sha256:75b673370b7eff7301cc27556ae7ba2a8092c557066ae5b4a8b1bbea6e603d80",
+      "target": "The same source snapshot and grammar version MUST deterministically produce the same CST, diagnostic codes and recovery kinds.",
+      "targetDigest": "sha256:1429cb1496d7d35a85b84031126380a79b7777069f7ed3ba9d9bcce8912efd7a",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PARSE-002",
+      "section": "syntax",
+      "source": "Recovery MÅSTE behålla exakt authored span eller en explicit zero-width missing-token-position. Den får aldrig fabricera en körbar opener, close eller stage.",
+      "sourceDigest": "sha256:070c8dc9591bfdd60d31bf9a2d5327068aa1f6d9448c97034f269747ef34518f",
+      "target": "Recovery MUST retain the exact authored span or an explicit zero-width missing-token position. It can never fabricate an executable opener, close or stage.",
+      "targetDigest": "sha256:84a00c31731108eb626a645b356aeeae8778ffb7c130e5e7a94925d3a4320e42",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PARSE-003",
+      "section": "syntax",
+      "source": "Varje error-level recovery MÅSTE blockera modulinitiering och domänexekvering men partial CST, AST, IR och diagnostik MÅSTE fortfarande kunna levereras till editorn.",
+      "sourceDigest": "sha256:e9ccfc378c5987c0662c80c9f113d7e4711a55e5d351d3afc5d67dd4d16a7d68",
+      "target": "Every error-level recovery MUST block module initialization and domain execution, but partial CST, AST, IR and diagnostics MUST still be deliverable to the editor.",
+      "targetDigest": "sha256:75d697f8865bca5657c5db3568b544a5b39e1967f0dcc99abb5bcdc0dabf829a",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SCOPE-001",
+      "section": "blocks-intervals",
+      "source": "Ett intervall FÅR anropas flera gånger under sin livstid när förändringar i andra aktiva scopes skapar flera maximala segment.",
+      "sourceDigest": "sha256:2410d66771b711350db5e26b3de0ed7e39184c58f875a17fbf7b056c180127c7",
+      "target": "An interval MAY be called several times during its lifetime when changes in other active scopes create multiple maximal segments.",
+      "targetDigest": "sha256:f0ea7b8d2a7cae4e5f43073741aade9652b42ca64051a53aa9803db1c7e2761d",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SCOPE-002",
+      "section": "blocks-intervals",
+      "source": "Ett explicit `@id` BÖR användas för beständig adressering. Ett genererat id är endast stabilt inom samma dokumentversion.",
+      "sourceDigest": "sha256:6294334d3b2a357160fd0350257a530915f90b785cb110c8e312bbcef3ca5a87",
+      "target": "An explicit `@id` SHOULD be used for persistent addressing. A generated id is stable only within the same document version.",
+      "targetDigest": "sha256:b4ab6133defff4573a0abf7e3f140ca7b530be4c497ad2d0de1f4e0e1de5bed8",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SCOPE-003",
+      "section": "blocks-intervals",
+      "source": "Block MÅSTE vara strikt nästlade. Intervall FÅR överlappa och korsa varandra eftersom de representeras separat från blockträdet.",
+      "sourceDigest": "sha256:602bed6fc1a84c9e116afba6f3a901c21ad2971cd37fe057fe82b9db373ebfa2",
+      "target": "Blocks MUST be strictly nested. Intervals MAY overlap and cross each other because they are represented separately from the block tree.",
+      "targetDigest": "sha256:6c00674034d0721026eff25106a5a9267e9b76c954516e940621130169f91011",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "INHERIT-001",
+      "section": "inheritance",
+      "source": "Förekomsten av minst ett `@intervals`-steg MÅSTE stänga av all implicit intervallinjektion för blocket.",
+      "sourceDigest": "sha256:f1f7a868dd4f036e86642f1057c24140ff91a877ea6d172e71de9d852f17be89",
+      "target": "The presence of at least one `@intervals` stage MUST disable all implicit interval injection for the block.",
+      "targetDigest": "sha256:512c95807a8cc6c1bb5fea684ab769b623398dc0554ba847e9f038bd02768e4a",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "INHERIT-002",
+      "section": "inheritance",
+      "source": "Urval med funktionsnamn matchar alla aktiva instanser med namnet; urval med `@id` matchar exakt en instans.",
+      "sourceDigest": "sha256:5c971499464fe91624de781de53db702fc1ee68cc4a9bb8b4697a5f30e2b7595",
+      "target": "Selection by function name matches every active instance with that name; selection by `@id` matches exactly one instance.",
+      "targetDigest": "sha256:aede6581eb3b8e091c1380a651c29d6c8e00ccc88ef41a1276e196aebcd84af6",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "INHERIT-003",
+      "section": "inheritance",
+      "source": "Inheritance styr hela intervallanropet, inklusive dess returvärde och emissioner. Redan emitterade events får aldrig pipas vidare som text.",
+      "sourceDigest": "sha256:a025047a9fa02dd4c0d823b764d9c3fa7546bb310eeddb88bd908b9b54c86668",
+      "target": "Inheritance controls the entire interval call, including its return value and emissions. Already emitted events can never be piped onward as text.",
+      "targetDigest": "sha256:8c65d42d6a5daec4ac1529f071d00798c2f1d54e6e3f522caa0f574a934cb8bf",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PROPERTY-001",
+      "section": "properties-modules",
+      "source": "`@order` ordnar funktioner. En property som `priority` påverkar endast ordning om en uttrycklig funktion läser den.",
+      "sourceDigest": "sha256:14a5546bd4eabc0273f06e6e86976dd25905e4dd91c6a65597100ae1a051fcbe",
+      "target": "`@order` orders functions. A property such as `priority` affects ordering only if an explicit function reads it.",
+      "targetDigest": "sha256:ac00eaabe32dbb50cc04683f7d5ba7551d5c7dfac98c73fe765e49e211f6e8da",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "MODULE-001",
+      "section": "properties-modules",
+      "source": "Compiler MÅSTE normalisera URI:er, bygga en DAG, upptäcka cykler och exportkollisioner samt pinna resolved URI, version och SHA-256 innan modulkod körs.",
+      "sourceDigest": "sha256:80c301588881e57719c36410a6a9ed98e576fa06417a6f39e4295aa604c652d5",
+      "target": "The compiler MUST normalize URIs, build a DAG, detect cycles and export collisions, and pin the resolved URI, version and SHA-256 before module code runs.",
+      "targetDigest": "sha256:e041039085ceab0a3999ce481b58a076c22f3d6472d9d0b79c61ad438f688baa",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "MODULE-002",
+      "section": "properties-modules",
+      "source": "Samma normaliserade URI och digest identifierar samma modulinstans. Modulen initieras en gång per fresh run, eller en gång per namngiven session i sessionprofilen.",
+      "sourceDigest": "sha256:9e72376fc8707b3bac87739863b7b10ee83671ef763881de607072193a8d076b",
+      "target": "The same normalized URI and digest identify the same module instance. The module initializes once per fresh run, or once per named session in the session profile.",
+      "targetDigest": "sha256:4c996e191f37c90654c54e69a91249b4d332a2e266465cfe2a8b9effd2144c4c",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "MODULE-003",
+      "section": "properties-modules",
+      "source": "Cache FÅR inte ändra semantik. Återanvänd sessionstate, modulbyte eller nondeterministisk replay MÅSTE framgå av proveniens.",
+      "sourceDigest": "sha256:1890eb33efab834d4075913241a60941a1f176a9a5c95e84563a193a8d1e1472",
+      "target": "Cache MUST NOT change semantics. Reused session state, module replacement or nondeterministic replay MUST be recorded in provenance.",
+      "targetDigest": "sha256:86c6d2abf417e9eca4940547ba205aa36c5c49b59b827f484d72448c5f047ba8",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PROCESS-001",
+      "section": "processing",
+      "source": "Samtidig exekvering FÅR endast användas när beroenden, eligibility, deterministic merge och publik event-/traceordning är fullt definierade. Completion timing får inte bli semantisk ordning.",
+      "sourceDigest": "sha256:7e5b59aa58f604bb523a6a0b72b3ea8466b559cef856f3906abfb0338817dd62",
+      "target": "Concurrent execution MAY be used only when dependencies, eligibility, deterministic merge and public event/trace order are fully defined. Completion timing cannot become semantic order.",
+      "targetDigest": "sha256:d5700dd57fc0dc9569e74a04c0b49e4a14d39f9861c38cb556136dc7365f20fc",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PROCESS-002",
+      "section": "processing",
+      "source": "Ett kompileringsfel MÅSTE stoppa all domänexekvering. Ett run-fel MÅSTE hindra durable commit.",
+      "sourceDigest": "sha256:42cdd19c2d2627df8fe4b828a69257e4119c0f2484f911c17b003e2431e51753",
+      "target": "A compilation error MUST stop all domain execution. A run error MUST prevent durable commit.",
+      "targetDigest": "sha256:994b483ae61bc05386cf6d89eb654cb72dfcbf2afd8096c7c90b6afbe25f2691",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PROCESS-003",
+      "section": "processing",
+      "source": "Modulinitiering är en effekt och FÅR INTE ske innan hela dokumentet har passerat parserns compile gate.",
+      "sourceDigest": "sha256:ae1df80339c36e7d18fae04dce77c7cecce07e87feb06af54bff3d61026e5206",
+      "target": "Module initialization is an effect and MUST NOT occur before the entire document has passed the parser's compile gate.",
+      "targetDigest": "sha256:f4da18eb604b3f609845d2b93ba9ba3dcf51a287d518d334b145c6e8046527b3",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PROCESS-004",
+      "section": "processing",
+      "source": "ExecutionPlan och ExecutionGraph MÅSTE vara kompletta före första stage-resolution. ExecutionTrace `textabana.execution-step/lab-v2` MÅSTE vara en separat observation där varje post refererar en planerad nod och skiljer fresh invocation från cachematerialisering. Vid fel behålls hela grafen och samtliga faktiskt startade, dränerade stageutfall publiceras i planordning; oschemalagda noder saknar tracepost.",
+      "sourceDigest": "sha256:19f1d454723b9ef8e75ba971e58cc29bd1b8627df7fa0f3a4c784ac4bbf2367e",
+      "target": "ExecutionPlan and ExecutionGraph MUST be complete before the first stage resolution. ExecutionTrace `textabana.execution-step/lab-v2` MUST be a separate observation in which each entry references a planned node and distinguishes fresh invocation from cache materialization. On failure, the entire graph is retained and every actually started, drained stage outcome is published in plan order; unscheduled nodes have no trace entry.",
+      "targetDigest": "sha256:cba9b8b5faa169f4fcc9885a966a5a87047a2020e0b5ac4a87013b894c7d6e8a",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "IR-001",
+      "section": "ir-plan",
+      "source": "Intervall MÅSTE representeras som scopes och segmentmedlemskap; de får inte pressas in i ett AST-träd som förlorar korsningar.",
+      "sourceDigest": "sha256:d1c70575fb9dd52ec24af34d097d6ba610abba5c8f518fe92f71cda18438deba",
+      "target": "Intervals MUST be represented as scopes and segment membership; they cannot be forced into an AST tree that loses crossings.",
+      "targetDigest": "sha256:a452ca1d90fa657445b8fd035a48ec229dac0c0b8644b95b93fe1ead8c7b2005",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "IR-002",
+      "section": "ir-plan",
+      "source": "Authored ids FÅR vara stabila mellan revisioner. Genererade node ids MÅSTE dokumenteras som revision-local.",
+      "sourceDigest": "sha256:04d7242a360452cf5c7bf7258793da243380ee59efa18014d7c6afb0a4f60597",
+      "target": "Authored ids MAY be stable across revisions. Generated node ids MUST be documented as revision-local.",
+      "targetDigest": "sha256:bf2df52cdec116d8f039bc8958496464c2a613e4601263662c59f80317e6153b",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "IR-003",
+      "section": "ir-plan",
+      "source": "Varje IR-node, stage och recovery MÅSTE ha ett halvöppet Unicode-code-point-span inom exakt source snapshot. Syntetiska missing tokens MÅSTE vara markerade och ha zero-width-span. En source-backed Blank-node FÅR vara zero-width utan att vara syntetisk; radslutet ägs då av CST:ns separata Newline-terminal.",
+      "sourceDigest": "sha256:bc0f80bc41bf30b98458c01f713bf18c42743dd2b02c40994bcd705d6962408e",
+      "target": "Every IR node, stage and recovery MUST have a half-open Unicode code point span within the exact source snapshot. Synthetic missing tokens MUST be marked and have a zero-width span. A source-backed Blank node MAY be zero-width without being synthetic; the line ending then belongs to the CST's separate Newline terminal.",
+      "targetDigest": "sha256:6163c775d26afdb992a2e79e57fc8056dce0c7d959f992041402079ff1630332",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "IR-004",
+      "section": "ir-plan",
+      "source": "En `Recovery`-node MÅSTE ha `executable=false` och får aldrig refereras som en körbar stage i ExecutionPlan.",
+      "sourceDigest": "sha256:dfc189a787bbd5b7d039b2abafad62d6dd1007764163f9e51f761116c139cf09",
+      "target": "A `Recovery` node MUST have `executable=false` and can never be referenced as an executable stage in ExecutionPlan.",
+      "targetDigest": "sha256:d533c6c74e2db502284c67ddf4ddf6e7520a8555dfb7c22ac0dcded033b88571",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PLAN-001",
+      "section": "ir-plan",
+      "source": "ExecutionPlan MÅSTE bära varje stages exakta funktionsversion, typkontrakt, granted capabilities och deterministiska order key.",
+      "sourceDigest": "sha256:2d4d10052bed2d8802a89dc7c6da207b24cfd92dd6a597cd77eeba0ab4adbd2d",
+      "target": "ExecutionPlan MUST carry each stage's exact function version, type contract, granted capabilities and deterministic order key.",
+      "targetDigest": "sha256:4f9d5493c612c3a9e06dfab438a5e54814408aedcdd4c8ff5ae81a78177c49b7",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PLAN-002",
+      "section": "ir-plan",
+      "source": "ExecutionGraph MÅSTE ha unika node- och edge-id:n, typade endpoints, acyklisk topologisk ordning och exakt en renderterminal. Edge-typerna `pipeline`, `interval`, `interval-injection`, `inheritance`, `merge` och `render` MÅSTE vara explicita. Samma operationstape MÅSTE vara auktoritet för både planering och exekvering.",
+      "sourceDigest": "sha256:b5f3667975a61f087a11d73e9cb8c49fb59a70268a87a79af64ca8ca6ab935b6",
+      "target": "ExecutionGraph MUST have unique node and edge ids, typed endpoints, acyclic topological order and exactly one render terminal. The edge types `pipeline`, `interval`, `interval-injection`, `inheritance`, `merge` and `render` MUST be explicit. The same operation tape MUST be authoritative for both planning and execution.",
+      "targetDigest": "sha256:0ae6a20bb3a154c41d7b1dcfb50629551af5eed8eba5cd8634d91b43e70fe9b7",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PLAN-003",
+      "section": "ir-plan",
+      "source": "Statisk cache eligibility, cache candidate, cache lookup, cache hit och faktisk reuse är skilda tillstånd. Ett ofullständigt state-, determinism- eller effektkontrakt MÅSTE göra funktionen icke-cachebar. En deklarerad kandidat är en betrodd manifestuppgift, inte i sig ett verifierat puritybevis.",
+      "sourceDigest": "sha256:6a3c57ab5cc011b6bd74e18836fd2a02eb90fc887bde7bcf867fa3b60e089904",
+      "target": "Static cache eligibility, cache candidate, cache lookup, cache hit and actual reuse are distinct states. An incomplete state, determinism or effect contract MUST make the function non-cacheable. A declared candidate is a trusted manifest assertion, not in itself a verified proof of purity.",
+      "targetDigest": "sha256:801fb13fe984e820a96a61867d829da043ecbf27c181fe268854b7cd11685ae2",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PLAN-004",
+      "section": "ir-plan",
+      "source": "Invalidation preview MÅSTE vara rådgivande och separat från grafens och Resultatets semantiska identitet. Den MÅSTE ange basis, target och maskinläsbara orsaker samt får aldrig redovisas som cache hit eller reuse.",
+      "sourceDigest": "sha256:75d7b79294efff725fe92799511702dd23948e42d1b1cd9a8f1570a6bc05d7df",
+      "target": "Invalidation preview MUST be advisory and separate from the graph's and Result's semantic identity. It MUST state the basis, target and machine-readable reasons and can never be reported as a cache hit or reuse.",
+      "targetDigest": "sha256:a4bff2d3f56693cd5678ab63f7754a79c6b3dfd5ce203367a777c75d9ab7fefb",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PLAN-005",
+      "section": "ir-plan",
+      "source": "Parallell eligibility och cache eligibility MÅSTE vara separata fält även när kriterierna sammanfaller. Endast oberoende `pure + deterministic + effects=[]`-stages utan kanaler eller icke-render-output FÅR överlappa i den aktuella subseten. En pending unknown, stateful eller effectful stage MÅSTE fence:a planmässigt senare ready branches tills barriären har avslutats; merge/render är seriella. Outputs från faktiskt samtidiga fresh-invocations MÅSTE snapshotas och klonas förlustfritt inom den portabla TextabanaValue-domänen vid settlement; andra typer avvisas atomiskt före planordnad publicering. Execution-ID:n, trace, values och cachejournal MÅSTE publiceras i planordning.",
+      "sourceDigest": "sha256:f00b7ecf715b61543aa53ebb1420b6959759d6d2de5788bb6410d8d17f7cbee8",
+      "target": "Parallel eligibility and cache eligibility MUST be separate fields even when their criteria coincide. Only independent `pure + deterministic + effects=[]` stages without channels or non-render output MAY overlap in the current subset. A pending unknown, stateful or effectful stage MUST fence ready branches that occur later in the plan until the barrier has completed; merge/render are serial. Outputs from actually concurrent fresh invocations MUST be snapshotted and cloned losslessly within the portable TextabanaValue domain at settlement; other types are rejected atomically before publication in plan order. Execution IDs, trace, values and cache journal MUST be published in plan order.",
+      "targetDigest": "sha256:0a2b3cf1c6e5f5babfb1427b7c70a7500bbb72fa81457d820259af99756b5978",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANCHOR-001",
+      "section": "anchors",
+      "source": "En durable annotation MÅSTE binda till en versionerad target och minst en selector. Position och quote BÖR lagras tillsammans.",
+      "sourceDigest": "sha256:ac5272dcb271fa623028b20a534749913e9ff8a6b6f989a2551ac63d16802169",
+      "target": "A durable annotation MUST bind to a versioned target and at least one selector. Position and quote SHOULD be stored together.",
+      "targetDigest": "sha256:7a1cc0cdacb83f988e8a9831635aabf6e826af33d3e480d5173dd20415aceaa9",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANCHOR-002",
+      "section": "anchors",
+      "source": "En runtime får aldrig tyst välja en av flera re-anchor-kandidater. Flera giltiga kandidater MÅSTE ge `ambiguous`; ingen giltig kandidat MÅSTE ge `orphaned`. Båda utfallen ska förbli olösta och diagnostiserbara.",
+      "sourceDigest": "sha256:67633d9b9ae92d6d22495e49e2cd0c46e994c5986d56428df4b4c91dee76b51f",
+      "target": "A runtime can never silently choose one of several re-anchoring candidates. Multiple valid candidates MUST produce `ambiguous`; the absence of a valid candidate MUST produce `orphaned`. Both outcomes are to remain unresolved and diagnosable.",
+      "targetDigest": "sha256:b78ce054b7e6dac10a3e1f229192fc892f469229f3bc1800b115f659894193ff",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANCHOR-003",
+      "section": "anchors",
+      "source": "Human-facing line och column är ettbaserade. LSP-adaptern MÅSTE konvertera till nollbaserade UTF-16-positioner.",
+      "sourceDigest": "sha256:5a35b5e0dbce6bf18cd36f14c3b603b66855c1124f06439d68dddc87bd460a84",
+      "target": "Human-facing line and column are one-based. The LSP adapter MUST convert to zero-based UTF-16 positions.",
+      "targetDigest": "sha256:444e880e876792159d98546170302b1dd260f3cf0fe08bac3053cc383e7a8b49",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SOURCEMAP-001",
+      "section": "anchors",
+      "source": "Varje mapping record MÅSTE ange `exact`, `derived` eller `synthetic` samt generating activity. Aggregat är aldrig `exact` utan verifierat mapping proof.",
+      "sourceDigest": "sha256:9ac880da4a0a8944b039f63e761a45e21762bed59690f30baea831fbff829b3d",
+      "target": "Every mapping record MUST state `exact`, `derived` or `synthetic` and its generating activity. Aggregates are never `exact` without a verified mapping proof.",
+      "targetDigest": "sha256:1695514fe3b610ff1d197f3c561ebda3c754ff4dd1b42c169ae97ce94a9ab4c7",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RESULT-001",
+      "section": "result",
+      "source": "Ett lyckat resultat MÅSTE vara immutable. `resultId` BÖR vara content-addressed.",
+      "sourceDigest": "sha256:32449c749833ff215873cc30ac5655c8b19ea2cb96ef02a39fd16687b0ed9b4b",
+      "target": "A successful result MUST be immutable. `resultId` SHOULD be content-addressed.",
+      "targetDigest": "sha256:049e62f8c2a95db9a956ffbdb5a46317c37936743485630cfbcad46d74cb1694",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RESULT-002",
+      "section": "result",
+      "source": "Ett failed eller cancelled resultat MÅSTE ha tom committed render och tomma committed domain channels, men FÅR bära control-plane diagnostics.",
+      "sourceDigest": "sha256:3638adc2a8be4620463889eedfc0862f46d83a0c66e8cac944e5fe24302d15d3",
+      "target": "A failed or cancelled result MUST have empty committed render and empty committed domain channels, but MAY carry control-plane diagnostics.",
+      "targetDigest": "sha256:29f49c8ff50ca5e37c1ffe62ed92be4ef09a3cdf29b4ced0021a1878c090e53e",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RESULT-003",
+      "section": "result",
+      "source": "Timestamps är transportmetadata och får inte styra semantisk hash eller eventordning.",
+      "sourceDigest": "sha256:d5872e4a14a1fb8ecf5ad259c55f01fe4a620f183b029ed0cc7dbe7acfbf7f46",
+      "target": "Timestamps are transport metadata and cannot determine semantic hashes or event order.",
+      "targetDigest": "sha256:597f96003c465b31ba68308d0d397022a200b98a161a5a4be31c7eff7e7ee773",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CHANNEL-001",
+      "section": "channels",
+      "source": "Kanalnamn är obegränsade utom den reserverade namnrymden `system.*`. `render` är reserverat som resultatfält.",
+      "sourceDigest": "sha256:34fb05429bc5624af41a9dd46308ba0f38e65f9b49df45a90da5c0d7b2b6142a",
+      "target": "Channel names are unrestricted except for the reserved namespace `system.*`. `render` is reserved as a result field.",
+      "targetDigest": "sha256:4cd4f4226c534268ac19d3cde98be1f8bbb390977f91f87399bc71573116c8a8",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CHANNEL-002",
+      "section": "channels",
+      "source": "I strict profile MÅSTE descriptor och payloadschema deklareras före emit. En permissive legacyprofil FÅR syntetisera generisk JSON-descriptor vid första emit men får inte hävda typed-channel conformance.",
+      "sourceDigest": "sha256:ff9d31edd77a256016d90b4a19962f67ebc6f53091e1c1570bc0021aafcd3af7",
+      "target": "In a strict profile, the descriptor and payload schema MUST be declared before emit. A permissive legacy profile MAY synthesize a generic JSON descriptor on the first emit but cannot claim typed-channel conformance.",
+      "targetDigest": "sha256:810d03c0300b1dd8812fe982cdf3b155ef1cd0b8413b9fe95d4c44fb9cfa43eb",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CHANNEL-003",
+      "section": "channels",
+      "source": "Events är append-only inom en run. Ett schemafel, en cyklisk payload eller ett oserialiserbart värde MÅSTE avvisas — inte förlustkonverteras till text.",
+      "sourceDigest": "sha256:25936ee100308c1fe9bd1293558e209110d9131110a071520e166692a74a5a3c",
+      "target": "Events are append-only within a run. A schema error, cyclic payload or unserializable value MUST be rejected, not lossily converted to text.",
+      "targetDigest": "sha256:0cda2ddc349df5ef65e1de13fa4521c9a3ac94697e3c687d43df604f8acf7ed1",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CHANNEL-004",
+      "section": "channels",
+      "source": "Varje accepted emit får en order key `(planStep, invocationOrder, localEmitIndex)`. `sequence` tilldelas vid deterministic merge/commit.",
+      "sourceDigest": "sha256:ee28dbf18268f1eecbccd815da5d9acd3398ba1d645cef2cfab803c6adee4ce8",
+      "target": "Each accepted emit receives an order key `(planStep, invocationOrder, localEmitIndex)`. `sequence` is assigned during deterministic merge/commit.",
+      "targetDigest": "sha256:1eed05111c7a74df804f665d6fbbcc764525becf5b670ba0eb4caa59ac5ab422",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CHANNEL-005",
+      "section": "channels",
+      "source": "En funktionsmodul körs inte en gång per kanal. Ett enda funktionsanrop FÅR emittera till valfritt många kanaler.",
+      "sourceDigest": "sha256:3bcabe7dd3b950a42e7c91984e509112876564aa2767feaa90238cc4cfc73254",
+      "target": "A function module does not run once per channel. A single function call MAY emit to any number of channels.",
+      "targetDigest": "sha256:61c26bea94286fcb47557d3fee6a519508f779dc6f17160bc4ca286c6d44f6db",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SYSTEM-OUT-001",
+      "section": "system-out",
+      "source": "Semantisk `kind` och positioneringssätt `target.mode` MÅSTE vara separata. `row` och `line` är target modes, inte eventtyper.",
+      "sourceDigest": "sha256:384cd8da5ddbdb5d7326a4af3d84ebfd68319922d9eaab322236c58cc792eef0",
+      "target": "Semantic `kind` and positioning method `target.mode` MUST be separate. `row` and `line` are target modes, not event types.",
+      "targetDigest": "sha256:df4e4651781fd657a13b5e78c9e8433c0feb7e1df9b3137e2791e3e36a3870e5",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SYSTEM-OUT-002",
+      "section": "system-out",
+      "source": "`context.system.out.row(...)` och `.line(...)` FÅR finnas som SDK-helpers men MÅSTE normalisera till samma portabla event envelope och Anchor.",
+      "sourceDigest": "sha256:6dc5332cbf67327c589255b51ed813fd7a58a35df931009a31679d432e7ddf5e",
+      "target": "`context.system.out.row(...)` and `.line(...)` MAY exist as SDK helpers but MUST normalize to the same portable event envelope and Anchor.",
+      "targetDigest": "sha256:0b78a07bf574e35989b44f4231a589991243b93dddc3ee292a6a1b7a32e2c937",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SYSTEM-OUT-003",
+      "section": "system-out",
+      "source": "Compile- och run-fel lagras i top-level diagnostics. En lyckad positionsbunden varning FÅR dessutom projiceras i `system.out` med samma diagnostic-id.",
+      "sourceDigest": "sha256:98b56317b453c01915e9d1686870710725fdff1d3e386399194ea25e3ba08b46",
+      "target": "Compile and run errors are stored in top-level diagnostics. A successful position-bound warning MAY also be projected into `system.out` with the same diagnostic id.",
+      "targetDigest": "sha256:f7cbf2ae9de7ce2e7e78dd6b89b03257e9512fe5e4cc874ae5f2defd0d60c5a4",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ARTIFACT-001",
+      "section": "artifacts",
+      "source": "Artifact digest MÅSTE verifieras. Signed URLs och credentials får inte serialiseras som durable URI; använd opaque handle och en host-resolver.",
+      "sourceDigest": "sha256:c1e6c64b62ee654d2b938aef234d9b33eaf92292926a5005148ed1971862e4c6",
+      "target": "Artifact digests MUST be verified. Signed URLs and credentials cannot be serialized as durable URIs; use an opaque handle and a host resolver.",
+      "targetDigest": "sha256:3e930c9afe86f12fccc794b03fdf8a7dfea2e724afec0220f6ed87190fdc4024",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SINK-001",
+      "section": "artifacts",
+      "source": "En icke-transaktionell sink MÅSTE buffra durable leverans till commit. Extern leverans BÖR använda `(runId, sequence)` som idempotency key.",
+      "sourceDigest": "sha256:981b589226c24f130a53670e978b0335a5994a50c80372f3da4e0e6f61912468",
+      "target": "A non-transactional sink MUST buffer durable delivery until commit. External delivery SHOULD use `(runId, sequence)` as its idempotency key.",
+      "targetDigest": "sha256:ed5224996020d0dbacab5e9c12f649896343414375a6cb4aac5cc1c0f309c848",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SINK-002",
+      "section": "artifacts",
+      "source": "Textabana får inte lova exactly-once över godtyckliga externa system. Adapterprofilen ska deklarera leveransgaranti, normalt at-least-once.",
+      "sourceDigest": "sha256:bdbd11f1572b24bd2cede8a8bf2e4c87e90d11137af1fc37db4ec92189fe36b2",
+      "target": "Textabana cannot promise exactly-once delivery across arbitrary external systems. The adapter profile is to declare its delivery guarantee, normally at-least-once.",
+      "targetDigest": "sha256:9bbfdc16799534575dea9aa86a37040fb6b19f5f888d4bd6e65b2498e75c5ecd",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "MANIFEST-001",
+      "section": "module-manifest",
+      "source": "Compiler MÅSTE kunna läsa och validera manifestet utan att exekvera modulens entrypoint.",
+      "sourceDigest": "sha256:e77f91a618b1626fd510fd63d1b96642eb9edc5b5fb4ea0ae8e470be0d1913d6",
+      "target": "The compiler MUST be able to read and validate the manifest without executing the module's entrypoint.",
+      "targetDigest": "sha256:bb5e55f2e43a464b67478ecea9c84d4916a9dc22bbb01c0ba0f01cf542588de8",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "MANIFEST-002",
+      "section": "module-manifest",
+      "source": "Dubbla exports utan namespace eller alias MÅSTE vara compile error.",
+      "sourceDigest": "sha256:b5d60a13368a02bc590f7dacbc45f2eceda500091e62407f2bb02fe873df2669",
+      "target": "Duplicate exports without a namespace or alias MUST be a compile error.",
+      "targetDigest": "sha256:e6814874b52236edbc25e45771aa021116495d1bbd38c666bb9d1e1f62887fae",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "MANIFEST-003",
+      "section": "module-manifest",
+      "source": "State och determinism är separata dimensioner. En stateful funktion kan vara deterministisk, och en stateless funktion kan vara nondeterministisk.",
+      "sourceDigest": "sha256:a0b0ce7e59ad78160be2743d8ad9b3bc41625ce2d9600b7b56c95f1b42743340",
+      "target": "State and determinism are separate dimensions. A stateful function can be deterministic, and a stateless function can be nondeterministic.",
+      "targetDigest": "sha256:2a71091223da4c95e09a22b103cdbd76501fc309cf462cfb7548da10b2de6c72",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "MANIFEST-004",
+      "section": "module-manifest",
+      "source": "`behavior` beskriver transformationens form och FÅR INTE tolkas som purity. State, determinism och observerbara effekter MÅSTE deklareras separat; saknad deklaration betyder `unknown` och icke-cachebar.",
+      "sourceDigest": "sha256:303d50fcefbbd47407ba9e3275638c29257e2281d463da4b4ede0f72075a0b0c",
+      "target": "`behavior` describes the transformation's shape and MUST NOT be interpreted as purity. State, determinism and observable effects MUST be declared separately; a missing declaration means `unknown` and non-cacheable.",
+      "targetDigest": "sha256:51c579e16f782c2bc25d8e7abe2d0cb7d3feeff6381a6547612e644c03c69e21",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "MANIFEST-005",
+      "section": "module-manifest",
+      "source": "En deklaration som `state=pure`, `determinism=deterministic` och `effects=[]` gör endast funktionen till cachekandidat. En host som faktiskt återanvänder output MÅSTE dessutom upprätthålla effektgränsen eller behandla kontraktet som betrott och redovisa den trust boundaryn.",
+      "sourceDigest": "sha256:c265a60248602ab48e176f45614bf2329557f2db29d64cb0d9fb6637df3a5ebe",
+      "target": "A declaration such as `state=pure`, `determinism=deterministic` and `effects=[]` only makes the function a cache candidate. A host that actually reuses output MUST also enforce the effect boundary or treat the contract as trusted and disclose that trust boundary.",
+      "targetDigest": "sha256:4c4addfc7bcefabc607c77cf73e760c5e9e9b3efff8a5019b0a3cf0ea7810ea2",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUNTIME-001",
+      "section": "runtime-protocol",
+      "source": "`emit` är logiskt acknowledged. Modulens completion MÅSTE flush:a alla accepted events innan stage avslutas.",
+      "sourceDigest": "sha256:6e86f063e326ed92af3f94167c8a63178d4b1b801ea37fe72bce09cca6efd1b9",
+      "target": "`emit` is logically acknowledged. Module completion MUST flush all accepted events before the stage ends.",
+      "targetDigest": "sha256:c4396f060a8012f536344af094b73187f841cf89b6c4a0a1f0b4f8bd630d4c03",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUNTIME-002",
+      "section": "runtime-protocol",
+      "source": "Funktioner får inte implicit läsa channels. En kanal som input kräver en explicit Plan-edge eller adapterstage.",
+      "sourceDigest": "sha256:38c1a3301415200b39ca0da880372b85db583cd29f256faa99f7a6e5ade14aa2",
+      "target": "Functions cannot implicitly read channels. Using a channel as input requires an explicit Plan edge or adapter stage.",
+      "targetDigest": "sha256:ea3cd14b2f69622543701c314c6e4e0538f4186c3812f9d3b5e41470cc290daf",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUNTIME-003",
+      "section": "runtime-protocol",
+      "source": "JavaScript, TypeScript, Python, R, Julia, SQL, WASM och externa tjänster FÅR implementera samma protokoll utan språksemantisk särbehandling.",
+      "sourceDigest": "sha256:dd062882253869c269edc49c2f60c8a8829c8d0dac44130753f25b7aee03bf7f",
+      "target": "JavaScript, TypeScript, Python, R, Julia, SQL, WASM and external services MAY implement the same protocol without language-specific semantic treatment.",
+      "targetDigest": "sha256:55fde5627bd3da5e7c27d559fd1fbbc232b9397982f483491a2b0d175af6f606",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "EDITOR-KERNEL-001",
+      "section": "editor-kernel",
+      "source": "Editor Kernel MÅSTE vara ett control plane runt språk och runtime. Det får inte kunna anropas som en dokumentfunktion eller införa dold pipelineordning.",
+      "sourceDigest": "sha256:ed6077f22f8f0dd9a619e62aaf32110c9a6348c04e4b2eb6b4e79bf1f59e4cfb",
+      "target": "Editor Kernel MUST be a control plane around the language and runtime. It cannot be callable as a document function or introduce hidden pipeline order.",
+      "targetDigest": "sha256:7e25bec40ffae485cc922021c64cfffed19e889386462124209cd671cd14f6b6",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "EDITOR-KERNEL-002",
+      "section": "editor-kernel",
+      "source": "Varje accepterad run MÅSTE fånga ett immutable snapshot med exakt `documentId`, `documentRevision` och `documentVersion`. Senare changes får inte ändra detta snapshot.",
+      "sourceDigest": "sha256:0f5f0b1d7ded55e952a935ef9916314a2c258576db39a0fefb195abb65829a2f",
+      "target": "Every accepted run MUST capture an immutable snapshot with the exact `documentId`, `documentRevision` and `documentVersion`. Later changes cannot alter this snapshot.",
+      "targetDigest": "sha256:268640640164779086bb0795eca8e7efafb7bea664480e04ec9d0f55015929aa",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "EDITOR-KERNEL-003",
+      "section": "editor-kernel",
+      "source": "`system.out` och andra channels är semantisk output som kan prenumereras på. De får inte bära `open`, `change` eller annan document lifecycle-semantik.",
+      "sourceDigest": "sha256:3d79779d0cb00df54086226348fbecca2eb85c21f483f7a721ade9b598c214ae",
+      "target": "`system.out` and other channels are semantic output that can be subscribed to. They cannot carry `open`, `change` or other document lifecycle semantics.",
+      "targetDigest": "sha256:e12f7c689a787b272b79125d47ac329af1c628c9c96772b9e1ae4d5673cec412",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DOCUMENT-001",
+      "section": "editor-kernel",
+      "source": "Snapshot och monoton revision är separata begrepp. En no-op ChangeSet får returnera `unchanged` utan att skapa en revision.",
+      "sourceDigest": "sha256:c27c7f1baf46a4d2be591a52031a4ce86ff1509fc438909ad348140401838965",
+      "target": "Snapshot and monotonic revision are separate concepts. A no-op ChangeSet may return `unchanged` without creating a revision.",
+      "targetDigest": "sha256:92d167e3d6e6ed220d2ffdcffa3eac7acb196d0ea40586a44cb590f9ecbc86bd",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DOCUMENT-002",
+      "section": "editor-kernel",
+      "source": "Failed eller cancelled run MÅSTE lämna senast committade metadata-baslinje orörd. Ett historiskt resultat får visas som stale men aldrig som aktuellt för en nyare head.",
+      "sourceDigest": "sha256:037f26a2e6022ce4c03d54958aa07a7372c889fa4cf857764d0a566e604b2c97",
+      "target": "A failed or cancelled run MUST leave the last committed metadata baseline untouched. A historical result may be shown as stale but never as current for a newer head.",
+      "targetDigest": "sha256:4233b91e2d56fa15f6bd2cf57031465e64b66bc3ca2f02e67f9eb788b12dfc12",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DOCUMENT-003",
+      "section": "editor-kernel",
+      "source": "En host MÅSTE avancera sin protokoll-head från kärnans korrelerade `open`- eller `change`-svar. Optimistiskt antagen revision/version får inte användas som grund för nästa change eller run.",
+      "sourceDigest": "sha256:eb1de9f679ed0fe8977803a5bbc41f1bfefff7d6342e0e3835ba551729da24d2",
+      "target": "A host MUST advance its protocol head from the kernel's correlated `open` or `change` response. An optimistically assumed revision/version cannot be used as the basis for the next change or run.",
+      "targetDigest": "sha256:3b9a726c56851e836324bfd2cf219a306f5420bffdd7dd088c93b0953a052687",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANALYZE-001",
+      "section": "editor-kernel",
+      "source": "`analyze` MÅSTE vara read-only, revisionsbundet och fritt från modulinitiering och stage-effekter. Det FÅR returnera partial IR med recovery även när samma snapshot inte kan köras.",
+      "sourceDigest": "sha256:1f5369dc7c8741d64e7a4e787880cc413e41c0febe86829c64c40d66c8b1704f",
+      "target": "`analyze` MUST be read-only, revision-bound and free from module initialization and stage effects. It MAY return partial IR with recovery even when the same snapshot cannot run.",
+      "targetDigest": "sha256:e14c7307e5e4f8d84b1179cbe568eeb018e8074ada3d3210d17cc1adb2e8d610",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CHANGE-001",
+      "section": "editor-kernel",
+      "source": "Alla ranges i en ChangeSet MÅSTE avse samma base snapshot, vara nollbaserade, halvöppna, sorterade och icke-överlappande samt tillämpas atomiskt.",
+      "sourceDigest": "sha256:26570a8fc63542827861dac367ccd4cfe631f0813baf6ddb664d0c7ce459bb48",
+      "target": "All ranges in a ChangeSet MUST refer to the same base snapshot, be zero-based, half-open, sorted and non-overlapping, and be applied atomically.",
+      "targetDigest": "sha256:c57b07ae2d6e5b63983798104e0801ee53d43a7cd3aec896a7b741f3ee15f55d",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CHANGE-002",
+      "section": "editor-kernel",
+      "source": "Canonical change offsets räknas i Unicode code points. UTF-16-, line/column- eller editor-native-koordinater MÅSTE konverteras av en hostadapter före protokollgränsen; en främmande deklarerad `coordinateUnit` MÅSTE avvisas före mutation.",
+      "sourceDigest": "sha256:ac536815860e45ecab0b984140cfdb76483355d9a90d71cabba822324db04bb7",
+      "target": "Canonical change offsets count Unicode code points. UTF-16, line/column or editor-native coordinates MUST be converted by a host adapter before the protocol boundary; a foreign declared `coordinateUnit` MUST be rejected before mutation.",
+      "targetDigest": "sha256:819cfefcf52330267fd83e2199514623ae798e5f4851c8b933c95b510a7cfd7d",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CHANGE-003",
+      "section": "editor-kernel",
+      "source": "Stale revision eller version, ogiltig range och överlappning MÅSTE ge strukturerat protokollfel utan sourcemutation eller semantisk run.",
+      "sourceDigest": "sha256:3b5344c88272ff9e402eebc558256a2609ef098ef9f557c12610cc187f36dd36",
+      "target": "A stale revision or version, invalid range or overlap MUST produce a structured protocol error without source mutation or a semantic run.",
+      "targetDigest": "sha256:78217cff9208e9ba3d82f9d5329bff0d23ad4e1f120b7fe69a3564795f63a54f",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SUBSCRIPTION-001",
+      "section": "editor-kernel",
+      "source": "Ett channelfilter begränsar endast leverans. Det får aldrig ändra core-resultatets channels, exekvering eller adapterfan-out.",
+      "sourceDigest": "sha256:7118f8667255cb52f136199229e7d88a0194f54b9b5f6db50e38da7f0a36e1fd",
+      "target": "A channel filter limits delivery only. It can never change the core result's channels, execution or adapter fan-out.",
+      "targetDigest": "sha256:c461df4551c673c0fcbf79eb3124b598c06c06f4a16b8691c224b3154c3e086a",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SUBSCRIPTION-002",
+      "section": "editor-kernel",
+      "source": "Varje delta MÅSTE ange basis, target och cursor. En konsument med annan basis måste resynkronisera i stället för att applicera deltat.",
+      "sourceDigest": "sha256:52ec456838a901d6f0d7c2ca5703330d6220ff4c5dda9aa38cf6b59665d2e778",
+      "target": "Every delta MUST state its basis, target and cursor. A consumer with a different basis must resynchronize instead of applying the delta.",
+      "targetDigest": "sha256:c42b46caf979f1c267d389408039629d873895400cdfafab403a790ee973820c",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DELTA-001",
+      "section": "editor-kernel",
+      "source": "Metadata-delta är en deterministisk post-commit-jämförelse mellan immutable snapshots; det muterar aldrig föregående `TextabanaResult`.",
+      "sourceDigest": "sha256:ae2f81e1ab7cf8f52be4d2d885030b8ac2c96e88c21d2b974dcdfcd93c543130",
+      "target": "A metadata delta is a deterministic post-commit comparison between immutable snapshots; it never mutates the previous `TextabanaResult`.",
+      "targetDigest": "sha256:e5d691db171391e6d23ee302a66ad6ef760cb2906a121890fb83e93a63515f79",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DELTA-002",
+      "section": "editor-kernel",
+      "source": "Cross-run matching MÅSTE använda deklarerad channel key eller explicit domänidentitet, aldrig run-lokala `eventId` eller `sequence`. Ounik identitet får inte ge ett falskt `moved` eller `changed`.",
+      "sourceDigest": "sha256:33b1ed251a4c9abf783d876d70dad578332fce4b7524d1d57bcabfc883889f58",
+      "target": "Cross-run matching MUST use a declared channel key or explicit domain identity, never run-local `eventId` or `sequence`. Non-unique identity cannot produce a false `moved` or `changed`.",
+      "targetDigest": "sha256:26b383e45400cb36da8115b722d95f86bebdc6badfd75bfd662fc58acfdc0edc",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DELTA-003",
+      "section": "editor-kernel",
+      "source": "`changed` betyder samma stabila identitet med ändrad semantik eller payload; `moved` betyder semantiskt ekvivalent payload med ny fysisk target. Payloadändring har företräde.",
+      "sourceDigest": "sha256:6fea05c03ac8b62a1ce75bea3db3602ddb4f21415b2ea0b14f16885519f9a2e4",
+      "target": "`changed` means the same stable identity with changed semantics or payload; `moved` means a semantically equivalent payload with a new physical target. Payload changes take precedence.",
+      "targetDigest": "sha256:001a7c705e2786c96cc54c351c48c1c146b6cc117348fb0c829338c79db7872c",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DELTA-004",
+      "section": "editor-kernel",
+      "source": "Endast succeeded commit får publicera durable `added`, `removed`, `changed` eller `moved`. Failed och cancelled publicerar ett tomt `not-committed`-delta och behåller baslinjen.",
+      "sourceDigest": "sha256:8ba771ecafd6c51a639d41a12c0ba2e7469cabe5eddc219f1222a948456c11b8",
+      "target": "Only a succeeded commit may publish durable `added`, `removed`, `changed` or `moved`. Failed and cancelled runs publish an empty `not-committed` delta and retain the baseline.",
+      "targetDigest": "sha256:d1b3fe723ac4c6a6cd9bd8924e68539c6f5b0ee81d5d230e925bc1875b6f409e",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "REANCHOR-001",
+      "section": "editor-kernel",
+      "source": "Anchor-records är immutable och versionsbundna. Cross-revision continuity MÅSTE publiceras som en separat transition med metod och utfall; `ambiguous` och `orphaned` förblir olösta.",
+      "sourceDigest": "sha256:1848dcbf593d643f90949ce3a508a1152483e5bbf52c808b47a538fc6ec22cb0",
+      "target": "Anchor records are immutable and version-bound. Cross-revision continuity MUST be published as a separate transition with its method and outcome; `ambiguous` and `orphaned` remain unresolved.",
+      "targetDigest": "sha256:0140f780dff9fb25711866a165c7797f63bf1c00861dc59f34f83ae9a47b0772",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUN-001",
+      "section": "runs",
+      "source": "Failed eller cancelled MÅSTE revokera tentative domänoutput. En extern side effect som inte kan rullas tillbaka måste deklareras och redovisas ärligt i proveniens.",
+      "sourceDigest": "sha256:631dcf20cd5f310c81d3f50216c4d8f12198b8370a87121b13bfbd037e461f45",
+      "target": "Failed or cancelled runs MUST revoke tentative domain output. An external side effect that cannot be rolled back must be declared and accurately reported in provenance.",
+      "targetDigest": "sha256:d55907cd379c646fa7153852f4a085da3d5adbccdfac03f1220a152122ebccc8",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUN-002",
+      "section": "runs",
+      "source": "Semantic cache key MÅSTE inkludera stage-lokala source- och IR-beroendedigests samt resolved module identity, hela den ordnade faktiskt initierade modulclosure, funktion-, context-, contract-, exakt typad input-, authored-args-, config-, profile- och environment-digests. Edge-topologi, ordnad merge och observerbar argumentordning MÅSTE påverka den rekursiva beroendeidentiteten. Playgroundens labdigest får inte ensam auktorisera en träff; full key witness MÅSTE också vara exakt lika.",
+      "sourceDigest": "sha256:2ec4d501bca9b61b7a3a03f0e9a1823ed7dd4e13cd09702e30cd5dc2a4aaf339",
+      "target": "The semantic cache key MUST include stage-local source and IR dependency digests, resolved module identity, the entire ordered closure of actually initialized modules, and function, context, contract, exactly typed input, authored arguments, config, profile and environment digests. Edge topology, ordered merge and observable argument order MUST affect the recursive dependency identity. The playground's lab digest cannot alone authorize a hit; the full key witness MUST also be exactly equal.",
+      "targetDigest": "sha256:d8c027b269112473f6c049af27090009b2abd26eda3fa3acaf8139c6b4482430",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUN-003",
+      "section": "runs",
+      "source": "Nondeterministiska och externa funktioner får inte cacheas utan explicit replay artifact eller dokumenterad policy.",
+      "sourceDigest": "sha256:45d9c88e92496a89f4d4f2e3c616dd3c27c454dac3bd792f50269b1095951618",
+      "target": "Nondeterministic and external functions cannot be cached without an explicit replay artifact or documented policy.",
+      "targetDigest": "sha256:50ca2f5e057e8279e08a56efcaa7fe84821faa901b8b26a088f180b4ffa21243",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUN-004",
+      "section": "runs",
+      "source": "Backpressure, timeout och cancellation MÅSTE propageras genom runtime och sinks; tyst eventförlust är inte tillåten.",
+      "sourceDigest": "sha256:4b8150c028cda7dc89bde4c9ebffe813fcc625d13d505dfbdef62f7013542da4",
+      "target": "Backpressure, timeout and cancellation MUST propagate through the runtime and sinks; silent event loss is not permitted.",
+      "targetDigest": "sha256:125348049d15d5d82a5afae570f44f14140911bb9b7a45a3f2e152bc6782cb15",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUN-005",
+      "section": "runs",
+      "source": "Cache candidate, cache eligible, lookup, hit och reused MÅSTE rapporteras som skilda tillstånd. En invalidation preview eller matchande statisk nyckel får aldrig ensam redovisas som en träff. Den aktuella Editor Kernel-subseten kräver två exakt lika fresh observationer i skilda committed revisioner före reuse; samma revision främjar inte observationsunderlaget.",
+      "sourceDigest": "sha256:d3c4dc05c90dd32727e71bacb34c57ad5e6d291678dd61f1b4710ce04f686392",
+      "target": "Cache candidate, cache eligible, lookup, hit and reused MUST be reported as distinct states. An invalidation preview or matching static key can never alone be reported as a hit. The current Editor Kernel subset requires two exactly equal fresh observations in distinct committed revisions before reuse; the same revision does not advance the observation evidence.",
+      "targetDigest": "sha256:8d822fcd5ca94a9637d01e4b3ca1168a7e6cf51e05cf7b9b4a9263992786aefa",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUN-006",
+      "section": "runs",
+      "source": "Cacheobservationer och verifieringar MÅSTE skrivas i ett run-lokalt journal och blir synliga atomiskt först när core-resultat, immutable post-commit-projektioner, conformance-gate och aktuell editor-head har accepterats. `observations`/`writes` avser endast committad evidens; försök redovisas separat. Failed, cancelled, stale, gate-rejected eller ersatt session MÅSTE kasta journalen.",
+      "sourceDigest": "sha256:341f7968e76697cb8cdef35f2d6db5adb9bfc4f15f6b822a090f7d4ede5f73fe",
+      "target": "Cache observations and verifications MUST be written to a run-local journal and become visible atomically only after the core result, immutable post-commit projections, conformance gate and current editor head have been accepted. `observations`/`writes` refer only to committed evidence; attempts are reported separately. A failed, cancelled, stale, gate-rejected or replaced session MUST discard the journal.",
+      "targetDigest": "sha256:8cfac55eea9ad2f3a2ffc4e6fb9146bc082a94ab353e31481b11ae5c95c9650b",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUN-007",
+      "section": "runs",
+      "source": "Återanvända stages MÅSTE skapa ny run-kvalificerad provenance och `execution-step/lab-v2` med `functionInvoked=false`; tidigare event-, stage-, invocation- eller activity-id:n får aldrig återspelas. Materialiseringen MÅSTE peka på aktuell cachepost och exakt två unika, resolverbara observationsposter med samma `planNodeRef` och output-digest. Cachetelemetri får inte ändra semantiskt Result-ID eller normalized conformance-golden.",
+      "sourceDigest": "sha256:b400f00f13e906701c749dfeac6c667024c0b7ddf7df7e06475c03fb60dff3b8",
+      "target": "Reused stages MUST create new run-qualified provenance and `execution-step/lab-v2` with `functionInvoked=false`; previous event, stage, invocation or activity ids can never be replayed. Materialization MUST point to the current cache entry and exactly two unique, resolvable observation records with the same `planNodeRef` and output digest. Cache telemetry cannot change the semantic Result ID or normalized conformance golden.",
+      "targetDigest": "sha256:94df420a04cea52deda3d8090206a2ae8fac23eb5c3aecd7b6cfcea629ba86ea",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUN-008",
+      "section": "runs",
+      "source": "En concurrent ready-set-batch MÅSTE startas deterministiskt, dräneras med alla terminalutfall och publiceras i planordning. Ett branchfel stoppar ny scheduling. Efter drain har en aktiv terminal control-signal företräde: user cancellation ger `cancelled` och deadline ger `failed`; bland övriga branchfel blir det tidigaste planordnade felet primärdiagnostik.",
+      "sourceDigest": "sha256:0c1d01225f0fc8e161f1f8be8e7ad06c0cc173ce20fe878bced5dc5105274b5c",
+      "target": "A concurrent ready-set batch MUST start deterministically, be drained with all terminal outcomes and be published in plan order. A branch failure stops new scheduling. After draining, an active terminal control signal takes precedence: user cancellation produces `cancelled` and a deadline produces `failed`; among other branch failures, the earliest error in plan order becomes the primary diagnostic.",
+      "targetDigest": "sha256:afa4c5b407ffda312e6a7c8b82efb2012547a8bdf1d5af73590082852373134f",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUN-009",
+      "section": "runs",
+      "source": "Den aktuella runtime-subseten MÅSTE avvisa icke-numeriska policyfält och rapportera requested/effective hosttak, wave/peak concurrency, planerade och resolverade stages, kanalhändelser samt final renderstorlek. Deadline är kooperativ vid runtimegränser. Stage-, event- och renderbrott MÅSTE inträffa före durable commit och får inte beskrivas som generell CPU-/minnesisolering eller synkron preemption.",
+      "sourceDigest": "sha256:5c07c5a070cc19f1d1e1b55ef7831bf80150233b48b57f04794bebb47c1ca52a",
+      "target": "The current runtime subset MUST reject non-numeric policy fields and report requested/effective host limits, wave/peak concurrency, planned and resolved stages, channel events and final render size. Deadlines are cooperative at runtime boundaries. Stage, event and render violations MUST occur before durable commit and cannot be described as general CPU/memory isolation or synchronous preemption.",
+      "targetDigest": "sha256:7e1c2bd80098ed301c2182c912e676c59a792f1e3a48b942acdbd7a6f54f9e04",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "RUNTIME-CACHE-PROVENANCE",
+      "section": "runs",
+      "source": "Conformance-grinden MÅSTE avvisa en cachematerialisering om cacheposten eller någon av dess två observationsentiteter saknas, dupliceras eller avviker i `planNodeRef` eller output-digest.",
+      "sourceDigest": "sha256:f383fdec9ec3cb231f8dcaa0b527b9712e3919b2aa81596c4ffadc75eecb12e1",
+      "target": "The conformance gate MUST reject cache materialization if the cache entry or either of its two observation entities is missing, duplicated or differs in `planNodeRef` or output digest.",
+      "targetDigest": "sha256:c546a8d2f554da7b5b3d173729c45edf34fb443de9d05bffeb5d254026e15330",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SECURITY-001",
+      "section": "security",
+      "source": "Ingen modul har implicit rätt till filesystem, network, process, model eller secrets. Host får endast ge en deklarerad subset.",
+      "sourceDigest": "sha256:274e38a60cf92220b32acab3127af240ab75b5bb617f2614219d6427c5cf6e81",
+      "target": "No module has an implicit right to filesystem, network, process, model or secrets. The host may grant only a declared subset.",
+      "targetDigest": "sha256:cbea27800916977a5795018adc8b539e38d188d2dded0e9c2a8e56075243f26e",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SECURITY-002",
+      "section": "security",
+      "source": "Secrets MÅSTE injiceras som opaque handles och får aldrig förekomma i source, metadata, IR, Result, event, artifact-URI eller logg.",
+      "sourceDigest": "sha256:85abf0e1fe9cf12863f755c0c83143a33dab8ef9693c6a918ffee6890762bee0",
+      "target": "Secrets MUST be injected as opaque handles and can never appear in source, metadata, IR, Result, an event, artifact URI or log.",
+      "targetDigest": "sha256:cd972038b250dfd1c3d0685ea50bfbf4fcc2c5e2f21a966bbe3d261422d0c242",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SECURITY-003",
+      "section": "security",
+      "source": "HTML, SVG, widgets och annan aktiv MIME MÅSTE följa hostens sanitization- och trustmodell.",
+      "sourceDigest": "sha256:321cc97c88656691d26b6e469cbb3bb27e2427a6fd8792360723533683963a1a",
+      "target": "HTML, SVG, widgets and other active MIME MUST follow the host's sanitization and trust model.",
+      "targetDigest": "sha256:69931a693ff7f05523e1507b7289eb8eac273052b81cd2e78e9b079af97c1732",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "SECURITY-004",
+      "section": "security",
+      "source": "Kanal- och artifactdescriptors BÖR ange classification, retention och åtkomstpolicy. Adaptrar får inte sänka skyddsnivån tyst.",
+      "sourceDigest": "sha256:24ab4759c36a2eaf2361daaf96874a0632a57e6c7fbb296667d060604e422d50",
+      "target": "Channel and artifact descriptors SHOULD state classification, retention and access policy. Adapters cannot silently lower the protection level.",
+      "targetDigest": "sha256:76b8c823b30335909fcc33960a21d9ab9f9b244566856698713cc12495b26da1",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ADAPTER-001",
+      "section": "adapter-contract",
+      "source": "En adapter MÅSTE deklarera id, version, profil, accepterade resultatscheman, producerade representationer, kapabilitetsbehov och fidelity-policy innan den körs.",
+      "sourceDigest": "sha256:f1e25030dca2bfef9200789a5d490c8021eecdebfbc3d3975cb488948e6e9386",
+      "target": "An adapter MUST declare its id, version, profile, accepted result schemas, produced representations, capability needs and fidelity policy before it runs.",
+      "targetDigest": "sha256:f8c961edcdf4a518f0584a629dc48a217f700b85df3aa59e3f633a87f8125103",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ADAPTER-002",
+      "section": "adapter-contract",
+      "source": "Varje projektion MÅSTE referera till exakt `source resultId` och manifestdigest. Samma deterministiska input, manifestversion och konfiguration MÅSTE ge samma `projectionId`.",
+      "sourceDigest": "sha256:4db73dde27c488cd2745a0dfd09d4fe3de708aa78472d1c3c50bc98e48a8201a",
+      "target": "Every projection MUST reference the exact `source resultId` and manifest digest. The same deterministic input, manifest version and configuration MUST produce the same `projectionId`.",
+      "targetDigest": "sha256:7c0588819c198c308bb79ffea9fd7e2ce8abf508fbc2ecc6e1dc23e0005bff34",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ADAPTER-003",
+      "section": "adapter-contract",
+      "source": "Adaptrar läser samma immutable Result som oberoende fan-out. Adapter-till-adapter-dataflöde kräver en explicit, acyklisk dependency edge; list- eller UI-ordning är aldrig semantik.",
+      "sourceDigest": "sha256:96312f82b192fbe6c920b45f3a5c070154eb9589716bb8c2eb841c363715ea90",
+      "target": "Adapters read the same immutable Result through independent fan-out. Adapter-to-adapter data flow requires an explicit, acyclic dependency edge; list or UI order is never semantic order.",
+      "targetDigest": "sha256:72e04596a9a1f9268f746e21f1a6f7f2b9fc6d2963638c957127fcc1abc09d61",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ADAPTER-004",
+      "section": "adapter-contract",
+      "source": "Event identity, Anchor, SourceMap, artifact och provenance MÅSTE bevaras genom referens eller redovisas individuellt som förlust. Ett tomt loss-fält är ett verifierbart påstående.",
+      "sourceDigest": "sha256:30845feaeeb9db1b497e2e70e19169568128d0098f66cfcae46ee5fa14c2c88f",
+      "target": "Event identity, Anchor, SourceMap, artifact and provenance MUST be preserved by reference or individually reported as losses. An empty loss field is a verifiable assertion.",
+      "targetDigest": "sha256:90f772dc1817690fd1aeb7715046b70c1233c6c3b0d746296ed43f13aa5178f7",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ADAPTER-005",
+      "section": "adapter-contract",
+      "source": "Ett adapterfel FÅR inte ändra core run status eller mutera ett committat Result. Felet returneras som adapterdiagnostik i adapterkörningen.",
+      "sourceDigest": "sha256:ee01be294eccd98bd002bc270813f9c1cafd00cea16b5de57cd4e032b9665df3",
+      "target": "An adapter failure MUST NOT change core run status or mutate a committed Result. The failure is returned as adapter diagnostics in the adapter run.",
+      "targetDigest": "sha256:443c846e6328d938039de9ce9d56c70547a32cf70d0bcd42a25930b6194be665",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ADAPTER-006",
+      "section": "adapter-contract",
+      "source": "En contract-only-deskriptor får förhandlas och inspekteras men får inte producera simulerad output eller användas som stöd för profilkonformitet.",
+      "sourceDigest": "sha256:2f346b31b8668734e250e67606006ea3ead7182217dd5b0d6d0736fbe563037e",
+      "target": "A contract-only descriptor may be negotiated and inspected but cannot produce simulated output or serve as evidence of profile conformance.",
+      "targetDigest": "sha256:a7251effcfbbc61562e5f563dc3ef422b830e16203ac0b109b1f3c972e75f042",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "JUPYTER-001",
+      "section": "notebooks",
+      "source": "Standard `execute_request` innehåller kod men inte cell-id eller hela notebooken. Cross-cell-semantik kräver därför att hosten skickar en hel, versionerad notebook snapshot med stabila `cell.id`. Playgrounden avvisar partial snapshots.",
+      "sourceDigest": "sha256:f22526cf9c79bc7187abc88d8275d457d8d1bddf2eb787052d307dbe65372a26",
+      "target": "A standard `execute_request` contains code but neither a cell id nor the entire notebook. Cross-cell semantics therefore require the host to send a complete, versioned notebook snapshot with stable `cell.id`. The playground rejects partial snapshots.",
+      "targetDigest": "sha256:a02f379f84f0fadc39d1966798fc0b01be752b1fc0aa15e7c8a37191a29916c8",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "JUPYTER-002",
+      "section": "notebooks",
+      "source": "MIME-alternativen `text/plain`, `text/markdown` och `application/vnd.textabana.result+json` representerar samma logiska cellvärde. Separata Textabanakanaler får inte modelleras som MIME-alternativ.",
+      "sourceDigest": "sha256:44963453713c3ca1b8f56eeff49464a08a8c2998cff89a3e8f44fae2c1390c84",
+      "target": "The MIME alternatives `text/plain`, `text/markdown` and `application/vnd.textabana.result+json` represent the same logical cell value. Separate Textabana channels cannot be modeled as MIME alternatives.",
+      "targetDigest": "sha256:238ab1fd284abd1ce11a7fbe892599b484d5f478eaa04952d99934759a797027",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "JUPYTER-003",
+      "section": "notebooks",
+      "source": "Jupyter streams och displays ska mappas till namespaced adapterkanaler som `host.jupyter.stdout`, `host.jupyter.stderr` och `host.jupyter.display` — aldrig till `system.out` som process-stdout.",
+      "sourceDigest": "sha256:1bac8d14d331c0a29f1d528b354ace3406291e788c478a5973c28a5d9ab6a590",
+      "target": "Jupyter streams and displays are to be mapped to namespaced adapter channels such as `host.jupyter.stdout`, `host.jupyter.stderr` and `host.jupyter.display`, never to `system.out` as process stdout.",
+      "targetDigest": "sha256:30591a4b168ddff904cbd4facfe396208634b7e552a17152d153e71fa3082e49",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "JUPYTER-004",
+      "section": "notebooks",
+      "source": "En notebookadapter MÅSTE bevara okänd författad metadata, reservera `metadata.textabana` för adapterfält och märka varje output med cells source digest.",
+      "sourceDigest": "sha256:096888c43365d8648d1e68d0d6fca7d11c4f548e64850d832a388116eb14e0db",
+      "target": "A notebook adapter MUST preserve unknown authored metadata, reserve `metadata.textabana` for adapter fields and mark each output with the cell's source digest.",
+      "targetDigest": "sha256:6eb42e09df103293a673eb857fec5244cd8c891459424e0b3b6159cd19306c69",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "JUPYTER-005",
+      "section": "notebooks",
+      "source": "Cellordning är presentationsordning och FÅR inte bli implicit exekverings- eller kernelstate. Notebookens begärda stateprofil är skild från kärnans `Result.run.profile`.",
+      "sourceDigest": "sha256:bdbbe3dfb2f9e7ed4eb440f463018464c15d3864ba5c8fd1a0326eba52a2ebe2",
+      "target": "Cell order is presentation order and MUST NOT become implicit execution or kernel state. The notebook's requested state profile is separate from the core `Result.run.profile`.",
+      "targetDigest": "sha256:3769d21c1a14f5a78a2dc3ce363782c4ed8413a01bc0911ca930e111987f00dd",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "JUPYTER-006",
+      "section": "notebooks",
+      "source": "En äldre output är stale exakt när `previousOutput.sourceDigest !== currentCell.sourceDigest`. En stale output FÅR visas som revisionsmetadata men aldrig som aktuell output.",
+      "sourceDigest": "sha256:2e5906c57d27f2197886662bfc6af9c86c2f2f933ed5d7e42edbf0f5584053ec",
+      "target": "An older output is stale exactly when `previousOutput.sourceDigest !== currentCell.sourceDigest`. A stale output MAY be shown as revision metadata but never as current output.",
+      "targetDigest": "sha256:8c904da4bd3f970bca366805ebdb11af4190ad778ce418a561840e7d08d59066",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "JUPYTER-007",
+      "section": "notebooks",
+      "source": "Varje cell MÅSTE ha explicit, unik identitet. Saknat eller duplicerat cell-id stoppar körningen atomiskt före channel commit.",
+      "sourceDigest": "sha256:91ec1b1c0c2564fa606e15fb0ed8e71de4acf2c58e4c1ac1166b3872dbe96172",
+      "target": "Every cell MUST have an explicit, unique identity. A missing or duplicate cell id stops the run atomically before channel commit.",
+      "targetDigest": "sha256:ab007ad9be3017dc62675f0d774de492d487060e7faa56181917e1fb12058e85",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DATA-001",
+      "section": "data-ai",
+      "source": "Dataset row identity MÅSTE använda stabilt `recordId` eller deklarerad key — aldrig fysisk row index efter filter, join eller sortering.",
+      "sourceDigest": "sha256:7ff75886cb839242be01bdaebf3ea099b9539f8951bd149009910372cc9d2083",
+      "target": "Dataset row identity MUST use a stable `recordId` or declared key, never a physical row index after filtering, joining or sorting.",
+      "targetDigest": "sha256:9f849e75dda7dd1fb165812dfcfd0bb95a38b70f69f4aafa0f4365eac22855ed",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DATA-002",
+      "section": "data-ai",
+      "source": "Filter bevarar lineage; join förenar inputanchors; aggregation producerar `derived` mapping och en explicit provenance relation.",
+      "sourceDigest": "sha256:d97a8739a5fe309ce62d13636cadb7f4a062fccce10382f27f66e186cdd10dd6",
+      "target": "Filtering preserves lineage; a join combines input anchors; aggregation produces `derived` mapping and an explicit provenance relation.",
+      "targetDigest": "sha256:f7f9406ec4a1f63ab2bbce4dab56f55bbd2d7418012dbfa662884889644fc9f7",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DATA-003",
+      "section": "data-ai",
+      "source": "Kritisk proveniens får inte endast ligga i Arrow- eller Parquet-schema metadata om den ska överleva tredjepartsverktyg.",
+      "sourceDigest": "sha256:b467e32fb9de4f6cb77f9b7df508a6963614967654e0e5396350e8af96101c66",
+      "target": "Critical provenance cannot reside only in Arrow or Parquet schema metadata if it is to survive third-party tools.",
+      "targetDigest": "sha256:6c04da8b44cf13b0cb99bd7a70086f986de29c21eb145cc2fcdeab2a7a199d71",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DATA-004",
+      "section": "data-ai",
+      "source": "Arrow IPC Stream delar ett schema. En inkompatibel schemaändring MÅSTE skapa en ny stream eller schemaversion.",
+      "sourceDigest": "sha256:807127263c307f320342a5f29d13ebdd63a5ed4d6cd388f18f93d100257cc7dd",
+      "target": "An Arrow IPC Stream shares one schema. An incompatible schema change MUST create a new stream or schema version.",
+      "targetDigest": "sha256:4080a2a8d6f53ae476c2c799b0e2198c2e7c426e70c72d9520b504b68a9222a2",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "DATA-005",
+      "section": "data-ai",
+      "source": "In-process Arrow- eller DLPack-handles får aldrig serialiseras i TextabanaResult; resultatet använder transportformat eller ArtifactRef.",
+      "sourceDigest": "sha256:a7bcad226f2a1f3eec8542c018b4ed7536afd866b26febafaaf199514fb5f8c8",
+      "target": "In-process Arrow or DLPack handles can never be serialized in TextabanaResult; the result uses a transport format or ArtifactRef.",
+      "targetDigest": "sha256:61692ee6e93b9aa58ae3755b0742fd4481f9dcaf54e41badbb59a26ebd30a59b",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "AI-001",
+      "section": "data-ai",
+      "source": "Confidence är ett modellmått, inte sanning. Candidate, accepted, rejected och superseded är separata review states.",
+      "sourceDigest": "sha256:b98d2f38415146e8c9175550030f14ed41b3e409bc987f03995e43a4d01d3cac",
+      "target": "Confidence is a model metric, not truth. Candidate, accepted, rejected and superseded are separate review states.",
+      "targetDigest": "sha256:da321b9877a0da3681db4ab7d61d72a74e7c513eaf21962dfdeb830c702316be",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "AI-002",
+      "section": "data-ai",
+      "source": "MCP FÅR exponera manifestfunktioner som tools och docs/resultat som resources, men är en adapter och får inte bli kärnans runtime- eller proveniensmodell.",
+      "sourceDigest": "sha256:5dc708c1d29b3bbb50912824a8efd95e1f0e9a159e4aba8d454c7417654f5382",
+      "target": "MCP MAY expose manifest functions as tools and documents/results as resources, but it is an adapter and cannot become the kernel's runtime or provenance model.",
+      "targetDigest": "sha256:a11ea63bd067d89a5e384a54c22220e2d120e1c21de4d9efbc3bebe218e91e25",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANNOTATION-001",
+      "section": "annotation-observability",
+      "source": "Intern annotation MÅSTE stödja span, document classification, relation och review state. W3C Web Annotation är en import/exportprofil, inte hela kärnmodellen.",
+      "sourceDigest": "sha256:019dcada9779b10d496032d141ab862227d43595b306c62f55d37669e31b7546",
+      "target": "Internal annotation MUST support spans, document classification, relations and review state. W3C Web Annotation is an import/export profile, not the entire core model.",
+      "targetDigest": "sha256:704550c5e9b39af04f1fdc98d43fb43f273881233a782a6d894a0122a09deadf",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANNOTATION-002",
+      "section": "annotation-observability",
+      "source": "Human-in-the-loop MÅSTE skapa ett separat review-event och en ny reviewed revision. Modellkandidatens ursprungliga fakta får inte muteras. Endast `supersede` kräver en explicit ersättare med ömsesidiga `supersededBy`/`supersedes`-relationer.",
+      "sourceDigest": "sha256:3056f151057648b277ca1c5e64ebd42c8a4d3cd1f6f07b2386a03f15eb20ebb4",
+      "target": "Human-in-the-loop review MUST create a separate review event and a new reviewed revision. The model candidate's original facts cannot be mutated. Only `supersede` requires an explicit replacement with reciprocal `supersededBy`/`supersedes` relations.",
+      "targetDigest": "sha256:db3e6e46a5b580a6f3d920923de0573074ef80a9942537a932744adf90c42242",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANNOTATION-003",
+      "section": "annotation-observability",
+      "source": "En AI-kandidat MÅSTE ange stabilt annotationId, modell-id/version/digest, prompt-id/digest, inputdigest samt confidence score och metod. Confidence är evidensmetadata, inte sanningssannolikhet.",
+      "sourceDigest": "sha256:03ca0230ac21f8d27e6ec21d2472a31f33c251faddfb0e914e028e95e194e0e7",
+      "target": "An AI candidate MUST state a stable annotationId, model id/version/digest, prompt id/digest, input digest and confidence score and method. Confidence is evidence metadata, not the probability of truth.",
+      "targetDigest": "sha256:9ba664f43a52d65a22ce622b43a33848ca220b3ceb23de3dc04f0616f6c04d15",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANNOTATION-004",
+      "section": "annotation-observability",
+      "source": "Varje durable candidate, review och revision MÅSTE lösas genom Event, AnnotationSelector, Anchor, SourceMap och generating Activity. En exporterad target får inte uppfinna fristående offsets.",
+      "sourceDigest": "sha256:474cb559ebdd2920f7efa8f7bedfe45d018f70adff6ad06b29eac3d5d273a368",
+      "target": "Every durable candidate, review and revision MUST be resolvable through Event, AnnotationSelector, Anchor, SourceMap and generating Activity. An exported target cannot invent independent offsets.",
+      "targetDigest": "sha256:c58491db478fd664946a0deab7c488392931f63a629d663cd098c04eacfe317d",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANNOTATION-005",
+      "section": "annotation-observability",
+      "source": "W3C Web Annotation och annoteringsverktygsformat är adapterprojektioner. De får inte skriva tillbaka extern formatsemantik till kandidat- eller revieweventen utan en explicit importerad ny revision.",
+      "sourceDigest": "sha256:fcf4bc0484dbd2ade80dd0b00148e7487f142c01f758f442a524a2371a3f7416",
+      "target": "W3C Web Annotation and annotation-tool formats are adapter projections. They cannot write external format semantics back into candidate or review events without an explicitly imported new revision.",
+      "targetDigest": "sha256:be288c1e5b9a206372a031f02754347e497ed88abfbcfb6c7dbda3818ee41e2a",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ANNOTATION-006",
+      "section": "annotation-observability",
+      "source": "En whole annotation snapshot MÅSTE validera unika id:n, counts, länkar, beslut, current view och acyklisk supersede-kedja före commit. Den aktuella lab-subseten begränsar varje target till en icke-tom textrad.",
+      "sourceDigest": "sha256:c927a6a4eb68b8e6edfe64a12b1f898328f08286b9fdd5aa45534de7cedaee25",
+      "target": "A whole annotation snapshot MUST validate unique ids, counts, links, decisions, current view and an acyclic supersede chain before commit. The current lab subset limits each target to one non-empty text line.",
+      "targetDigest": "sha256:0a71d6535764755423944efa217741ee55034fd1d5a6aab737aa2f5a8d2451c9",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PROV-001",
+      "section": "annotation-observability",
+      "source": "Varje durable output MÅSTE länka till generating Activity och använda inputanchors/entities. Operativa traces FÅR länkas men ersätter inte semantic provenance.",
+      "sourceDigest": "sha256:8f9348a341a408926a2317af7510a88ec87dc1b470e2b2fb548829b03ca40f0b",
+      "target": "Every durable output MUST link to its generating Activity and the input anchors/entities used. Operational traces MAY be linked but do not replace semantic provenance.",
+      "targetDigest": "sha256:7ad2d206a064452bb4e0fa80ef913261d0f0961bec01d8dd28c181ec8ca6fad3",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "EXT-001",
+      "section": "annotation-observability",
+      "source": "Okända namespaced extensionfält MÅSTE round-trippas av adaptrar som inte förstår dem.",
+      "sourceDigest": "sha256:a6f3411c9ee4da0b61ba5cd60c8ccd7e159725b88581a3ad2fd0c103c33ceaed",
+      "target": "Unknown namespaced extension fields MUST round-trip through adapters that do not understand them.",
+      "targetDigest": "sha256:c6c8b15686e6d7535e43cc369eba59ef5bdf0b4c9867182cb90c0c334dd47222",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CONF-001",
+      "section": "conformance",
+      "source": "En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.",
+      "sourceDigest": "sha256:cccf35a2109e9144e1c2d872b3067453e2d90b4ef00dca996802cac14606ae39",
+      "target": "An implementation MUST publish a machine-readable capability response with exact profile versions, limits, value kinds, runtimes and extensions.",
+      "targetDigest": "sha256:5bf47c3de4e081872eeaa97604e39fe3abec20e327297c9f2ff7ac06d00371bc",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CONF-002",
+      "section": "conformance",
+      "source": "Ett profilanspråk MÅSTE bindas till en versionssatt suite och verifiera source → IR → plan → result → projection. Profiler utan relevant input MÅSTE vara `not-run`, inte passerade.",
+      "sourceDigest": "sha256:72bf69df20ce015dca69115153882d14199d5116e169f8eeb96e47e53b3c14fa",
+      "target": "A profile claim MUST be bound to a versioned suite and verify source → IR → plan → result → projection. Profiles without relevant input MUST be `not-run`, not passed.",
+      "targetDigest": "sha256:adebe549fb977c916e955ba7714730805442d3bb1251db8fd8e391aba2456277",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CONF-003",
+      "section": "conformance",
+      "source": "En adapter får inte förändra Language Core-semantik för att passa hostens exekveringsmodell.",
+      "sourceDigest": "sha256:7b9e17afb8fbeb115fcba03fa7c1b12834570435372abf20579deb70e1afdf57",
+      "target": "An adapter cannot change Language Core semantics to fit the host's execution model.",
+      "targetDigest": "sha256:a37639c7ceb3552b85a4558e7c8a2561b98fc1c19ad8eb0cdf090f61cbe73955",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CONF-004",
+      "section": "conformance",
+      "source": "Deklarerad support och verifieringsutfall MÅSTE vara separata. Ett saknat eller misslyckat obligatoriskt krav blockerar `claimable` även när capability-katalogen säger playground-subset.",
+      "sourceDigest": "sha256:a642ca39b736d833d19a9e842f40d4644d43f4ef5450eb6a8f385c444271cf37",
+      "target": "Declared support and verification outcomes MUST be separate. A missing or failed mandatory requirement blocks `claimable` even when the capability catalog says playground-subset.",
+      "targetDigest": "sha256:d539468d7c3f7b8e1b9cb651a752484265880628d05d45b7af71639ae7c8eccc",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CONF-005",
+      "section": "conformance",
+      "source": "`contract-only` och `unsupported` får aldrig härledas till ett lyckat implementeringsanspråk. Ett passerat no-fabrication-krav verifierar endast kontraktsgränsen.",
+      "sourceDigest": "sha256:70ef45d31bc6803e51a2130402d1b68e3d8fdea9d9265d59bc0ca47afefb6f0b",
+      "target": "`contract-only` and `unsupported` can never be interpreted as a successful implementation claim. A passing no-fabrication requirement verifies only the contract boundary.",
+      "targetDigest": "sha256:598540de559dfda84776131c796470ba1e73ba0013e2cd89071344fe90c6c69b",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CONF-006",
+      "section": "conformance",
+      "source": "En structural snapshot MÅSTE publicera normaliseringspolicy, ignorerade transportfält, digestalgoritm, actual digest och versionssatt expected digest när en golden baseline finns.",
+      "sourceDigest": "sha256:3304a283bdbe49af9e1ee3fe075582fe230e6ca75370813f8613615facdc135f",
+      "target": "A structural snapshot MUST publish its normalization policy, ignored transport fields, digest algorithm, actual digest and versioned expected digest when a golden baseline exists.",
+      "targetDigest": "sha256:3af6feea4c554cc071d2b6351df8c4c9ec6769c053a47b0d7f4cd4b270da3db3",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CONF-007",
+      "section": "conformance",
+      "source": "Negativa fixtures MÅSTE köras isolerat och kräva förväntad terminalstatus, exakt diagnostikkod och atomiskt tom durable commit. Ett negativt pass får aldrig skriva om core-resultatet till succeeded.",
+      "sourceDigest": "sha256:0d1dd94aadf3552c971112e7c3107f535e8ebdb6976799f00090de3b22b4ee9f",
+      "target": "Negative fixtures MUST run in isolation and require the expected terminal status, exact diagnostic code and atomically empty durable commit. A negative pass can never rewrite the core result as succeeded.",
+      "targetDigest": "sha256:258a2213d63a71093480823cf79cd47c735a183ef8780278b20e993166da7b32",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "CONF-008",
+      "section": "conformance",
+      "source": "Cancellation MÅSTE ha eget terminaltillstånd. Den aktuella subseten implementerar kooperativ cancellation och kooperativ deadline vid runtimegränser samt rapporterade stage-, event- och rendergränser. Credit-styrd metadata-streaming efter commit stöds. Den hävdar inte synkron preemption, multicore-exekvering, kontinuerlig stage-streaming, generell sink-backpressure eller kökvot, hård CPU-/minnessandbox eller rollback av externa sidoeffekter.",
+      "sourceDigest": "sha256:a8eb0086d8b689fc0ecf5df7bbebe73f77056421959c013f1c18b091cdea877a",
+      "target": "Cancellation MUST have its own terminal state. The current subset implements cooperative cancellation and cooperative deadlines at runtime boundaries, and reported stage, event and render limits. Credit-controlled metadata streaming after commit is supported. It claims no synchronous preemption, multicore execution, continuous stage streaming, general sink backpressure or queue quota, hard CPU/memory sandbox or rollback of external side effects.",
+      "targetDigest": "sha256:7a5658ce99e43f839c30263d686377e545a7d8195093fc161841c0fa72113af2",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ERROR-001",
+      "section": "errors",
+      "source": "Diagnostik MÅSTE ha stabil kod, severity, message, fas och position när position är känd. Hostspecifika stacktraces FÅR bifogas som skyddad extension.",
+      "sourceDigest": "sha256:afed3ddd77ebd6624a310930dc22795982c69f5bc2898ae050850998dc3aa1ec",
+      "target": "Diagnostics MUST have a stable code, severity, message, phase and position when the position is known. Host-specific stack traces MAY be attached as a protected extension.",
+      "targetDigest": "sha256:2662d43cb6bde2076ac14d59f57c247c06c3408edbaff1a6b5516c73894c2f4b",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ERROR-002",
+      "section": "errors",
+      "source": "För samma malformed construct MÅSTE `code`, `recoveryKind` och `diagnosticKey` vara semantiskt stabila. `diagnosticId` och source span är snapshotbundna och får flytta sig först genom en explicit ny analys eller re-anchor-transition.",
+      "sourceDigest": "sha256:12018b11417f0878c78d2362bec58800069d7a50de514ada1f56117123755c30",
+      "target": "For the same malformed construct, `code`, `recoveryKind` and `diagnosticKey` MUST be semantically stable. `diagnosticId` and source span are snapshot-bound and may move only through an explicit new analysis or re-anchoring transition.",
+      "targetDigest": "sha256:ff9ab98f6d07b2a0eea2028e4f0fba2f8097f743fde222ad566b77642670eab5",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "ERROR-003",
+      "section": "errors",
+      "source": "En parsediagnostik MÅSTE bära ett halvöppet `sourceSpan` och `recoveryNodeId`. Relaterad opener eller declaration BÖR anges i `related`.",
+      "sourceDigest": "sha256:2c97fb21fd001a563ca653cdc21079ae89b84034cedae549dbef9c282dc4d023",
+      "target": "A parse diagnostic MUST carry a half-open `sourceSpan` and `recoveryNodeId`. A related opener or declaration SHOULD be specified in `related`.",
+      "targetDigest": "sha256:f595b16cbafc0c774b81ce2cc9bc6f3052117acef916742a5fefa8816614b86b",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "VERSION-001",
+      "section": "errors",
+      "source": "Language, IR, Result och adapterprofiler versioneras oberoende. Breaking semantik kräver ny major/schemaidentifierare.",
+      "sourceDigest": "sha256:e431831cb94d3f175ffc3f189b5fb0503aa339efdb869caa5bdb34678bb83020",
+      "target": "Language, IR, Result and adapter profiles are versioned independently. Breaking semantics require a new major version/schema identifier.",
+      "targetDigest": "sha256:3c374a4f138b802362d074082ab84e20ab41c7270a897b43af879be18926f151",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "VERSION-002",
+      "section": "errors",
+      "source": "Extensions MÅSTE vara namespaced. Okända optional extensions round-trippas; okända required extensions stoppar körningen med capabilitydiagnostik.",
+      "sourceDigest": "sha256:ef23b163ad845883a089b0fc7dc0da7870d99e07b2b86411f957839e494fdbcd",
+      "target": "Extensions MUST be namespaced. Unknown optional extensions round-trip; unknown required extensions stop the run with a capability diagnostic.",
+      "targetDigest": "sha256:f4e228c664dc274d0cfc35b1e274921ac502b55d93d32d7ccebe2b6943821417",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PLAYGROUND-001",
+      "section": "playgrounds",
+      "source": "Alla labs BÖR använda samma lilla dokument, modulmanifest, inputdata och förväntade resultatsnapshot så att relationen mellan vyerna är verifierbar.",
+      "sourceDigest": "sha256:46fa39424a4573db7662d04f15f8302b5131116bf507a9ce917436625dbe2ecc",
+      "target": "All labs SHOULD use the same small document, module manifest, input data and expected result snapshot so that the relationship between views is verifiable.",
+      "targetDigest": "sha256:23c212c50dace24c01f7f17cce336674467bd0b4dfe524e02329b7ee487ad606",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PLAYGROUND-002",
+      "section": "playgrounds",
+      "source": "Varje lab MÅSTE skilja författad källa, kompilerad semantik, runtimeevents och adapterprojektion visuellt.",
+      "sourceDigest": "sha256:564bd6ece83dd53c45cf00a64773a3d6c2fd4d2383badbb8327dfedb531791f1",
+      "target": "Every lab MUST visually distinguish authored source, compiled semantics, runtime events and adapter projection.",
+      "targetDigest": "sha256:f47719f78b5e40ff476ea7993a5a7216be30ec3ab3315499c9d7bd69e190a31c",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PLAYGROUND-003",
+      "section": "playgrounds",
+      "source": "En funktion som UI:t ännu inte implementerar MÅSTE visas som planned/unsupported och får inte simuleras som konformt resultat.",
+      "sourceDigest": "sha256:5feb9cfc4cde6b4fd848aab6f8d4d8ebd602b4859cb5008bf9970a638277284a",
+      "target": "A function that the UI does not yet implement MUST be shown as planned/unsupported and cannot be simulated as a conforming result.",
+      "targetDigest": "sha256:b55d9d9592942cce1d7089325bec7740abe603c5a55bb099967a24e03ede334a",
+      "review": "author-reviewed"
+    },
+    {
+      "id": "PLAYGROUND-004",
+      "section": "playgrounds",
+      "source": "Golden fixtures ska kunna exporteras och köras headless i samma conformance suite som UI:t visualiserar.",
+      "sourceDigest": "sha256:46b80a62e70a4bcd7d7c13db5cb8173b7f5e2241f36e58a08cadb406c5b17ac8",
+      "target": "Golden fixtures are to be exportable and runnable headlessly in the same conformance suite that the UI visualizes.",
+      "targetDigest": "sha256:bb470b7798d04c4d6df85c9ad602118bbabb76cbc0191d09c77fbbbac19f6ad7",
+      "review": "author-reviewed"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Editor Kernel
 
-Editor Kernel är ett host-neutralt control plane runt parser, compiler och runtime. Den körbara workern använder `textabana.editor-kernel/lab-v1`. En editor kan analysera en ofullständig revision utan exekvering, välja exakt giltig revision att köra och prenumerera på committade metadataförändringar.
+Editor Kernel is a host-neutral control plane around the parser, compiler and runtime. The executable Worker uses `textabana.editor-kernel/lab-v1`. An editor can analyze an incomplete revision without execution, select the exact valid revision to run and subscribe to committed metadata changes.
 
 **Host** — CodeMirror · notebook · pipeline
 
@@ -8,24 +8,24 @@ Editor Kernel är ett host-neutralt control plane runt parser, compiler och runt
 
 **Atomic delivery** — Result · metadata delta · anchor continuity
 
-### Editor Kernel-kommandon
+### Editor Kernel commands
 
-| Kommando | Inputgrind | Observerbart utfall |
+| Command | Input gate | Observable outcome |
 | --- | --- | --- |
-| `open` | documentId, path och source | Immutable snapshot på documentRevision 1. |
-| `change` | baseRevision och sorterade ChangeSet-ranges | Ny document head eller atomiskt protokollfel. |
-| `analyze` | documentId och valfri exakt revision | CST, AST, partial typed IR och diagnostics; inga moduler eller stages körs. |
-| `subscribe` | Exakta channel names eller * | Snapshot-then-delta-cursor för vald leverans. |
-| `credit` | subscriptionId och positiv credit | Återupptar en bounded post-commit metadataström. |
-| `cache-export / cache-import` | Digestbundet host-checkpoint | Explicit cachepersistens och sessionstransport. |
-| `run` | Exakt documentRevision | Immutable run snapshot och atomiskt Result. |
-| `cancel` | runId | Kooperativ cancellation vid deklarerade gränser. |
+| `open` | documentId, path and source | Immutable snapshot at documentRevision 1. |
+| `change` | baseRevision and sorted ChangeSet ranges | New document head or atomic protocol error. |
+| `analyze` | documentId and optional exact revision | CST, AST, partial typed IR and diagnostics; no modules or stages run. |
+| `subscribe` | Exact channel names or * | Snapshot-then-delta cursor for the selected delivery mode. |
+| `credit` | subscriptionId and positive credit | Resumes a bounded post-commit metadata stream. |
+| `cache-export / cache-import` | Digest-bound host checkpoint | Explicit cache persistence and session transport. |
+| `run` | Exact documentRevision | Immutable run snapshot and atomic Result. |
+| `cancel` | runId | Cooperative cancellation at declared boundaries. |
 
-En vanlig idempotent `open` får returnera sessions aktuella revision när dokument-id, path och source redan matchar. En avsiktlig reset använder playground-flaggans `replaceSession: true`, skapar en ny session på revision 1 och gör sena svar från den äldre sessionen inaktuella.
+An ordinary idempotent `open` may return the session's current revision when document id, path and source already match. An intentional reset uses the playground flag `replaceSession: true`, creates a new session at revision 1 and makes late responses from the older session obsolete.
 
-### ChangeSet — playground-envelope
+### ChangeSet — playground envelope
 
-Körbar lab-subset · json
+Executable lab subset · json
 
 ```json
 {
@@ -40,100 +40,100 @@ Körbar lab-subset · json
 }
 ```
 
-01**Document version**
+**Document version**
 
-Innehållsidentitet. Undo kan återge samma version på en senare monoton documentRevision.
+Content identity. Undo can reproduce the same version at a later monotonic documentRevision.
 
-02**Document revision**
+**Document revision**
 
-Sessionslokal editgeneration. Den påverkar inte semantisk Result-identitet.
+Session-local edit generation. It does not affect semantic Result identity.
 
-03**Published revision**
+**Published revision**
 
-Senaste head-revision med en lyckad atomisk run; failed och cancelled flyttar den inte.
+The latest head revision with a successful atomic run; failed and cancelled runs do not advance it.
 
-04**Metadata cursor**
+**Metadata cursor**
 
-Monoton leveransposition per subscription, separat från event sequence inom en run.
+Monotonic delivery position per subscription, separate from event sequence within a run.
 
 <a id="EDITOR-KERNEL-001"></a>
 
-> **EDITOR-KERNEL-001** Editor Kernel MÅSTE vara ett control plane runt språk och runtime. Det får inte kunna anropas som en dokumentfunktion eller införa dold pipelineordning.
+> **EDITOR-KERNEL-001** Editor Kernel MUST be a control plane around the language and runtime. It cannot be callable as a document function or introduce hidden pipeline order.
 
 <a id="EDITOR-KERNEL-002"></a>
 
-> **EDITOR-KERNEL-002** Varje accepterad run MÅSTE fånga ett immutable snapshot med exakt `documentId`, `documentRevision` och `documentVersion`. Senare changes får inte ändra detta snapshot.
+> **EDITOR-KERNEL-002** Every accepted run MUST capture an immutable snapshot with the exact `documentId`, `documentRevision` and `documentVersion`. Later changes cannot alter this snapshot.
 
 <a id="EDITOR-KERNEL-003"></a>
 
-> **EDITOR-KERNEL-003** `system.out` och andra channels är semantisk output som kan prenumereras på. De får inte bära `open`, `change` eller annan document lifecycle-semantik.
+> **EDITOR-KERNEL-003** `system.out` and other channels are semantic output that can be subscribed to. They cannot carry `open`, `change` or other document lifecycle semantics.
 
 <a id="DOCUMENT-001"></a>
 
-> **DOCUMENT-001** Snapshot och monoton revision är separata begrepp. En no-op ChangeSet får returnera `unchanged` utan att skapa en revision.
+> **DOCUMENT-001** Snapshot and monotonic revision are separate concepts. A no-op ChangeSet may return `unchanged` without creating a revision.
 
 <a id="DOCUMENT-002"></a>
 
-> **DOCUMENT-002** Failed eller cancelled run MÅSTE lämna senast committade metadata-baslinje orörd. Ett historiskt resultat får visas som stale men aldrig som aktuellt för en nyare head.
+> **DOCUMENT-002** A failed or cancelled run MUST leave the last committed metadata baseline untouched. A historical result may be shown as stale but never as current for a newer head.
 
 <a id="DOCUMENT-003"></a>
 
-> **DOCUMENT-003** En host MÅSTE avancera sin protokoll-head från kärnans korrelerade `open`- eller `change`-svar. Optimistiskt antagen revision/version får inte användas som grund för nästa change eller run.
+> **DOCUMENT-003** A host MUST advance its protocol head from the kernel's correlated `open` or `change` response. An optimistically assumed revision/version cannot be used as the basis for the next change or run.
 
 <a id="ANALYZE-001"></a>
 
-> **ANALYZE-001** `analyze` MÅSTE vara read-only, revisionsbundet och fritt från modulinitiering och stage-effekter. Det FÅR returnera partial IR med recovery även när samma snapshot inte kan köras.
+> **ANALYZE-001** `analyze` MUST be read-only, revision-bound and free from module initialization and stage effects. It MAY return partial IR with recovery even when the same snapshot cannot run.
 
 <a id="CHANGE-001"></a>
 
-> **CHANGE-001** Alla ranges i en ChangeSet MÅSTE avse samma base snapshot, vara nollbaserade, halvöppna, sorterade och icke-överlappande samt tillämpas atomiskt.
+> **CHANGE-001** All ranges in a ChangeSet MUST refer to the same base snapshot, be zero-based, half-open, sorted and non-overlapping, and be applied atomically.
 
 <a id="CHANGE-002"></a>
 
-> **CHANGE-002** Canonical change offsets räknas i Unicode code points. UTF-16-, line/column- eller editor-native-koordinater MÅSTE konverteras av en hostadapter före protokollgränsen; en främmande deklarerad `coordinateUnit` MÅSTE avvisas före mutation.
+> **CHANGE-002** Canonical change offsets count Unicode code points. UTF-16, line/column or editor-native coordinates MUST be converted by a host adapter before the protocol boundary; a foreign declared `coordinateUnit` MUST be rejected before mutation.
 
 <a id="CHANGE-003"></a>
 
-> **CHANGE-003** Stale revision eller version, ogiltig range och överlappning MÅSTE ge strukturerat protokollfel utan sourcemutation eller semantisk run.
+> **CHANGE-003** A stale revision or version, invalid range or overlap MUST produce a structured protocol error without source mutation or a semantic run.
 
 <a id="SUBSCRIPTION-001"></a>
 
-> **SUBSCRIPTION-001** Ett channelfilter begränsar endast leverans. Det får aldrig ändra core-resultatets channels, exekvering eller adapterfan-out.
+> **SUBSCRIPTION-001** A channel filter limits delivery only. It can never change the core result's channels, execution or adapter fan-out.
 
 <a id="SUBSCRIPTION-002"></a>
 
-> **SUBSCRIPTION-002** Varje delta MÅSTE ange basis, target och cursor. En konsument med annan basis måste resynkronisera i stället för att applicera deltat.
+> **SUBSCRIPTION-002** Every delta MUST state its basis, target and cursor. A consumer with a different basis must resynchronize instead of applying the delta.
 
 <a id="DELTA-001"></a>
 
-> **DELTA-001** Metadata-delta är en deterministisk post-commit-jämförelse mellan immutable snapshots; det muterar aldrig föregående `TextabanaResult`.
+> **DELTA-001** A metadata delta is a deterministic post-commit comparison between immutable snapshots; it never mutates the previous `TextabanaResult`.
 
 <a id="DELTA-002"></a>
 
-> **DELTA-002** Cross-run matching MÅSTE använda deklarerad channel key eller explicit domänidentitet, aldrig run-lokala `eventId` eller `sequence`. Ounik identitet får inte ge ett falskt `moved` eller `changed`.
+> **DELTA-002** Cross-run matching MUST use a declared channel key or explicit domain identity, never run-local `eventId` or `sequence`. Non-unique identity cannot produce a false `moved` or `changed`.
 
 <a id="DELTA-003"></a>
 
-> **DELTA-003** `changed` betyder samma stabila identitet med ändrad semantik eller payload; `moved` betyder semantiskt ekvivalent payload med ny fysisk target. Payloadändring har företräde.
+> **DELTA-003** `changed` means the same stable identity with changed semantics or payload; `moved` means a semantically equivalent payload with a new physical target. Payload changes take precedence.
 
 <a id="DELTA-004"></a>
 
-> **DELTA-004** Endast succeeded commit får publicera durable `added`, `removed`, `changed` eller `moved`. Failed och cancelled publicerar ett tomt `not-committed`-delta och behåller baslinjen.
+> **DELTA-004** Only a succeeded commit may publish durable `added`, `removed`, `changed` or `moved`. Failed and cancelled runs publish an empty `not-committed` delta and retain the baseline.
 
 <a id="REANCHOR-001"></a>
 
-> **REANCHOR-001** Anchor-records är immutable och versionsbundna. Cross-revision continuity MÅSTE publiceras som en separat transition med metod och utfall; `ambiguous` och `orphaned` förblir olösta.
+> **REANCHOR-001** Anchor records are immutable and version-bound. Cross-revision continuity MUST be published as a separate transition with its method and outcome; `ambiguous` and `orphaned` remain unresolved.
 
-### Tre oberoende former av inkrementalitet
+### Independent forms of incrementality
 
-| Förmåga | Betydelse | Playground |
+| Capability | Meaning | Playground |
 | --- | --- | --- |
-| Inkrementell input | Hosten skickar ChangeSets i stället för att ersätta hela dokumentet. | Implementerat |
-| Invalidation preview | Två pre-transform-grafer jämförs till direct, transitive, unchanged, added och removed utan att återanvända output. | Rådgivande lab-subset |
-| Inkrementell stage-exekvering | Editor-sessionen kan återanvända verifierad pure-stageoutput och överlappa oberoende säkra async-grenar. | Avgränsad lab-subset |
-| Parser-/compilerreuse | Giltiga Lezer-fragment återanvänds efter ChangeSets och en exakt analyserad revision återanvänder sin compiler-snapshot; grafen byggs fortfarande per run. | Avgränsad lab-subset |
-| Inkrementell leverans | Hosten får semantiska deltan och kan välja credit-bunden post-commit-streaming. | Implementerat |
+| Incremental input | The host sends ChangeSets instead of replacing the entire document. | Implemented |
+| Invalidation preview | Two pre-transform graphs are compared into direct, transitive, unchanged, added and removed without reusing output. | Advisory lab subset |
+| Incremental stage execution | The editor session can reuse verified pure-stage output and overlap independent safe async branches. | Bounded lab subset |
+| Parser/compiler reuse | Valid Lezer fragments are reused after ChangeSets and an exactly analyzed revision reuses its compiler snapshot; the graph is still built per run. | Bounded lab subset |
+| Incremental delivery | The host receives semantic deltas and can select credit-bound post-commit streaming. | Implemented |
 
-**Exakt gräns för den körbara subseten**
+**Exact boundary of the executable subset**
 
-Workern håller en in-memory documentsession, applicerar versionguardade Unicode-patchar och erbjuder read-only `analyze` med formell parser och lokal recovery. En exakt analyserad revision återanvänder sin compiler-snapshot; nästa ChangeSet kan återanvända giltiga Lezer-fragment. En deterministisk ready-set-scheduler får överlappa oberoende, snapshotbara effects-free stages asynkront i samma Worker. Cachen kan flyttas explicit som ett digestbundet host-checkpoint och committade metadatadeltan kan streamas med credit-baserad backpressure. Multicore-exekvering, kontinuerlig stage-streaming, OT/CRDT, generell strukturell re-anchor, fullständiga editorintegrationer och LSP-adapter, synkron preemption och hård CPU-/minnessandbox är inte implementerade.
+The Worker keeps an in-memory document session, applies version-guarded Unicode patches and offers read-only `analyze` with a formal parser and local recovery. An exactly analyzed revision reuses its compiler snapshot; the next ChangeSet can reuse valid Lezer fragments. A deterministic ready-set scheduler may overlap independent, snapshotable effects-free stages asynchronously in the same Worker. The cache can be moved explicitly as a digest-bound host checkpoint, and committed metadata deltas can stream under credit-based backpressure. Multicore execution, continuous stage streaming, OT/CRDT, general structural re-anchoring, complete editor integrations and an LSP adapter, synchronous preemption and hard CPU/memory sandboxing are not implemented.

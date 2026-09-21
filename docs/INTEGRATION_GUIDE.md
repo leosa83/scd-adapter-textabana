@@ -4,6 +4,8 @@ This guide covers `textabana.editor-kernel/lab-v1`, module packages `lab-v1` and
 
 ## Run the complete examples
 
+For exact method inputs, response boundaries, ownership and failure behavior, use the [host SDK and transport reference](reference/sdk.md).
+
 From the repository root, after installing locked dependencies, with Node as specified in `package.json` and Python 3:
 
 ```sh

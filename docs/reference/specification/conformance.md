@@ -1,36 +1,36 @@
 # Profiles and versions
 
-Conformance Lab utvärderar ett valt, versionssatt case efter core run och adapter fan-out. Rapporten skiljer deklarerad support från observerat testutfall: endast en tillämplig playground-subset vars samtliga krav passerar blir `claimable` för den aktuella körningen.
+Conformance Lab evaluates a selected, versioned case after the core run and adapter fan-out. The report distinguishes declared support from observed test outcomes: only an applicable playground subset whose requirements all pass becomes `claimable` for the current run.
 
-### Konformitetsprofiler
+### Conformance profiles
 
-| Profil | Måste täcka | Web runtime idag |
+| Profile | Required coverage | Web runtime today |
 | --- | --- | --- |
-| `language-core/0.4` | Formell parser, lossless CST, typed IR, recovery, block, intervall, property, pipeline, inheritance och cross=error. | Playground subset |
-| `runtime-json/1` | IR, Plan, Run, Result, JSON channels och atomisk commit. | Playground subset |
-| `editor/1` | Anchor, SourceMap, system.out och LSP-projektion. | Playground subset |
-| `editor-kernel/1` | Document lifecycle, revision fencing, channel subscriptions, metadata-delta och anchor continuity. | Interaktiv subset · separat evidens |
-| `adapter-contract/1` | Manifest, negotiation, immutable fan-out, fidelity, referenser och failure isolation. | Playground subset |
-| `notebook/1` | Whole snapshot, stabila cell-id:n, MIME bundle, stateprofiler, stale detection och host-neutral JSON-projektion; full profil omfattar även verifierad Jupytertransport. | Playground subset |
-| `data/1` | Dataset/schema-events, record identity, JSON table projection och multi-input lineage; full profil omfattar även dataplan och artifacts. | Playground subset |
-| `annotation/1` | Immutable kandidater, review-revisioner, supersede-kedjor, resolverbara targets samt W3C- och Label Studio-projektion. | Playground subset |
-| `ml-lineage/1` | AI invocation, PROV, OpenLineage, MLflow och OTel correlation. | Contract-only · ej claimable |
+| `language-core/0.4` | Formal parser, lossless CST, typed IR, recovery, blocks, intervals, properties, pipelines, inheritance and cross=error. | Playground subset |
+| `runtime-json/1` | IR, Plan, Run, Result, JSON channels and atomic commit. | Playground subset |
+| `editor/1` | Anchor, SourceMap, system.out and LSP projection. | Playground subset |
+| `editor-kernel/1` | Document lifecycle, revision fencing, channel subscriptions, metadata delta and anchor continuity. | Interactive subset · separate evidence |
+| `adapter-contract/1` | Manifest, negotiation, immutable fan-out, fidelity, references and failure isolation. | Playground subset |
+| `notebook/1` | Whole snapshot, stable cell ids, MIME bundle, state profiles, stale detection and host-neutral JSON projection; the full profile also includes verified Jupyter transport. | Playground subset |
+| `data/1` | Dataset/schema events, record identity, JSON table projection and multi-input lineage; the full profile also includes the data plane and artifacts. | Playground subset |
+| `annotation/1` | Immutable candidates, review revisions, supersede chains, resolvable targets and W3C/Label Studio projection. | Playground subset |
+| `ml-lineage/1` | AI invocation, PROV, OpenLineage, MLflow and OTel correlation. | Contract-only · not claimable |
 
-### Maskinläsbar ConformanceReport
+### Machine-readable ConformanceReport
 
-| Fält | Betydelse | Nuvarande lab-semantik |
+| Field | Meaning | Current lab semantics |
 | --- | --- | --- |
-| `schema / reportId` | Versionssatt rapporttyp och deterministisk rapportidentitet. | `textabana.conformance-report/lab-v1` |
-| `sourceResultRef` | Binder evidensen till exakt semantiskt Result. | Transport-run-id ingår inte i strukturdigesten. |
-| `suite / case` | Suiteversion, fixture, förväntat och faktiskt terminalutfall. | Negativa cases kräver både exakt status och diagnostikkod. |
-| `profiles` | Deklarerad support, tillämplighet, kravutfall, härledd support och claimable. | Ej emitterade domänprofiler blir not-run; contract-only blir aldrig claimable. |
-| `stages` | Source → IR → Plan → Result → Projection med evidensreferenser. | Ett negativt case gör inget positivt plan- eller projektionsanspråk. |
-| `structuralSnapshot` | Normaliserad labbsnapshot och incheckad golden digest. | FNV-1a-lab är icke-kryptografisk och canonical=false. |
-| `gate` | Samlad blockeringslista härledd ur misslyckade krav och stages. | Regression eller golden-diff tar bort runnens subset-anspråk. |
+| `schema / reportId` | Versioned report type and deterministic report identity. | `textabana.conformance-report/lab-v1` |
+| `sourceResultRef` | Binds evidence to the exact semantic Result. | Transport run id is excluded from the structural digest. |
+| `suite / case` | Suite version, fixture, expected and actual terminal outcome. | Negative cases require both exact status and diagnostic code. |
+| `profiles` | Declared support, applicability, requirement outcomes, derived support and claimable. | Domain profiles with no emitted data become not-run; contract-only never becomes claimable. |
+| `stages` | Source → IR → Plan → Result → Projection with evidence references. | A negative case makes no positive plan or projection claim. |
+| `structuralSnapshot` | Normalized lab snapshot and checked-in golden digest. | FNV-1a-lab is non-cryptographic and canonical=false. |
+| `gate` | Combined blocker list derived from failed requirements and stages. | A regression or golden difference removes the run's subset claim. |
 
-### Conformance report · förkortat exempel
+### Conformance report · abbreviated example
 
-Körbar playground-subset · json
+Executable playground subset · json
 
 ```json
 {
@@ -49,23 +49,23 @@ Körbar playground-subset · json
 }
 ```
 
-**Våg 5 · extern värdsuite**
+**Wave 5 · external host suite**
 
-CLI:n kör åtta gemensamma protokollfall genom Worker, TypeScript, CodeMirror, Monaco och Python. Rapporten visar 40 utfall och binder suite och kernel till SHA-256. Samma JavaScript-kärna används i alla värdar.
+The CLI runs eight shared protocol cases through Worker, TypeScript, CodeMirror, Monaco and Python. The report shows 40 outcomes and binds the suite and kernel to SHA-256. Every host uses the same JavaScript kernel.
 
-[Hämta verifieringsrapporten (JSON)](../../../public/conformance/host-report.json)
+[Download the verification report (JSON)](../../../public/conformance/host-report.json)
 
-**Verifierat i aktuella labs**
+**Verified in current labs**
 
-Lossless CST, typed IR, inkrementell Lezer-/compilerreuse, typad DAG, verifierad cache, bounded concurrency, budgetar, atomiskt Result, Anchors/SourceMaps, credit-bunden metadata-streaming, host-cachecheckpoints, adapterisolering, TypeScript-/Python-hostklienter, CodeMirror-/Monaco-bindningar samt SHA-256-låsta modulpaket med explicita capability grants.
+Lossless CST, typed IR, incremental Lezer/compiler reuse, typed DAG, verified cache, bounded concurrency, budgets, atomic Result, Anchors/SourceMaps, credit-bound metadata streaming, host cache checkpoints, adapter isolation, TypeScript/Python host clients, CodeMirror/Monaco bindings and SHA-256-locked module packages with explicit capability grants.
 
-**Återstår för full konformitet**
+**Remaining work for full conformance**
 
-Fulla produktionsprofiler för IR/Plan/Result, full JSON Schema, transparent distribuerad cache, cached event replay, multicore stage-exekvering, effectful branch-concurrency, kontinuerlig stage-streaming, persistent dokumenthistorik, strukturell/fuzzy re-anchor, LSP-adapter, preemption, hårda CPU-/minneskvoter, extern side-effect rollback, beständiga artifacts, fulla polyglotta runtimes, Jupyter Messaging och nbformat-roundtrip samt externa observability-profiler.
+Complete production profiles for IR/Plan/Result, full JSON Schema, transparent distributed caching, cached event replay, multicore stage execution, effectful branch concurrency, continuous stage streaming, persistent document history, structural/fuzzy re-anchoring, an LSP adapter, preemption, hard CPU/memory quotas, external side-effect rollback, persistent artifacts, full polyglot runtimes, Jupyter Messaging and nbformat round trips, and external observability profiles.
 
-### Extern verifiering · sprint 5.1
+### External verification · sprint 5.1
 
-Körbar värdsuite · bash
+Executable host suite · bash
 
 ```bash
 npm run conformance:external
@@ -74,11 +74,11 @@ node cli/textabana.mjs digest report.json
 node cli/textabana.mjs registry-check PACKAGE_REGISTRY.json
 ```
 
-CLI:n kan även signera rapporter med en egen Ed25519-nyckel och verifiera dem mot en separat betrodd publik nyckel. De nedladdningsbara rapporterna är osignerade. Befintliga labb-ID:n behålls; sprint 5.2 lägger till separata källbundna SHA-256-identiteter för IR, Plan och committat Result.
+The CLI can also sign reports with an owner's Ed25519 key and verify them against a separately trusted public key. The downloadable reports are unsigned. Existing lab ids are retained; sprint 5.2 adds separate source-bound SHA-256 identities for IR, Plan and committed Result.
 
-### Semantiska identiteter · sprint 5.2
+### Semantic identities · sprint 5.2
 
-Körbar artefaktprofil · bash
+Executable artifact profile · bash
 
 ```bash
 node cli/textabana.mjs identify examples/document.md > identity.json
@@ -86,111 +86,111 @@ node cli/textabana.mjs verify-identity identity.json
 node cli/textabana.mjs conformance-semantic > semantic-report.json
 ```
 
-Aktivera SHA-256-identiteter i Playground och öppna Conformance → Identiteter för att se artefakterna. Den externa profilen verifierar 28 utfall mot fasta identiteter, inklusive inkrementell parsning och verklig cacheåteranvändning. [Hämta den semantiska profilrapporten (JSON)](../../../public/conformance/semantic-report.json). Integritetsverifiering bevisar paketets interna konsistens; fullständiga produktionsprofiler, bredare runtimejämförelse, release-signering och registertjänst återstår.
+Enable SHA-256 identities in the Playground and open Conformance → Identities to inspect the artifacts. The external profile verifies 28 outcomes against fixed identities, including incremental parsing and actual cache reuse. [Download the semantic profile report (JSON)](../../../public/conformance/semantic-report.json). Integrity verification proves the bundle's internal consistency; complete production profiles, broader runtime comparisons, release signing and a registry service remain unimplemented.
 
-### Exekverbart artefaktkontrakt · sprint 5.3
+### Executable artifact contract · sprint 5.3
 
-80 kontraktfall · bash
+80 contract cases · bash
 
 ```bash
 node cli/textabana.mjs verify-identity identity.json
 node cli/textabana.mjs conformance-contract > contract-report.json
 ```
 
-Verifieraren kontrollerar nu JSON-struktur, kontrollsummor, identitetskedja, tillgängliga källbytes samt interna referenser mellan IR, plan, events, ankare och source maps. Klicka på Verifiera paket i identitetsvyn, eller ladda ner paketet för samma kontroll i CLI. [JSON Schema](../../../public/contracts/semantic-bundle-v1.schema.json) och [kontraktrapporten](../../../public/conformance/contract-report.json) kan hämtas separat. De 80 frysta fallen omfattar 14 giltiga paket och 66 förväntade avvisningar. En omhashad ändring av render kan fortfarande vara ett giltigt paket: verifieraren kör inte om modulerna och intygar inte exekveringens riktighet.
+The verifier checks JSON structure, checksums, the identity chain, available source bytes and internal references between IR, plan, events, anchors and source maps. Click Verify bundle in the identities view, or download the bundle for the same check in the CLI. The [JSON Schema](../../../public/contracts/semantic-bundle-v1.schema.json) and [contract report](../../../public/conformance/contract-report.json) can be downloaded separately. The 80 frozen cases include 14 valid bundles and 66 expected rejections. A rehashed render change can still form a valid bundle: the verifier does not rerun the modules and does not attest to correct execution.
 
-### Oberoende textprofil · sprint 5.4
+### Independent text profile · sprint 5.4
 
-70 jämförelsefall · bash
+70 comparison cases · bash
 
 ```bash
 python3 reference/text_core.py run examples/text-core.md
 node cli/textabana.mjs conformance-text-core > text-core-report.json
 ```
 
-En fristående Python-parser och evaluator kör nu samma avgränsade textprofil som JavaScript-kärnan. Python-versionen behöver varken Node eller projektets JavaScript-kod. De 70 fasta testfallen jämför exakt renderad text, felutfall och commit-status för bland annat nästlade block, pipelines, Unicode och resursgränser. [Hämta rapporten](../../../public/conformance/text-core-report.json). Anspråket gäller endast textabana.text-core/v1; full språksemantik, moduler, kanaler, cache och identiska IR/Plan/Result-artefakter ingår inte.
+A standalone Python parser and evaluator execute the same bounded text profile as the JavaScript kernel. The Python version needs neither Node nor the project's JavaScript code. The 70 fixed cases compare exact rendered text, error outcomes and commit status for nested blocks, pipelines, Unicode, resource limits and other cases. [Download the report](../../../public/conformance/text-core-report.json). The claim covers only textabana.text-core/v1; full language semantics, modules, channels, cache and identical IR/Plan/Result artifacts are excluded.
 
-### Oberoende intervallprofil · sprint 5.5
+### Independent interval profile · sprint 5.5
 
-80 jämförelsefall · bash
+80 comparison cases · bash
 
 ```bash
 python3 reference/scoped_text.py run examples/scoped-text.md
 node cli/textabana.mjs conformance-scoped-text > scoped-text-report.json
 ```
 
-Profilen textabana.scoped-text/v1 utökar jämförelsen till öppna intervall, namngivna avslut, numerisk ordning och block som ärver eller stänger av yttre intervall. 80 fasta fall jämför både render och hela ordningen på committade funktionsanrop. Gränsen för antalet anrop kontrolleras före exekvering; felaktiga scope-/blockgränser lämnar inget committat resultat. [Hämta intervallrapporten](../../../public/conformance/scoped-text-report.json). Godtyckliga moduler, alternativa korsningspolicyer, cache och full produktionskonformitet återstår.
+The textabana.scoped-text/v1 profile extends comparison to open intervals, named closes, numeric ordering and blocks that inherit or disable outer intervals. The 80 fixed cases compare both render and the complete order of committed function calls. The call-count limit is checked before execution; invalid scope/block boundaries leave no committed result. [Download the interval report](../../../public/conformance/scoped-text-report.json). Arbitrary modules, alternative crossing policies, cache and full production conformance remain unimplemented.
 
-### Oberoende kanalprofil · sprint 5.6
+### Independent channel profile · sprint 5.6
 
-80 jämförelsefall · bash
+80 comparison cases · bash
 
 ```bash
 python3 reference/channel_core.py run examples/channel-core.md
 node cli/textabana.mjs conformance-channel-core > channel-core-report.json
 ```
 
-Profilen textabana.channel-core/v1 jämför även exakta payloads, global händelseordning och sparade kanalresultat. Tillfälliga händelser behåller sina platsnummer men ingår inte i durable snapshots. 80 fasta fall verifierar bland annat payloadkopiering, obligatoriska tomma kanaler, blockarv och återställning av hela resultatet vid kanal- eller budgetfel. [Hämta kanalrapporten](../../../public/conformance/channel-core-report.json). Källpositioner och full proveniensekvivalens ingår inte i jämförelsen mellan runtimes.
+The textabana.channel-core/v1 profile also compares exact payloads, global event order and stored channel results. Transient events retain their sequence positions but are excluded from durable snapshots. The 80 fixed cases verify payload copying, required empty channels, block inheritance and rollback of the entire result on channel or budget errors, among other cases. [Download the channel report](../../../public/conformance/channel-core-report.json). Source positions and full provenance equivalence are excluded from the cross-runtime comparison.
 
-### Oberoende positionsprofil · sprint 5.7
+### Independent position profile · sprint 5.7
 
-70 jämförelsefall · bash
+70 comparison cases · bash
 
 ```bash
 python3 reference/source_map_core.py run examples/source-map-core.md
 node cli/textabana.mjs conformance-source-map-core > source-map-core-report.json
 ```
 
-Profilen textabana.source-map-core/v1 jämför var varje händelse hör hemma i den författade texten: deklarationsrader, källintervall, Unicode-positioner, citat och länkar till ankare och funktionsanrop. 70 fasta fall täcker bland annat tomma block, intervall, återanvända radankare och emoji vid citatgränser. Olika rad-id:n med samma interna ankarnyckel avvisas atomiskt. [Hämta positionsrapporten](../../../public/conformance/source-map-core-report.json). Full proveniensgraf, editorhistorik och semantisk artefaktekvivalens återstår.
+The textabana.source-map-core/v1 profile compares where each event belongs in the authored text: declaration lines, source ranges, Unicode positions, quotes and links to anchors and function calls. The 70 fixed cases include empty blocks, intervals, reused row anchors and emoji at quote boundaries. Different row ids with the same internal anchor key are rejected atomically. [Download the position report](../../../public/conformance/source-map-core-report.json). Full provenance graphs, editor history and semantic artifact equivalence remain outside this profile.
 
-### Modulkontrakt · sprint 5.8
+### Module contract · sprint 5.8
 
-54 verifieringsfall · bash
+54 verification cases · bash
 
 ```bash
 node cli/textabana.mjs conformance-module-gate > module-gate-report.json
 ```
 
-Modulgrinden verifierar digest, låsning, grants och entydiga funktionsdeklarationer. Rapportens räknare visar om modulens startkod hann köras: felaktiga deklarationer stoppas före laddning, medan faktiska exportkontrakt kontrolleras efter laddning men före transform. [Hämta modulrapporten](../../../public/conformance/module-gate-report.json). Detta är en labbgrind runt samma JavaScript-kärna, inte oberoende modulexekvering eller en JavaScript-sandbox.
+The module gate verifies digests, locking, grants and unambiguous function declarations. Report counters show whether module startup code ran: invalid declarations stop before loading, while actual export contracts are checked after loading but before transform. [Download the module report](../../../public/conformance/module-gate-report.json). This is a lab gate around the same JavaScript kernel, not independent module execution or a JavaScript sandbox.
 
-### Oberoende paketkontroll · sprint 5.9
+### Independent package admission · sprint 5.9
 
-72 jämförelsefall · bash
+72 comparison cases · bash
 
 ```bash
 node cli/textabana.mjs conformance-module-admission > module-admission-report.json
 ```
 
-Python och JavaScript jämför nu 72 beslut om manifest, låsning, digests och grants. Python kör ingen modulkod. Godkänd förhandskontroll redovisas separat från senare export- och körningsfel; ett ogiltigt senare paket ska stoppa all startkod. [Hämta paketjämförelsen](../../../public/conformance/module-admission-report.json). Oberoendet gäller paketkontrollen och omfattar inte modulexekvering eller sandbox-säkerhet.
+Python and JavaScript compare 72 decisions about manifests, locking, digests and grants. Python executes no module code. Successful admission checks are reported separately from subsequent export and execution failures; an invalid later package is to stop all startup code. [Download the package comparison](../../../public/conformance/module-admission-report.json). Independence covers package admission, not module execution or sandbox security.
 
 <a id="CONF-001"></a>
 
-> **CONF-001** En implementation MÅSTE publicera en machine-readable capability response med exakta profilversioner, limits, value kinds, runtimes och extensions.
+> **CONF-001** An implementation MUST publish a machine-readable capability response with exact profile versions, limits, value kinds, runtimes and extensions.
 
 <a id="CONF-002"></a>
 
-> **CONF-002** Ett profilanspråk MÅSTE bindas till en versionssatt suite och verifiera source → IR → plan → result → projection. Profiler utan relevant input MÅSTE vara `not-run`, inte passerade.
+> **CONF-002** A profile claim MUST be bound to a versioned suite and verify source → IR → plan → result → projection. Profiles without relevant input MUST be `not-run`, not passed.
 
 <a id="CONF-003"></a>
 
-> **CONF-003** En adapter får inte förändra Language Core-semantik för att passa hostens exekveringsmodell.
+> **CONF-003** An adapter cannot change Language Core semantics to fit the host's execution model.
 
 <a id="CONF-004"></a>
 
-> **CONF-004** Deklarerad support och verifieringsutfall MÅSTE vara separata. Ett saknat eller misslyckat obligatoriskt krav blockerar `claimable` även när capability-katalogen säger playground-subset.
+> **CONF-004** Declared support and verification outcomes MUST be separate. A missing or failed mandatory requirement blocks `claimable` even when the capability catalog says playground-subset.
 
 <a id="CONF-005"></a>
 
-> **CONF-005** `contract-only` och `unsupported` får aldrig härledas till ett lyckat implementeringsanspråk. Ett passerat no-fabrication-krav verifierar endast kontraktsgränsen.
+> **CONF-005** `contract-only` and `unsupported` can never be interpreted as a successful implementation claim. A passing no-fabrication requirement verifies only the contract boundary.
 
 <a id="CONF-006"></a>
 
-> **CONF-006** En structural snapshot MÅSTE publicera normaliseringspolicy, ignorerade transportfält, digestalgoritm, actual digest och versionssatt expected digest när en golden baseline finns.
+> **CONF-006** A structural snapshot MUST publish its normalization policy, ignored transport fields, digest algorithm, actual digest and versioned expected digest when a golden baseline exists.
 
 <a id="CONF-007"></a>
 
-> **CONF-007** Negativa fixtures MÅSTE köras isolerat och kräva förväntad terminalstatus, exakt diagnostikkod och atomiskt tom durable commit. Ett negativt pass får aldrig skriva om core-resultatet till succeeded.
+> **CONF-007** Negative fixtures MUST run in isolation and require the expected terminal status, exact diagnostic code and atomically empty durable commit. A negative pass can never rewrite the core result as succeeded.
 
 <a id="CONF-008"></a>
 
-> **CONF-008** Cancellation MÅSTE ha eget terminaltillstånd. Den aktuella subseten implementerar kooperativ cancellation och kooperativ deadline vid runtimegränser samt rapporterade stage-, event- och rendergränser. Credit-styrd metadata-streaming efter commit stöds. Den hävdar inte synkron preemption, multicore-exekvering, kontinuerlig stage-streaming, generell sink-backpressure eller kökvot, hård CPU-/minnessandbox eller rollback av externa sidoeffekter.
+> **CONF-008** Cancellation MUST have its own terminal state. The current subset implements cooperative cancellation and cooperative deadlines at runtime boundaries, and reported stage, event and render limits. Credit-controlled metadata streaming after commit is supported. It claims no synchronous preemption, multicore execution, continuous stage streaming, general sink backpressure or queue quota, hard CPU/memory sandbox or rollback of external side effects.

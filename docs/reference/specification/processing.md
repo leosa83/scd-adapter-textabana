@@ -1,8 +1,8 @@
 # Processing model
 
-### Sammanhängande referensdokument
+### Complete reference document
 
-Planerad golden fixture · textabana
+Planned golden fixture · textabana
 
 ```textabana
 >>>>! include "pkg:textabana/core@1" as core
@@ -25,31 +25,31 @@ Fartyget avgick från Göteborg den 4 maj.
 <<<<+ @id=review
 ```
 
-1. 1**Fånga immutable snapshot**Bind documentId, revision, source version och exakta source coordinates.
-2. 2**Bygg lossless CST**Lezer bevarar varje lexem och radslut; fenced code och escapes klassificeras före kontrollsyntax.
-3. 3**Sänk till AST**Bygg blockträdet, typed stages, literalnoder, properties, directives och lokala recovery nodes.
-4. 4**Beräkna intervallgraf**Behåll open/close-events separat från blockträdet och härled maximala scope-segment.
-5. 5**Publicera typed IR**Ge varje node/stage ett verifierbart Unicode code-point-span och varje fel en stabil kod.
-6. 6**Stäng compile gate**Recovery förblir synlig för editorn, men error-level diagnostics stoppar all modulinitiering och exekvering.
-7. 7**Lös, initiera och bind moduler**Alla säkra transporterade paket måste ha passerat metadata-, digest-, lock- och grantkontroll. Includes och config läses ur samma IR. Efter modulstart jämförs faktiska exports med manifestet, före första transform.
-8. 8**Kompilera plan och graf**Bygg en komplett, typad DAG efter modulinitiering men före första `transform`. Source-, stage-, merge- och rendernoder får deterministisk ordning och explicita beroenden.
-9. 9**Resolvera deterministiska ready sets**Varje stage får antingen ett fresh transformanrop eller en verifierad cachematerialisering. Oberoende effects-free kandidater kan överlappa asynkront; effectful/unknown är seriella barriärer. Startade batcher dräneras och values, trace samt cachejournal publiceras i planordning.
-10. 10**Commit atomiskt**Publicera immutable render, kanalsnapshots, proveniens och diagnostik som ett resultat.
+1. **Capture an immutable snapshot.** Bind documentId, revision, source version and exact source coordinates.
+2. **Build a lossless CST.** Lezer preserves every lexeme and line ending; fenced code and escapes are classified before control syntax.
+3. **Lower to an AST.** Build the block tree, typed stages, literal nodes, properties, directives and local recovery nodes.
+4. **Compute the interval graph.** Keep open/close events separate from the block tree and derive maximal scope segments.
+5. **Publish typed IR.** Give each node/stage a verifiable Unicode code point span and each error a stable code.
+6. **Apply the compile gate.** Recovery remains visible to the editor, but error-level diagnostics stop all module initialization and execution.
+7. **Resolve, initialize and bind modules.** Every securely transported package must pass metadata, digest, lock and grant checks. Includes and config are read from the same IR. After module startup, actual exports are compared with the manifest before the first transform.
+8. **Compile the plan and graph.** Build a complete, typed DAG after module initialization but before the first `transform`. Source, stage, merge and render nodes receive deterministic order and explicit dependencies.
+9. **Resolve deterministic ready sets.** Each stage receives either a fresh transform call or verified cache materialization. Independent effects-free candidates can overlap asynchronously; effectful/unknown stages are serial barriers. Started batches are drained and values, trace and cache journal are published in plan order.
+10. **Commit atomically.** Publish immutable render, channel snapshots, provenance and diagnostics as one result.
 
-Listan visar de semantiska stegen. I den aktuella Workern görs paketförhandskontrollen före dokumentparsningen; båda grindarna måste passera före någon modulstart. Ett paketfel kan därför rapporteras före ett syntaxfel. Legacy-moduler utan säker paketsignal följer den äldre loadergränsen. Se [exakt paketkontroll och felordning](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_ADMISSION_PROFILE.md).
+This list describes the semantic stages. In the current Worker, package admission checks precede document parsing; both gates must pass before any module starts. A package error can therefore be reported before a syntax error. Legacy modules without a secure package signal use the older loader boundary. See [exact package checks and error order](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_ADMISSION_PROFILE.md).
 
 <a id="PROCESS-001"></a>
 
-> **PROCESS-001** Samtidig exekvering FÅR endast användas när beroenden, eligibility, deterministic merge och publik event-/traceordning är fullt definierade. Completion timing får inte bli semantisk ordning.
+> **PROCESS-001** Concurrent execution MAY be used only when dependencies, eligibility, deterministic merge and public event/trace order are fully defined. Completion timing cannot become semantic order.
 
 <a id="PROCESS-002"></a>
 
-> **PROCESS-002** Ett kompileringsfel MÅSTE stoppa all domänexekvering. Ett run-fel MÅSTE hindra durable commit.
+> **PROCESS-002** A compilation error MUST stop all domain execution. A run error MUST prevent durable commit.
 
 <a id="PROCESS-003"></a>
 
-> **PROCESS-003** Modulinitiering är en effekt och FÅR INTE ske innan hela dokumentet har passerat parserns compile gate.
+> **PROCESS-003** Module initialization is an effect and MUST NOT occur before the entire document has passed the parser's compile gate.
 
 <a id="PROCESS-004"></a>
 
-> **PROCESS-004** ExecutionPlan och ExecutionGraph MÅSTE vara kompletta före första stage-resolution. ExecutionTrace `textabana.execution-step/lab-v2` MÅSTE vara en separat observation där varje post refererar en planerad nod och skiljer fresh invocation från cachematerialisering. Vid fel behålls hela grafen och samtliga faktiskt startade, dränerade stageutfall publiceras i planordning; oschemalagda noder saknar tracepost.
+> **PROCESS-004** ExecutionPlan and ExecutionGraph MUST be complete before the first stage resolution. ExecutionTrace `textabana.execution-step/lab-v2` MUST be a separate observation in which each entry references a planned node and distinguishes fresh invocation from cache materialization. On failure, the entire graph is retained and every actually started, drained stage outcome is published in plan order; unscheduled nodes have no trace entry.

@@ -1,24 +1,24 @@
 # Parser, syntax and recovery
 
-Modaliteten är synlig direkt i texten. En versionssatt Lezer-parser producerar först en förlustfri CST; Textabana sänker den därefter till AST och typed IR. Samma parseprodukt styr include-resolution, inspektion och exekvering.
+Modality is visible directly in the text. A versioned Lezer parser first produces a lossless CST; Textabana then lowers it to an AST and typed IR. The same parse product governs include resolution, inspection and execution.
 
-### Markörfamiljer
+### Marker families
 
-| Markör | Roll | Krav |
+| Marker | Role | Requirement |
 | --- | --- | --- |
-| `>>>>!` | Direktiv | Påverkar compilation; producerar inget värde. |
-| `>>>>` | Öppna block | MÅSTE stängas strukturellt. |
-| `<<<<` | Stäng block | MÅSTE matcha öppningens första funktionsnamn. |
-| `>>>>+` | Aktivera intervall | Lägger till en identifierbar scope-instans. |
-| `<<<<+` | Avaktivera intervall | Stänger exakt @id eller senast öppnade aktiva instans med namnet. |
-| `\|` | Pipeline | Kör steg vänster till höger. |
-| `{ ... }` | Properties | Fäster metadata på en Markdown-AST-enhet. |
-| `\>>>>` | Escapad markör | Blir literal text; exakt escape-backslash tas bort. |
-| ``````` / ~~~```` | Literal fence | Kontrollmarkörer inuti Markdown-fence tolkas aldrig. |
+| `>>>>!` | Directive | Affects compilation; produces no value. |
+| `>>>>` | Open block | MUST be closed structurally. |
+| `<<<<` | Close block | MUST match the opening's first function name. |
+| `>>>>+` | Activate interval | Adds an identifiable scope instance. |
+| `<<<<+` | Deactivate interval | Closes the exact @id or the most recently opened active instance with the name. |
+| `\|` | Pipeline | Runs stages from left to right. |
+| `{ ... }` | Properties | Attaches metadata to a Markdown AST unit. |
+| `\>>>>` | Escaped marker | Becomes literal text; exactly the escape backslash is removed. |
+| ``````` / ~~~```` | Literal fence | Control markers inside a Markdown fence are never interpreted. |
 
-### Alla syntaktiska ytor
+### All syntactic surfaces
 
-Normativ syntax · textabana
+Normative syntax · textabana
 
 ```textabana
 >>>>! include "./modules/core.js"
@@ -35,7 +35,7 @@ Text {.claim priority=10}
 <<<<+ @id=clean
 ```
 
-### Körbar EBNF · förenklat kärnfragment
+### Executable EBNF · simplified core fragment
 
 Parser lab-v1 · ebnf
 
@@ -52,46 +52,46 @@ Stage         ::= Name Argument*
 Argument      ::= ArgName ('=' Value)?
 ```
 
-**Funktionsargument**
+**Function arguments**
 
-`sentences=2` och andra vanliga argument typas av parsern och skickas till funktionen. Validering mot funktionens fulla JSON Schema är definierad men ännu inte körbar i labbet.
+`sentences=2` and other ordinary arguments are typed by the parser and passed to the function. Validation against the function's full JSON Schema is defined but not yet executable in the lab.
 
 **Engine controls**
 
-`@id`, `@order`, `@inherit` och `@cross` styr motorn och skickas inte som funktionsargument. Parsern kräver identifierarsträng, ändligt tal respektive uttryckliga policysträngar utan JavaScript-koercion.
+`@id`, `@order`, `@inherit` and `@cross` control the engine and are not passed as function arguments. The parser requires an identifier string, a finite number or explicit policy strings, respectively, without JavaScript coercion.
 
 **Literal syntax**
 
-Markörer känns endast igen vid logisk radstart utanför fenced code. U+005C före markören gör raden literal; genererad output parsas aldrig om.
+Markers are recognized only at a logical line start outside fenced code. U+005C before a marker makes the line literal; generated output is never parsed again.
 
-**Kommentarer**
+**Comments**
 
-Språket definierar ingen fristående `//`-kommentar. Prosa eller en framtida explicit directive ska användas.
+The language defines no standalone `//` comment. Use prose or a future explicit directive.
 
-**Recovery är editorstruktur, inte tolererad exekvering**
+**Recovery is editor structure, not tolerated execution**
 
-Ofullständig syntax ger lokala `Recovery`-noder med stabil kod och exakt span. Giltiga syskon finns kvar i CST/AST/IR, men varje error-level recovery blockerar modulinitiering, Plan och domänexekvering för hela snapshoten.
+Incomplete syntax produces local `Recovery` nodes with a stable code and exact span. Valid siblings remain in the CST/AST/IR, but any error-level recovery blocks module initialization, the Plan and domain execution for the entire snapshot.
 
-**Varför Lezer — och varför ingen Worker-migrering**
+**Why Lezer, and why no Worker migration**
 
-Lezer är JavaScript-native, editororienterat och byggt för syntaxträd under pågående fel. Tree-sitters webbväg hade krävt separat runtime-Wasm, grammar-Wasm och asynkron assetladdning. Parsern genereras därför offline och buntas i samma klassiska `/runtime-worker.js`; Lezer-trädet förblir intern CST och blir aldrig publikt IR-schema.
+Lezer is JavaScript-native, editor-oriented and designed for syntax trees during incomplete edits. Tree-sitter's web path would have required separate runtime Wasm, grammar Wasm and asynchronous asset loading. The parser is therefore generated offline and bundled into the same classic `/runtime-worker.js`; the Lezer tree remains an internal CST and never becomes the public IR schema.
 
 <a id="SYNTAX-001"></a>
 
-> **SYNTAX-001** Kontrollrader, stängningsrader och fristående propertyrader MÅSTE avlägsnas från primär render.
+> **SYNTAX-001** Control lines, closing lines and standalone property lines MUST be removed from the primary render.
 
 <a id="SYNTAX-002"></a>
 
-> **SYNTAX-002** Okända engine controls MÅSTE ge kompileringsdiagnostik; de får inte tyst skickas vidare till funktionen.
+> **SYNTAX-002** Unknown engine controls MUST produce compilation diagnostics; they cannot be silently passed to the function.
 
 <a id="PARSE-001"></a>
 
-> **PARSE-001** Samma source snapshot och grammar version MÅSTE deterministiskt ge samma CST, diagnostikkoder och recovery kinds.
+> **PARSE-001** The same source snapshot and grammar version MUST deterministically produce the same CST, diagnostic codes and recovery kinds.
 
 <a id="PARSE-002"></a>
 
-> **PARSE-002** Recovery MÅSTE behålla exakt authored span eller en explicit zero-width missing-token-position. Den får aldrig fabricera en körbar opener, close eller stage.
+> **PARSE-002** Recovery MUST retain the exact authored span or an explicit zero-width missing-token position. It can never fabricate an executable opener, close or stage.
 
 <a id="PARSE-003"></a>
 
-> **PARSE-003** Varje error-level recovery MÅSTE blockera modulinitiering och domänexekvering men partial CST, AST, IR och diagnostik MÅSTE fortfarande kunna levereras till editorn.
+> **PARSE-003** Every error-level recovery MUST block module initialization and domain execution, but partial CST, AST, IR and diagnostics MUST still be deliverable to the editor.

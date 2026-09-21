@@ -1,35 +1,35 @@
 # Contract sources and requirements
 
-Specification anger målbild och normativa principer. Ett profilanspråk avser bara det versionssatta profilkontraktets uttryckliga delmängd. En körningsrapport visar utfallet för sin bundna källa och sina fixtures.
+The Specification defines the target model and normative principles. A profile claim covers only the explicit subset of the versioned profile contract. An execution report shows the outcome for its bound source and fixtures.
 
-Vid skillnad mellan en generell formulering här och ett labbkontrakt avgör profilkontraktet vad labbet får hävda. Det sänker inte målkravet. Implementation visar faktiskt beteende; ett testfilnamn eller en länk bevisar inte att hela kravet är uppfyllt.
+Where a general statement here differs from a lab contract, the profile contract determines what the lab may claim. This does not weaken the target requirement. Implementation shows actual behavior; a test filename or link does not prove that the whole requirement is satisfied.
 
-### Läs kontrakt och rapport tillsammans
+### Read the contract and report together
 
-| Kontraktskälla | Verifiering |
+| Contract source | Verification |
 | --- | --- |
-| [TEXTABANA_PARSER.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/TEXTABANA_PARSER.md) | Parser- och kompilatortester i kravunderlaget |
-| [conformance/README.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/conformance/README.md) | [Hämta profilrapport](../../../public/conformance/host-report.json) |
-| [SEMANTIC_IDENTITY.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SEMANTIC_IDENTITY.md) | [Hämta profilrapport](../../../public/conformance/semantic-report.json) |
-| [SEMANTIC_CONTRACT.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SEMANTIC_CONTRACT.md) | [Hämta profilrapport](../../../public/conformance/contract-report.json) |
-| [TEXT_CORE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/TEXT_CORE_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/text-core-report.json) |
-| [SCOPED_TEXT_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SCOPED_TEXT_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/scoped-text-report.json) |
-| [CHANNEL_CORE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/CHANNEL_CORE_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/channel-core-report.json) |
-| [SOURCE_MAP_CORE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SOURCE_MAP_CORE_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/source-map-core-report.json) |
-| [MODULE_GATE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_GATE_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/module-gate-report.json) |
-| [MODULE_ADMISSION_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_ADMISSION_PROFILE.md) | [Hämta profilrapport](../../../public/conformance/module-admission-report.json) |
+| [TEXTABANA_PARSER.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/TEXTABANA_PARSER.md) | Parser and compiler tests in the requirement evidence |
+| [conformance/README.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/conformance/README.md) | [Download profile report](../../../public/conformance/host-report.json) |
+| [SEMANTIC_IDENTITY.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SEMANTIC_IDENTITY.md) | [Download profile report](../../../public/conformance/semantic-report.json) |
+| [SEMANTIC_CONTRACT.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SEMANTIC_CONTRACT.md) | [Download profile report](../../../public/conformance/contract-report.json) |
+| [TEXT_CORE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/TEXT_CORE_PROFILE.md) | [Download profile report](../../../public/conformance/text-core-report.json) |
+| [SCOPED_TEXT_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SCOPED_TEXT_PROFILE.md) | [Download profile report](../../../public/conformance/scoped-text-report.json) |
+| [CHANNEL_CORE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/CHANNEL_CORE_PROFILE.md) | [Download profile report](../../../public/conformance/channel-core-report.json) |
+| [SOURCE_MAP_CORE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/SOURCE_MAP_CORE_PROFILE.md) | [Download profile report](../../../public/conformance/source-map-core-report.json) |
+| [MODULE_GATE_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_GATE_PROFILE.md) | [Download profile report](../../../public/conformance/module-gate-report.json) |
+| [MODULE_ADMISSION_PROFILE.md](https://github.com/leosa83/scd-adapter-textabana/blob/main/MODULE_ADMISSION_PROFILE.md) | [Download profile report](../../../public/conformance/module-admission-report.json) |
 
-[Källan till artefaktschemat](https://github.com/leosa83/scd-adapter-textabana/blob/main/contracts/semantic-bundle-v1.js) genererar [JSON Schema 2020-12](../../../public/contracts/semantic-bundle-v1.schema.json). [Verifieringsguiden](https://github.com/leosa83/scd-adapter-textabana/blob/main/conformance/README.md) anger kommandon och anspråksgränser.
+The [artifact schema source](https://github.com/leosa83/scd-adapter-textabana/blob/main/contracts/semantic-bundle-v1.js) generates [JSON Schema 2020-12](../../../public/contracts/semantic-bundle-v1.schema.json). The [verification guide](https://github.com/leosa83/scd-adapter-textabana/blob/main/conformance/README.md) states the commands and claim boundaries.
 
-Alla 144 krav har ett expanderbart underlag med kontrakt, implementationskälla, relevanta testkällor och begränsning. [Hämta kravregistret](../../../public/docs/requirements.json). Registret kontrollerar täckning och källreferenser; det är ingen fullständig konformitetsrapport.
+All 144 requirements have expandable evidence with contracts, implementation sources, relevant test sources and limitations. [Download the requirement index](../../../public/docs/requirements.json). The index checks coverage and source references; it is not a complete conformance report.
 
-### Kontrollera dokumentationens spårbarhet
+### Check documentation traceability
 
-Dokumentationskontroll · bash
+Documentation check · bash
 
 ```bash
 node scripts/build-specification-docs.mjs --check
 node --test tests/documentation.test.mjs
 ```
 
-[Standardbedömning och prioriterade luckor](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/STANDARDS_DIRECTION.md) · [Integrationsguide](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/INTEGRATION_GUIDE.md) · [Dokumentationssprintens acceptans](https://github.com/leosa83/scd-adapter-textabana/blob/main/DOCUMENTATION_PLAN.md).
+[Standards assessment and priority gaps](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/STANDARDS_DIRECTION.md) · [Integration guide](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/INTEGRATION_GUIDE.md) · [Documentation sprint acceptance](https://github.com/leosa83/scd-adapter-textabana/blob/main/DOCUMENTATION_PLAN.md).

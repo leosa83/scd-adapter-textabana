@@ -29,7 +29,7 @@
     {
       "kind": "adapter",
       "namespace": "org.textabana.python",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "manifest": {
         "schema": "textabana.registry-package/v1",
         "entrypoint": "sdk/python/textabana_client.py",
@@ -44,14 +44,14 @@
       "files": [
         {
           "path": "sdk/python/textabana_client.py",
-          "digest": "sha256:74f0890d2fa7900a6173bd35edee9d1b5f5b4512a8c3ffe03123c68f289c7d2f"
+          "digest": "sha256:4e47b144fb05d3b62424455496550d437758174c72b4806103a9ffa4e94371a6"
         },
         {
           "path": "sdk/python/__init__.py",
           "digest": "sha256:184ced4684240eb73acc1f137769b59eb3d1cf04bcc0b9fbe04d94fd4e5a063a"
         }
       ],
-      "digest": "sha256:fe26ea492fd68dd59316e9126ce119cca37319f2508950f313b1e35da3c7ed1b"
+      "digest": "sha256:cbfebcffe259f88df2e97f357f5ff9e4ee23d485576263c233abd57346ef8db7"
     }
   ]
 }

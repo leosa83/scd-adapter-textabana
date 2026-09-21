@@ -2,11 +2,11 @@
 
 ### Properties
 
-Attributlistor fästs på Markdown-AST-enheter, lagras i IR och försvinner ur renderingen. De exekverar ingenting av sig själva.
+Attribute lists attach to Markdown AST units, are stored in the IR and disappear from the rendering. They execute nothing by themselves.
 
-### Lättviktig semantik
+### Lightweight semantics
 
-Illustrativt · markdown + textabana
+Illustrative · markdown + textabana
 
 ```markdown + textabana
 Den centrala slutsatsen.
@@ -16,15 +16,15 @@ Den centrala slutsatsen.
 ## Evidens {.evidence source="PARES"}
 ```
 
-**Alias är språksemantik, inte playgroundsemantik**
+**Aliases are language semantics, not playground semantics**
 
-Draft 0.7 definierar `as alias`, men `textabana.parser/lab-v1` kör endast `>>>>! include "path"`. Exakta legacyraden `>>>> include "path"` stöds utan alias och har företräde framför ett block med namnet `include`.
+Draft 0.7 defines `as alias`, but `textabana.parser/lab-v1` executes only `>>>>! include "path"`. The exact legacy line `>>>> include "path"` is supported without aliases and takes precedence over a block named `include`.
 
 ### Includes
 
-Skriptning är include-baserad. Compiler löser först en modulgraf och initierar därefter varje unik modul enligt vald run-profil.
+Scripting is include-based. The compiler first resolves a module graph, then initializes each unique module according to the chosen run profile.
 
-### Modulimport med alias
+### Module import with an alias
 
 0.4-defined · textabana
 
@@ -39,16 +39,16 @@ Text
 
 <a id="PROPERTY-001"></a>
 
-> **PROPERTY-001** `@order` ordnar funktioner. En property som `priority` påverkar endast ordning om en uttrycklig funktion läser den.
+> **PROPERTY-001** `@order` orders functions. A property such as `priority` affects ordering only if an explicit function reads it.
 
 <a id="MODULE-001"></a>
 
-> **MODULE-001** Compiler MÅSTE normalisera URI:er, bygga en DAG, upptäcka cykler och exportkollisioner samt pinna resolved URI, version och SHA-256 innan modulkod körs.
+> **MODULE-001** The compiler MUST normalize URIs, build a DAG, detect cycles and export collisions, and pin the resolved URI, version and SHA-256 before module code runs.
 
 <a id="MODULE-002"></a>
 
-> **MODULE-002** Samma normaliserade URI och digest identifierar samma modulinstans. Modulen initieras en gång per fresh run, eller en gång per namngiven session i sessionprofilen.
+> **MODULE-002** The same normalized URI and digest identify the same module instance. The module initializes once per fresh run, or once per named session in the session profile.
 
 <a id="MODULE-003"></a>
 
-> **MODULE-003** Cache FÅR inte ändra semantik. Återanvänd sessionstate, modulbyte eller nondeterministisk replay MÅSTE framgå av proveniens.
+> **MODULE-003** Cache MUST NOT change semantics. Reused session state, module replacement or nondeterministic replay MUST be recorded in provenance.

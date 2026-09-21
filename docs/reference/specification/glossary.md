@@ -1,48 +1,48 @@
 # Glossary
 
-### Glossary
+### Domain terms
 
-| Begrepp | Definition |
+| Term | Definition |
 | --- | --- |
-| `SourceDocument` | Immutable, versionerad textkälla med logical identity och base URI. |
-| `CST` | Förlustfri konkret syntaxrepresentation från Lezer; bevarar lexem och radslut utan att bestämma domänexekvering. |
-| `AST` | Normaliserat blockträd med typed stages, literalnoder och recovery; intervallhändelser förblir separat modellerade. |
-| `SourceSpan` | Nollbaserat, halvöppet Unicode-code-point-intervall med 1-baserade line- och 0-baserade column-projektioner. |
-| `RecoveryNode` | Lokal representation av malformed eller saknad syntax. Den är alltid non-executable men gör partial editorstruktur möjlig. |
-| `Block` | Strikt nästlad funktionsregion vars kompletta pipeline kör före ambient inheritance. |
-| `Intervall` | Öppet, identifierbart scope som är aktivt över ett eller flera textsegment. |
-| `Property` | Icke-exekverande metadata på en Markdown-AST-enhet. |
-| `TextabanaIR` | Host-neutral semantisk representation av source snapshot. |
-| `ExecutionPlan` | Körbar, typad och capability-validerad stagegraf för en host. |
-| `ExecutionGraph` | Pre-transform DAG med source-, stage-, merge- och rendernoder samt explicita, typade beroenden. |
-| `Typed edge` | Riktat värde- eller kontrollberoende med namngivna portar, edge-kind och deterministisk order key. |
-| `ExecutionTrace` | Observerad följd av stage-resolutioner i execution-step/lab-v2; functionInvoked skiljer fresh invocation från cachematerialisering och varje post binds till grafen med planNodeRef. |
-| `Invalidation preview` | Rådgivande, historikberoende jämförelse mellan en baslinjegraf och en målgraf; inte en cacheträff eller körning. |
-| `Cache eligibility / hit / reuse` | Skilda tillstånd för statisk säkerhetsbedömning, faktisk lookup-träff och verkligt återanvänd stageoutput. |
-| `Scheduler wave` | Ett deterministiskt ready set av oberoende stages; settlement kan överlappa men trace, cachejournal och value commit följer alltid planordning. |
-| `Resource report` | Run-bunden redovisning av requested/effective gränser och faktisk stage-, event-, render-, deadline- och concurrencyanvändning. |
-| `TextabanaValue` | Portabelt typed value envelope i pipelines och runtimeprotokoll. |
-| `DocumentSnapshot` | Immutable textinnehåll för ett documentId vid en monoton documentRevision och content-bunden documentVersion. |
-| `ChangeSet` | Atomisk, versionsguardad mängd sorterade och icke-överlappande textpatchar. |
-| `Anchor` | Immutable, versionsbunden target record med selectors; cross-revision continuity är en separat, explicit resolution. |
-| `MetadataDelta` | Post-commit-jämförelse mellan två immutable metadatasnapshots, filtrerad för en editor subscription. |
-| `SourceMap` | Många-till-många-relation mellan outputselectors och inputanchors. |
-| `render` | Primärt resultatvärde från returpipelinen; inte en vanlig channel. |
-| `Channel` | Namngiven, typed append-only eventström inom en run. |
-| `system.out` | Reserverad channel för editor- och positionsbunden metadata. |
-| `ArtifactRef` | Content-addressed referens till stor eller binär payload. |
-| `Run` | En versionerad compilation/execution med explicit profil och livscykel. |
-| `Adapter` | Versionssatt post-commit-projektion mellan ett immutable TextabanaResult och en extern host, standard eller tjänst. |
-| `Candidate` | Immutable modell- eller verktygsförslag på revision 0, utan mänskligt decision state. |
-| `Review revision` | Append-only mänsklig handling och ny revision som accepterar, avvisar eller ersätter en kandidat. |
-| `Current view` | Härledd lista över nu accepterade annotationer; den raderar aldrig historiska kandidater eller revisioner. |
-| `ConformanceReport` | Maskinläsbar, source-result-bunden evidens för ett versionssatt suite-case; separat från canonical Result och CI-status. |
-| `Golden fixture` | Incheckad input och expected structural digest som inte beräknas från samma aktuella run. |
-| `Declared vs claimable` | Declared support beskriver katalogen; claimable kräver att alla tillämpliga krav passerar. Contract-only är aldrig claimable. |
-| `Conformance gate` | Härledd blockeringslista för failed requirements, stagefel och golden-regressioner i det aktuella caset. |
+| `SourceDocument` | Immutable, versioned text source with a logical identity and base URI. |
+| `CST` | Lossless concrete syntax representation from Lezer; preserves lexemes and line endings without deciding domain execution. |
+| `AST` | Normalized block tree with typed stages, literal nodes and recovery; interval events remain separately modeled. |
+| `SourceSpan` | Zero-based, half-open Unicode code point range with one-based line and zero-based column projections. |
+| `RecoveryNode` | Local representation of malformed or missing syntax. Always non-executable, but enables partial editor structure. |
+| `Block` | Strictly nested function region whose complete pipeline runs before ambient inheritance. |
+| Interval | Open, identifiable scope active over one or more text segments. |
+| `Property` | Non-executable metadata on a Markdown AST unit. |
+| `TextabanaIR` | Host-neutral semantic representation of the source snapshot. |
+| `ExecutionPlan` | Executable, typed and capability-validated stage graph for a host. |
+| `ExecutionGraph` | Pre-transform DAG with source, stage, merge and render nodes and explicit typed dependencies. |
+| `Typed edge` | Directed value or control dependency with named ports, edge kind and deterministic order key. |
+| `ExecutionTrace` | Observed sequence of stage resolutions in execution-step/lab-v2; functionInvoked distinguishes fresh invocation from cache materialization and every entry binds to the graph through planNodeRef. |
+| `Invalidation preview` | Advisory, history-dependent comparison of a baseline graph and target graph; not a cache hit or execution. |
+| `Cache eligibility / hit / reuse` | Distinct states for static safety assessment, an actual lookup hit and actually reused stage output. |
+| `Scheduler wave` | Deterministic ready set of independent stages; settlement may overlap, but trace, cache journal and value commit always follow plan order. |
+| `Resource report` | Run-bound account of requested/effective limits and actual stage, event, render, deadline and concurrency usage. |
+| `TextabanaValue` | Portable typed value envelope in pipelines and the runtime protocol. |
+| `DocumentSnapshot` | Immutable text content for a documentId at a monotonic documentRevision and content-bound documentVersion. |
+| `ChangeSet` | Atomic, version-guarded set of sorted, non-overlapping text patches. |
+| `Anchor` | Immutable, version-bound target record with selectors; cross-revision continuity is a separate, explicit resolution. |
+| `MetadataDelta` | Post-commit comparison between two immutable metadata snapshots, filtered for an editor subscription. |
+| `SourceMap` | Many-to-many relation between output selectors and input anchors. |
+| `render` | Primary result value from the return pipeline; not an ordinary channel. |
+| `Channel` | Named, typed append-only event stream within a run. |
+| `system.out` | Reserved channel for editor and position-bound metadata. |
+| `ArtifactRef` | Content-addressed reference to a large or binary payload. |
+| `Run` | Versioned compilation/execution with an explicit profile and lifecycle. |
+| `Adapter` | Versioned post-commit projection between an immutable TextabanaResult and an external host, standard or service. |
+| `Candidate` | Immutable model or tool proposal at revision 0 without human decision state. |
+| `Review revision` | Append-only human action and a new revision accepting, rejecting or replacing a candidate. |
+| `Current view` | Derived list of currently accepted annotations; never deletes historical candidates or revisions. |
+| `ConformanceReport` | Machine-readable, source-result-bound evidence for a versioned suite case; separate from canonical Result and CI status. |
+| `Golden fixture` | Checked-in input and expected structural digest that are not computed from the same current run. |
+| `Declared vs claimable` | Declared support describes the catalog; claimable requires every applicable requirement to pass. Contract-only is never claimable. |
+| `Conformance gate` | Derived blocker list for failed requirements, stage failures and golden regressions in the current case. |
 
-**Specifikationens riktning**
+**Specification direction**
 
-Textabana återanvänder etablerade format där de redan löser problemet: Markdown för läsbar text, JSON Schema för kontrakt, Arrow/Parquet för data, MIME för notebookpresentation, W3C-modeller för annotation/proveniens och LSP/OTel/OpenLineage/MLflow som adaptrar. Det nya är den sammanhängande semantiken mellan dem.
+Textabana reuses established formats where they already solve the problem: Markdown for readable text, JSON Schema for contracts, Arrow/Parquet for data, MIME for notebook presentation, W3C models for annotation/provenance, and LSP/OTel/OpenLineage/MLflow as adapters. Its contribution is the coherent semantics connecting them.
 
-Detta är inriktningen. [Standardmatrisen](./direction.md) visar vad som är implementerat, avgränsat eller planerat och varför kanalernas JSON Schema-validering är en prioriterad avvikelse.
+This is the direction. The [standards matrix](./direction.md) shows what is implemented, bounded or planned and why channel JSON Schema validation is a priority deviation.

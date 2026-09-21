@@ -1,69 +1,69 @@
 # Playground Labs
 
-Language & Scope, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review och Conformance använder samma valda källa och run. Language-vyn skiljer Parser, pre-transform Graf och observerat Körspår: partial CST/AST/IR kan visas när compile gate blockerar körning, medan en giltig run visar hela grafen även om exekveringen senare avbryts.
+Language & Scope, Editor Kernel, Editor Metadata, Channel & Result, Data & Lineage, Notebook Interop, Annotation & Review and Conformance use the same selected source and run. The Language view separates Parser, pre-transform Graph and observed Execution trace: partial CST/AST/IR can be displayed when the compile gate blocks execution, while a valid run shows the whole graph even if execution is subsequently interrupted.
 
-01**Language & Scope Lab**
+**01 · Language & Scope Lab**
 
-Lossless CST, AST, typed IR, recovery, source spans, scope-segment, pre-transform DAG, advisory invalidation, scheduler-waves/run-budget, faktisk execution report, planordnat `planNodeRef`-bundet körspår och render.
+Lossless CST, AST, typed IR, recovery, source spans, scope segments, pre-transform DAG, advisory invalidation, scheduler waves/run budget, actual execution report, a plan-ordered `planNodeRef`-bound execution trace and render.
 
 Live · verified-stage-cache · bounded async branch subset
 
-02**Editor Kernel Lab**
+**02 · Editor Kernel Lab**
 
-Open document, revisionguardad ChangeSet, captured run snapshot, subscriptionfiltrerat metadata-delta och anchor continuity.
+Open document, revision-guarded ChangeSet, captured run snapshot, subscription-filtered metadata delta and anchor continuity.
 
 Live · editor-kernel-revisions · editor-kernel/1 subset
 
-03**Editor Metadata Lab**
+**03 · Editor Metadata Lab**
 
-system.out, metadatagutter, row/line, Anchor och SourceMap i den aktuella revisionen.
+system.out, metadata gutter, row/line, Anchor and SourceMap in the current revision.
 
 Live · editor-revision
 
-04**Channel & Result Lab**
+**04 · Channel & Result Lab**
 
-ChannelDescriptors, strict mode, global eventtimeline, snapshots och atomiskt Result JSON.
+ChannelDescriptors, strict mode, global event timeline, snapshots and atomic Result JSON.
 
 Live · channel-fanout + failed-run
 
-05**Data & Lineage Lab**
+**05 · Data & Lineage Lab**
 
-JSON-tabell, schema-events, stabila recordId, deterministisk inner join, derived aggregation och cell-/record-lineage.
+JSON table, schema events, stable recordId, deterministic inner join, derived aggregation and cell/record lineage.
 
 Live · data-join · data/1 playground-subset
 
-06**Notebook Interop Lab**
+**06 · Notebook Interop Lab**
 
-Whole-snapshot, stabila cell-id:n, tre MIME-representationer, explicit state och digest-baserad stale detection.
+Whole snapshot, stable cell ids, three MIME representations, explicit state and digest-based stale detection.
 
 Live · notebook-snapshot · notebook/1 playground-subset
 
-07**Annotation & AI Review Lab**
+**07 · Annotation & AI Review Lab**
 
-Immutable AI-kandidater, confidence method, append-only human review, revisionskedja, Anchor-targets samt W3C- och Label Studio-export.
+Immutable AI candidates, confidence method, append-only human review, revision chain, Anchor targets and W3C/Label Studio export.
 
 Live · annotation-review · annotation/1 playground-subset
 
-08**Conformance Lab**
+**08 · Conformance Lab**
 
-Profilval, capability response, stage gates, normalized golden snapshot, strukturell diff, exakta negativa cases och kooperativ cancellation.
+Profile selection, capability response, stage gates, normalized golden snapshot, structural diff, exact negative cases and cooperative cancellation.
 
 Live · conformance-golden · report/lab-v1
 
-### Gemensamt playgroundkontrakt
+### Shared playground contract
 
 <a id="PLAYGROUND-001"></a>
 
-> **PLAYGROUND-001** Alla labs BÖR använda samma lilla dokument, modulmanifest, inputdata och förväntade resultatsnapshot så att relationen mellan vyerna är verifierbar.
+> **PLAYGROUND-001** All labs SHOULD use the same small document, module manifest, input data and expected result snapshot so that the relationship between views is verifiable.
 
 <a id="PLAYGROUND-002"></a>
 
-> **PLAYGROUND-002** Varje lab MÅSTE skilja författad källa, kompilerad semantik, runtimeevents och adapterprojektion visuellt.
+> **PLAYGROUND-002** Every lab MUST visually distinguish authored source, compiled semantics, runtime events and adapter projection.
 
 <a id="PLAYGROUND-003"></a>
 
-> **PLAYGROUND-003** En funktion som UI:t ännu inte implementerar MÅSTE visas som planned/unsupported och får inte simuleras som konformt resultat.
+> **PLAYGROUND-003** A function that the UI does not yet implement MUST be shown as planned/unsupported and cannot be simulated as a conforming result.
 
 <a id="PLAYGROUND-004"></a>
 
-> **PLAYGROUND-004** Golden fixtures ska kunna exporteras och köras headless i samma conformance suite som UI:t visualiserar.
+> **PLAYGROUND-004** Golden fixtures are to be exportable and runnable headlessly in the same conformance suite that the UI visualizes.

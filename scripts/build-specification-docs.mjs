@@ -39,11 +39,12 @@ for (const id of Object.keys(overrides)) if (!ids.has(id)) throw new Error(`Stal
 for (const r of requirements) for (const ref of [...r.contract, ...r.implementation, ...r.verification]) await access(new URL(ref.split("#")[0], root));
 
 outputs.set("public/docs/specification.json", `${JSON.stringify({ schema: "textabana.specification-projection/v1", revision: catalog.revision, groups: catalog.groups, sections: documents.map((section) => ({ id: section.id, source: section.source, label: section.label, language: section.language, number: section.number, layer: section.layer, normative: section.normative, implementation: section.implementation, title: section.title, blocks: section.blocks })) }, null, 2)}\n`);
-outputs.set("public/docs/requirements.json", `${JSON.stringify({ schema: "textabana.documentation-index/v2", sourceFormat: "markdown", reviewedAt: "2026-09-20", profileConformance: false, interpretation: "Source references and boundaries per requirement; no automatic test or standards conformance.", requirements }, null, 2)}\n`);
+outputs.set("public/docs/requirements.json", `${JSON.stringify({ schema: "textabana.documentation-index/v2", sourceFormat: "markdown", reviewedAt: "2026-09-21", profileConformance: false, interpretation: "Source references and boundaries per requirement; no automatic test or standards conformance.", requirements }, null, 2)}\n`);
 const reference = [
   "# Specification reference", "",
+  "For implementation APIs, see the [host SDK and transport reference](sdk.md).", "",
   "Language & Interop draft 0.7, Language 0.4. These Markdown documents are the authored source for the application's Specification view. Edit a section here, then run `npm run docs:build`; check generated projections with `npm run docs:check`.", "",
-  "English translation is in progress. The current structural migration preserves all 144 normative requirements and 43 code examples from sprint 5.10. Remaining Swedish sections are identified below and in the application. See the [language migration register](../english-migration.md).", "",
+  "All 34 sections and 144 requirements are authored in English. The [translation ledger](../translation-ledger.json) retains each Swedish source and reviewed English target; the [glossary](../translation-glossary.md) defines the terminology. All 43 code examples retain their original bytes, including deliberate multilingual input. See the [language migration register](../english-migration.md) for the rest of the codebase.", "",
   "The target specification, implementation status and versioned conformance profiles have different authority. Read the [architecture guide](../architecture.md#authority) and [conformance tools](../../conformance/README.md) before making a claim.", "",
   "## Sections", "", "| Section | Source language |", "|---|---|",
   ...documents.map((section) => `| [${section.title}](specification/${section.id}.md) | ${section.language === "en" ? "English" : "Swedish; translation pending"} |`), "",
@@ -78,7 +79,7 @@ for (const [path, content] of outputs) {
 }
 if (mismatches.length) throw new Error(`Stale documentation artifacts: ${mismatches.join(", ")}. Run node scripts/build-specification-docs.mjs`);
 // Check local document links without treating code examples as live links.
-const authoredGuides = ["README.md", "CONTRIBUTING.md", "docs/README.md", "docs/development.md", "docs/architecture.md", "docs/english-migration.md", "docs/INTEGRATION_GUIDE.md", "docs/STANDARDS_DIRECTION.md", "docs/reference/README.md"];
+const authoredGuides = ["README.md", "CONTRIBUTING.md", "docs/README.md", "docs/development.md", "docs/architecture.md", "docs/english-migration.md", "docs/INTEGRATION_GUIDE.md", "docs/STANDARDS_DIRECTION.md", "docs/reference/README.md", "docs/reference/sdk.md", "docs/translation-glossary.md", "sdk/README.md"];
 for (const path of [...authoredGuides, ...documents.map((document) => document.source)]) {
   let fence = null;
   for (const line of (await read(path)).split("\n")) {

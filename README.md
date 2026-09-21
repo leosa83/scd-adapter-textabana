@@ -8,7 +8,7 @@ Textabana turns readable text into a position-aware interface for structured app
 
 This is an experimental engine and reference playground. Language 0.4 and Interop draft 0.7 have explicitly limited implementations and versioned conformance profiles. A passing profile is evidence for its declared scope, not full production or standards conformance.
 
-The repository is being consolidated for an open-source release. A project license has not yet been selected, and the application workspace is not a published npm package. English is the primary language; the [migration register](docs/english-migration.md) identifies remaining Swedish reference text, lab panels and runtime messages.
+The repository is being consolidated for an open-source release. A project license has not yet been selected, and the application workspace is not a published npm package. The specification, application controls, lab explanations and SDK reference are in English. The [migration register](docs/english-migration.md) identifies remaining runtime messages, version-bound profiles and historical material.
 
 ## Run from source
 
@@ -58,7 +58,7 @@ The eight labs cover Language & Scope, Editor Kernel, Editor Metadata, Channel &
 
 | Task | Entry point |
 |---|---|
-| Embed the kernel | [Integration guide](docs/INTEGRATION_GUIDE.md), [`sdk/`](sdk/) and [`examples/integration/`](examples/integration/) |
+| Embed the kernel | [Integration guide](docs/INTEGRATION_GUIDE.md), [SDK reference](docs/reference/sdk.md) and [`examples/integration/`](examples/integration/) |
 | Understand the implementation | [Architecture map](docs/architecture.md) |
 | Read normative requirements | [Specification reference](docs/reference/README.md) and [requirement index](public/docs/requirements.json) |
 | Reproduce a profile claim | [Conformance guide](conformance/README.md) |

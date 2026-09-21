@@ -1,23 +1,23 @@
 # Annotation and observability
 
-Textabana skiljer modellens förslag från människans beslut. Kärnan lagrar kandidat, review och revision som separata events med samma stabila annotation-identitet. En post-commit-adapter projicerar kedjan till externa standarder utan att göra deras format till ny kärnsemantik.
+Textabana separates a model's proposal from a person's decision. The kernel stores candidate, review and revision as separate events with the same stable annotation identity. A post-commit adapter projects the chain to external standards without making their formats new core semantics.
 
-**Körbar Annotation & AI Review-subset**
+**Executable Annotation & AI Review subset**
 
-`annotation/1` kör whole snapshots, stabila annotation-id:n, modell-/prompt-/inputdigests, explicit confidence method, accept/reject/supersede och resolverbara W3C- samt Label Studio-projektioner. Digests är märkta `fnv1a-lab`; verklig modellkörning, persistent review store och `ml-lineage/1` är inte simulerade.
+`annotation/1` supports whole snapshots, stable annotation ids, model/prompt/input digests, an explicit confidence method, accept/reject/supersede and resolvable W3C and Label Studio projections. Digests are labeled `fnv1a-lab`; actual model execution, a persistent review store and `ml-lineage/1` are not simulated.
 
-### Exakt exekverad annotationsmodell i playgrounden
+### Exact annotation model executed in the playground
 
-| Kanal | Payload | Semantik |
+| Channel | Payload | Semantics |
 | --- | --- | --- |
-| `annotation.set` | setId, wholeSnapshot, authoredOrder, candidateIds, currentIds, counts, setDigest | Exakt en komplett snapshot som låser eventmängd, ordning och current view. |
-| `annotation.candidates` | annotationId, revision 0, body, model, prompt, inputDigest, confidence | Immutable modellfakta. Payloaden innehåller aldrig decision, reviewer eller supersededBy. |
-| `annotation.reviews` | reviewId, candidateEventRef, revision 1, decision, reviewer, reviewDigest | Append-only mänsklig handling. accept, reject och supersede är de enda besluten i lab-subseten. |
-| `annotation.revisions` | revisionId, state, basedOnEventRef, reviewEventRef, supersedes/supersededBy | Materialiserat reviewutfall plus eventuell explicit mänsklig ersättare. |
+| `annotation.set` | setId, wholeSnapshot, authoredOrder, candidateIds, currentIds, counts, setDigest | Exactly one complete snapshot fixing the event set, order and current view. |
+| `annotation.candidates` | annotationId, revision 0, body, model, prompt, inputDigest, confidence | Immutable model facts. The payload never contains decision, reviewer or supersededBy. |
+| `annotation.reviews` | reviewId, candidateEventRef, revision 1, decision, reviewer, reviewDigest | Append-only human action. accept, reject and supersede are the only decisions in the lab subset. |
+| `annotation.revisions` | revisionId, state, basedOnEventRef, reviewEventRef, supersedes/supersededBy | Materialized review outcome plus an optional explicit human replacement. |
 
-### Lättviktig reviewkälla
+### Lightweight review source
 
-Körbar fixture · annotation-review · textabana
+Executable fixture · annotation-review · textabana
 
 ```textabana
 >>>>! include "./modules/annotation.js"
@@ -34,27 +34,27 @@ Positionen kräver extern verifiering.
 <<<< annotation_review
 ```
 
-**Review är källstyrd i denna fresh-runtime**
+**Review is source-driven in this fresh runtime**
 
-Playgrounden visar inga knappar som låtsas spara beslut. Ändra `decision` i källan och kör igen: kandidatens fakta förblir separata, medan ett nytt review-event och revision 1 materialiserar beslutet i den nya snapshoten.
+The playground has no buttons that pretend to save decisions. Change `decision` in the source and run again: the candidate's facts remain separate, while a new review event and revision 1 materialize the decision in the new snapshot.
 
-### Interopmappning
+### Interoperability mapping
 
-| Teknik | Roll | Textabana mapping |
+| Technology | Role | Textabana mapping |
 | --- | --- | --- |
-| W3C Web Annotation | Portabel annotationsexport | Körbar AnnotationPage; target kopierar versionerad Anchor med position/quote selectors och anchorRef. |
-| W3C PROV | Semantisk proveniens | Source/result/event/artifact = Entity; stage/run = Activity; människa/runtime/modul/model = Agent. |
-| LSP | Transient editorprojection | Diagnostics, semantic tokens, inlay hints och code actions; aldrig canonical storage. |
-| OpenLineage | Data pipeline lineage | Job, Run och Dataset från Plan, Run och Artifact/Data outputs. |
-| OpenTelemetry | Operativ observability | Trace, logs och metrics med traceId/spanId; inte semantisk sanning. |
-| CloudEvents | Distribuerad eventtransport | Export av event envelope med idempotent event identity. |
-| MLflow | Experiment och modellartifacts | Parametrar, metrics, models och artifacts från run/proveniens. |
-| Label Studio | Annoteringsverktyg | Körbar task/import-subset med choices-resultat och Textabana-referenser i meta; ingen API-/projektroundtrip. |
-| doccano / Prodigy / brat | Ytterligare annoteringsverktyg | Planerade adapterprofiler via Anchor + Annotation + review relations. |
+| W3C Web Annotation | Portable annotation export | Executable AnnotationPage; target copies a versioned Anchor with position/quote selectors and anchorRef. |
+| W3C PROV | Semantic provenance | Source/result/event/artifact = Entity; stage/run = Activity; person/runtime/module/model = Agent. |
+| LSP | Transient editor projection | Diagnostics, semantic tokens, inlay hints and code actions; never canonical storage. |
+| OpenLineage | Data pipeline lineage | Job, Run and Dataset from Plan, Run and Artifact/Data outputs. |
+| OpenTelemetry | Operational observability | Traces, logs and metrics with traceId/spanId; not semantic truth. |
+| CloudEvents | Distributed event transport | Event envelope export with idempotent event identity. |
+| MLflow | Experiments and model artifacts | Parameters, metrics, models and artifacts from run/provenance. |
+| Label Studio | Annotation tool | Executable task/import subset with choices results and Textabana references in meta; no API/project round trip. |
+| doccano / Prodigy / brat | Additional annotation tools | Planned adapter profiles through Anchor + Annotation + review relations. |
 
-### Immutable modellkandidat
+### Immutable model candidate
 
-Kanoniskt eventpayload · annotation.candidates · json
+Canonical event payload · annotation.candidates · json
 
 ```json
 {
@@ -69,9 +69,9 @@ Kanoniskt eventpayload · annotation.candidates · json
 }
 ```
 
-### W3C target återanvänder Anchor
+### W3C target reuses Anchor
 
-Körbar adapterprojektion · json
+Executable adapter projection · json
 
 ```json
 "target": {
@@ -84,9 +84,9 @@ Körbar adapterprojektion · json
 }
 ```
 
-### Label Studio task/import-subset
+### Label Studio task/import subset
 
-Körbar adapterprojektion · json
+Executable adapter projection · json
 
 ```json
 { "id": "ann-route",
@@ -99,36 +99,43 @@ Körbar adapterprojektion · json
 
 <a id="ANNOTATION-001"></a>
 
-> **ANNOTATION-001** Intern annotation MÅSTE stödja span, document classification, relation och review state. W3C Web Annotation är en import/exportprofil, inte hela kärnmodellen.
+> **ANNOTATION-001** Internal annotation MUST support spans, document classification, relations and review state. W3C Web Annotation is an import/export profile, not the entire core model.
 
 <a id="ANNOTATION-002"></a>
 
-> **ANNOTATION-002** Human-in-the-loop MÅSTE skapa ett separat review-event och en ny reviewed revision. Modellkandidatens ursprungliga fakta får inte muteras. Endast `supersede` kräver en explicit ersättare med ömsesidiga `supersededBy`/`supersedes`-relationer.
+> **ANNOTATION-002** Human-in-the-loop review MUST create a separate review event and a new reviewed revision. The model candidate's original facts cannot be mutated. Only `supersede` requires an explicit replacement with reciprocal `supersededBy`/`supersedes` relations.
 
 <a id="ANNOTATION-003"></a>
 
-> **ANNOTATION-003** En AI-kandidat MÅSTE ange stabilt annotationId, modell-id/version/digest, prompt-id/digest, inputdigest samt confidence score och metod. Confidence är evidensmetadata, inte sanningssannolikhet.
+> **ANNOTATION-003** An AI candidate MUST state a stable annotationId, model id/version/digest, prompt id/digest, input digest and confidence score and method. Confidence is evidence metadata, not the probability of truth.
 
 <a id="ANNOTATION-004"></a>
 
-> **ANNOTATION-004** Varje durable candidate, review och revision MÅSTE lösas genom Event, AnnotationSelector, Anchor, SourceMap och generating Activity. En exporterad target får inte uppfinna fristående offsets.
+> **ANNOTATION-004** Every durable candidate, review and revision MUST be resolvable through Event, AnnotationSelector, Anchor, SourceMap and generating Activity. An exported target cannot invent independent offsets.
 
 <a id="ANNOTATION-005"></a>
 
-> **ANNOTATION-005** W3C Web Annotation och annoteringsverktygsformat är adapterprojektioner. De får inte skriva tillbaka extern formatsemantik till kandidat- eller revieweventen utan en explicit importerad ny revision.
+> **ANNOTATION-005** W3C Web Annotation and annotation-tool formats are adapter projections. They cannot write external format semantics back into candidate or review events without an explicitly imported new revision.
 
 <a id="ANNOTATION-006"></a>
 
-> **ANNOTATION-006** En whole annotation snapshot MÅSTE validera unika id:n, counts, länkar, beslut, current view och acyklisk supersede-kedja före commit. Den aktuella lab-subseten begränsar varje target till en icke-tom textrad.
+> **ANNOTATION-006** A whole annotation snapshot MUST validate unique ids, counts, links, decisions, current view and an acyclic supersede chain before commit. The current lab subset limits each target to one non-empty text line.
 
 <a id="PROV-001"></a>
 
-> **PROV-001** Varje durable output MÅSTE länka till generating Activity och använda inputanchors/entities. Operativa traces FÅR länkas men ersätter inte semantic provenance.
+> **PROV-001** Every durable output MUST link to its generating Activity and the input anchors/entities used. Operational traces MAY be linked but do not replace semantic provenance.
 
 <a id="EXT-001"></a>
 
-> **EXT-001** Okända namespaced extensionfält MÅSTE round-trippas av adaptrar som inte förstår dem.
+> **EXT-001** Unknown namespaced extension fields MUST round-trip through adapters that do not understand them.
 
-### Standardreferenser
+### Standard references
 
-[**Lezer** — Editorparser, CST, recovery och inkrementell återanvändning](https://lezer.codemirror.net/docs/guide/)[**JSON Schema 2020-12** — Validering av portabla JSON-kontrakt](https://json-schema.org/draft/2020-12)[**W3C Web Annotation** — Annotationsexport](https://www.w3.org/TR/2017/REC-annotation-model-20170223/)[**W3C PROV-O** — Proveniensexport](https://www.w3.org/TR/2013/REC-prov-o-20130430/)[**Jupyter Messaging** — Kerneltransport](https://jupyter-client.readthedocs.io/en/stable/messaging.html)[**nbformat** — Notebookprojection och cell ids](https://nbformat.readthedocs.io/en/latest/format_description.html)[**Apache Arrow** — Tabulärt dataplan](https://arrow.apache.org/docs/format/Columnar.html)[**CloudEvents** — Distribuerad eventexport](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md)
+- [**Lezer** — Editor parser, CST, recovery and incremental reuse](https://lezer.codemirror.net/docs/guide/)
+- [**JSON Schema 2020-12** — Validation of portable JSON contracts](https://json-schema.org/draft/2020-12)
+- [**W3C Web Annotation** — Annotation export](https://www.w3.org/TR/2017/REC-annotation-model-20170223/)
+- [**W3C PROV-O** — Provenance export](https://www.w3.org/TR/2013/REC-prov-o-20130430/)
+- [**Jupyter Messaging** — Kernel transport](https://jupyter-client.readthedocs.io/en/stable/messaging.html)
+- [**nbformat** — Notebook projection and cell ids](https://nbformat.readthedocs.io/en/latest/format_description.html)
+- [**Apache Arrow** — Tabular data plane](https://arrow.apache.org/docs/format/Columnar.html)
+- [**CloudEvents** — Distributed event export](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md)

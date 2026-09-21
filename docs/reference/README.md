@@ -1,8 +1,10 @@
 # Specification reference
 
+For implementation APIs, see the [host SDK and transport reference](sdk.md).
+
 Language & Interop draft 0.7, Language 0.4. These Markdown documents are the authored source for the application's Specification view. Edit a section here, then run `npm run docs:build`; check generated projections with `npm run docs:check`.
 
-English translation is in progress. The current structural migration preserves all 144 normative requirements and 43 code examples from sprint 5.10. Remaining Swedish sections are identified below and in the application. See the [language migration register](../english-migration.md).
+All 34 sections and 144 requirements are authored in English. The [translation ledger](../translation-ledger.json) retains each Swedish source and reviewed English target; the [glossary](../translation-glossary.md) defines the terminology. All 43 code examples retain their original bytes, including deliberate multilingual input. See the [language migration register](../english-migration.md) for the rest of the codebase.
 
 The target specification, implementation status and versioned conformance profiles have different authority. Read the [architecture guide](../architecture.md#authority) and [conformance tools](../../conformance/README.md) before making a claim.
 
@@ -11,39 +13,39 @@ The target specification, implementation status and versioned conformance profil
 | Section | Source language |
 |---|---|
 | [Readable text as an executable, position-aware semantic source](specification/definition.md) | English |
-| [Status and norms](specification/status.md) | Swedish; translation pending |
-| [Direction and standards](specification/direction.md) | Swedish; translation pending |
-| [Textabana and HTML](specification/html.md) | Swedish; translation pending |
-| [Architecture](specification/architecture.md) | Swedish; translation pending |
-| [Semantic contract](specification/contract.md) | Swedish; translation pending |
-| [Source and values](specification/source-value.md) | Swedish; translation pending |
-| [Parser, syntax and recovery](specification/syntax.md) | Swedish; translation pending |
-| [Blocks and intervals](specification/blocks-intervals.md) | Swedish; translation pending |
-| [Inheritance](specification/inheritance.md) | Swedish; translation pending |
-| [Properties and includes](specification/properties-modules.md) | Swedish; translation pending |
-| [Processing model](specification/processing.md) | Swedish; translation pending |
-| [IR, graph, plan and trace](specification/ir-plan.md) | Swedish; translation pending |
-| [Anchors and source maps](specification/anchors.md) | Swedish; translation pending |
-| [TextabanaResult](specification/result.md) | Swedish; translation pending |
-| [Typed channels](specification/channels.md) | Swedish; translation pending |
-| [system.out](specification/system-out.md) | Swedish; translation pending |
-| [Artifacts and sinks](specification/artifacts.md) | Swedish; translation pending |
-| [Manifests and functions](specification/module-manifest.md) | Swedish; translation pending |
-| [Runtime protocol](specification/runtime-protocol.md) | Swedish; translation pending |
-| [Editor Kernel](specification/editor-kernel.md) | Swedish; translation pending |
-| [Integrate the kernel](specification/integration.md) | Swedish; translation pending |
-| [Runs and transactions](specification/runs.md) | Swedish; translation pending |
-| [Security](specification/security.md) | Swedish; translation pending |
-| [Adapter contract](specification/adapter-contract.md) | Swedish; translation pending |
-| [Jupyter and notebooks](specification/notebooks.md) | Swedish; translation pending |
-| [Data, AI and ML](specification/data-ai.md) | Swedish; translation pending |
-| [Annotation and observability](specification/annotation-observability.md) | Swedish; translation pending |
-| [Use cases](specification/use-cases.md) | Swedish; translation pending |
-| [Profiles and versions](specification/conformance.md) | Swedish; translation pending |
-| [Contract sources and requirements](specification/documentation-sources.md) | Swedish; translation pending |
-| [Error model](specification/errors.md) | Swedish; translation pending |
-| [Playground Labs](specification/playgrounds.md) | Swedish; translation pending |
-| [Glossary](specification/glossary.md) | Swedish; translation pending |
+| [Status and norms](specification/status.md) | English |
+| [Direction and standards](specification/direction.md) | English |
+| [Textabana and HTML](specification/html.md) | English |
+| [Architecture](specification/architecture.md) | English |
+| [Semantic contract](specification/contract.md) | English |
+| [Source and values](specification/source-value.md) | English |
+| [Parser, syntax and recovery](specification/syntax.md) | English |
+| [Blocks and intervals](specification/blocks-intervals.md) | English |
+| [Inheritance](specification/inheritance.md) | English |
+| [Properties and includes](specification/properties-modules.md) | English |
+| [Processing model](specification/processing.md) | English |
+| [IR, graph, plan and trace](specification/ir-plan.md) | English |
+| [Anchors and source maps](specification/anchors.md) | English |
+| [TextabanaResult](specification/result.md) | English |
+| [Typed channels](specification/channels.md) | English |
+| [system.out](specification/system-out.md) | English |
+| [Artifacts and sinks](specification/artifacts.md) | English |
+| [Manifests and functions](specification/module-manifest.md) | English |
+| [Runtime protocol](specification/runtime-protocol.md) | English |
+| [Editor Kernel](specification/editor-kernel.md) | English |
+| [Integrate the kernel](specification/integration.md) | English |
+| [Runs and transactions](specification/runs.md) | English |
+| [Security](specification/security.md) | English |
+| [Adapter contract](specification/adapter-contract.md) | English |
+| [Jupyter and notebooks](specification/notebooks.md) | English |
+| [Data, AI and ML](specification/data-ai.md) | English |
+| [Annotation and observability](specification/annotation-observability.md) | English |
+| [Use cases](specification/use-cases.md) | English |
+| [Profiles and versions](specification/conformance.md) | English |
+| [Contract sources and requirements](specification/documentation-sources.md) | English |
+| [Error model](specification/errors.md) | English |
+| [Playground Labs](specification/playgrounds.md) | English |
+| [Glossary](specification/glossary.md) | English |
 
 ## Stable contracts and history
 

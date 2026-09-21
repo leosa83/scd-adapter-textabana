@@ -85,7 +85,7 @@ export function Specification() {
     </aside>
     <main className="docs-content spec-content" id="spec-main" tabIndex={-1}>
       <details className="mobile-spec-index"><summary>Contents · Interop 0.7</summary><SpecNav mobile /></details>
-      <p className="spec-language-note">English translation is in progress. Sections marked Swedish preserve the existing wording. <a href={`${repoRoot}docs/english-migration.md`}>Translation status</a> · <a href={`${repoRoot}docs/README.md`}>Documentation index</a></p>
+      <p className="spec-language-note">The specification is authored in English. Multilingual example inputs retain their original text. <a href={`${repoRoot}docs/english-migration.md`}>Translation record</a> · <a href={`${repoRoot}docs/README.md`}>Documentation index</a></p>
       {specification.sections.map((section) => <section className={section.id === "definition" ? "spec-hero" : "docs-section spec-section"} id={section.id} lang={section.language} key={section.id}>
         {section.id === "definition" ? <>
           <div className="spec-kicker" lang="en"><ShieldCheck aria-hidden="true" /> Language &amp; Interop Specification</div>

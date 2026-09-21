@@ -1,10 +1,10 @@
 # Anchors and source maps
 
-Rader flyttar sig när text redigeras. En hållbar metadataapplikation behöver därför versionerad target, flera selectors och en ärlig re-anchor-algoritm.
+Lines move when text is edited. A durable metadata application therefore needs a versioned target, multiple selectors and an explicit re-anchoring algorithm that reports uncertainty.
 
-### Kanoniskt Anchor
+### Canonical Anchor
 
-Normativt schemafragment · json
+Normative schema fragment · json
 
 ```json
 {
@@ -23,50 +23,53 @@ Normativt schemafragment · json
 }
 ```
 
-### Kanoniska selectors
+### Canonical selectors
 
-| Selector | Identifierar | När den används |
+| Selector | Identifies | Use |
 | --- | --- | --- |
-| `TextPositionSelector` | Halvöppet code-point-spann. | Exakt snapshot och snabb lookup. |
-| `TextQuoteSelector` | Exakt text med valfri prefix/suffix-context. | Re-anchor efter textredigering. |
-| `NodeSelector` | Semantisk IR-node. | Strukturell stabilitet över mindre ändringar. |
-| `CellSelector` | Stabilt notebook cell.id. | Notebookprofil. |
-| `DataSelector` | datasetId, recordId och valfri kolumn. | Tabell- och analyticsprofil. |
-| `Time/FragmentSelector` | Tid, bildregion eller annan coordinate space. | Namespaced extension. |
+| `TextPositionSelector` | Half-open code point span. | Exact snapshot and fast lookup. |
+| `TextQuoteSelector` | Exact text with optional prefix/suffix context. | Re-anchoring after a text edit. |
+| `NodeSelector` | Semantic IR node. | Structural stability across minor changes. |
+| `CellSelector` | Stable notebook cell.id. | Notebook profile. |
+| `DataSelector` | datasetId, recordId and an optional column. | Table and analytics profile. |
+| `Time/FragmentSelector` | Time, image region or another coordinate space. | Namespaced extension. |
 
 ### Coordinate spaces
 
-| view | Koordinat | Typiskt mål |
+| view | Coordinate | Typical target |
 | --- | --- | --- |
-| `source` | Unicode code points | Kanonisk textkälla. |
-| `generated` | Outputselector + SourceMap | Transformerat mellanvärde. |
-| `rendered` | Rendererspecifik selector | Visuell Markdown/HTML-projektion. |
-| `notebook` | cellId + source selector | Notebookcell. |
-| `table` | datasetId + recordId + column | Tabellrecord. |
-| `image / time` | Fragment eller time selector | Bild-, ljud- och videoregion. |
+| `source` | Unicode code points | Canonical text source. |
+| `generated` | Output selector + SourceMap | Transformed intermediate value. |
+| `rendered` | Renderer-specific selector | Visual Markdown/HTML projection. |
+| `notebook` | cellId + source selector | Notebook cell. |
+| `table` | datasetId + recordId + column | Table record. |
+| `image / time` | Fragment or time selector | Image, audio and video region. |
 
-### Re-anchor i bestämd ordning
+### Re-anchoring in a fixed order
 
-1 · Samma version → position2 · Stabil node/cell/record identity3 · Unik quote + context4 · Ambiguous/orphan + diagnostic
+1. Same version → position.
+2. Stable node/cell/record identity.
+3. Unique quote + context.
+4. Ambiguous/orphaned + diagnostic.
 
 <a id="ANCHOR-001"></a>
 
-> **ANCHOR-001** En durable annotation MÅSTE binda till en versionerad target och minst en selector. Position och quote BÖR lagras tillsammans.
+> **ANCHOR-001** A durable annotation MUST bind to a versioned target and at least one selector. Position and quote SHOULD be stored together.
 
 <a id="ANCHOR-002"></a>
 
-> **ANCHOR-002** En runtime får aldrig tyst välja en av flera re-anchor-kandidater. Flera giltiga kandidater MÅSTE ge `ambiguous`; ingen giltig kandidat MÅSTE ge `orphaned`. Båda utfallen ska förbli olösta och diagnostiserbara.
+> **ANCHOR-002** A runtime can never silently choose one of several re-anchoring candidates. Multiple valid candidates MUST produce `ambiguous`; the absence of a valid candidate MUST produce `orphaned`. Both outcomes are to remain unresolved and diagnosable.
 
 <a id="ANCHOR-003"></a>
 
-> **ANCHOR-003** Human-facing line och column är ettbaserade. LSP-adaptern MÅSTE konvertera till nollbaserade UTF-16-positioner.
+> **ANCHOR-003** Human-facing line and column are one-based. The LSP adapter MUST convert to zero-based UTF-16 positions.
 
-Detta avser presentation för människor. Serialiserad `SourceSpan` använder ettbaserade rader men nollbaserade code-point-kolumner och halvöppna offsets. CodeMirror-/Monaco-bindningarna konverterar UTF-16-offsets; en LSP-adapter är ännu planerad.
+This concerns human-facing presentation. Serialized `SourceSpan` uses one-based lines but zero-based code point columns and half-open offsets. The CodeMirror/Monaco bindings convert UTF-16 offsets; an LSP adapter remains planned.
 
 <a id="SOURCEMAP-001"></a>
 
-> **SOURCEMAP-001** Varje mapping record MÅSTE ange `exact`, `derived` eller `synthetic` samt generating activity. Aggregat är aldrig `exact` utan verifierat mapping proof.
+> **SOURCEMAP-001** Every mapping record MUST state `exact`, `derived` or `synthetic` and its generating activity. Aggregates are never `exact` without a verified mapping proof.
 
 **Editor Metadata Lab**
 
-Editor Metadata Lab producerar Anchor med position- och quote-selector och visar SourceMap-records. Editor Kernel Lab publicerar därutöver verkliga cross-revision transitions: stabilt anchor-id matchas först och unik quote + origin därefter; flera kandidater blir `ambiguous` och ingen kandidat blir `orphaned`. Persistens över worker-restart, strukturell/fuzzy matching och LSP-coordinate conversion återstår.
+Editor Metadata Lab produces Anchors with position and quote selectors and shows SourceMap records. Editor Kernel Lab additionally publishes actual cross-revision transitions: stable anchor id is matched first, then unique quote + origin; multiple candidates become `ambiguous` and no candidate becomes `orphaned`. Persistence across Worker restarts, structural/fuzzy matching and LSP coordinate conversion remain unimplemented.

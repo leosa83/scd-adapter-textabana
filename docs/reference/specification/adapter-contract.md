@@ -1,27 +1,27 @@
 # Adapter contract
 
-En adapter är en explicit, versionssatt post-commit-projektion av ett redan producerat `TextabanaResult`. Den får välja representation för en värd eller standard, men den får inte mutera källan, kärnresultatet eller dess semantiska identiteter.
+An adapter is an explicit, versioned post-commit projection of an already produced `TextabanaResult`. It may choose a representation for a host or standard, but cannot mutate the source, core result or its semantic identities.
 
-**Immutable Result** — exakt committad input
+**Immutable Result** — exact committed input
 
 **Adapter fan-out** — manifest · negotiation · pure projection
 
-**Projection envelopes** — separata · versionssatta · source-bound
+**Projection envelopes** — separate · versioned · source-bound
 
-### AdapterManifest — kontrakt före körning
+### AdapterManifest — contract before execution
 
-| Fält | Semantik | Sprint 1 |
+| Field | Semantics | Sprint 1 |
 | --- | --- | --- |
-| `adapterId / version / profile` | Oberoende adapteridentitet och profilanspråk. | Obligatoriskt och digestbundet. |
-| `accepts` | Tillåtna Result-scheman, profiler, channels och artifact kinds. | Förhandlas före projektion. |
-| `produces` | Projection kind, value kind, mediaType och schemaRef. | Exakt en output för referensadaptern. |
-| `capabilities` | Required och optional host-/runtimeförmågor. | Saknad required capability ger unsupported. |
-| `support` | playground-subset · contract-only · unsupported. | Contract-only får aldrig producera låtsasoutput. |
-| `fidelity` | lossless · selective · lossy samt omittedPaths. | Selektiv output måste behålla sourceResultRef. |
+| `adapterId / version / profile` | Independent adapter identity and profile claim. | Required and digest-bound. |
+| `accepts` | Accepted Result schemas, profiles, channels and artifact kinds. | Negotiated before projection. |
+| `produces` | Projection kind, value kind, mediaType and schemaRef. | Exactly one output for the reference adapter. |
+| `capabilities` | Required and optional host/runtime capabilities. | A missing required capability produces unsupported. |
+| `support` | playground-subset · contract-only · unsupported. | Contract-only can never produce fabricated output. |
+| `fidelity` | lossless · selective · lossy and omittedPaths. | Selective output must retain sourceResultRef. |
 
 ### AdapterManifest
 
-Körbar lab-envelope · json
+Executable lab envelope · json
 
 ```json
 {
@@ -43,7 +43,7 @@ Körbar lab-envelope · json
 
 ### AdapterProjection
 
-Körbar lab-envelope · json
+Executable lab envelope · json
 
 ```json
 {
@@ -62,28 +62,28 @@ Körbar lab-envelope · json
 
 <a id="ADAPTER-001"></a>
 
-> **ADAPTER-001** En adapter MÅSTE deklarera id, version, profil, accepterade resultatscheman, producerade representationer, kapabilitetsbehov och fidelity-policy innan den körs.
+> **ADAPTER-001** An adapter MUST declare its id, version, profile, accepted result schemas, produced representations, capability needs and fidelity policy before it runs.
 
 <a id="ADAPTER-002"></a>
 
-> **ADAPTER-002** Varje projektion MÅSTE referera till exakt `source resultId` och manifestdigest. Samma deterministiska input, manifestversion och konfiguration MÅSTE ge samma `projectionId`.
+> **ADAPTER-002** Every projection MUST reference the exact `source resultId` and manifest digest. The same deterministic input, manifest version and configuration MUST produce the same `projectionId`.
 
 <a id="ADAPTER-003"></a>
 
-> **ADAPTER-003** Adaptrar läser samma immutable Result som oberoende fan-out. Adapter-till-adapter-dataflöde kräver en explicit, acyklisk dependency edge; list- eller UI-ordning är aldrig semantik.
+> **ADAPTER-003** Adapters read the same immutable Result through independent fan-out. Adapter-to-adapter data flow requires an explicit, acyclic dependency edge; list or UI order is never semantic order.
 
 <a id="ADAPTER-004"></a>
 
-> **ADAPTER-004** Event identity, Anchor, SourceMap, artifact och provenance MÅSTE bevaras genom referens eller redovisas individuellt som förlust. Ett tomt loss-fält är ett verifierbart påstående.
+> **ADAPTER-004** Event identity, Anchor, SourceMap, artifact and provenance MUST be preserved by reference or individually reported as losses. An empty loss field is a verifiable assertion.
 
 <a id="ADAPTER-005"></a>
 
-> **ADAPTER-005** Ett adapterfel FÅR inte ändra core run status eller mutera ett committat Result. Felet returneras som adapterdiagnostik i adapterkörningen.
+> **ADAPTER-005** An adapter failure MUST NOT change core run status or mutate a committed Result. The failure is returned as adapter diagnostics in the adapter run.
 
 <a id="ADAPTER-006"></a>
 
-> **ADAPTER-006** En contract-only-deskriptor får förhandlas och inspekteras men får inte producera simulerad output eller användas som stöd för profilkonformitet.
+> **ADAPTER-006** A contract-only descriptor may be negotiated and inspected but cannot produce simulated output or serve as evidence of profile conformance.
 
-**Adaptergrunden i playgrounden**
+**Adapter foundation in the playground**
 
-`org.textabana.result-summary`, data-, notebook- och annotationadaptrarna körs efter commit som oberoende, rena projektioner. Adapterfliken visar manifest, source-result-bindning, stabil projektionidentitet, fidelity och resolverbara referenser. `org.textabana.ml-lineage` är fortsatt contract-only och producerar ingen simulerad modell- eller observabilityoutput.
+`org.textabana.result-summary` and the data, notebook and annotation adapters run after commit as independent, pure projections. The adapter tab shows the manifest, source-result binding, stable projection identity, fidelity and resolvable references. `org.textabana.ml-lineage` remains contract-only and produces no simulated model or observability output.

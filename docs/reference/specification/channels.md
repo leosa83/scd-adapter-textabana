@@ -1,10 +1,10 @@
 # Typed channels
 
-Kanaler följer logger-mönstrets öppna namnrymd, men ett kanalnamn måste lösa till en descriptor. JSON är kontrollplan; Arrow och ArtifactRef är dataplan.
+Channels follow the logging pattern's open namespace, but a channel name must resolve to a descriptor. JSON is the control plane; Arrow and ArtifactRef are the data plane.
 
-### ChannelDescriptor och event envelope
+### ChannelDescriptor and event envelope
 
-Normativt schemafragment · json
+Normative schema fragment · json
 
 ```json
 {
@@ -39,51 +39,51 @@ Normativt schemafragment · json
 }
 ```
 
-### ChannelDescriptor — portabelt kontrakt
+### ChannelDescriptor — portable contract
 
-| Fält | Tillåtna värden | Regel |
+| Field | Allowed values | Rule |
 | --- | --- | --- |
-| `name` | Öppet, namespaced namn | Måste vara unikt i resultatet; system.* är reserverat. |
-| `payloadKind / mediaType / schemaRef` | TextabanaValue + mediatyp + JSON Schema | Bestämmer validering och adapterval. |
-| `delivery` | snapshot · stream | Beskriver konsumtionssätt, inte commitstatus. |
-| `persistence` | durable · transient | Transient events ingår inte i committed snapshot. |
-| `ordering` | global-sequence eller deklarerad key | Måste ge reproducerbar iteration. |
-| `key` | Ett eller flera payloadfält | Valfri stabil domänidentitet/idempotency. |
-| `required` | boolean | Om avsaknad av event gör run invalid. |
-| `sensitivity` | Hostdefinierad klassificering | Får endast skärpas av en adapter, aldrig tyst sänkas. |
+| `name` | Open, namespaced name | Must be unique in the result; system.* is reserved. |
+| `payloadKind / mediaType / schemaRef` | TextabanaValue + media type + JSON Schema | Determine validation and adapter selection. |
+| `delivery` | snapshot · stream | Describes consumption mode, not commit status. |
+| `persistence` | durable · transient | Transient events are excluded from the committed snapshot. |
+| `ordering` | global-sequence or declared key | Must provide reproducible iteration. |
+| `key` | One or more payload fields | Optional stable domain identity/idempotency. |
+| `required` | boolean | Whether absence of an event makes the run invalid. |
+| `sensitivity` | Host-defined classification | An adapter may only tighten it, never silently lower it. |
 
-`return value`**Primärt värde**
+`return value` — **Primary value**
 
-Blir input till nästa steg och slutligen resultatets `render`.
+Becomes input to the next stage and ultimately the result's `render`.
 
-`context.emit(name, event)`**Sidoflöde**
+`context.emit(name, event)` — **Side flow**
 
-Appenderar ett validerat event utan att ändra pipelinevärdet.
+Appends a validated event without changing the pipeline value.
 
-`result.channel(name)`**Mål-API för läsning**
+`result.channel(name)` — **Target read API**
 
-Illustrativ hjälpare. Aktuell SDK läser `resultEnvelope.channelSnapshots[name].events` efter run.
+Illustrative helper. The current SDK reads `resultEnvelope.channelSnapshots[name].events` after a run.
 
 <a id="CHANNEL-001"></a>
 
-> **CHANNEL-001** Kanalnamn är obegränsade utom den reserverade namnrymden `system.*`. `render` är reserverat som resultatfält.
+> **CHANNEL-001** Channel names are unrestricted except for the reserved namespace `system.*`. `render` is reserved as a result field.
 
 <a id="CHANNEL-002"></a>
 
-> **CHANNEL-002** I strict profile MÅSTE descriptor och payloadschema deklareras före emit. En permissive legacyprofil FÅR syntetisera generisk JSON-descriptor vid första emit men får inte hävda typed-channel conformance.
+> **CHANNEL-002** In a strict profile, the descriptor and payload schema MUST be declared before emit. A permissive legacy profile MAY synthesize a generic JSON descriptor on the first emit but cannot claim typed-channel conformance.
 
 <a id="CHANNEL-003"></a>
 
-> **CHANNEL-003** Events är append-only inom en run. Ett schemafel, en cyklisk payload eller ett oserialiserbart värde MÅSTE avvisas — inte förlustkonverteras till text.
+> **CHANNEL-003** Events are append-only within a run. A schema error, cyclic payload or unserializable value MUST be rejected, not lossily converted to text.
 
 <a id="CHANNEL-004"></a>
 
-> **CHANNEL-004** Varje accepted emit får en order key `(planStep, invocationOrder, localEmitIndex)`. `sequence` tilldelas vid deterministic merge/commit.
+> **CHANNEL-004** Each accepted emit receives an order key `(planStep, invocationOrder, localEmitIndex)`. `sequence` is assigned during deterministic merge/commit.
 
 <a id="CHANNEL-005"></a>
 
-> **CHANNEL-005** En funktionsmodul körs inte en gång per kanal. Ett enda funktionsanrop FÅR emittera till valfritt många kanaler.
+> **CHANNEL-005** A function module does not run once per channel. A single function call MAY emit to any number of channels.
 
-**Strict channels i playgrounden**
+**Strict channels in the playground**
 
-Strict mode kräver en deklarerad descriptor och avvisar odeklarerade kanaler, reserverade namn samt cykliska eller icke-serialiserbara payloads. Egen payloadkontroll verkställer endast `type`, `required` och direkta `properties[*].type`. Exempelvis `$ref`, `enum`, `minimum` och nästlade constraints kan ignoreras; `schemaRef` löser inte automatiskt ett schema. Full JSON Schema 2020-12 för kanalpayloads återstår. Editor Kernel har credit-styrd metadata-streaming efter commit; kontinuerlig stage-streaming och generell sink-backpressure återstår.
+Strict mode requires a declared descriptor and rejects undeclared channels, reserved names and cyclic or non-serializable payloads. Handwritten payload checks enforce only `type`, `required` and direct `properties[*].type`. For example, `$ref`, `enum`, `minimum` and nested constraints can be ignored; `schemaRef` does not automatically resolve a schema. Full JSON Schema 2020-12 validation of channel payloads remains unimplemented. Editor Kernel has credit-controlled metadata streaming after commit; continuous stage streaming and general sink backpressure remain unimplemented.

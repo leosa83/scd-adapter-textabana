@@ -1,20 +1,20 @@
 # system.out
 
-`system.out` är inte Python-, process- eller Jupyter-stdout. Det är en reserverad, typad kanal för positionsbunden metadata och editorupplevelser.
+`system.out` is not Python, process or Jupyter stdout. It is a reserved, typed channel for position-bound metadata and editor experiences.
 
-### Kanoniska system.out kinds
+### Canonical system.out kinds
 
-| kind | Avsikt | Vanlig presentation |
+| kind | Purpose | Typical presentation |
 | --- | --- | --- |
-| `annotation` | Domänmetadata, relation eller review candidate. | Gutter, highlight, sidopanel. |
-| `diagnostic` | Positionsbunden varning eller information efter lyckad körning. | Squiggle, Problems-panel. |
-| `metric` | Mätvärde kopplat till dokument, span eller record. | Badge, chart, status. |
-| `progress` | Transient run-status. | Progressrad; aldrig durable domänoutput. |
-| `artifact-link` | Länk mellan position och ArtifactRef. | Preview, nedladdning, detaljpanel. |
+| `annotation` | Domain metadata, relation or review candidate. | Gutter, highlight, side panel. |
+| `diagnostic` | Position-bound warning or information after a successful run. | Squiggle, Problems panel. |
+| `metric` | Measurement bound to a document, span or record. | Badge, chart, status. |
+| `progress` | Transient run status. | Progress row; never durable domain output. |
+| `artifact-link` | Link between a position and ArtifactRef. | Preview, download, detail panel. |
 
-### Positionsbundet editorevent
+### Position-bound editor event
 
-Normativt 0.4-format · json
+Normative 0.4 format · json
 
 ```json
 {
@@ -35,32 +35,32 @@ Normativt 0.4-format · json
 
 **rowId**
 
-Durable domänidentitet inom deklarerad `rowSet` eller dataset.
+Durable domain identity within a declared `rowSet` or dataset.
 
 **row / line**
 
-Ettbaserade, lättanvända projektioner för presentation — aldrig primär identitet.
+One-based convenience projections for presentation, never primary identity.
 
 **anchorRef**
 
-Kanonisk länk till versionerad källa och selectors.
+Canonical link to a versioned source and selectors.
 
 **origin**
 
-Stage, modul, funktion, modalitet, scope och proveniensrelation.
+Stage, module, function, modality, scope and provenance relation.
 
 <a id="SYSTEM-OUT-001"></a>
 
-> **SYSTEM-OUT-001** Semantisk `kind` och positioneringssätt `target.mode` MÅSTE vara separata. `row` och `line` är target modes, inte eventtyper.
+> **SYSTEM-OUT-001** Semantic `kind` and positioning method `target.mode` MUST be separate. `row` and `line` are target modes, not event types.
 
 <a id="SYSTEM-OUT-002"></a>
 
-> **SYSTEM-OUT-002** `context.system.out.row(...)` och `.line(...)` FÅR finnas som SDK-helpers men MÅSTE normalisera till samma portabla event envelope och Anchor.
+> **SYSTEM-OUT-002** `context.system.out.row(...)` and `.line(...)` MAY exist as SDK helpers but MUST normalize to the same portable event envelope and Anchor.
 
 <a id="SYSTEM-OUT-003"></a>
 
-> **SYSTEM-OUT-003** Compile- och run-fel lagras i top-level diagnostics. En lyckad positionsbunden varning FÅR dessutom projiceras i `system.out` med samma diagnostic-id.
+> **SYSTEM-OUT-003** Compile and run errors are stored in top-level diagnostics. A successful position-bound warning MAY also be projected into `system.out` with the same diagnostic id.
 
-**Kompatibilitet**
+**Compatibility**
 
-Playgrounden normaliserar `context.system.out.row(...)` och `.line(...)` till separata `kind`, `target.mode` och `anchorRef`, och visar Anchor samt SourceMap i Editor Metadata Lab. Editor Kernel är det separata control-plane-protokollet för dokumentlivscykeln och konsumerar `system.out` genom channel subscriptions. Legacyfälten `type`, `row` och `line` finns kvar som kompatibilitetsprojektioner. Persistenta ankare och LSP-adaptern är fortfarande unsupported.
+The playground normalizes `context.system.out.row(...)` and `.line(...)` into separate `kind`, `target.mode` and `anchorRef`, and shows Anchor and SourceMap in Editor Metadata Lab. Editor Kernel is the separate control-plane protocol for the document lifecycle and consumes `system.out` through channel subscriptions. Legacy fields `type`, `row` and `line` remain as compatibility projections. Persistent anchors and the LSP adapter are still unsupported.

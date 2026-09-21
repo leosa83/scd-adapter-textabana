@@ -12,4 +12,4 @@ Textabana turns readable text into an executable source with multiple output cha
 
 Textabana defines the semantic relationships between these parts. Notebook formats, Python kernels, table formats, annotation models and experiment trackers remain external hosts, formats or adapters.
 
-This reference distinguishes target contracts from implemented lab subsets. English translation is in progress; sections marked Swedish preserve their existing normative wording. See the [English migration register](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/english-migration.md).
+This reference distinguishes target contracts from implemented lab subsets. All specification prose is authored in English; multilingual examples retain their original text. See the [English migration register](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/english-migration.md) for the translation record and remaining codebase work.

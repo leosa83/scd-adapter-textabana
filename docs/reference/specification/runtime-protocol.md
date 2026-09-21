@@ -1,22 +1,22 @@
 # Runtime protocol
 
-Detta är målprotokollet för polyglotta runtimes. Den körbara hostgränsen i dag är Editor Kernels meddelanden nedan; `initialize` och `execute` är inte metoder i dagens TypeScript-klient. Börja med [integrationsguiden](./integration.md) för fungerande anrop.
+This is the target protocol for polyglot runtimes. Today's executable host boundary is the Editor Kernel messaging protocol below; `initialize` and `execute` are not methods on the current TypeScript client. Start with the [integration guide](./integration.md) for working calls.
 
-### Runtime-metoder
+### Runtime methods
 
-| Metod | Krav | Ansvar |
+| Method | Requirement | Responsibility |
 | --- | --- | --- |
-| `initialize` | MÅSTE | Förhandla version, miljö och granted capabilities. |
-| `capabilities` | MÅSTE | Deklarera värdets runtimes, value kinds, limits och adapterprofiler. |
-| `execute` | MÅSTE | Kör en stage med typed input, args, anchors och run context. |
-| `cancel` | MÅSTE | Propagera avbrott till pågående invocation. |
-| `inspect` | BÖR | Beskriv symbol, schema eller runtimevärde för editor. |
-| `complete` | FÅR | Ge completions för funktioner, args och channels. |
-| `shutdown` | BÖR | Frigör session och externa resurser. |
+| `initialize` | MUST | Negotiate version, environment and granted capabilities. |
+| `capabilities` | MUST | Declare the host's runtimes, value kinds, limits and adapter profiles. |
+| `execute` | MUST | Run a stage with typed input, arguments, anchors and run context. |
+| `cancel` | MUST | Propagate cancellation to the ongoing invocation. |
+| `inspect` | SHOULD | Describe a symbol, schema or runtime value to the editor. |
+| `complete` | MAY | Provide completions for functions, arguments and channels. |
+| `shutdown` | SHOULD | Release the session and external resources. |
 
-### ExecuteRequest — logisk form
+### ExecuteRequest — logical form
 
-Normativt schemafragment · json
+Normative schema fragment · json
 
 ```json
 {
@@ -32,16 +32,16 @@ Normativt schemafragment · json
 }
 ```
 
-source snapshotanchor builderrun / stage / profileemitsystem.outartifacts.putcancellationgranted capabilitiesdiagnostics
+Context: source snapshot · anchor builder · run / stage / profile · emit · system.out · artifacts.put · cancellation · granted capabilities · diagnostics.
 
 <a id="RUNTIME-001"></a>
 
-> **RUNTIME-001** `emit` är logiskt acknowledged. Modulens completion MÅSTE flush:a alla accepted events innan stage avslutas.
+> **RUNTIME-001** `emit` is logically acknowledged. Module completion MUST flush all accepted events before the stage ends.
 
 <a id="RUNTIME-002"></a>
 
-> **RUNTIME-002** Funktioner får inte implicit läsa channels. En kanal som input kräver en explicit Plan-edge eller adapterstage.
+> **RUNTIME-002** Functions cannot implicitly read channels. Using a channel as input requires an explicit Plan edge or adapter stage.
 
 <a id="RUNTIME-003"></a>
 
-> **RUNTIME-003** JavaScript, TypeScript, Python, R, Julia, SQL, WASM och externa tjänster FÅR implementera samma protokoll utan språksemantisk särbehandling.
+> **RUNTIME-003** JavaScript, TypeScript, Python, R, Julia, SQL, WASM and external services MAY implement the same protocol without language-specific semantic treatment.

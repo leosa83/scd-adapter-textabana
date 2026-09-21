@@ -1,21 +1,21 @@
 # Semantic contract
 
-Följande invariants är ryggraden i språket. En optimering, adapter eller framtida syntax får inte bryta dem.
+The following invariants form the language's foundation. An optimization, adapter or future syntax must not violate them.
 
-1. 01Källsnapshoten är immutable och versionerad.
-2. 02Kontrollsyntax syns inte i renderingen, utom när den uttryckligen escapats som literal text.
-3. 03Block är balanserade träd; intervall är ordnade aktiva scope-mängder och inte ett falskt träd.
-4. 04Samma deterministiska inputs och plan ger samma värde, eventinnehåll och eventordning.
-5. 05Default är `block output → ambient interval input`, exakt en gång vid blockgränsen.
-6. 06Ett explicit `@intervals`-steg innebär att ingen implicit intervallinjektion sker.
-7. 07`return` påverkar primär pipeline; `emit` påverkar endast en sidokanal.
-8. 08Inheritance omfattar hela funktionsanropet: både returvärde och emissioner.
-9. 09Kanaler är append-only inom en run och läses aldrig implicit av samma pipeline.
-10. 10Global `sequence` är unik, monoton och härledd ur planen — aldrig ur väggklockan.
-11. 11Commit är atomisk. `tentative` är inte samma sak som durable output.
-12. 12Beständiga positioner binds till dokumentversion och Anchor; row och line är projektioner.
-13. 13`mapping=exact` kräver verifierbar output–input-relation.
-14. 14Manifest, digest och kapabiliteter löses före modulkod exekveras.
-15. 15Stora eller binära resultat refereras som artifacts i stället för att bäddas in i kontrollplanet.
-16. 16Hemligheter serialiseras aldrig i source, IR, events, resultat eller loggar.
-17. 17Hela source snapshot parsas före modulinitiering. Recovery är synlig för editorn men aldrig körbar.
+1. The source snapshot is immutable and versioned.
+2. Control syntax does not appear in the rendering unless explicitly escaped as literal text.
+3. Blocks are balanced trees; intervals are ordered sets of active scopes, not an artificial tree.
+4. The same deterministic inputs and plan produce the same value, event content and event order.
+5. The default is `block output → ambient interval input`, exactly once at the block boundary.
+6. An explicit `@intervals` stage disables implicit interval injection.
+7. `return` affects the primary pipeline; `emit` affects only a side channel.
+8. Inheritance covers the entire function call: both its return value and emissions.
+9. Channels are append-only within a run and are never implicitly read by the same pipeline.
+10. Global `sequence` is unique, monotonic and derived from the plan, never from the wall clock.
+11. Commit is atomic. `tentative` is not the same as durable output.
+12. Persistent positions are bound to the document version and Anchor; row and line are projections.
+13. `mapping=exact` requires a verifiable output–input relationship.
+14. Manifests, digests and capabilities are resolved before module code executes.
+15. Large or binary results are referenced as artifacts rather than embedded in the control plane.
+16. Secrets are never serialized in source, IR, events, results or logs.
+17. The entire source snapshot is parsed before module initialization. Recovery is visible to the editor but never executable.

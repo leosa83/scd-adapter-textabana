@@ -1,39 +1,39 @@
 # Use cases
 
-Kärnans första mål är att göra editorprogram för metadata betydligt enklare. Samma mekanik skalar sedan till data- och AI-arbetsflöden.
+The kernel's first goal is to make metadata editor applications substantially easier to build. The same mechanisms then extend to data and AI workflows.
 
-**Metadataeditorer utan ny parser**
+**Metadata editors without a new parser**
 
-Återanvänd syntaxanalys, source mapping, modulkörning, eventmodell och synk mellan text och sidopanel.
+Reuse syntax analysis, source mapping, module execution, the event model and synchronization between text and side panel.
 
-**Text och metadata driver inte isär**
+**Text and metadata stay aligned**
 
-Annotationer, claims och diagnostik skapas från samma versionerade källa och pekar tillbaka via Anchor.
+Annotations, claims and diagnostics are created from the same versioned source and point back through Anchor.
 
-**Diagnostik där felet finns**
+**Diagnostics where the error occurs**
 
-Squiggles, badges, hoverinfo och fixes visas på rätt span utan att hamna i renderingen.
+Squiggles, badges, hover information and fixes appear at the correct span without entering the rendering.
 
-**Ett dokument ger flera produkter**
+**One document produces multiple outputs**
 
-Samma run kan ge Markdown, sökindex, Arrow-tabell, graf, GIS, validering och audit.
+The same run can produce Markdown, a search index, an Arrow table, a graph, GIS, validation and an audit.
 
-**Granskbar AI-extraktion**
+**Reviewable AI extraction**
 
-Modellkandidaten bevaras immutable med inputankare, modellversion, promptdigest och confidence method; människans beslut blir en separat revisionskedja.
+The model candidate remains immutable with input anchors, model version, prompt digest and confidence method; the human decision becomes a separate revision chain.
 
-**Notebook utan notebook-lock-in**
+**Notebooks without notebook lock-in**
 
-Analytikern använder Python, R eller Julia medan .tba-källan och resultatkontraktet förblir portabla.
+The analyst uses Python, R or Julia while the .tba source and result contract remain portable.
 
-**Reproducerbara datapipelines**
+**Reproducible data pipelines**
 
-Dataset, schema, run, artifacts och lineage binds samman utan att gömma semantiken i cellordning.
+Dataset, schema, run, artifacts and lineage are linked without hiding semantics in cell order.
 
-**Billiga domänspecifika verktyg**
+**Low-cost domain-specific tools**
 
-Juridik, forskning, krav, publicering och arkiv delar kärna men får egna moduler, channels och vyer.
+Law, research, requirements, publishing and archives share the kernel while using their own modules, channels and views.
 
-**PARES/RWMT: dokument → GIS och graf**
+**PARES/RWMT: documents → GIS and graph**
 
-Arkivtext kan samtidigt producera skepp, resor, platser, sannolikhetsrutter, evidens och grafrelationer med spårbarhet till originalkällan.
+Archival text can simultaneously produce ships, voyages, places, probable routes, evidence and graph relations with traceability to the original source.

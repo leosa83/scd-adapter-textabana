@@ -1,25 +1,25 @@
 # Data, AI and ML
 
-Bindings ska vara externa och typed. DataFrames, modeller och dataset serialiseras inte in i källtexten; de binds som inputs eller ArtifactRefs och spåras i run-proveniens.
+Bindings are to be external and typed. DataFrames, models and datasets are not serialized into source text; they are bound as inputs or ArtifactRefs and tracked in run provenance.
 
-**Körbar Data & Lineage-subset**
+**Executable Data & Lineage subset**
 
-`data/1` körs som en avgränsad playground-subset: typade JSON-records, dataset/schema-events, stabila `recordId`, deterministisk inner join, kolumnbundna `DataSelector`, derived aggregation och multi-input-lineage via SourceMaps som förenar båda inputankarna. Arrow IPC, Parquet, DuckDB, beständiga ArtifactRefs, OpenLineage-export och full `data/1`-konformitet är fortfarande unsupported.
+`data/1` runs as a bounded playground subset: typed JSON records, dataset/schema events, stable `recordId`, deterministic inner joins, column-bound `DataSelector`, derived aggregation and multi-input lineage through SourceMaps that combine both input anchors. Arrow IPC, Parquet, DuckDB, persistent ArtifactRefs, OpenLineage export and full `data/1` conformance remain unsupported.
 
-### Exakt exekverad datamodell i playgrounden
+### Exact data model executed in the playground
 
-| Lager | Körbar representation | Identitet och mapping |
+| Layer | Executable representation | Identity and mapping |
 | --- | --- | --- |
-| Författad input | Två vanliga GFM Markdown-tabeller i ett relational_join-block. | Deklarerade datasetnamn och join key; ingen dold tabellsyntax. |
-| Canonical Result | data.datasets, data.input.records, data.output.records, data.lineage och data.aggregates. | Dataset-ID, naturlig key och innehållsbaserat recordId; aldrig fysisk radposition. |
-| Join | Deterministisk inner equijoin med vänster inputordning och explicit fel för tomma eller duplicerade keys. | Varje outputrecord har en derived SourceMap med vänster och höger inputanchor. |
-| Cell-lineage | Ett lineage-event per outputcell med DataSelector för output- och inputkolumn. | Join key pekar på båda key-cellerna; övriga celler pekar på sin vänster- eller högerkälla. |
-| Aggregation | Count över join-output i data.aggregates. | Alltid derived och kopplad till de records som räknades. |
-| Adapterprojektion | application/json med schema, rows, record-/cell-lineage och explicit fidelity report. | Source-bound post-commit-projektion; artifactRefs är tom tills verkliga bytes finns. |
+| Authored input | Two ordinary GFM Markdown tables in a relational_join block. | Declared dataset names and join key; no hidden table syntax. |
+| Canonical Result | data.datasets, data.input.records, data.output.records, data.lineage and data.aggregates. | Dataset ID, natural key and content-based recordId; never physical row position. |
+| Join | Deterministic inner equijoin in left-input order, with explicit errors for empty or duplicate keys. | Every output record has a derived SourceMap with left and right input anchors. |
+| Cell lineage | One lineage event per output cell with DataSelector for the output and input columns. | The join key points to both key cells; other cells point to their left or right source. |
+| Aggregation | Count over the join output in data.aggregates. | Always derived and linked to the records counted. |
+| Adapter projection | application/json with schema, rows, record/cell lineage and an explicit fidelity report. | Source-bound post-commit projection; artifactRefs remain empty until actual bytes exist. |
 
-### Derived SourceMap för en join-record
+### Derived SourceMap for a join record
 
-Körbar lab-envelope · json
+Executable lab envelope · json
 
 ```json
 {
@@ -35,24 +35,24 @@ Körbar lab-envelope · json
 }
 ```
 
-**Cell betyder semantisk kolumn i denna subset**
+**Cell means a semantic column in this subset**
 
-Cell-lineage använder en kolumnbunden `DataSelector` ovanpå ett stabilt row-anchor. Playgrounden räknar inte ut exakta teckenpositioner för varje Markdown-cell; sådan textpositionsprecision kräver separata cellankare och är ännu unsupported.
+Cell lineage uses a column-bound `DataSelector` on top of a stable row anchor. The playground does not compute exact character positions for each Markdown cell; that text-position precision requires separate cell anchors and is not yet supported.
 
-### Data- och analyticsprofil
+### Data and analytics profile
 
-| Behov | Primär standard | Textabanaregel |
+| Need | Primary standard | Textabana rule |
 | --- | --- | --- |
-| Tabeller mellan processer | Apache Arrow / Arrow IPC | Schema + stabil record identity + anchor refs. |
-| Beständig tabell | Parquet | Proveniens måste överleva export som fysiska kolumner/relationer. |
-| Pandas / Polars | Arrow PyCapsule, Arrow IPC, därefter dataframe interchange | Adapterkonvertering; inte nytt core-value. |
-| Lokal SQL | DuckDB över Arrow | SQL-stage i ExecutionPlan med typed in/out. |
-| Tensor/embedding | DLPack eller Arrow FixedSizeList/standard extension | Shape, dtype, device och mapping deklareras. |
-| Experiment tracking | MLflow adapter | Run params, metrics, models och artifacts projiceras från TextabanaResult. |
+| Tables between processes | Apache Arrow / Arrow IPC | Schema + stable record identity + anchor refs. |
+| Persistent table | Parquet | Provenance must survive export as physical columns/relations. |
+| Pandas / Polars | Arrow PyCapsule, Arrow IPC, then dataframe interchange | Adapter conversion, not a new core value. |
+| Local SQL | DuckDB over Arrow | SQL stage in ExecutionPlan with typed input/output. |
+| Tensor/embedding | DLPack or Arrow FixedSizeList/standard extension | Declare shape, dtype, device and mapping. |
+| Experiment tracking | MLflow adapter | Run parameters, metrics, models and artifacts are projected from TextabanaResult. |
 
-### Provenienskolumner som överlever pipelines
+### Provenance columns that survive pipelines
 
-Informativ adapterprofil · arrow schema
+Informative adapter profile · arrow schema
 
 ```arrow schema
 claim_id: utf8 not null
@@ -65,32 +65,32 @@ _textabana_activity_id: utf8 not null
 
 **AI invocation provenance**
 
-Provider, model-id/revision, prompt-template digest eller skyddad artifactref, input/output-digests, samplingparametrar, seed när relevant, tool/retrieval refs, tokenanvändning/kostnad, schema, timing och reviewer state.
+Provider, model id/revision, prompt-template digest or protected artifact reference, input/output digests, sampling parameters, seed where relevant, tool/retrieval references, token usage/cost, schema, timing and reviewer state.
 
 <a id="DATA-001"></a>
 
-> **DATA-001** Dataset row identity MÅSTE använda stabilt `recordId` eller deklarerad key — aldrig fysisk row index efter filter, join eller sortering.
+> **DATA-001** Dataset row identity MUST use a stable `recordId` or declared key, never a physical row index after filtering, joining or sorting.
 
 <a id="DATA-002"></a>
 
-> **DATA-002** Filter bevarar lineage; join förenar inputanchors; aggregation producerar `derived` mapping och en explicit provenance relation.
+> **DATA-002** Filtering preserves lineage; a join combines input anchors; aggregation produces `derived` mapping and an explicit provenance relation.
 
 <a id="DATA-003"></a>
 
-> **DATA-003** Kritisk proveniens får inte endast ligga i Arrow- eller Parquet-schema metadata om den ska överleva tredjepartsverktyg.
+> **DATA-003** Critical provenance cannot reside only in Arrow or Parquet schema metadata if it is to survive third-party tools.
 
 <a id="DATA-004"></a>
 
-> **DATA-004** Arrow IPC Stream delar ett schema. En inkompatibel schemaändring MÅSTE skapa en ny stream eller schemaversion.
+> **DATA-004** An Arrow IPC Stream shares one schema. An incompatible schema change MUST create a new stream or schema version.
 
 <a id="DATA-005"></a>
 
-> **DATA-005** In-process Arrow- eller DLPack-handles får aldrig serialiseras i TextabanaResult; resultatet använder transportformat eller ArtifactRef.
+> **DATA-005** In-process Arrow or DLPack handles can never be serialized in TextabanaResult; the result uses a transport format or ArtifactRef.
 
 <a id="AI-001"></a>
 
-> **AI-001** Confidence är ett modellmått, inte sanning. Candidate, accepted, rejected och superseded är separata review states.
+> **AI-001** Confidence is a model metric, not truth. Candidate, accepted, rejected and superseded are separate review states.
 
 <a id="AI-002"></a>
 
-> **AI-002** MCP FÅR exponera manifestfunktioner som tools och docs/resultat som resources, men är en adapter och får inte bli kärnans runtime- eller proveniensmodell.
+> **AI-002** MCP MAY expose manifest functions as tools and documents/results as resources, but it is an adapter and cannot become the kernel's runtime or provenance model.

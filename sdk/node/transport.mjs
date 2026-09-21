@@ -1,5 +1,9 @@
 import { Worker } from "node:worker_threads";
 
+/** Host-owned worker transport for the generated kernel; executes trusted JS.
+ * Unexpected worker failure emits an uncorrelated transport-error message.
+ * Worker stdout/stderr are forwarded to host stderr to preserve JSONL stdout.
+ */
 export class NodeKernelTransport {
   #listeners = new Set();
   #closed = false;
@@ -16,5 +20,6 @@ export class NodeKernelTransport {
   postMessage(message) { if (this.#closed) throw new Error("Transport closed."); this.worker.postMessage(message); }
   addEventListener(_type, listener) { this.#listeners.add(listener); }
   removeEventListener(_type, listener) { this.#listeners.delete(listener); }
+  /** Terminate the worker. Dispose attached clients first to settle pending calls. */
   async close() { this.#closed = true; await this.worker.terminate(); this.#listeners.clear(); }
 }

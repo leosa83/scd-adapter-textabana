@@ -1,20 +1,20 @@
 # Error model
 
-### Felkodsfamiljer
+### Error code families
 
-| Prefix | Fas | Exempel |
+| Prefix | Phase | Example |
 | --- | --- | --- |
-| `TBA-PARSE` | Lexing / parsing | Obalanserat block eller ogiltig marker. |
-| `TBA-RESOLVE` | Include / manifest | Cykel, digest mismatch eller exportkollision. |
-| `TBA-TYPE` | Planering | Inkompatibel TextabanaValue eller channel payload. |
-| `TBA-RUN` | Exekvering | Funktionsfel, timeout, cancellation eller backpressure. |
-| `TBA-ANCHOR` | Positionering | Ambiguous, orphan eller falskt exact mapping claim. |
-| `TBA-SECURITY` | Capabilities | Saknad grant, otillåten URI eller secret leak. |
-| `TBA-ADAPTER` | Interop | Förlust av metadata, schema eller coordinate conversion. |
+| `TBA-PARSE` | Lexing / parsing | Unbalanced block or invalid marker. |
+| `TBA-RESOLVE` | Include / manifest | Cycle, digest mismatch or export collision. |
+| `TBA-TYPE` | Planning | Incompatible TextabanaValue or channel payload. |
+| `TBA-RUN` | Execution | Function error, timeout, cancellation or backpressure. |
+| `TBA-ANCHOR` | Positioning | Ambiguous, orphaned or false exact mapping claim. |
+| `TBA-SECURITY` | Capabilities | Missing grant, forbidden URI or secret leak. |
+| `TBA-ADAPTER` | Interoperability | Loss of metadata, schema or coordinate conversion. |
 
 ### Diagnostic
 
-Normativt schemafragment · json
+Normative schema fragment · json
 
 ```json
 {
@@ -31,20 +31,20 @@ Normativt schemafragment · json
 
 <a id="ERROR-001"></a>
 
-> **ERROR-001** Diagnostik MÅSTE ha stabil kod, severity, message, fas och position när position är känd. Hostspecifika stacktraces FÅR bifogas som skyddad extension.
+> **ERROR-001** Diagnostics MUST have a stable code, severity, message, phase and position when the position is known. Host-specific stack traces MAY be attached as a protected extension.
 
 <a id="ERROR-002"></a>
 
-> **ERROR-002** För samma malformed construct MÅSTE `code`, `recoveryKind` och `diagnosticKey` vara semantiskt stabila. `diagnosticId` och source span är snapshotbundna och får flytta sig först genom en explicit ny analys eller re-anchor-transition.
+> **ERROR-002** For the same malformed construct, `code`, `recoveryKind` and `diagnosticKey` MUST be semantically stable. `diagnosticId` and source span are snapshot-bound and may move only through an explicit new analysis or re-anchoring transition.
 
 <a id="ERROR-003"></a>
 
-> **ERROR-003** En parsediagnostik MÅSTE bära ett halvöppet `sourceSpan` och `recoveryNodeId`. Relaterad opener eller declaration BÖR anges i `related`.
+> **ERROR-003** A parse diagnostic MUST carry a half-open `sourceSpan` and `recoveryNodeId`. A related opener or declaration SHOULD be specified in `related`.
 
 <a id="VERSION-001"></a>
 
-> **VERSION-001** Language, IR, Result och adapterprofiler versioneras oberoende. Breaking semantik kräver ny major/schemaidentifierare.
+> **VERSION-001** Language, IR, Result and adapter profiles are versioned independently. Breaking semantics require a new major version/schema identifier.
 
 <a id="VERSION-002"></a>
 
-> **VERSION-002** Extensions MÅSTE vara namespaced. Okända optional extensions round-trippas; okända required extensions stoppar körningen med capabilitydiagnostik.
+> **VERSION-002** Extensions MUST be namespaced. Unknown optional extensions round-trip; unknown required extensions stop the run with a capability diagnostic.

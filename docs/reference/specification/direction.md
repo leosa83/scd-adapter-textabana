@@ -1,10 +1,10 @@
 # Direction and standards
 
-Arkitekturen följer riktningen; standardåteranvändningen är delvis genomförd och flera adapterlöften återstår.
+The architecture follows the direction; standards reuse is partially implemented and several adapter commitments remain unfulfilled.
 
-Bedömt 2026-09-20 mot sprint 5.9. Tabellen skiljer faktisk formatanvändning, avgränsad projektion och planerat stöd. Ett internt test eller ett välkänt fältnamn bevisar inte extern interoperabilitet.
+Assessed on 2026-09-20 against sprint 5.9. The table distinguishes actual format use, bounded projection and planned support. An internal test or a familiar field name does not prove external interoperability.
 
-### Etablerade standarder: faktisk användning och gräns
+### Established standards: actual use and boundary
 
 <!-- standards:start -->
 | Standard | Status | Actual use | Boundary |
@@ -22,20 +22,20 @@ Bedömt 2026-09-20 mot sprint 5.9. Tabellen skiljer faktisk formatanvändning, a
 | [MLflow](https://mlflow.org/docs/latest/ml/tracking/) | Planned | Model and prompt metadata exists in the annotation lab contracts. | No MLflow tracking client/server, model execution or experiment round trip is implemented. |
 <!-- standards:end -->
 
-**Prioriterad implementationsskuld: kanalernas schemavalidering**
+**Priority implementation debt: channel schema validation**
 
-Artefaktpaketet använder Ajv2020. Kanalpayloads använder fortfarande en egen begränsad kontroll; exempelvis `minimum`, `enum` och `$ref` verkställs inte. Nästa schemaarbete behöver använda en standardvalidator eller avvisa regler utanför en uttrycklig dialekt. Den här dokumentationsrevisionen ändrar inte valideringsbeteendet.
+The artifact bundle uses Ajv2020. Channel payloads still use a limited handwritten check; for example, `minimum`, `enum` and `$ref` are not enforced. The next schema work needs to use a standard validator or reject rules outside an explicit dialect. This documentation revision does not change validation behavior.
 
-Egna IR-, Result- och revisionskontrakt behövs för att binda källa, plan, events och projektion till samma betydelse. Vid formatgränser ska etablerade representationer användas. Läs [hela riktningsbedömningen med källor och prioriteringar](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/STANDARDS_DIRECTION.md).
+Textabana's IR, Result and revision contracts are needed to bind source, plan, events and projection to the same meaning. Established representations are to be used at format boundaries. Read the [full direction assessment with sources and priorities](https://github.com/leosa83/scd-adapter-textabana/blob/main/docs/STANDARDS_DIRECTION.md).
 
 <a id="DIRECTION-001"></a>
 
-> **DIRECTION-001** Ett nytt Textabana-format MÅSTE ange vilket semantiskt samband det tillför, vilken etablerad standard som övervägts och hur utbyte ska ske utan dold betydelseförändring.
+> **DIRECTION-001** A new Textabana format MUST state which semantic relationship it adds, which established standard was considered and how interchange is to occur without hidden changes in meaning.
 
 <a id="DIRECTION-002"></a>
 
-> **DIRECTION-002** Standardstöd MÅSTE beskriva version, riktning för import/export, implementerad delmängd och verifierad gräns. Ett schema-ID, en dependency eller en planerad adapter får inte ensam räknas som stöd.
+> **DIRECTION-002** Standards support MUST describe the version, import/export direction, implemented subset and verified boundary. A schema id, dependency or planned adapter alone cannot count as support.
 
 <a id="DIRECTION-003"></a>
 
-> **DIRECTION-003** En adapter MÅSTE redovisa mapping och förluster vid standardgränsen. Intern konformitet och verifiering mot en oberoende extern konsument MÅSTE rapporteras separat.
+> **DIRECTION-003** An adapter MUST report mappings and losses at the standards boundary. Internal conformance and verification against an independent external consumer MUST be reported separately.
