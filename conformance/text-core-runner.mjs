@@ -1,3 +1,4 @@
+import { KERNEL_BOUNDARY_SOURCES } from "./kernel-sources.mjs";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
@@ -108,7 +109,7 @@ export async function runTextCoreSuite({ suiteUrl = textCoreSuiteUrl } = {}) {
   const suiteDigest = await canonicalDigest(suite);
   const specificationDigest = digest(await readFile(new URL("../TEXT_CORE_PROFILE.md", import.meta.url)));
   if (manifest.schema !== "textabana.text-core-manifest/v1" || manifest.profile !== TEXT_CORE_PROFILE || manifest.version !== "1.0.0" || manifest.suiteDigest !== suiteDigest || manifest.specificationDigest !== specificationDigest || manifest.caseCount !== suite.cases?.length || suite.schema !== "textabana.text-core-suite/v1" || suite.profile !== TEXT_CORE_PROFILE || suite.version !== "1.0.0" || !suite.cases?.length || new Set(suite.cases.map((item) => item.id)).size !== suite.cases.length) throw new Error("Text core profile manifest mismatch.");
-  const paths = ["reference/text_core.py", "reference/text-core-module.js", "conformance/text-core-runner.mjs", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/canonical-json.js", "public/runtime-worker.js", "sdk/node/transport.mjs", "sdk/node/worker-bridge.mjs", "conformance/host-runner.mjs", "package-lock.json"];
+  const paths = ["reference/text_core.py", "reference/text-core-module.js", "conformance/text-core-runner.mjs", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/canonical-json.js", "public/runtime-worker.js", "sdk/node/transport.mjs", "sdk/node/worker-bridge.mjs", "conformance/host-runner.mjs", "package-lock.json", "conformance/kernel-sources.mjs", ...KERNEL_BOUNDARY_SOURCES];
   const sourceDigests = async () => Object.fromEntries(await Promise.all(paths.map(async (path) => [path, digest(await readFile(new URL(`../${path}`, import.meta.url)))])));
   const implementations = await sourceDigests();
   const python = await runPythonTextCore(suite.cases.map((fixture) => fixture.source));

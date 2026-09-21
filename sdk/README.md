@@ -8,4 +8,4 @@ These source clients embed the repository's JavaScript kernel in browser, editor
 - [Node transport](node/transport.mjs): generated kernel in a worker thread.
 - [Python exports](python/__init__.py): callback client and committed-result MIME projection.
 
-Run `npm run runtime:build` before using the Node transport or JSONL host. The host owns the transport and accepted revision; clients correlate messages. Dispose the client before closing the transport. Public response types and package distribution remain part of the [consolidation plan](../CONSOLIDATION_PLAN.md).
+Run `npm run runtime:build` before using the Node transport or JSONL host. The host owns the transport and accepted revision; clients correlate messages. Dispose the client before closing the transport. Command responses, failures and metadata chunks have shared public TypeScript types. Package distribution remains part of the [consolidation plan](../CONSOLIDATION_PLAN.md).

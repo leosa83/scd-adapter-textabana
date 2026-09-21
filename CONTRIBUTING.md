@@ -18,7 +18,7 @@ Document public code by responsibility, accepted inputs, returned results, error
 
 ## Checks
 
-Run `npm run docs:check`, `npm run lint` and `npm test`. For changes affecting the application, also run `npm run test:app`. New `tests/*.test.mjs` files automatically join the headless suite unless explicitly assigned to the application suite in `scripts/run-tests.mjs`.
+Run `npm run docs:check`, `npm run types:check`, `npm run typecheck`, `npm run lint` and `npm test`. For changes affecting the application, also run `npm run test:app`. New `tests/*.test.mjs` files automatically join the headless suite unless explicitly assigned to the application suite in `scripts/run-tests.mjs`.
 
 Preserve independent reference implementations and frozen conformance expectations. Shared examples may be consumed by the app and tests; expected outcomes must not simply be recalculated from the implementation being tested.
 

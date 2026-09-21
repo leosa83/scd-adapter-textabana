@@ -1,3 +1,4 @@
+import { KERNEL_BOUNDARY_SOURCES } from "./kernel-sources.mjs";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
@@ -47,7 +48,7 @@ export async function runScopedTextSuite({ suiteUrl = scopedTextSuiteUrl } = {})
   const baseSpecificationDigest = digest(await readFile(new URL("../TEXT_CORE_PROFILE.md", import.meta.url)));
   if (manifest.baseSpecificationDigest !== baseSpecificationDigest) throw new Error("Scoped text base specification mismatch.");
   if (manifest.schema !== "textabana.scoped-text-manifest/v1" || manifest.profile !== SCOPED_TEXT_PROFILE || manifest.version !== "1.0.0" || manifest.suiteDigest !== suiteDigest || manifest.specificationDigest !== specificationDigest || manifest.caseCount !== suite.cases?.length || suite.schema !== "textabana.scoped-text-suite/v1" || suite.profile !== SCOPED_TEXT_PROFILE || suite.version !== "1.0.0" || !suite.cases?.length || new Set(suite.cases.map((item) => item.id)).size !== suite.cases.length) throw new Error("Scoped text profile manifest mismatch.");
-  const paths = ["reference/scoped_text.py", "reference/text_core.py", "reference/text-core-module.js", "conformance/scoped-text-runner.mjs", "conformance/scoped-admission.mjs", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/canonical-json.js", "public/runtime-worker.js", "sdk/node/transport.mjs", "sdk/node/worker-bridge.mjs", "conformance/host-runner.mjs", "package-lock.json"];
+  const paths = ["reference/scoped_text.py", "reference/text_core.py", "reference/text-core-module.js", "conformance/scoped-text-runner.mjs", "conformance/scoped-admission.mjs", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/canonical-json.js", "public/runtime-worker.js", "sdk/node/transport.mjs", "sdk/node/worker-bridge.mjs", "conformance/host-runner.mjs", "package-lock.json", "conformance/kernel-sources.mjs", ...KERNEL_BOUNDARY_SOURCES];
   const sourceDigests = async () => Object.fromEntries(await Promise.all(paths.map(async (path) => [path, digest(await readFile(new URL(`../${path}`, import.meta.url)))])));
   const implementations = await sourceDigests();
   const python = await runPythonScopedText(suite.cases.map((fixture) => fixture.source));

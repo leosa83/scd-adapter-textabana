@@ -79,7 +79,7 @@ for (const [path, content] of outputs) {
 }
 if (mismatches.length) throw new Error(`Stale documentation artifacts: ${mismatches.join(", ")}. Run node scripts/build-specification-docs.mjs`);
 // Check local document links without treating code examples as live links.
-const authoredGuides = ["README.md", "CONTRIBUTING.md", "docs/README.md", "docs/development.md", "docs/architecture.md", "docs/english-migration.md", "docs/INTEGRATION_GUIDE.md", "docs/STANDARDS_DIRECTION.md", "docs/reference/README.md", "docs/reference/sdk.md", "docs/translation-glossary.md", "sdk/README.md"];
+const authoredGuides = ["README.md", "CONTRIBUTING.md", "docs/README.md", "docs/development.md", "docs/architecture.md", "docs/english-migration.md", "docs/INTEGRATION_GUIDE.md", "docs/STANDARDS_DIRECTION.md", "docs/reference/README.md", "docs/reference/sdk.md", "docs/translation-glossary.md", "sdk/README.md", "runtime/README.md"];
 for (const path of [...authoredGuides, ...documents.map((document) => document.source)]) {
   let fence = null;
   for (const line of (await read(path)).split("\n")) {

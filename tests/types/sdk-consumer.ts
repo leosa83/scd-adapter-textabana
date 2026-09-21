@@ -36,15 +36,15 @@ export async function consume(client: TextabanaKernelClient) {
       const identity: string = chunk.value.identity;
       void identity;
       // @ts-expect-error Added items have no before/after pair.
-      chunk.value.before;
+      void chunk.value.before;
     }
   });
   codeMirrorTextabanaBinding(client, "doc", () => revision, (response) => { revision = response.document.documentRevision; });
   const monaco: ChangeResponse = await applyMonacoChanges(client, "doc", revision, { getValue: () => "B🌊" }, []);
   // @ts-expect-error open does not return run output.
-  opened.output;
+  void opened.output;
   // @ts-expect-error analysis is not an arbitrary untyped extension map.
-  analyzed.analysis.notAField;
+  void analyzed.analysis.notAField;
   // @ts-expect-error Convenience responses are inferred, not any or unknown.
   const wrong: string = credit.delivered;
   void [executable, committed, delivered, version, accepted, direct, extension, monaco, wrong];

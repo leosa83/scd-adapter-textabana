@@ -1,6 +1,6 @@
 # Host SDK and transport reference
 
-This reference describes the source APIs in sprint 5.12. The [integration guide](../INTEGRATION_GUIDE.md) provides the complete editor loop and runnable examples. These sources are consumed from the repository; separate npm and PyPI distributions are planned.
+This reference describes the source APIs through sprint 5.13. The [integration guide](../INTEGRATION_GUIDE.md) provides the complete editor loop and runnable examples. These sources are consumed from the repository; separate npm and PyPI distributions are planned.
 
 The clients use the same JavaScript kernel and `textabana.editor-kernel/lab-v1` protocol. The Python client is a host binding; the independent Python conformance evaluators implement narrower profiles. This reference documents current behavior. The [runtime protocol](specification/runtime-protocol.md), [Editor Kernel requirements](specification/editor-kernel.md) and versioned profiles define their respective contracts.
 
@@ -28,34 +28,40 @@ new TextabanaKernelClient(transport: KernelTransport)
 
 | Method | Inputs and result |
 |---|---|
-| `command<T = unknown>(command, payload = {})` | `command: KernelCommand`, `payload: Record<string, unknown>`. Returns `Promise<T>`. `T` is an unchecked caller assertion; it does not validate the response. |
-| `open(documentId, path, source)` | Three strings; requests `documentRevision: 1`. Returns `Promise<unknown>`. |
-| `change(documentId, baseRevision, changes)` | String, number, `TextChange[]`; sends `coordinateUnit: "unicode-code-point"`. Returns `Promise<unknown>`. |
-| `analyze(documentId, documentRevision)` | String and number; read-only analysis without module execution. Returns `Promise<unknown>`. |
-| `run(documentId, documentRevision, runId, modules, options = {})` | String, number, number, `ModulePackage[]` or record array, and options record with optional `moduleLock`/`capabilityGrants`. Returns `Promise<unknown>`. |
-| `subscribe(documentId, subscriptionId, channels = ["*"], initialCredit = 0)` | Two strings, string array and number; selects `delivery: "stream"`. Returns `Promise<unknown>`. |
-| `credit(subscriptionId, credit)` | String and number; adds metadata delivery credit. Returns `Promise<unknown>`. |
-| `exportCache(documentId)` | String; requests a cache checkpoint. Returns `Promise<unknown>`. The host owns storage. |
-| `importCache(documentId, checkpoint)` | String and `unknown`; the kernel validates the checkpoint before reuse. Returns `Promise<unknown>`. |
+| `command(command, payload = {})` | `command: KernelCommand`, `payload: Record<string, unknown>`. Infers `Promise<CommandResponses[C]>` from the command. The explicit `command<T>` overload remains an unchecked caller assertion. |
+| `open(documentId, path, source)` | Three strings; requests `documentRevision: 1`. Returns `Promise<OpenResponse>`. |
+| `change(documentId, baseRevision, changes)` | String, number, `TextChange[]`; sends `coordinateUnit: "unicode-code-point"`. Returns `Promise<ChangeResponse>`. |
+| `analyze(documentId, documentRevision)` | String and number; read-only analysis without module execution. Returns `Promise<AnalyzeResponse>`. |
+| `run(documentId, documentRevision, runId, modules, options = {})` | String, number, number, `ModulePackage[]` or record array, and options record with optional `moduleLock`/`capabilityGrants`. Returns `Promise<RunResponse>`. |
+| `subscribe(documentId, subscriptionId, channels = ["*"], initialCredit = 0)` | Two strings, string array and number; selects `delivery: "stream"`. Returns `Promise<SubscribeResponse>`. |
+| `credit(subscriptionId, credit)` | String and number; adds metadata delivery credit. Returns `Promise<CreditResponse>`. |
+| `exportCache(documentId)` | String; requests a cache checkpoint. Returns `Promise<CacheExportResponse>`. The host owns storage. |
+| `importCache(documentId, checkpoint)` | String and `unknown`; the kernel validates the checkpoint before reuse. Returns `Promise<CacheImportResponse>`. |
 | `cancel(runId)` | Number; directly posts an uncorrelated cancellation request. Returns `void`. |
-| `onChunk(subscriptionId, listener)` | String and `(chunk: unknown) => void`; returns a function that removes this local listener. It does not cancel the kernel subscription. |
+| `onChunk(subscriptionId, listener)` | String and `(chunk: MetadataChunk) => void`; returns a function that removes this local listener. It does not cancel the kernel subscription. |
 | `dispose()` | Detaches the message listener, rejects pending commands and clears local listeners. Returns `void`; leaves the transport open. |
 
 `KernelCommand` is the union `open`, `change`, `analyze`, `subscribe`, `credit`, `cache-export`, `cache-import`, `run`, `cancel`. The lower-level `command` method allows additional payload fields supported by the kernel, such as `replaceSession` for `open`, or correlated `cancel`. Each command gets a generated `sdk:<command>:<sequence>` request ID unless a truthy `payload.requestId` supplies one. Duplicate in-flight IDs are rejected. A caller-supplied `type` cannot override the command argument.
 
 Register `onChunk` before requesting delivery. `subscribe` selects metadata after commit; it does not enable continuous stage-output streaming. A delivery credit unit is one metadata chunk. The kernel, rather than this client, validates credit and subscription fields.
 
+### Response type ownership
+
+[`responses.ts`](../../sdk/typescript/responses.ts) owns command-specific replies, failures, document/change/subscription/cache records and metadata chunks. [`runtime-types.ts`](../../sdk/typescript/runtime-types.ts) owns shared runtime, result-envelope, plan, channel and adapter data shapes. The app re-exports these types; the SDK never imports application code. Narrow `MetadataChunk.collection` to obtain the matching `value` shape. Narrow `KernelFailure.type` to distinguish a protocol error object from a failed run's error string.
+
+Promise convenience methods resolve successful replies only. Use `command("cancel", { runId })` for a typed acknowledgement; `cancel(runId)` remains fire-and-forget. Type inference does not change transport messages, acceptance order or error behavior. The [standalone type consumer](../../tests/types/sdk-consumer.ts) checks all nine commands, editor bindings, narrowing and deliberately invalid property access without app or Cloudflare dependencies.
+
 ### Failures and shutdown
 
 | Condition | Client behavior |
 |---|---|
-| Correlated response has `ok: false` | Rejects with `KernelCommandError`; its `response` retains the original response and diagnostics. |
+| Correlated response has `ok: false` | Rejects with `KernelCommandError`; its `response: KernelFailure` retains the original response and diagnostics. |
 | Uncorrelated `transport-error` | Rejects all pending requests with `KernelCommandError`, then disposes the client. |
 | `postMessage` throws | Removes the affected pending request and rejects with the thrown error. |
 | Duplicate in-flight ID or command after disposal | Rejects with `Error`. |
 | Explicit disposal | Rejects pending requests with `Error("Textabana client disposed.")`. |
 
-The client provides no timeout or automatic retry. An `ok: false` response is a rejected promise, so inspect `KernelCommandError.response` in the catch path. Other correlated responses resolve as received; there is no full response-schema validator yet. Complete public response types are scheduled for sprint 5.13.
+The client provides no timeout or automatic retry. An `ok: false` response is a rejected promise, so inspect `KernelCommandError.response` in the catch path. Other correlated responses resolve as received; there is no full response-schema validator yet. The SDK now exports all nine successful command response types, discriminated protocol/run/transport failures, metadata chunks and shared runtime data types. Open extension values such as user channel payloads remain `unknown`; these declarations are not runtime validators.
 
 Dispose the client before terminating the Worker or closing a Node transport. Stop calling helpers after disposal: `cancel` directly invokes the transport, and `onChunk` only changes local listeners; those helpers do not use the disposed guard in `command`.
 
@@ -69,8 +75,8 @@ The bindings accept minimal structural interfaces; they neither instantiate an e
 
 | Binding | Contract |
 |---|---|
-| [`codeMirrorTextabanaBinding(client, documentId, revision, accepted)`](../../sdk/typescript/codemirror.ts) | Returns a listener for `CodeMirrorUpdateLike`. Reads `startState.doc` and change ranges before the edit, converts offsets to code points, and queues acknowledged changes. `revision: () => number` is evaluated when each queued request starts. `accepted: (response: unknown) => void` must update the host's revision before the next request. |
-| [`applyMonacoChanges(client, documentId, revision, modelBefore, changes)`](../../sdk/typescript/monaco.ts) | Reads `modelBefore.getValue()`, converts each `rangeOffset`/`rangeLength` from UTF-16, sorts the patches and returns `Promise<unknown>` from `client.change`. Pass the pre-edit snapshot, not the already-updated live model. The host serializes calls and updates revisions. |
+| [`codeMirrorTextabanaBinding(client, documentId, revision, accepted)`](../../sdk/typescript/codemirror.ts) | Returns a listener for `CodeMirrorUpdateLike`. Reads `startState.doc` and change ranges before the edit, converts offsets to code points, and queues acknowledged changes. `revision: () => number` is evaluated when each queued request starts. `accepted: (response: ChangeResponse) => void` must update the host's revision before the next request. |
+| [`applyMonacoChanges(client, documentId, revision, modelBefore, changes)`](../../sdk/typescript/monaco.ts) | Reads `modelBefore.getValue()`, converts each `rangeOffset`/`rangeLength` from UTF-16, sorts the patches and returns `Promise<ChangeResponse>` from `client.change`. Pass the pre-edit snapshot, not the already-updated live model. The host serializes calls and updates revisions. |
 
 The CodeMirror listener returns `undefined` for updates without document changes; otherwise it returns `Promise<void>`. A rejected request or throwing `accepted` callback leaves its queue rejected. Resynchronize the document and create a new binding before submitting further edits. The Monaco helper has no internal queue or recovery state.
 

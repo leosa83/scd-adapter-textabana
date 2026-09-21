@@ -70,7 +70,7 @@ try {
 }
 ```
 
-The standalone Node example is the complete, automatically exercised integration. SDK responses are `unknown` by default; supply an appropriately checked response type through `command<T>` or validate responses at the host boundary. Full generated protocol typing is still planned.
+The standalone Node example is the complete, automatically exercised integration. SDK convenience methods and literal `command` calls infer their successful response types. An explicit `command<T>` remains an unchecked assertion for compatibility. Validate untrusted responses at the host boundary; static types do not perform runtime validation. The SDK reference describes the typed failure and metadata unions.
 
 ## Methods, errors and revisions
 

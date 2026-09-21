@@ -1,3 +1,4 @@
+import { KERNEL_BOUNDARY_SOURCES } from "./kernel-sources.mjs";
 import { readFile } from "node:fs/promises";
 import { createHash, webcrypto } from "node:crypto";
 import assert from "node:assert/strict";
@@ -44,7 +45,7 @@ export async function runModuleGateSuite({ suiteUrl = moduleGateSuiteUrl } = {})
   const suite = parseStrictJson(await readFile(suiteUrl, "utf8")), manifest = parseStrictJson(await readFile(manifestUrl, "utf8"));
   const suiteDigest = await canonicalDigest(suite), specificationDigest = digest(await readFile(new URL("../MODULE_GATE_PROFILE.md", import.meta.url)));
   if (manifest.schema !== "textabana.module-gate-manifest/lab-v1" || manifest.profile !== MODULE_GATE_PROFILE || manifest.version !== "1.0.0" || manifest.suiteDigest !== suiteDigest || manifest.specificationDigest !== specificationDigest || manifest.caseCount !== suite.cases?.length || suite.schema !== "textabana.module-gate-suite/lab-v1" || suite.profile !== MODULE_GATE_PROFILE || suite.version !== "1.0.0" || !suite.cases?.length || new Set(suite.cases.map((item) => item.id)).size !== suite.cases.length) throw new Error("Module gate profile manifest mismatch.");
-  const paths = ["conformance/module-gate-runner.mjs", "runtime/worker-entry.js", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/execution-graph.js", "runtime/canonical-json.js", "public/runtime-worker.js", "package-lock.json"];
+  const paths = ["conformance/module-gate-runner.mjs", "runtime/worker-entry.js", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/execution-graph.js", "runtime/canonical-json.js", "public/runtime-worker.js", "package-lock.json", "conformance/kernel-sources.mjs", ...KERNEL_BOUNDARY_SOURCES];
   const sourceDigests = async () => Object.fromEntries(await Promise.all(paths.map(async (path) => [path, digest(await readFile(new URL(`../${path}`, import.meta.url)))])));
   const implementations = await sourceDigests(), workerSource = await readFile(workerUrl, "utf8"), checks = [];
   for (const fixture of suite.cases) {

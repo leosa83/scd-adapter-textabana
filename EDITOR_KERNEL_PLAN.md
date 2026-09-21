@@ -3,8 +3,8 @@
 | Fält | Värde |
 |---|---|
 | Plan-ID | `TA-EDITOR-KERNEL-PLAN` |
-| Planversion | `1.17.0` |
-| Status | Våg 5 aktiv · sprint 5.1–5.12 genomförda |
+| Planversion | `1.18.0` |
+| Status | Våg 5 aktiv · sprint 5.1–5.13 genomförda |
 | Fastställd | 2026-09-05 |
 | Baseline | Interop draft 0.7 efter Våg 2 · Language 0.4 · parser/CST/AST lab-v1 · typed IR lab-v2 · genomförd `TA-ADAPTER-PLAN` 1.0.5 |
 | Mål | En inbäddningsbar, positionsmedveten kärna för editorer, notebooks och pipelinevärdar |
@@ -225,7 +225,7 @@ Textabana Editor Kernel
 
 ### Våg 5 — Produktionskonformitet och ekosystem
 
-**Status:** aktiv · sprint 5.1–5.12 genomförda, senast 2026-09-21
+**Status:** aktiv · sprint 5.1–5.13 genomförda, senast 2026-09-21
 
 **Mål:** Göra kompatibilitetsanspråk portabla mellan oberoende implementationer.
 
@@ -403,6 +403,16 @@ Textabana Editor Kernel
 
 **Boundary:** author translation review is not independent acceptance or a standards-conformance claim. Runtime diagnostics, embedded module text, version-bound profile prose and historical material remain recorded translation work. Engine separation, complete SDK response types and hosting declarations are next in sprint 5.13. See the [consolidation validation record](./CONSOLIDATION_PLAN.md#validation-record-sprint-512) for exact scope and remaining limits.
 
+#### Sprint 5.13 — Engine boundaries and typed host responses
+
+**Status:** implemented 2026-09-21 under [TA-OSS-CONSOLIDATION-001](./CONSOLIDATION_PLAN.md).
+
+**Delivery:** explicit document, module admission/loading, channel, result, adapter and lab-conformance modules; instance-owned editor/loader state; all nine typed command responses, failure and metadata unions; SDK-owned shared data types reused by the app; official generated Cloudflare declarations and CI type-check gates.
+
+**Evidence:** 222 headless tests and 7 application tests pass, including new state-isolation checks and standalone positive/negative SDK type assertions. Lint, documentation freshness, generated declaration checks, repository-wide TypeScript checking and the production build pass. The earlier three hosting declaration errors are resolved. All nine external suites pass; only kernel/source fingerprints change in eight reports, and the contract report remains byte-identical.
+
+**Boundary:** public messages, diagnostics, frozen profile expectations and standards claims remain unchanged. The JavaScript engine is behavior-tested; static response types do not validate untrusted transport data. Channel validation, remaining diagnostic/profile translation and release packaging/licensing continue under the consolidation plan. Sprint 5.14 is next.
+
 ## Beroenden och ordning
 
 | Våg | Kräver | Låser upp |
@@ -414,6 +424,12 @@ Textabana Editor Kernel
 | 5 · Produktionskonformitet | Våg 1–4 | Oberoende implementationer och verifierbara claims |
 
 ## Ändringslogg
+
+### 1.18.0 — 2026-09-21
+
+- Sprint 5.13 separates kernel responsibilities while preserving observable behavior and frozen profile outcomes.
+- Shared typed host responses and official hosting declarations support a passing repository-wide type-check gate in CI.
+- Sprint 5.14 addresses channel schema enforcement and the remaining version-sensitive English migration.
 
 ### 1.17.0 — 2026-09-21
 

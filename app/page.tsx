@@ -1333,20 +1333,10 @@ interface KernelDocumentHead {
   documentVersion: string;
 }
 
-interface KernelProtocolResponse {
-  type: "kernel-response";
-  requestId: string | null;
-  command: string;
-  ok: boolean;
-  status?: string;
-  document?: {
-    documentId: string;
-    path: string;
-    documentRevision: number;
-    documentVersion: string;
-  };
-  error?: { code?: string; message?: string };
-}
+// This UI sends open/change/subscribe acknowledgements; run results have a separate handler.
+type KernelProtocolResponse = import("../sdk/typescript/responses").OpenResponse
+  | import("../sdk/typescript/responses").ChangeResponse
+  | import("../sdk/typescript/responses").SubscribeResponse;
 
 interface PendingKernelRequest {
   resolve: (response: KernelProtocolResponse) => void;

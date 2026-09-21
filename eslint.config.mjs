@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Deterministic parser/runtime build artifacts. Lint their authored sources.
     "public/runtime-worker.js",
     "runtime/generated/**",
+    // Official declarations are checked by Wrangler, not rewritten by ESLint.
+    "types/cloudflare-runtime.d.ts",
   ]),
   {
     files: ["components/ui/**/*.{ts,tsx}", "hooks/use-mobile.ts"],

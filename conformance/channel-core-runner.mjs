@@ -1,3 +1,4 @@
+import { KERNEL_BOUNDARY_SOURCES } from "./kernel-sources.mjs";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
@@ -104,7 +105,7 @@ export async function runChannelCoreSuite({ suiteUrl = channelCoreSuiteUrl } = {
   const baseSpecificationDigests = Object.fromEntries(await Promise.all(["TEXT_CORE_PROFILE.md", "SCOPED_TEXT_PROFILE.md"].map(async (file) => [file, digest(await readFile(new URL(`../${file}`, import.meta.url)))])));
   if (canonicalize(manifest.baseSpecificationDigests) !== canonicalize(baseSpecificationDigests)) throw new Error("Channel core base specification mismatch.");
   if (manifest.schema !== "textabana.channel-core-manifest/v1" || manifest.profile !== CHANNEL_CORE_PROFILE || manifest.version !== "1.0.0" || manifest.suiteDigest !== suiteDigest || manifest.specificationDigest !== specificationDigest || manifest.caseCount !== suite.cases?.length || suite.schema !== "textabana.channel-core-suite/v1" || suite.profile !== CHANNEL_CORE_PROFILE || suite.version !== "1.0.0" || !suite.cases?.length || new Set(suite.cases.map((item) => item.id)).size !== suite.cases.length) throw new Error("Channel core profile manifest mismatch.");
-  const paths = ["reference/channel_core.py", "reference/scoped_text.py", "reference/text_core.py", "reference/text-core-module.js", "reference/channel-core-module.js", "conformance/channel-core-runner.mjs", "conformance/scoped-admission.mjs", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/canonical-json.js", "public/runtime-worker.js", "sdk/node/transport.mjs", "sdk/node/worker-bridge.mjs", "conformance/host-runner.mjs", "package-lock.json"];
+  const paths = ["reference/channel_core.py", "reference/scoped_text.py", "reference/text_core.py", "reference/text-core-module.js", "reference/channel-core-module.js", "conformance/channel-core-runner.mjs", "conformance/scoped-admission.mjs", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/canonical-json.js", "public/runtime-worker.js", "sdk/node/transport.mjs", "sdk/node/worker-bridge.mjs", "conformance/host-runner.mjs", "package-lock.json", "conformance/kernel-sources.mjs", ...KERNEL_BOUNDARY_SOURCES];
   const sourceDigests = async () => Object.fromEntries(await Promise.all(paths.map(async (path) => [path, digest(await readFile(new URL(`../${path}`, import.meta.url)))])));
   const implementations = await sourceDigests(), python = await runPythonChannelCore(suite.cases.map((fixture) => fixture.source)), checks = [];
   for (const [index, fixture] of suite.cases.entries()) {

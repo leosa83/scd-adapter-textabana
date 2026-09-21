@@ -1,3 +1,4 @@
+import { KERNEL_BOUNDARY_SOURCES } from "./kernel-sources.mjs";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
@@ -28,7 +29,7 @@ export async function runModuleAdmissionSuite({ suiteUrl = moduleAdmissionSuiteU
   const suite = parseStrictJson(await readFile(suiteUrl, "utf8")), manifest = parseStrictJson(await readFile(manifestUrl, "utf8"));
   const suiteDigest = await canonicalDigest(suite), specificationDigest = digest(await readFile(new URL("../MODULE_ADMISSION_PROFILE.md", import.meta.url)));
   if (manifest.schema !== "textabana.module-admission-manifest/lab-v1" || manifest.profile !== MODULE_ADMISSION_PROFILE || manifest.version !== "1.0.0" || manifest.suiteDigest !== suiteDigest || manifest.specificationDigest !== specificationDigest || manifest.caseCount !== suite.cases?.length || suite.schema !== "textabana.module-admission-suite/lab-v1" || suite.profile !== MODULE_ADMISSION_PROFILE || suite.version !== "1.0.0" || !suite.cases?.length || new Set(suite.cases.map((item) => item.id)).size !== suite.cases.length) throw new Error("Module admission profile manifest mismatch.");
-  const paths = ["reference/module_admission.py", "conformance/module-admission-runner.mjs", "conformance/module-gate-runner.mjs", "runtime/worker-entry.js", "runtime/semantic-identity.js", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/execution-graph.js", "runtime/canonical-json.js", "public/runtime-worker.js", "package-lock.json"];
+  const paths = ["reference/module_admission.py", "conformance/module-admission-runner.mjs", "conformance/module-gate-runner.mjs", "runtime/worker-entry.js", "runtime/semantic-identity.js", "runtime/parser.js", "runtime/generated/textabana-parser.js", "runtime/execution-graph.js", "runtime/canonical-json.js", "public/runtime-worker.js", "package-lock.json", "conformance/kernel-sources.mjs", ...KERNEL_BOUNDARY_SOURCES];
   const sourceDigests = async () => Object.fromEntries(await Promise.all(paths.map(async (path) => [path, digest(await readFile(new URL(`../${path}`, import.meta.url)))])));
   const implementations = await sourceDigests(), workerSource = await readFile(new URL("../public/runtime-worker.js", import.meta.url), "utf8");
   const python = await runPythonModuleAdmission(suite.cases.map((fixture) => fixture.input)), checks = [];

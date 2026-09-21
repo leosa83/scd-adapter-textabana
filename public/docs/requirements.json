@@ -17,7 +17,8 @@
         "conformance/README.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/lab-conformance.js"
       ],
       "verification": [
         "tests/conformance.test.mjs"
@@ -39,7 +40,8 @@
         "conformance/README.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/lab-conformance.js"
       ],
       "verification": [
         "tests/conformance.test.mjs"
@@ -61,7 +63,8 @@
         "conformance/README.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/lab-conformance.js"
       ],
       "verification": [
         "tests/conformance.test.mjs"
@@ -194,7 +197,9 @@
         "README.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/adapter-contract.test.mjs"
@@ -215,7 +220,9 @@
         "README.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/adapter-contract.test.mjs"
@@ -237,7 +244,8 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/lab-values.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs"
@@ -259,7 +267,8 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/lab-values.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs"
@@ -544,7 +553,9 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs",
@@ -568,7 +579,9 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs",
@@ -592,7 +605,9 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs",
@@ -616,7 +631,9 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs",
@@ -640,6 +657,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js",
         "runtime/execution-graph.js"
       ],
       "verification": [
@@ -665,6 +684,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js",
         "runtime/execution-graph.js"
       ],
       "verification": [
@@ -690,6 +711,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js",
         "runtime/execution-graph.js"
       ],
       "verification": [
@@ -715,6 +738,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js",
         "runtime/execution-graph.js"
       ],
       "verification": [
@@ -963,7 +988,9 @@
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js",
+        "runtime/editor-kernel.js"
       ],
       "verification": [
         "tests/source-map-core.test.mjs",
@@ -985,7 +1012,9 @@
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js",
+        "runtime/editor-kernel.js"
       ],
       "verification": [
         "tests/source-map-core.test.mjs",
@@ -1007,7 +1036,9 @@
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js",
+        "runtime/editor-kernel.js"
       ],
       "verification": [
         "tests/source-map-core.test.mjs",
@@ -1029,7 +1060,9 @@
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js",
+        "runtime/editor-kernel.js"
       ],
       "verification": [
         "tests/source-map-core.test.mjs",
@@ -1053,6 +1086,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/result-envelope.js",
+        "runtime/result-references.js",
         "runtime/semantic-identity.js"
       ],
       "verification": [
@@ -1078,6 +1113,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/result-envelope.js",
+        "runtime/result-references.js",
         "runtime/semantic-identity.js"
       ],
       "verification": [
@@ -1103,6 +1140,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/result-envelope.js",
+        "runtime/result-references.js",
         "runtime/semantic-identity.js"
       ],
       "verification": [
@@ -1126,7 +1165,8 @@
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
@@ -1148,7 +1188,8 @@
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
@@ -1170,7 +1211,8 @@
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
@@ -1192,7 +1234,8 @@
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
@@ -1214,7 +1257,8 @@
         "CHANNEL_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js"
       ],
       "verification": [
         "tests/channel-core.test.mjs",
@@ -1236,7 +1280,8 @@
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js"
       ],
       "verification": [
         "tests/source-map-core.test.mjs",
@@ -1258,7 +1303,8 @@
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js"
       ],
       "verification": [
         "tests/source-map-core.test.mjs",
@@ -1280,7 +1326,8 @@
         "SOURCE_MAP_CORE_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/channels.js"
       ],
       "verification": [
         "tests/source-map-core.test.mjs",
@@ -1352,6 +1399,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js",
         "reference/module_admission.py"
       ],
       "verification": [
@@ -1377,6 +1426,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js",
         "reference/module_admission.py"
       ],
       "verification": [
@@ -1402,6 +1453,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js",
         "reference/module_admission.py"
       ],
       "verification": [
@@ -1427,6 +1480,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js",
         "reference/module_admission.py"
       ],
       "verification": [
@@ -1452,6 +1507,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/module-admission.js",
+        "runtime/module-loader.js",
         "reference/module_admission.py"
       ],
       "verification": [
@@ -1533,10 +1590,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1559,10 +1618,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1585,10 +1646,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1611,10 +1674,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1637,10 +1702,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1663,10 +1730,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1689,10 +1758,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1715,10 +1786,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1741,10 +1814,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1767,10 +1842,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1793,10 +1870,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1819,10 +1898,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1845,10 +1926,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1871,10 +1954,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1897,10 +1982,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1923,10 +2010,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1949,10 +2038,12 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
         "sdk/typescript/client.ts",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
+        "tests/kernel-boundaries.test.mjs",
         "tests/editor-kernel.test.mjs",
         "tests/wave3-closure.test.mjs",
         "tests/host-sdk.test.mjs"
@@ -1974,6 +2065,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -1998,6 +2091,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -2022,6 +2117,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -2046,6 +2143,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -2070,6 +2169,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -2094,6 +2195,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -2118,6 +2221,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -2142,6 +2247,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -2166,6 +2273,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -2190,6 +2299,8 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/editor-kernel.js",
+        "runtime/module-loader.js",
         "runtime/stage-cache.js"
       ],
       "verification": [
@@ -2213,7 +2324,8 @@
         "MODULE_ADMISSION_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/module-admission.js"
       ],
       "verification": [
         "tests/module-admission.test.mjs"
@@ -2251,7 +2363,8 @@
         "MODULE_ADMISSION_PROFILE.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/module-admission.js"
       ],
       "verification": [
         "tests/module-admission.test.mjs"
@@ -2289,7 +2402,8 @@
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/adapter-contract.test.mjs"
@@ -2310,7 +2424,8 @@
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/adapter-contract.test.mjs"
@@ -2331,7 +2446,8 @@
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/adapter-contract.test.mjs"
@@ -2352,7 +2468,8 @@
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/adapter-contract.test.mjs"
@@ -2373,7 +2490,8 @@
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/adapter-contract.test.mjs"
@@ -2394,7 +2512,8 @@
         "IMPLEMENTATION_PLAN.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/adapter-contract.test.mjs"
@@ -2416,6 +2535,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/adapters.js",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
@@ -2438,6 +2558,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/adapters.js",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
@@ -2477,6 +2598,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/adapters.js",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
@@ -2499,6 +2621,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/adapters.js",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
@@ -2521,6 +2644,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/adapters.js",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
@@ -2543,6 +2667,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/adapters.js",
         "sdk/python/textabana_client.py"
       ],
       "verification": [
@@ -2565,6 +2690,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/adapters.js",
         "app/page.tsx"
       ],
       "verification": [
@@ -2588,6 +2714,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/adapters.js",
         "app/page.tsx"
       ],
       "verification": [
@@ -2662,6 +2789,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/adapters.js",
         "app/page.tsx"
       ],
       "verification": [
@@ -2701,7 +2829,8 @@
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/annotation-review.test.mjs"
@@ -2722,7 +2851,8 @@
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/annotation-review.test.mjs"
@@ -2743,7 +2873,8 @@
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/annotation-review.test.mjs"
@@ -2764,7 +2895,8 @@
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/annotation-review.test.mjs"
@@ -2785,7 +2917,8 @@
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/annotation-review.test.mjs"
@@ -2806,7 +2939,8 @@
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/annotation-review.test.mjs"
@@ -2827,7 +2961,8 @@
         "docs/STANDARDS_DIRECTION.md"
       ],
       "implementation": [
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/adapters.js"
       ],
       "verification": [
         "tests/annotation-review.test.mjs"
@@ -2866,6 +3001,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/lab-conformance.js",
         "conformance/host-runner.mjs"
       ],
       "verification": [
@@ -2889,6 +3025,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/lab-conformance.js",
         "conformance/host-runner.mjs"
       ],
       "verification": [
@@ -2912,6 +3049,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/lab-conformance.js",
         "conformance/host-runner.mjs"
       ],
       "verification": [
@@ -2935,6 +3073,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/lab-conformance.js",
         "conformance/host-runner.mjs"
       ],
       "verification": [
@@ -2958,6 +3097,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/lab-conformance.js",
         "conformance/host-runner.mjs"
       ],
       "verification": [
@@ -2981,6 +3121,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/lab-conformance.js",
         "conformance/host-runner.mjs"
       ],
       "verification": [
@@ -3004,6 +3145,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/lab-conformance.js",
         "conformance/host-runner.mjs"
       ],
       "verification": [
@@ -3027,6 +3169,7 @@
       ],
       "implementation": [
         "runtime/worker-entry.js",
+        "runtime/lab-conformance.js",
         "conformance/host-runner.mjs"
       ],
       "verification": [
@@ -3050,7 +3193,9 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/runtime-errors.js",
+        "runtime/editor-kernel.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs",
@@ -3073,7 +3218,9 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/runtime-errors.js",
+        "runtime/editor-kernel.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs",
@@ -3096,7 +3243,9 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/runtime-errors.js",
+        "runtime/editor-kernel.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs",
@@ -3119,7 +3268,9 @@
       ],
       "implementation": [
         "runtime/parser.js",
-        "runtime/worker-entry.js"
+        "runtime/worker-entry.js",
+        "runtime/runtime-errors.js",
+        "runtime/editor-kernel.js"
       ],
       "verification": [
         "tests/parser-wave.test.mjs",
