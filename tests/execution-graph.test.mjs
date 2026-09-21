@@ -223,11 +223,11 @@ test("the typed DAG preserves nested block and repeated interval invocation orde
 
   const invalidPort = JSON.parse(JSON.stringify(graph));
   invalidPort.edges[0].to.port = "missing";
-  assert.throws(() => validateExecutionGraph(invalidPort), /okänd inputport/);
+  assert.throws(() => validateExecutionGraph(invalidPort), /unknown input port/);
 
   const duplicateEdge = JSON.parse(JSON.stringify(graph));
   duplicateEdge.edges[1].edgeId = duplicateEdge.edges[0].edgeId;
-  assert.throws(() => validateExecutionGraph(duplicateEdge), /duplicerat edgeId/);
+  assert.throws(() => validateExecutionGraph(duplicateEdge), /duplicate edgeId/);
 
   const invalidEntries = JSON.parse(JSON.stringify(graph));
   invalidEntries.entryNodeIds = [];
@@ -235,11 +235,11 @@ test("the typed DAG preserves nested block and repeated interval invocation orde
 
   const unknownEdgeKind = JSON.parse(JSON.stringify(graph));
   unknownEdgeKind.edges[0].kind = "implicit";
-  assert.throws(() => validateExecutionGraph(unknownEdgeKind), /okänd typ/);
+  assert.throws(() => validateExecutionGraph(unknownEdgeKind), /unknown type/);
 
   const untypedPort = JSON.parse(JSON.stringify(graph));
   delete untypedPort.nodes[0].outputPort.valueKind;
-  assert.throws(() => validateExecutionGraph(untypedPort), /typad outputport/);
+  assert.throws(() => validateExecutionGraph(untypedPort), /typed output port/);
 });
 
 test("editor baselines include authored block context in direct invalidation before verification", async () => {

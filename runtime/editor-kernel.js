@@ -93,7 +93,7 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
   function readEditorDocument(documentId) {
     const document = editorDocuments.get(String(documentId || ""));
     if (!document) {
-      throw editorProtocolError("TBA-EDITOR-DOCUMENT-NOT-OPEN-LAB", `Dokumentet “${documentId || ""}” är inte öppnat i Editor Kernel.`);
+      throw editorProtocolError("TBA-EDITOR-DOCUMENT-NOT-OPEN-LAB", `Document “${documentId || ""}” is not open in the Editor Kernel.`);
     }
     return document;
   }
@@ -102,11 +102,11 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
     const input = payload.document && typeof payload.document === "object" ? payload.document : payload;
     const documentId = String(input.documentId || input.id || "").trim();
     const path = String(input.path || "document.md").trim();
-    if (!documentId) throw editorProtocolError("TBA-EDITOR-DOCUMENT-ID-LAB", "open kräver documentId.");
-    if (!path) throw editorProtocolError("TBA-EDITOR-DOCUMENT-PATH-LAB", "open kräver en documentsökväg.");
+    if (!documentId) throw editorProtocolError("TBA-EDITOR-DOCUMENT-ID-LAB", "open requires documentId.");
+    if (!path) throw editorProtocolError("TBA-EDITOR-DOCUMENT-PATH-LAB", "open requires a document path.");
     const source = String(input.source ?? input.text ?? "");
     const revision = Number(input.documentRevision ?? input.revision ?? 1);
-    if (revision !== 1) throw editorProtocolError("TBA-EDITOR-REVISION-LAB", "En ny documentsession måste öppnas på revision 1.");
+    if (revision !== 1) throw editorProtocolError("TBA-EDITOR-REVISION-LAB", "A new document session must open at revision 1.");
     const sourceVersion = `fnv1a:${sourceHash(source)}`;
     const existing = editorDocuments.get(documentId);
     const replaceSession = Boolean(payload.replaceSession ?? input.replaceSession ?? false);
@@ -139,7 +139,7 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
 
   function normalizeEditorChanges(document, rawChanges) {
     if (!Array.isArray(rawChanges) || rawChanges.length === 0) {
-      throw editorProtocolError("TBA-EDITOR-CHANGESET-EMPTY-LAB", "change kräver minst en textändring.");
+      throw editorProtocolError("TBA-EDITOR-CHANGESET-EMPTY-LAB", "change requires at least one text edit.");
     }
     const length = Array.from(document.source).length;
     const changes = rawChanges.map((raw, index) => {
@@ -150,7 +150,7 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
       if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < from || to > length) {
         throw editorProtocolError(
           "TBA-EDITOR-RANGE-LAB",
-          `Change ${index + 1} har ett ogiltigt halvöppet Unicode-intervall [${from}, ${to}) för dokumentlängd ${length}.`,
+          `Change ${index + 1} has an invalid half-open Unicode range [${from}, ${to}) for document length ${length}.`,
           { index, from, to, documentLength: length },
         );
       }
@@ -160,10 +160,10 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
       const previous = changes[index - 1];
       const current = changes[index];
       if (current.from < previous.from) {
-        throw editorProtocolError("TBA-EDITOR-CHANGESET-ORDER-LAB", "ChangeSet-ranges måste vara sorterade i stigande ordning.");
+        throw editorProtocolError("TBA-EDITOR-CHANGESET-ORDER-LAB", "ChangeSet ranges must be sorted in ascending order.");
       }
       if (current.from < previous.to || current.from === previous.from) {
-        throw editorProtocolError("TBA-EDITOR-CHANGESET-OVERLAP-LAB", "ChangeSet-ranges får inte överlappa eller börja på samma position.");
+        throw editorProtocolError("TBA-EDITOR-CHANGESET-OVERLAP-LAB", "ChangeSet ranges must not overlap or start at the same position.");
       }
     }
     return changes;
@@ -175,7 +175,7 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
     if (coordinateUnit !== "unicode-code-point") {
       throw editorProtocolError(
         "TBA-EDITOR-COORDINATE-UNIT-LAB",
-        `Editor Kernel accepterar endast coordinateUnit “unicode-code-point”; fick “${coordinateUnit}”. Ingen text ändrades.`,
+        `Editor Kernel accepts only coordinateUnit “unicode-code-point”; received “${coordinateUnit}”. No text was changed.`,
         { expectedCoordinateUnit: "unicode-code-point", receivedCoordinateUnit: coordinateUnit },
       );
     }
@@ -183,14 +183,14 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
     if (!Number.isInteger(baseRevision) || baseRevision !== document.revision) {
       throw editorProtocolError(
         "TBA-EDITOR-STALE-REVISION-LAB",
-        `ChangeSet bygger på revision ${payload.baseRevision ?? "–"}, men documentsessionen står på revision ${document.revision}. Ingen text ändrades.`,
+        `ChangeSet is based on revision ${payload.baseRevision ?? "–"}, but the document session is at revision ${document.revision}. No text was changed.`,
         { expectedRevision: document.revision, receivedRevision: payload.baseRevision ?? null },
       );
     }
     if (payload.baseDocumentVersion && payload.baseDocumentVersion !== document.sourceVersion) {
       throw editorProtocolError(
         "TBA-EDITOR-STALE-VERSION-LAB",
-        "ChangeSetets baseDocumentVersion matchar inte documentsessionens aktuella innehåll. Ingen text ändrades.",
+        "ChangeSet baseDocumentVersion does not match the document session's current content. No text was changed.",
         { expectedVersion: document.sourceVersion, receivedVersion: payload.baseDocumentVersion },
       );
     }
@@ -258,9 +258,9 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
     }
     const subscriptionId = String(payload.subscriptionId || `subscription:${sourceHash(`${document.documentId}:${channels.join("|")}`)}`);
     const delivery = String(payload.delivery || "snapshot-then-delta");
-    if (!["snapshot-then-delta", "stream"].includes(delivery)) throw editorProtocolError("TBA-EDITOR-DELIVERY-LAB", `Ogiltigt delivery-läge “${delivery}”.`);
+    if (!["snapshot-then-delta", "stream"].includes(delivery)) throw editorProtocolError("TBA-EDITOR-DELIVERY-LAB", `Invalid delivery mode “${delivery}”.`);
     const initialCredit = Number(payload.initialCredit ?? (delivery === "stream" ? 0 : 1));
-    if (!Number.isInteger(initialCredit) || initialCredit < 0 || initialCredit > 1024) throw editorProtocolError("TBA-EDITOR-CREDIT-LAB", "initialCredit måste vara ett heltal mellan 0 och 1024.");
+    if (!Number.isInteger(initialCredit) || initialCredit < 0 || initialCredit > 1024) throw editorProtocolError("TBA-EDITOR-CREDIT-LAB", "initialCredit must be an integer between 0 and 1024.");
     const subscription = {
       schema: "textabana.editor-subscription/lab-v1",
       subscriptionId,
@@ -294,9 +294,9 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
 
   function creditEditorSubscription(payload) {
     const subscription = editorSubscriptions.get(String(payload.subscriptionId || ""));
-    if (!subscription) throw editorProtocolError("TBA-EDITOR-SUBSCRIPTION-NOT-FOUND-LAB", "credit refererar en okänd subscription.");
+    if (!subscription) throw editorProtocolError("TBA-EDITOR-SUBSCRIPTION-NOT-FOUND-LAB", "credit references an unknown subscription.");
     const credit = Number(payload.credit);
-    if (!Number.isInteger(credit) || credit <= 0 || credit > 1024) throw editorProtocolError("TBA-EDITOR-CREDIT-LAB", "credit måste vara ett heltal mellan 1 och 1024.");
+    if (!Number.isInteger(credit) || credit <= 0 || credit > 1024) throw editorProtocolError("TBA-EDITOR-CREDIT-LAB", "credit must be an integer between 1 and 1024.");
     subscription.credit = Math.min(1024, subscription.credit + credit);
     const delivered = flushEditorSubscription(subscription);
     return { status: "credited", delivered, pending: subscription.queue.length, subscription: withoutKeys(subscription, ["baseline", "queue"]) };
@@ -319,7 +319,7 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
 
   function importEditorCache(payload) {
     const document = readEditorDocument(payload.documentId);
-    if (isRunBusy()) throw editorProtocolError("TBA-EDITOR-CACHE-BUSY-LAB", "Cachecheckpoint kan bara importeras när inga körningar är aktiva eller köade.");
+    if (isRunBusy()) throw editorProtocolError("TBA-EDITOR-CACHE-BUSY-LAB", "A cache checkpoint can be imported only when no runs are active or queued.");
     try {
       document.stageCache = importStageCacheCheckpoint(payload.checkpoint, document.sessionId);
     } catch (error) {
@@ -334,7 +334,7 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
     if (!Number.isInteger(expectedRevision) || expectedRevision !== document.revision) {
       throw editorProtocolError(
         "TBA-EDITOR-RUN-REVISION-LAB",
-        `run begärde revision ${payload.documentRevision ?? payload.revision ?? "–"}, men documentsessionens head är revision ${document.revision}.`,
+        `run requested revision ${payload.documentRevision ?? payload.revision ?? "–"}, but the document session head is revision ${document.revision}.`,
         { expectedRevision: document.revision, receivedRevision: payload.documentRevision ?? payload.revision ?? null },
       );
     }
@@ -361,7 +361,7 @@ export function createEditorKernel({ postMessage, isRunBusy }) {
     if (receivedRevision !== undefined && Number(receivedRevision) !== document.revision) {
       throw editorProtocolError(
         "TBA-EDITOR-ANALYZE-REVISION-LAB",
-        `analyze begärde revision ${receivedRevision}, men documentsessionens head är revision ${document.revision}.`,
+        `analyze requested revision ${receivedRevision}, but the document session head is revision ${document.revision}.`,
         { expectedRevision: document.revision, receivedRevision },
       );
     }

@@ -458,7 +458,7 @@ export function compileExecutionGraph({
         flush();
         continue;
       }
-      if (node.kind === "Recovery") throw new Error(`Recovery-noden ${node.recoveryKind} får inte nå planeringsfasen.`);
+      if (node.kind === "Recovery") throw new Error(`Recovery node ${node.recoveryKind} must not reach the planning phase.`);
       if (node.kind === "IntervalOpen") {
         flush();
         scopeSequence += 1;
@@ -480,7 +480,7 @@ export function compileExecutionGraph({
       if (node.kind === "IntervalClose") {
         flush();
         const found = scopes.findLastIndex((scope) => scope.scopeId === node.scopeId);
-        if (found < 0) throw new Error(`Rad ${node.sourceSpan.startLine}: planeringsgrafen refererar ett inaktivt intervall.`);
+        if (found < 0) throw new Error(`Line ${node.sourceSpan.startLine}: the planning graph references an inactive interval.`);
         scopes.splice(found, 1);
         continue;
       }
@@ -609,16 +609,16 @@ export function validateExecutionGraph(graph) {
   const edgeKinds = new Set(["pipeline", "interval", "interval-injection", "inheritance", "merge", "render"]);
   const nodeKinds = new Set(["source", "stage", "merge", "render"]);
   const nodes = new Map(graph.nodes.map((node) => [node.nodeId, node]));
-  if (nodes.size !== graph.nodes.length) throw new Error("ExecutionGraph innehåller duplicerade nodeId.");
+  if (nodes.size !== graph.nodes.length) throw new Error("ExecutionGraph contains duplicate nodeId values.");
   for (const node of graph.nodes) {
-    if (!nodeKinds.has(node.kind)) throw new Error(`ExecutionGraph-node ${node.nodeId} har okänd typ ${node.kind}.`);
-    if (!node.outputPort?.name || node.outputPort.valueKind === undefined) throw new Error(`ExecutionGraph-node ${node.nodeId} saknar typad outputport.`);
+    if (!nodeKinds.has(node.kind)) throw new Error(`ExecutionGraph-node ${node.nodeId} has unknown type ${node.kind}.`);
+    if (!node.outputPort?.name || node.outputPort.valueKind === undefined) throw new Error(`ExecutionGraph-node ${node.nodeId} is missing a typed output port.`);
     const declaredInputs = node.kind === "merge" ? node.inputPorts || [] : node.inputPort ? [node.inputPort] : [];
-    if (declaredInputs.some((port) => !port.name || port.valueKind === undefined)) throw new Error(`ExecutionGraph-node ${node.nodeId} saknar typad inputport.`);
+    if (declaredInputs.some((port) => !port.name || port.valueKind === undefined)) throw new Error(`ExecutionGraph-node ${node.nodeId} is missing a typed input port.`);
   }
   const edgeIds = new Set();
   if (!nodes.has(graph.terminalNodeId) || nodes.get(graph.terminalNodeId).kind !== "render") {
-    throw new Error("ExecutionGraph måste ha exakt en giltig renderterminal.");
+    throw new Error("ExecutionGraph must have exactly one valid render terminal.");
   }
   const incoming = new Map(graph.nodes.map((node) => [node.nodeId, 0]));
   const outgoing = new Map(graph.nodes.map((node) => [node.nodeId, 0]));
@@ -629,39 +629,39 @@ export function validateExecutionGraph(graph) {
     ? new Set((node.inputPorts || []).map((port) => port.name))
     : new Set(node.inputPort?.name ? [node.inputPort.name] : []);
   for (const edge of graph.edges) {
-    if (edgeIds.has(edge.edgeId)) throw new Error(`ExecutionGraph innehåller duplicerat edgeId ${edge.edgeId}.`);
+    if (edgeIds.has(edge.edgeId)) throw new Error(`ExecutionGraph contains duplicate edgeId ${edge.edgeId}.`);
     edgeIds.add(edge.edgeId);
-    if (!edgeKinds.has(edge.kind)) throw new Error(`ExecutionGraph-edge ${edge.edgeId} har okänd typ ${edge.kind}.`);
+    if (!edgeKinds.has(edge.kind)) throw new Error(`ExecutionGraph-edge ${edge.edgeId} has unknown type ${edge.kind}.`);
     const from = nodes.get(edge.from.nodeId);
     const to = nodes.get(edge.to.nodeId);
-    if (!from || !to) throw new Error(`ExecutionGraph-edge ${edge.edgeId} refererar en okänd nod.`);
-    if (edge.from.port !== outputPortName(from)) throw new Error(`ExecutionGraph-edge ${edge.edgeId} refererar en okänd outputport.`);
-    if (!inputPortNames(to).has(edge.to.port)) throw new Error(`ExecutionGraph-edge ${edge.edgeId} refererar en okänd inputport.`);
+    if (!from || !to) throw new Error(`ExecutionGraph-edge ${edge.edgeId} references an unknown node.`);
+    if (edge.from.port !== outputPortName(from)) throw new Error(`ExecutionGraph-edge ${edge.edgeId} references an unknown output port.`);
+    if (!inputPortNames(to).has(edge.to.port)) throw new Error(`ExecutionGraph-edge ${edge.edgeId} references an unknown input port.`);
     const inputKey = `${to.nodeId}:${edge.to.port}`;
-    if (connectedInputPorts.has(inputKey)) throw new Error(`ExecutionGraph-input ${inputKey} har flera producenter.`);
+    if (connectedInputPorts.has(inputKey)) throw new Error(`ExecutionGraph-input ${inputKey} has multiple producers.`);
     connectedInputPorts.add(inputKey);
-    if (edge.kind === "merge" && to.kind !== "merge") throw new Error(`ExecutionGraph-edge ${edge.edgeId} har ogiltig merge-target.`);
-    if (edge.kind === "render" && to.kind !== "render") throw new Error(`ExecutionGraph-edge ${edge.edgeId} har ogiltig render-target.`);
-    if (!["merge", "render"].includes(edge.kind) && to.kind !== "stage") throw new Error(`ExecutionGraph-edge ${edge.edgeId} har ogiltig stage-target.`);
-    if (from.orderKey[0] >= to.orderKey[0]) throw new Error(`ExecutionGraph-edge ${edge.edgeId} bryter topologisk ordning.`);
+    if (edge.kind === "merge" && to.kind !== "merge") throw new Error(`ExecutionGraph-edge ${edge.edgeId} has an invalid merge target.`);
+    if (edge.kind === "render" && to.kind !== "render") throw new Error(`ExecutionGraph-edge ${edge.edgeId} has an invalid render target.`);
+    if (!["merge", "render"].includes(edge.kind) && to.kind !== "stage") throw new Error(`ExecutionGraph-edge ${edge.edgeId} has an invalid stage target.`);
+    if (from.orderKey[0] >= to.orderKey[0]) throw new Error(`ExecutionGraph-edge ${edge.edgeId} violates topological order.`);
     incoming.set(to.nodeId, incoming.get(to.nodeId) + 1);
     outgoing.set(from.nodeId, outgoing.get(from.nodeId) + 1);
     reverseEdges.get(to.nodeId).push(from.nodeId);
   }
   const renderNodes = graph.nodes.filter((node) => node.kind === "render");
-  if (renderNodes.length !== 1) throw new Error("ExecutionGraph måste innehålla exakt en rendernod.");
-  if (incoming.get(graph.terminalNodeId) !== 1) throw new Error("ExecutionGraph-rendernoden måste ha exakt ett inputberoende.");
-  if (outgoing.get(graph.terminalNodeId) !== 0) throw new Error("ExecutionGraph-rendernoden måste vara terminal.");
+  if (renderNodes.length !== 1) throw new Error("ExecutionGraph must contain exactly one render node.");
+  if (incoming.get(graph.terminalNodeId) !== 1) throw new Error("The ExecutionGraph render node must have exactly one input dependency.");
+  if (outgoing.get(graph.terminalNodeId) !== 0) throw new Error("The ExecutionGraph render node must be terminal.");
   for (const node of graph.nodes) {
-    if (node.kind === "source" && incoming.get(node.nodeId) !== 0) throw new Error(`ExecutionGraph-source ${node.nodeId} får inte ha input.`);
-    if (node.kind === "stage" && incoming.get(node.nodeId) !== 1) throw new Error(`ExecutionGraph-stage ${node.nodeId} måste ha exakt ett inputberoende.`);
+    if (node.kind === "source" && incoming.get(node.nodeId) !== 0) throw new Error(`ExecutionGraph-source ${node.nodeId} must not have input.`);
+    if (node.kind === "stage" && incoming.get(node.nodeId) !== 1) throw new Error(`ExecutionGraph-stage ${node.nodeId} must have exactly one input dependency.`);
     if (node.kind === "merge" && incoming.get(node.nodeId) !== (node.inputPorts || []).length) {
-      throw new Error(`ExecutionGraph-merge ${node.nodeId} matchar inte deklarerad arity.`);
+      throw new Error(`ExecutionGraph-merge ${node.nodeId} does not match the declared arity.`);
     }
   }
   const expectedEntries = graph.nodes.filter((node) => incoming.get(node.nodeId) === 0).map((node) => node.nodeId).sort();
   const declaredEntries = [...graph.entryNodeIds].sort();
-  if (canonicalJson(expectedEntries) !== canonicalJson(declaredEntries)) throw new Error("ExecutionGraph entryNodeIds matchar inte grafens noll-inputnoder.");
+  if (canonicalJson(expectedEntries) !== canonicalJson(declaredEntries)) throw new Error("ExecutionGraph entryNodeIds do not match the graph's zero-input nodes.");
   const reachesTerminal = new Set([graph.terminalNodeId]);
   const queue = [graph.terminalNodeId];
   while (queue.length) {
@@ -672,7 +672,7 @@ export function validateExecutionGraph(graph) {
       queue.push(previous);
     }
   }
-  if (reachesTerminal.size !== graph.nodes.length) throw new Error("ExecutionGraph innehåller noder som inte når renderterminalen.");
+  if (reachesTerminal.size !== graph.nodes.length) throw new Error("ExecutionGraph contains nodes that do not reach the render terminal.");
   return true;
 }
 

@@ -20,23 +20,23 @@ function cacheValueNode(value, seen, path, rejectAliases) {
   if (typeof value === "string") return ["string", value];
   if (typeof value === "boolean") return ["boolean", value];
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw new Error(`${path} är inte ett ändligt tal.`);
+    if (!Number.isFinite(value)) throw new Error(`${path} is not a finite number.`);
     return ["number", Object.is(value, -0) ? "-0" : value];
   }
   if (value === undefined || ["bigint", "function", "symbol"].includes(typeof value)) {
-    throw new Error(`${path} har den icke-cachebara typen ${typeof value}.`);
+    throw new Error(`${path} has non-cacheable type ${typeof value}.`);
   }
   if (seen.has(value)) {
     throw new Error(rejectAliases
-      ? `${path} innehåller en cyklisk eller delad objektreferens.`
-      : `${path} innehåller en cyklisk objektreferens.`);
+      ? `${path} contains a cyclic or shared object reference.`
+      : `${path} contains a cyclic object reference.`);
   }
   seen.add(value);
   const encodeComposite = () => {
     if (Array.isArray(value)) {
-      if (!Object.isExtensible(value)) throw new Error(`${path} är en icke-extensibel array.`);
-      if (Object.getPrototypeOf(value) !== Array.prototype) throw new Error(`${path} har en icke-standard arrayprototyp.`);
-      if (Object.getOwnPropertySymbols(value).length) throw new Error(`${path} har symbolegenskaper.`);
+      if (!Object.isExtensible(value)) throw new Error(`${path} is a non-extensible array.`);
+      if (Object.getPrototypeOf(value) !== Array.prototype) throw new Error(`${path} has a nonstandard array prototype.`);
+      if (Object.getOwnPropertySymbols(value).length) throw new Error(`${path} has symbol properties.`);
       const descriptors = Object.getOwnPropertyDescriptors(value);
       const names = Object.getOwnPropertyNames(value);
       const lengthDescriptor = descriptors.length;
@@ -44,22 +44,22 @@ function cacheValueNode(value, seen, path, rejectAliases) {
         || lengthDescriptor.get || lengthDescriptor.set
         || lengthDescriptor.enumerable || lengthDescriptor.configurable
         || !lengthDescriptor.writable || lengthDescriptor.value !== value.length) {
-        throw new Error(`${path} har en icke-standard length-deskriptor.`);
+        throw new Error(`${path} has a nonstandard length descriptor.`);
       }
       for (const name of names) {
         if (name === "length") continue;
         const index = Number(name);
         if (!Number.isInteger(index) || index < 0 || index >= value.length || String(index) !== name) {
-          throw new Error(`${path} har extra arrayegenskaper.`);
+          throw new Error(`${path} has extra array properties.`);
         }
       }
       const items = [];
       for (let index = 0; index < value.length; index += 1) {
         const descriptor = descriptors[String(index)];
-        if (!descriptor) throw new Error(`${path} är en gles array.`);
+        if (!descriptor) throw new Error(`${path} is a sparse array.`);
         if (descriptor.get || descriptor.set
           || !descriptor.enumerable || !descriptor.writable || !descriptor.configurable) {
-          throw new Error(`${path}[${index}] har en icke-standard egenskapsdeskriptor.`);
+          throw new Error(`${path}[${index}] has a nonstandard property descriptor.`);
         }
         items.push(cacheValueNode(descriptor.value, seen, `${path}[${index}]`, rejectAliases));
       }
@@ -67,18 +67,18 @@ function cacheValueNode(value, seen, path, rejectAliases) {
     }
     const prototype = Object.getPrototypeOf(value);
     if (prototype !== Object.prototype && prototype !== null) {
-      throw new Error(`${path} är inte ett plain object.`);
+      throw new Error(`${path} is not a plain object.`);
     }
-    if (!Object.isExtensible(value)) throw new Error(`${path} är ett icke-extensibelt objekt.`);
-    if (Object.getOwnPropertySymbols(value).length) throw new Error(`${path} har symbolegenskaper.`);
+    if (!Object.isExtensible(value)) throw new Error(`${path} is a non-extensible object.`);
+    if (Object.getOwnPropertySymbols(value).length) throw new Error(`${path} has symbol properties.`);
     const descriptors = Object.getOwnPropertyDescriptors(value);
     const keys = Object.getOwnPropertyNames(value);
     const entries = [];
     for (const key of keys) {
       const descriptor = descriptors[key];
-      if (descriptor.get || descriptor.set) throw new Error(`${path}.${key} är en accessor.`);
+      if (descriptor.get || descriptor.set) throw new Error(`${path}.${key} is an accessor.`);
       if (!descriptor.enumerable || !descriptor.writable || !descriptor.configurable) {
-        throw new Error(`${path}.${key} har en icke-standard egenskapsdeskriptor.`);
+        throw new Error(`${path}.${key} has a nonstandard property descriptor.`);
       }
       entries.push([key, cacheValueNode(descriptor.value, seen, `${path}.${key}`, rejectAliases)]);
     }
@@ -93,33 +93,33 @@ function cacheValueNode(value, seen, path, rejectAliases) {
 }
 
 function decodeCacheNode(node) {
-  if (!Array.isArray(node) || typeof node[0] !== "string") throw new Error("Cachevärdet har en ogiltig typnod.");
+  if (!Array.isArray(node) || typeof node[0] !== "string") throw new Error("The cache value has an invalid type node.");
   const [type, payload] = node;
   if (type === "null") return null;
   if (type === "string") {
-    if (typeof payload !== "string") throw new Error("Cachevärdet har en ogiltig sträng.");
+    if (typeof payload !== "string") throw new Error("The cache value has an invalid string.");
     return payload;
   }
   if (type === "boolean") {
-    if (typeof payload !== "boolean") throw new Error("Cachevärdet har ett ogiltigt booleskt värde.");
+    if (typeof payload !== "boolean") throw new Error("The cache value has an invalid boolean value.");
     return payload;
   }
   if (type === "number") {
     if (payload === "-0") return -0;
-    if (typeof payload !== "number" || !Number.isFinite(payload)) throw new Error("Cachevärdet har ett ogiltigt tal.");
+    if (typeof payload !== "number" || !Number.isFinite(payload)) throw new Error("The cache value has an invalid number.");
     return payload;
   }
   if (type === "array") {
-    if (!Array.isArray(payload)) throw new Error("Cachevärdet har en ogiltig array.");
+    if (!Array.isArray(payload)) throw new Error("The cache value has an invalid array.");
     return payload.map(decodeCacheNode);
   }
   if (type === "object" || type === "null-object") {
-    if (!Array.isArray(payload)) throw new Error("Cachevärdet har ett ogiltigt objekt.");
+    if (!Array.isArray(payload)) throw new Error("The cache value has an invalid object.");
     const result = type === "null-object" ? Object.create(null) : {};
     const seenKeys = new Set();
     for (const entry of payload) {
       if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== "string" || seenKeys.has(entry[0])) {
-        throw new Error("Cachevärdet har ogiltiga eller duplicerade objektnycklar.");
+        throw new Error("The cache value has invalid or duplicate object keys.");
       }
       seenKeys.add(entry[0]);
       Object.defineProperty(result, entry[0], {
@@ -131,20 +131,20 @@ function decodeCacheNode(node) {
     }
     return result;
   }
-  throw new Error(`Cachevärdet har den okända typen ${type}.`);
+  throw new Error(`The cache value has unknown type ${type}.`);
 }
 
 function snapshotTypedValue(value, maxBytes, { rejectAliases = true } = {}) {
   try {
-    const node = cacheValueNode(value, new WeakSet(), "värdet", rejectAliases);
+    const node = cacheValueNode(value, new WeakSet(), "value", rejectAliases);
     if (value && typeof value === "object") {
-      if (typeof globalThis.structuredClone !== "function") throw new Error("Native structuredClone saknas i runtimevärden.");
+      if (typeof globalThis.structuredClone !== "function") throw new Error("Native structuredClone is unavailable in the runtime host.");
       globalThis.structuredClone(value);
     }
     const wire = JSON.stringify(node);
     const bytes = new TextEncoder().encode(wire).byteLength;
     if (bytes > maxBytes) {
-      return { ok: false, reason: "value-too-large", detail: `${bytes} bytes överskrider cachegränsen ${maxBytes}.` };
+      return { ok: false, reason: "value-too-large", detail: `${bytes} bytes exceed the cache limit of ${maxBytes}.` };
     }
     return {
       ok: true,
@@ -166,22 +166,22 @@ export function snapshotParallelValue(value) {
 }
 
 function cloneTypedValue(snapshot, maxBytes, label) {
-  if (!snapshot?.ok || typeof snapshot.wire !== "string") throw new Error(`${label} saknar en giltig wire-snapshot.`);
-  if (`fnv1a-lab:${hashSource(snapshot.wire)}` !== snapshot.digest) throw new Error(`${label}s digest matchar inte dess wire-snapshot.`);
+  if (!snapshot?.ok || typeof snapshot.wire !== "string") throw new Error(`${label} is missing a valid wire snapshot.`);
+  if (`fnv1a-lab:${hashSource(snapshot.wire)}` !== snapshot.digest) throw new Error(`${label} digest does not match its wire snapshot.`);
   const value = decodeCacheNode(JSON.parse(snapshot.wire));
   const roundTrip = snapshotTypedValue(value, maxBytes);
   if (!roundTrip.ok || roundTrip.wire !== snapshot.wire || roundTrip.digest !== snapshot.digest) {
-    throw new Error(`${label} klarade inte lossless roundtrip-validering.`);
+    throw new Error(`${label} failed lossless round-trip validation.`);
   }
   return value;
 }
 
 export function cloneCacheValue(snapshot) {
-  return cloneTypedValue(snapshot, MAX_ENTRY_BYTES, "Cachevärdet");
+  return cloneTypedValue(snapshot, MAX_ENTRY_BYTES, "Cache value");
 }
 
 export function cloneParallelValue(snapshot) {
-  return cloneTypedValue(snapshot, Number.POSITIVE_INFINITY, "Parallellvärdet");
+  return cloneTypedValue(snapshot, Number.POSITIVE_INFINITY, "Parallel value");
 }
 
 export function createStageCacheStore(sessionId) {
@@ -226,31 +226,31 @@ export function exportStageCacheCheckpoint(store) {
 }
 
 export function importStageCacheCheckpoint(checkpoint, sessionId) {
-  if (!checkpoint || checkpoint.schema !== "textabana.stage-cache-checkpoint/lab-v1") throw new Error("Cachecheckpoint har fel eller saknat schema.");
+  if (!checkpoint || checkpoint.schema !== "textabana.stage-cache-checkpoint/lab-v1") throw new Error("The cache checkpoint has an incorrect or missing schema.");
   const digest = checkpoint.digest;
   const payload = { ...checkpoint };
   delete payload.digest;
   delete payload.bytes;
   const wire = JSON.stringify(payload);
-  if (digest !== `fnv1a-lab:${hashSource(wire)}`) throw new Error("Cachecheckpointets digest matchar inte payloaden.");
-  if (!Array.isArray(payload.entries) || !Array.isArray(payload.quarantined)) throw new Error("Cachecheckpoint saknar giltiga samlingar.");
+  if (digest !== `fnv1a-lab:${hashSource(wire)}`) throw new Error("The cache checkpoint digest does not match the payload.");
+  if (!Array.isArray(payload.entries) || !Array.isArray(payload.quarantined)) throw new Error("The cache checkpoint is missing valid collections.");
   const store = createStageCacheStore(sessionId);
   for (const pair of payload.entries) {
-    if (!Array.isArray(pair) || pair.length !== 2 || typeof pair[0] !== "string") throw new Error("Cachecheckpoint innehåller en ogiltig entry.");
+    if (!Array.isArray(pair) || pair.length !== 2 || typeof pair[0] !== "string") throw new Error("The cache checkpoint contains an invalid entry.");
     const entry = pair[1];
-    if (!entry || typeof entry !== "object" || typeof entry.witness !== "string" || !entry.output) throw new Error("Cachecheckpoint innehåller en ofullständig entry.");
+    if (!entry || typeof entry !== "object" || typeof entry.witness !== "string" || !entry.output) throw new Error("The cache checkpoint contains an incomplete entry.");
     cloneCacheValue(entry.output);
     const observations = Array.isArray(entry.observations) ? entry.observations.map((item) => ({ ...item })) : [];
-    if (Boolean(entry.verified) !== (observations.length >= 2)) throw new Error("Cachecheckpointets verifieringsstatus saknar tillräcklig evidens.");
+    if (Boolean(entry.verified) !== (observations.length >= 2)) throw new Error("The cache checkpoint verification status lacks sufficient evidence.");
     store.entries.set(pair[0], { ...entry, output: { ...entry.output }, observations });
   }
   for (const pair of payload.quarantined) {
-    if (!Array.isArray(pair) || pair.length !== 2 || typeof pair[0] !== "string" || !pair[1] || typeof pair[1] !== "object") throw new Error("Cachecheckpoint innehåller en ogiltig quarantine-entry.");
+    if (!Array.isArray(pair) || pair.length !== 2 || typeof pair[0] !== "string" || !pair[1] || typeof pair[1] !== "object") throw new Error("The cache checkpoint contains an invalid quarantine entry.");
     store.quarantined.set(pair[0], { ...pair[1] });
   }
-  if (store.entries.size > MAX_ENTRIES || store.quarantined.size > MAX_QUARANTINES) throw new Error("Cachecheckpoint överskrider hostens gränser.");
+  if (store.entries.size > MAX_ENTRIES || store.quarantined.size > MAX_QUARANTINES) throw new Error("The cache checkpoint exceeds the host limits.");
   const totalBytes = [...store.entries.values()].reduce((sum, entry) => sum + Number(entry.output?.bytes || 0), 0);
-  if (totalBytes > MAX_TOTAL_VALUE_BYTES) throw new Error("Cachecheckpoint överskrider hostens värdebudget.");
+  if (totalBytes > MAX_TOTAL_VALUE_BYTES) throw new Error("The cache checkpoint exceeds the host value budget.");
   store.version = Number.isInteger(payload.sourceVersion) ? payload.sourceVersion : 0;
   return store;
 }

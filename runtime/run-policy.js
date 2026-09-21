@@ -34,7 +34,7 @@ function limitError(code, message) {
 function optionalPositiveInteger(value, field) {
   if (value === undefined) return null;
   if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
-    throw policyError(`${field} måste vara ett positivt heltal.`, { field, received: value });
+    throw policyError(`${field} must be a positive integer.`, { field, received: value });
   }
   return value;
 }
@@ -42,7 +42,7 @@ function optionalPositiveInteger(value, field) {
 export function normalizeRunPolicy(options = {}) {
   const raw = options?.runtimeLimits;
   if (raw !== undefined && (!raw || typeof raw !== "object" || Array.isArray(raw))) {
-    throw policyError("runtimeLimits måste vara ett objekt.", { receivedType: Array.isArray(raw) ? "array" : typeof raw });
+    throw policyError("runtimeLimits must be an object.", { receivedType: Array.isArray(raw) ? "array" : typeof raw });
   }
   const requested = {
     maxParallelism: optionalPositiveInteger(raw?.maxParallelism, "runtimeLimits.maxParallelism"),
@@ -86,7 +86,7 @@ export function createRunControl({ policy, startedAt, now, isCancelled, cancella
   };
   const deadlineError = () => {
     mark("deadline-exceeded", "TBA-RUN-DEADLINE-LAB");
-    return limitError("TBA-RUN-DEADLINE-LAB", `Körningens kooperativa deadline på ${policy.effective.deadlineMs} ms överskreds vid en runtimegräns.`);
+    return limitError("TBA-RUN-DEADLINE-LAB", `The run's cooperative deadline of ${policy.effective.deadlineMs} ms was exceeded at a runtime boundary.`);
   };
   const assertActive = () => {
     if (isCancelled()) {
@@ -117,7 +117,7 @@ export function createRunControl({ policy, startedAt, now, isCancelled, cancella
         mark("stage-limit-exceeded", "TBA-RUN-STAGE-LIMIT-LAB");
         throw limitError(
           "TBA-RUN-STAGE-LIMIT-LAB",
-          `Planen kräver ${stageCount} stage-resolutioner men run-gränsen är ${policy.effective.maxStageResolutions}.`,
+          `The plan requires ${stageCount} stage resolutions but the run limit is ${policy.effective.maxStageResolutions}.`,
         );
       }
     },
@@ -127,7 +127,7 @@ export function createRunControl({ policy, startedAt, now, isCancelled, cancella
         mark("event-limit-exceeded", "TBA-RUN-EVENT-LIMIT-LAB");
         throw limitError(
           "TBA-RUN-EVENT-LIMIT-LAB",
-          `Körningen överskred gränsen ${policy.effective.maxChannelEvents} kanalhändelser.`,
+          `The run exceeded the limit of ${policy.effective.maxChannelEvents} channel events.`,
         );
       }
     },
@@ -141,7 +141,7 @@ export function createRunControl({ policy, startedAt, now, isCancelled, cancella
         mark("render-limit-exceeded", "TBA-RUN-RENDER-LIMIT-LAB");
         throw limitError(
           "TBA-RUN-RENDER-LIMIT-LAB",
-          `Renderkandidaten är ${renderBytes} UTF-8-bytes men run-gränsen är ${policy.effective.maxRenderBytes}.`,
+          `The render candidate is ${renderBytes} UTF-8 bytes but the run limit is ${policy.effective.maxRenderBytes}.`,
         );
       }
     },

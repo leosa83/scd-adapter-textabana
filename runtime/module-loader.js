@@ -12,7 +12,7 @@ export function createModuleLoader() {
     const definitions = {};
     const define = (value) => {
       if (!value || typeof value !== "object" || Array.isArray(value)) {
-        throw new Error(`${path}: define(...) måste få ett objekt med funktioner.`);
+        throw new Error(`${path}: define(...) requires an object containing functions.`);
       }
       Object.assign(definitions, value);
     };
@@ -26,7 +26,7 @@ export function createModuleLoader() {
     const compiled = Object.entries(definitions).map(([name, raw]) => {
       const descriptor = typeof raw === "function" ? { transform: raw } : raw;
       if (!descriptor || typeof descriptor.transform !== "function") {
-        throw new Error(`${path}: funktionen “${name}” saknar transform(input, args, context).`);
+        throw new Error(`${path}: function “${name}” is missing transform(input, args, context).`);
       }
       return { name, descriptor, modulePath: path, moduleDigest, moduleSource: source };
     });
@@ -37,9 +37,9 @@ export function createModuleLoader() {
   async function loadModule(path, files, registry, loaded, loading) {
     const normalized = normalizePath(path);
     if (loaded.has(normalized)) return;
-    if (loading.has(normalized)) throw new Error(`Cirkulär include upptäcktes vid “${normalized}”.`);
+    if (loading.has(normalized)) throw Object.assign(new Error(`Circular include detected at “${normalized}”.`), { code: "TBA-RESOLVE-LAB" });
     const source = files[normalized];
-    if (source === undefined) throw new Error(`Modulen “${normalized}” finns inte i projektet.`);
+    if (source === undefined) throw Object.assign(new Error(`Module “${normalized}” does not exist in the project.`), { code: "TBA-RESOLVE-LAB" });
     loading.add(normalized);
     for (const line of source.split("\n")) {
       const include = line.match(moduleIncludePattern);
@@ -47,7 +47,7 @@ export function createModuleLoader() {
     }
     for (const entry of await compileModule(normalized, source)) {
       if (registry.has(entry.name)) {
-        throw new Error(`Funktionen “${entry.name}” definieras i både ${registry.get(entry.name).modulePath} och ${normalized}.`);
+        throw new Error(`Function “${entry.name}” is defined in both ${registry.get(entry.name).modulePath} and ${normalized}.`);
       }
       registry.set(entry.name, entry);
     }

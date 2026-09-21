@@ -41,7 +41,7 @@ function detachParallelOutput(value, stageName) {
   if (!snapshot.ok) {
     throw cacheContractError(
       "TBA-PARALLEL-OUTPUT-NOT-DETACHABLE-LAB",
-      `Parallellkandidaten “${stageName}” returnerade ett värde utanför den portabla TextabanaValue-domänen: ${snapshot.detail || snapshot.reason}.`,
+      `Parallel candidate “${stageName}” returned a value outside the portable TextabanaValue domain: ${snapshot.detail || snapshot.reason}.`,
     );
   }
   try {
@@ -49,7 +49,7 @@ function detachParallelOutput(value, stageName) {
   } catch (error) {
     throw cacheContractError(
       "TBA-PARALLEL-OUTPUT-NOT-DETACHABLE-LAB",
-      `Parallellkandidaten “${stageName}” kunde inte detacheras förlustfritt: ${error instanceof Error ? error.message : String(error)}.`,
+      `Parallel candidate “${stageName}” could not be detached without loss: ${error instanceof Error ? error.message : String(error)}.`,
     );
   }
 }
@@ -60,7 +60,7 @@ function serializableMeta(name, descriptor, modulePath, moduleDigest) {
     name,
     modulePath,
     moduleDigest,
-    description: descriptor.description || "Ingen beskrivning angiven.",
+    description: descriptor.description || "No description provided.",
     args: descriptor.args || {},
     accepts: descriptor.accepts || "text",
     returns: descriptor.returns || "text",
@@ -83,7 +83,7 @@ function stringifyResult(value) {
 async function callFunction(stage, input, registry, diagnostics, channelBus, contextExtra = {}, runtimeHooks = {}) {
   channelBus.throwIfCancelled();
   const entry = registry.get(stage.name);
-  if (!entry) throw new Error(`Rad ${stage.line}: okänd funktion “${stage.name}”.`);
+  if (!entry) throw Object.assign(new Error(`Line ${stage.line}: unknown function “${stage.name}”.`), { code: "TBA-RUN-LAB", line: stage.line });
   for (const [channelName, descriptor] of Object.entries(entry.descriptor.channels || {})) {
     channelBus.declare(channelName, descriptor);
   }
@@ -106,13 +106,13 @@ async function callFunction(stage, input, registry, diagnostics, channelBus, con
   let invocationLeaseOpen = true;
   const assertEffectAllowed = () => {
     if (!invocationLeaseOpen) {
-      throw cacheContractError("TBA-STAGE-LEASE-CLOSED-LAB", `Funktionen “${stage.name}” försökte emittera efter att dess invocation avslutats.`);
+      throw cacheContractError("TBA-STAGE-LEASE-CLOSED-LAB", `Function “${stage.name}” attempted to emit after its invocation ended.`);
     }
     if (runtimeHooks.enforceNoEffects) {
       const parallelOnly = runtimeHooks.enforceNoEffects === "parallel";
       throw cacheContractError(
         parallelOnly ? "TBA-PARALLEL-EFFECT-VIOLATION-LAB" : "TBA-CACHE-EFFECT-VIOLATION-LAB",
-        `${parallelOnly ? "Parallellkandidaten" : "Cachekandidaten"} “${stage.name}” deklarerade effects=[] men försökte skapa en observerbar effekt.`,
+        `${parallelOnly ? "Parallel candidate" : "Cache candidate"} “${stage.name}” declared effects=[] but attempted to produce an observable effect.`,
       );
     }
   };
@@ -244,7 +244,7 @@ async function executeExecutionGraph(compiled, registry, diagnostics, channelBus
     if (operation.kind === "source") return [];
     if (operation.kind === "merge") return operation.inputNodeIds;
     if (operation.kind === "stage" || operation.kind === "render") return [operation.inputNodeId];
-    throw planningError(`Okänd operationstyp “${operation.kind}”.`);
+    throw planningError(`Unknown operation type “${operation.kind}”.`);
   };
   const sortOperations = (operations) => [...operations]
     .sort((left, right) => operationOrder.get(left.nodeId) - operationOrder.get(right.nodeId));
@@ -262,7 +262,7 @@ async function executeExecutionGraph(compiled, registry, diagnostics, channelBus
       throw planningError(`Stage-operationen ${operation.nodeId} saknar motsvarande grafnod.`);
     }
     if (!values.has(operation.inputNodeId)) {
-      throw planningError(`Stage-noden ${operation.nodeId} saknar sitt planerade inputvärde.`);
+      throw planningError(`Stage node ${operation.nodeId} is missing its planned input value.`);
     }
     const input = values.get(operation.inputNodeId);
     const parallelCandidate = planNode.contract.parallelEligibility === "candidate";
@@ -371,7 +371,7 @@ async function executeExecutionGraph(compiled, registry, diagnostics, channelBus
                 const parallelOnly = item.parallelCandidate && !item.cacheEligible;
                 throw cacheContractError(
                   parallelOnly ? "TBA-PARALLEL-INPUT-MUTATION-LAB" : "TBA-CACHE-INPUT-MUTATION-LAB",
-                  `${parallelOnly ? "Parallellkandidaten" : "Cachekandidaten"} “${item.operation.stage.name}” muterade sitt inputvärde; körningen rullas tillbaka.`,
+                  `${parallelOnly ? "Parallel candidate" : "Cache candidate"} “${item.operation.stage.name}” mutated its input value; the run is rolled back.`,
                 );
               }
             }
@@ -438,7 +438,7 @@ async function executeExecutionGraph(compiled, registry, diagnostics, channelBus
     while (pending.size) {
       runControl.assertActive();
       const ready = readyOperations();
-      if (!ready.length) throw planningError("ExecutionGraph kunde inte producera ett färdigt ready set.");
+      if (!ready.length) throw planningError("ExecutionGraph could not produce a ready set.");
       const synchronous = ready.filter((operation) => operation.kind !== "stage");
       if (synchronous.length) {
         for (const operation of synchronous) {
@@ -446,14 +446,14 @@ async function executeExecutionGraph(compiled, registry, diagnostics, channelBus
           if (operation.kind === "source") values.set(operation.nodeId, operation.text);
           else if (operation.kind === "merge") {
             const missing = operation.inputNodeIds.find((nodeId) => !values.has(nodeId));
-            if (missing) throw planningError(`Merge-noden ${operation.nodeId} saknar input från ${missing}.`);
+            if (missing) throw planningError(`Merge node ${operation.nodeId} is missing input from ${missing}.`);
             values.set(operation.nodeId, operation.inputNodeIds.map((nodeId) => stringifyResult(values.get(nodeId))).join(""));
           } else if (operation.kind === "render") {
-            if (!values.has(operation.inputNodeId)) throw planningError(`Rendernoden ${operation.nodeId} saknar sitt planerade inputvärde.`);
+            if (!values.has(operation.inputNodeId)) throw planningError(`Render node ${operation.nodeId} is missing its planned input value.`);
             const render = String(values.get(operation.inputNodeId));
             runControl.checkRender(render);
             values.set(operation.nodeId, render);
-          } else throw planningError(`Okänd operationstyp “${operation.kind}”.`);
+          } else throw planningError(`Unknown operation type “${operation.kind}”.`);
           pending.delete(operation.nodeId);
         }
         continue;
@@ -468,7 +468,7 @@ async function executeExecutionGraph(compiled, registry, diagnostics, channelBus
         .filter((operation) => operation.kind === "stage")
         .filter((operation) => operationOrder.get(operation.nodeId) <= barrierOrder);
       const first = readyStages[0];
-      if (!first) throw planningError("ExecutionGraph saknar körbar operation i sitt ready set.");
+      if (!first) throw planningError("ExecutionGraph has no executable operation in its ready set.");
       if (!isRuntimeParallelCandidate(first)) {
         await resolveStageWave([first], isStaticParallelCandidate(first) ? "safe" : "barrier");
         pending.delete(first.nodeId);
@@ -492,7 +492,7 @@ async function executeExecutionGraph(compiled, registry, diagnostics, channelBus
   const plannedStages = compiled.plan.graph.nodes.filter((node) => node.kind === "stage").map((node) => node.nodeId);
   const observedStages = channelBus.traceSnapshot().map((step) => step.planNodeRef);
   if (plannedStages.length !== observedStages.length || plannedStages.some((nodeId, index) => nodeId !== observedStages[index])) {
-    throw planningError("Execution trace avvek från den förkompilerade stageordningen; ingen commit tillåts.");
+    throw planningError("Execution trace diverged from the precompiled stage order; commit is not allowed.");
   }
   return values.get(compiled.plan.graph.terminalNodeId) || "";
 }
@@ -574,7 +574,7 @@ async function executeRun(payload) {
     diagnostics.push(...parsed.diagnostics);
     if (!parsed.executable) {
       const primary = parsed.diagnostics[0];
-      const error = new Error(primary?.message || "Dokumentet innehåller ett syntaxfel.");
+      const error = new Error(primary?.message || "The document contains a syntax error.");
       error.code = primary?.code || "TBA-PARSE-LAB";
       error.phase = "parsing";
       error.parseFailure = true;
@@ -584,7 +584,7 @@ async function executeRun(payload) {
     channelBus.throwIfCancelled();
     const normalizedModules = verifiedModules.map((module) => ({ ...module, path: normalizePath(module.path) }));
     if (new Set(normalizedModules.map((module) => module.path)).size !== normalizedModules.length) {
-      throw new Error("Modulmanifestet innehåller duplicerade normaliserade sökvägar.");
+      throw new Error("The module manifest contains duplicate normalized paths.");
     }
     const files = Object.fromEntries(normalizedModules.map((module) => [module.path, module.content]));
     const loading = new Set();
@@ -703,6 +703,8 @@ async function executeRun(payload) {
     runControl.markError(error);
     const message = error instanceof Error ? error.message : String(error);
     const cancelled = error?.code === cancellationDiagnosticCode;
+    // Preserve legacy classification of untyped module exceptions. Kernel-owned
+    // translated errors carry explicit codes instead of depending on this prose.
     const diagnostic = error?.diagnostic || {
       diagnosticId: `diag:run:${runId}:${String(diagnostics.length + 1).padStart(3, "0")}`,
       code: error?.code || (cancelled ? cancellationDiagnosticCode : /include|Modulen|Cirkulär/.test(message) ? "TBA-RESOLVE-LAB" : /kanal|ChannelDescriptor|payload/.test(message) ? "TBA-TYPE-CHANNEL-LAB" : /okänd funktion/.test(message) ? "TBA-RUN-LAB" : /Rad|block|intervall|markör/.test(message) ? "TBA-PARSE-LAB" : "TBA-RUN-LAB"),
@@ -710,7 +712,7 @@ async function executeRun(payload) {
       level: "error",
       message,
       phase: error?.phase || "run",
-      line: Number(message.match(/Rad (\d+)/)?.[1] || 1),
+      line: error?.line || Number(message.match(/Rad (\d+)/)?.[1] || 1),
     };
     if (!diagnostics.includes(diagnostic)) diagnostics.push(diagnostic);
     const duration = performance.now() - started;
@@ -936,7 +938,7 @@ self.onmessage = (event) => {
   if (activeRuns.has(payload.runId) || queuedRuns.has(payload.runId)) {
     postRejectedEditorRun(payload, editorProtocolError(
       editorRun ? "TBA-EDITOR-RUN-ID-INFLIGHT-LAB" : "TBA-RUN-ID-INFLIGHT-LAB",
-      `runId ${String(payload.runId)} används redan av en aktiv eller köad körning.`,
+      `runId ${String(payload.runId)} is already used by an active or queued run.`,
       { runId: payload.runId },
     ), editorRun);
     return Promise.resolve();

@@ -3,7 +3,7 @@
 const cancellationDiagnosticCode = "TBA-RUN-CANCELLED-LAB";
 
 function cancellationError() {
-  const error = new Error("Körningen avbröts vid en kooperativ runtimegräns.");
+  const error = new Error("The run was cancelled at a cooperative runtime boundary.");
   error.name = "AbortError";
   error.code = cancellationDiagnosticCode;
   return error;
@@ -26,4 +26,3 @@ function cacheContractError(code, message) {
 }
 
 export { cacheContractError, cancellationDiagnosticCode, cancellationError, planningError };
-
