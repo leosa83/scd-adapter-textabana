@@ -34,6 +34,14 @@ The regression in `tests/semantic-identity.test.mjs` pins the existing syntax-fa
 | Lab conformance | Structural evidence includes module source digests, adapter manifest digests and result/projection data; golden baselines are versioned. | Preserve the existing baseline and distinguish report presentation from bound evidence before translating. |
 | Embedded example modules | Module content participates in source digests and semantic context; explanatory strings inside source are still bytes. | Retain historical fixtures and publish separately versioned English examples if their source changes. Do not translate user values. |
 
-The adapter/conformance/module review here identifies the binding points; it is not a completed field-by-field migration. Their runtime sources, the parser source, frozen profiles and goldens remain untouched in this increment. The next 5.14B increment implements the separate English diagnostic presentation and its coverage, then addresses the remaining versioned surfaces.
+The adapter/conformance/module review here identifies the binding points; it is not a completed field-by-field migration. Their runtime sources, the parser source, frozen profiles and goldens remain untouched.
+
+## Increment 5.14B.2: separate English parser presentation
+
+`app/parser-diagnostic-presentation.ts` now supplies an English view for the Parser tab. It recognizes all 36 current recovery kinds using the parser schema, phase, diagnostic code and matching recovery node, never the original prose. It preserves authored actual/expected values and copies related source spans without mutating the input. Primary coordinates, codes and diagnostic keys remain visible. Related-location labels distinguish interval/block openings and synthetic inner-block recovery from its authored outer-block closing marker.
+
+Unrecognized kinds, schemas, phases, codes or missing/mismatched recovery nodes retain the original message. Original diagnostic JSON remains available in an expandable section; raw IR, exports and kernel responses are unchanged. This is a UI presentation policy, not a canonical artifact projection or a new wire/profile version. Original artifact data may therefore still contain Swedish text.
+
+The application tests exercise the recovery inventory, actual parser failures with Unicode, immutable inputs, related spans, fallbacks and rendered English/raw separation. Existing semantic-profile tests continue to protect the frozen identities. Adapter/conformance/example migration remains the next increment.
 
 Sprint 5.14 remains active after 5.14A. Sprint 5.15 release preparation does not begin automatically; licensing, packaging and security-contact decisions remain open.

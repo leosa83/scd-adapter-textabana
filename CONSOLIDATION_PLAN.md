@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Plan | `TA-OSS-CONSOLIDATION-001` |
-| Version | `1.3.1` |
-| Status | Active; sprints 5.11–5.13, 5.14A and 5.14B.1 implemented; remaining 5.14B work next |
+| Version | `1.3.2` |
+| Status | Active; sprints 5.11–5.13, 5.14A and 5.14B.1–B.2 implemented; remaining 5.14B work next |
 | Baseline | Sprint 5.10, GitHub `a0ec88761b904602e28522a6334bc90c5ae0f5e3` |
 | Accepted | 2026-09-20 |
 | Goal | A repository that external developers can understand, run, test and maintain without conversation history or a Sites account |
@@ -146,6 +146,12 @@ The parser guide is English, with the EBNF preserved byte-for-byte. The compatib
 
 Validation: all 232 headless tests pass, including the unchanged 28-check semantic profile and the new diagnostic-identity regression. The EBNF and ordered recovery-code inventory match the previous guide exactly. Runtime sources, frozen corpus and golden files are unchanged.
 
-Next within 5.14B: implement the separate English diagnostic presentation and test recovery details and related locations; then finish adapter/conformance/example migration with explicit version evidence. License selection, public packaging and other 5.15 release work remain separate.
+### Increment 5.14B.2 — English parser presentation
+
+The Parser tab uses a separate English view for all 36 current recovery kinds, gated by parser schema, parsing phase, diagnostic code and matching recovery-node identity. Authored actual/expected values and Unicode source locations are retained. Related locations receive English labels, including the two distinct locations of synthetic outer-block recovery. Unknown or mismatched input falls back to original messages. An expandable original diagnostic and the existing raw IR view preserve access to unchanged evidence.
+
+Tests cover the complete recovery-kind inventory, actual parser output, frozen input/non-mutation, source locations, fallback boundaries and rendered English/raw separation. Runtime sources, semantic artifacts, fixtures and golden files are unchanged. No canonical profile or wire field is added.
+
+Next within 5.14B: finish adapter/conformance/example migration with explicit version evidence. Parser presentation is now implemented, but adapters, conformance prose and embedded module text are not translated by this increment. License selection, public packaging and other 5.15 release work remain separate.
 
 Publication uses matching Git trees in GitHub and Sites. Deployment status is verified separately through the hosting service; a local build alone is not a publication claim.
